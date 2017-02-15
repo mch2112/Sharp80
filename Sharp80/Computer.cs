@@ -47,7 +47,7 @@ namespace Sharp80
             Ports = new PortSet(this);
             Processor = new Processor.Z80(this);
 
-            Sound = new SoundX(new SoundX.GetSampleCallback(Ports.CassetteOut), MainForm)
+            Sound = new SoundX(new SoundX.GetSampleCallback(Ports.CassetteOut))
             {
                 On = Settings.SoundOn
             };

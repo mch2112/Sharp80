@@ -258,7 +258,7 @@ namespace Sharp80
                                       + (MAX_TRACK_NOISE_AMP * Math.Sin(i / TRACK_STEP_WAV_2_PERIOD * (Math.PI * 2)))
                                       )
                                       // Fade in/out
-                                      //* (1.0 - (Math.Abs((i - TRACK_STEP_NOISE_SAMPLE_SIZE / 2.0) / (TRACK_STEP_NOISE_SAMPLE_SIZE / 2.0))))
+                                      * (1.0 - (Math.Abs((i - TRACK_STEP_NOISE_SAMPLE_SIZE / 2.0) / (TRACK_STEP_NOISE_SAMPLE_SIZE / 2.0))))
                                       // Random noise
                                       //* (0.85 + 0.15 * ((double)r.Next() / (double)(int.MaxValue)))
                                       );

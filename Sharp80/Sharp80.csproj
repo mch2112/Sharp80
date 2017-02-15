@@ -187,7 +187,6 @@
     <Compile Include="Register.cs" />
     <Compile Include="SectorDescriptor.cs" />
     <Compile Include="Properties_Settings.cs" />
-    <Compile Include="SoundDX.cs" />
     <Compile Include="Storage.cs" />
     <Compile Include="Track.cs" />
     <Compile Include="UIController.cs" />

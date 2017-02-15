@@ -13,7 +13,7 @@ namespace Sharp80
         private delegate void VoidDelegate();
 
         public const ushort TICKS_PER_TSTATE = 1000;
-        private const int MSEC_PER_SLEEP = 5;
+        private const int MSEC_PER_SLEEP = 1;
 
         // Internal State
 
@@ -327,7 +327,12 @@ namespace Sharp80
                     soundCallback();
                     nextSoundSampleTick += ticksPerSoundSample;
                 }
-                if (++skip > 10)
+                if (++skip > 10000)
+                {
+                    SyncRealTimeOffset();
+                    skip = 0;
+                }
+                else if (++skip > 10)
                 {
                     QueryPerformanceCounter(ref realTimeElapsedTicks);
                     var realTimeTicks = realTimeElapsedTicks - realTimeElapsedTicksOffset;
