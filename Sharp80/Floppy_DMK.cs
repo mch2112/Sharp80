@@ -33,6 +33,7 @@ namespace Sharp80
         public DMK() : base()
         {
         }
+
         public DMK(byte[] DiskData)
         {
             Deserialize(DiskData);

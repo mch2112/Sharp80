@@ -191,13 +191,13 @@ namespace Sharp80
                 psd.breakpoint_on = breakpointOn.Value;
             if (!String.IsNullOrWhiteSpace(defaultFloppyDirectory))
                 psd.default_floppy_directory = defaultFloppyDirectory;
-            if (!String.IsNullOrWhiteSpace(disk0Filename))
+            if (disk0Filename != null)
                 psd.disk0 = disk0Filename;
-            if (!String.IsNullOrWhiteSpace(disk1Filename))
+            if (disk1Filename != null)
                 psd.disk1 = disk1Filename;
-            if (!String.IsNullOrWhiteSpace(disk2Filename))
+            if (disk2Filename != null)
                 psd.disk2 = disk2Filename;
-            if (!String.IsNullOrWhiteSpace(disk3Filename))
+            if (disk3Filename != null)
                 psd.disk3 = disk3Filename;
             if (driveNoise.HasValue)
                 psd.drive_noise = driveNoise.Value;

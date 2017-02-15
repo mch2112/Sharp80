@@ -68,7 +68,8 @@ namespace Sharp80
                         UI.Format() +
                         UI.Format(string.Format("Drive {0} Commands", FloppyNum.Value)) +
                         UI.Format() +
-                        UI.Format("[L] Load Floppy from file");
+                        UI.Format("[L] Load Floppy from file") +
+                        UI.Format("[T] Load TRSDOS floppy");
 
                 if (diskLoaded)
                 {

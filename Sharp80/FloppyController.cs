@@ -250,7 +250,7 @@ namespace Sharp80
             motorOffPulseReq = new PulseReq(MOTOR_OFF_DELAY_IN_USEC, MotorOffCallback, true);
             commandPulseReq  = new PulseReq();
         }
-        public void LoadFloppy(string FilePath, byte DriveNum)
+        public void LoadFloppy(byte DriveNum, string FilePath)
         {
             if (FilePath.Length == 0)
             {
@@ -292,6 +292,7 @@ namespace Sharp80
         public void RemoveDisk(byte DriveNum)
         {
             LoadDisk(DriveNum, new DMK());
+            Storage.SaveDefaultDriveFileName(DriveNum, String.Empty);
         }
 
         public string GetDriveStatusReport()

@@ -36,7 +36,7 @@ namespace Sharp80
             this.Reset();
         }
 
-        protected Floppy(byte[] Data) { throw new Exception("Need to deserialize"); }
+        public Floppy(byte[] Data) { throw new Exception("Need to deserialize"); }
         public Floppy(BinaryReader Reader)
             : this(Reader.ReadInt32(), Reader)
         {
@@ -94,8 +94,9 @@ namespace Sharp80
             try
             {
                 diskData = Storage.LoadBinaryFile(FilePath);
-                var bb = Lib.Compress(diskData);
-                var s = String.Join(", ", diskData.Select(b => "0x" + b.ToString("X2")));
+                //var bb = Lib.Compress(diskData);
+                //var s = String.Join(", ", bb.Select(b => "0x" + b.ToString("X2")));
+
                 f = LoadDisk(diskData, FilePath);
                 if (!f.IsEmpty)
                     f.FilePath = FilePath;

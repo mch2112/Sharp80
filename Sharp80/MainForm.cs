@@ -383,6 +383,10 @@ namespace Sharp80
                                 if (screen.DiskViewFloppyNumber.HasValue)
                                     MakeAndLoadBlankFloppy(Formatted: false, DriveNumber: screen.DiskViewFloppyNumber.Value);
                                 break;
+                            case SharpDX.DirectInput.Key.T:
+                                if (screen.DiskViewFloppyNumber.HasValue)
+                                    uic.Computer.LoadTrsDosFloppy(screen.DiskViewFloppyNumber.Value);
+                                break;
                             default:
                                 screen.SendChar(Key, IsShifted);
                                 break;
