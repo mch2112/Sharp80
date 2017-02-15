@@ -1,0 +1,104 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+
+namespace Sharp80
+{
+    internal sealed class UIController : IDisposable
+    {
+        public Computer Computer { get; set; }
+        private IDXClient parent;
+        
+        private IScreen Screen { get; set; }
+
+        private readonly ulong refreshRate;
+
+        public UIController(IScreen Screen, IDXClient Parent, ulong RefreshRate)
+        {
+            this.Screen = Screen;
+            parent = Parent;
+            refreshRate = RefreshRate;
+        }
+
+        public void Initialize()
+        {
+            HardReset();
+        }
+        public void Start()
+        {
+            Computer.CancelStepOverOrOut();
+            Computer.Start();
+        }
+
+        public bool LoadCMDFile(string FilePath)
+        {
+            try
+            {
+                int pc = Computer.LoadCMDFile(FilePath);
+                
+                Computer.Processor.Jump((ushort)pc);
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+#if CASSETTE
+        public void LoadCassette(string FilePath)
+        {
+            computer.LoadCassette(FilePath);
+        }
+        public bool RewindCassette()
+        {
+            return computer.RewindCassette();
+        }
+#endif
+        public void HardReset()
+        {
+            if (Computer != null)
+                Computer.Dispose();
+            
+            Computer = new Computer(parent, Screen, refreshRate, Settings.Throttle);
+            Computer.StartupLoadFloppies();
+            Computer.Sound.UseDriveNoise = Settings.DriveNoise;
+            Computer.Processor.BreakPoint = Settings.Breakpoint;
+            Computer.Processor.BreakPointOn = Settings.BreakpointOn;
+
+            Screen.Invalidate();
+        }
+        public void ResetKeyboard()
+        {
+            Computer.ResetKeyboard();
+        }
+        public bool MakeFloppyFromFile(string FilePath)
+        {
+            byte[] diskImage = DMK.MakeFloppyFromFile(Storage.LoadBinaryFile(FilePath), System.IO.Path.GetFileName(FilePath)).Serialize(ForceDMK: true);
+
+            if (diskImage.Length > 0)
+                return Storage.SaveBinaryFile(System.IO.Path.ChangeExtension(FilePath, "DMK"), diskImage);
+            else
+                return false;
+        }
+        
+        public bool IsDisposed
+        {
+            get { return Computer.IsDisposed; }
+        }
+        public void Dispose()
+        {
+            if (!Computer.IsDisposed)
+            {
+                if (Computer.Ready)
+                {
+                    Computer.HardwareReset();
+                    Computer.ShutDown();
+                }
+                Computer.Dispose();
+            }
+        }
+    }
+}
