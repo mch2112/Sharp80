@@ -23,8 +23,7 @@ namespace Sharp80
         public PortSet Ports { get; private set; }
         public IScreen Screen { get; private set; }
         public Processor.Z80 Processor { get; private set; }
-        //public SoundDX __Sound { get; private set; }
-        public SoundX Sound { get; private set; }
+        public ISound Sound { get; private set; }
         public bool HasRunYet { get; private set; }
 #if CASSETTE
         private Cassette cassette;
@@ -47,16 +46,15 @@ namespace Sharp80
             Ports = new PortSet(this);
             Processor = new Processor.Z80(this);
 
-            Sound = new SoundX(new SoundX.GetSampleCallback(Ports.CassetteOut))
-            {
-                On = Settings.SoundOn
-            };
+            //Sound = new SoundNull();
+            Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut));
+            Sound.On = Settings.SoundOn;
 
             Clock = new Clock(this,
                               CLOCK_RATE,
                               milliTStatesPerIRQ,
                               milliTStatesPerSoundSample,
-                              new SoundX.SoundEventCallback(Sound.Sample),
+                              new SoundEventCallback(Sound.Sample),
                               Throttle);
 
             Clock.ThrottleChanged += OnThrottleChanged;
@@ -91,6 +89,7 @@ namespace Sharp80
         public void Start()
         {
             HasRunYet = true;
+             
             Clock.Start();
             Sound.Mute = !Clock.Throttle;
         }

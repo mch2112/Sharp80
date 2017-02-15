@@ -114,6 +114,7 @@
     <Compile Include="Cassette.cs" />
     <Compile Include="Clock.cs" />
     <Compile Include="Computer.cs" />
+    <Compile Include="ISound.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -125,6 +126,7 @@
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="Resources.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="SoundNull.cs" />
     <Compile Include="UI.cs" />
     <Compile Include="IMemory.cs" />
     <Compile Include="InstructionSet.cs" />

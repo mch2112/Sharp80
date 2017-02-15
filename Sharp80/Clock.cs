@@ -43,7 +43,7 @@ namespace Sharp80
         private List<PulseReq> pulseReqs = new List<PulseReq>();
         private ulong nextPulseReqTick = UInt64.MaxValue;
 
-        private SoundX.SoundEventCallback soundCallback;
+        private SoundEventCallback soundCallback;
 #if CASSETTE
         private Cassette.CassetteReadCallback cassetteCallback;
 #endif
@@ -54,7 +54,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Clock(Computer Computer, ulong FrequencyInHz, ulong MilliTStatesPerIRQ, ulong MilliTStatesPerSoundSample, SoundX.SoundEventCallback SoundCallback, bool Throttle)
+        public Clock(Computer Computer, ulong FrequencyInHz, ulong MilliTStatesPerIRQ, ulong MilliTStatesPerSoundSample, SoundEventCallback SoundCallback, bool Throttle)
         {
             tstatesPerSec = FrequencyInHz;
             ticksPerSec = FrequencyInHz * TICKS_PER_TSTATE;
@@ -310,16 +310,6 @@ namespace Sharp80
                 pulseReqs.RemoveAll(r => r.Expired);
                 SetNextPulseReqTick();
             }
-
-            // Real-time processes
-            //if (throttle && tickCount > nextSoundSampleTick)
-            //{
-            //    while (soundPause)
-            //        System.Threading.Thread.Sleep(MSEC_PER_SLEEP);
-
-            //    soundCallback();
-            //    nextSoundSampleTick += ticksPerSoundSample;
-            //}
             if (throttle)
             {
                 if (tickCount > nextSoundSampleTick)
@@ -327,7 +317,7 @@ namespace Sharp80
                     soundCallback();
                     nextSoundSampleTick += ticksPerSoundSample;
                 }
-                if (++skip > 10000)
+                if (++skip > 250000)  // couple times a second
                 {
                     SyncRealTimeOffset();
                     skip = 0;

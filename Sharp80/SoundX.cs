@@ -7,11 +7,8 @@ using System.Threading.Tasks;
 
 namespace Sharp80
 {
-    internal class SoundX : IDisposable
+    internal class SoundX : ISound, IDisposable
     {
-        public delegate byte GetSampleCallback();
-        public delegate void SoundEventCallback();
-
         public const int SAMPLE_RATE = 16000;
 
         private XAudio2 xaudio;
