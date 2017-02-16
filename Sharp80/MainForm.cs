@@ -34,15 +34,13 @@ namespace Sharp80
             
             InitializeComponent();
 
-            uic = new UIController(screen, this, SCREEN_REFRESH_RATE);
+            uic = new UIController(this, SCREEN_REFRESH_RATE);
 
-            screen.UIC = uic;
-            
             KeyPreview = true;
             Text = "Sharp80 - TRS-80 Model III Emulator";
             int h = (int)ScreenDX.WINDOWED_HEIGHT;
             int w = (int)(screen.AdvancedView ? ScreenDX.WINDOWED_WIDTH_ADVANCED : ScreenDX.WINDOWED_WIDTH_NORMAL);
-            var scn = Screen.FromHandle(this.Handle);
+            var scn = System.Windows.Forms.Screen.FromHandle(Handle);
 
             float defaultScale = 1f;
 
@@ -62,9 +60,9 @@ namespace Sharp80
         private void Form_Load(object sender, EventArgs e)
         {
             keyboard = new KeyboardDX();
-            screen.Run(this);
-            uic.Initialize();
-
+            uic.HardReset(screen);
+            screen.Initialize(this);
+            
 #if CASSETTE
             uic.LoadCassette(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Application.ExecutablePath), "startrek.cas"));
 #endif
@@ -120,11 +118,17 @@ namespace Sharp80
         private bool IsControlPressed { get { return leftControlPressed || rightControlPressed; } }
         private bool IsAltPressed { get { return leftAltPressed || rightAltPressed; } }
 
-        //protected override void OnKeyPress(KeyPressEventArgs e)
-        //{
-        //    e.Handled = true;
-        //    base.OnKeyPress(e);
-        //}
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            // Prevent stupid ding noise
+
+            if (e.KeyCode < Keys.F1 || e.KeyCode > Keys.F19 || (!e.Alt && !e.Control))
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                base.OnKeyDown(e);
+            }
+        }
 
         private void UiTimerTick(object Sender, EventArgs e)
         {
@@ -351,7 +355,6 @@ namespace Sharp80
                     }
                     break;
                 case ViewMode.OptionsView:
-                
                 case ViewMode.HelpView:
                 case ViewMode.SetBreakpointView:
                 case ViewMode.JumpToView:
@@ -405,7 +408,7 @@ namespace Sharp80
                 if (cancel)
                     return;
                 else
-                    uic.HardReset();
+                    uic.HardReset(screen);
             }
             else
             {
@@ -425,11 +428,11 @@ namespace Sharp80
             
             if (fs)
             {
-                previousClientHeight = this.ClientSize.Height;
+                previousClientHeight = ClientSize.Height;
                 
                 FormBorderStyle = FormBorderStyle.None;
                 WindowState = FormWindowState.Maximized;
-                var parentScreen = Screen.FromHandle(this.Handle);
+                var parentScreen = System.Windows.Forms.Screen.FromHandle(Handle);
                 ClientSize = parentScreen.Bounds.Size;
             }
             else
@@ -681,7 +684,14 @@ namespace Sharp80
         private void Exit()
         {
             Settings.Save();
-            this.Dispose();
+
+            if (!screen.IsDisposed)
+                screen.Dispose();
+            if (!uic.IsDisposed)
+                uic.Dispose();
+            if (!keyboard.IsDisposed)
+                keyboard.Dispose();
+
             Close();
         }
         private string GetTRS80File(string DefaultPath)

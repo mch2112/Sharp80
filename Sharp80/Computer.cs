@@ -21,7 +21,7 @@ namespace Sharp80
         public FloppyController FloppyController { get; private set; }
         public InterruptManager IntMgr { get; private set; }
         public PortSet Ports { get; private set; }
-        public IScreen Screen { get; private set; }
+        public Screen Screen { get; private set; }
         public Processor.Z80 Processor { get; private set; }
         public ISound Sound { get; private set; }
         public bool HasRunYet { get; private set; }
@@ -33,15 +33,16 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Computer(IDXClient MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool Throttle)
+        public Computer(IDXClient MainForm, ScreenDX PhysicalScreen, ulong DisplayRefreshRateInHz, bool Throttle)
         {
             ulong milliTStatesPerIRQ = CLOCK_RATE * Clock.TICKS_PER_TSTATE / 30;
             ulong milliTStatesPerSoundSample = CLOCK_RATE * Clock.TICKS_PER_TSTATE / SoundX.SAMPLE_RATE;
 
-            this.Screen = Screen;
-
             HasRunYet = false;
 
+            PhysicalScreen.Computer = this;
+            Screen = new Screen(PhysicalScreen);
+            
             IntMgr = new InterruptManager(this);
             Ports = new PortSet(this);
             Processor = new Processor.Z80(this);
@@ -60,15 +61,15 @@ namespace Sharp80
             Clock.ThrottleChanged += OnThrottleChanged;
 
             FloppyController = new FloppyController(this);
-            
+
+
 #if CASSETTE
             cassette = new Cassette(this);
             Clock.CassetteCallback = cassette.CassetteCallback;
 #endif
-            Screen.Initialize(this);
 
-            //__Sound.ThrottleOffCallback = Clock.SoundPauseOn;
-            //__Sound.ThrottleOnCallback = Clock.SoundPauseOff;
+            PhysicalScreen.Initialize(MainForm);
+            Screen.SetVideoMode();
 
             ready = true;
         }
@@ -142,7 +143,7 @@ namespace Sharp80
             if (Ready)
             {
                 ResetButton();
-                Screen.Invalidate();
+                Screen.Reset();
             }
         }
         // FLOPPY SUPPORT

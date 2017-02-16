@@ -124,7 +124,9 @@
     <Compile Include="Floppy_DMK_JV.cs" />
     <Compile Include="IDXClient.cs" />
     <Compile Include="MessageEventArgs.cs" />
+    <Compile Include="NativeMethods.cs" />
     <Compile Include="Resources.cs" />
+    <Compile Include="Screen.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="SoundNull.cs" />
     <Compile Include="UI.cs" />
@@ -136,7 +138,6 @@
     <Compile Include="KeyboardDX.cs" />
     <Compile Include="Library_Tables.cs" />
     <Compile Include="Log.cs" />
-    <Compile Include="IScreen.cs" />
     <Compile Include="ScreenDX.cs" />
     <Compile Include="Direct3D.cs" />
     <Compile Include="Floppy_DMK.cs" />

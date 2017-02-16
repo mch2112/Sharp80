@@ -53,6 +53,10 @@ namespace Sharp80
                 LogToDebug(m);
 #endif
         }
+        public static void LogException(Exception ex)
+        {
+            LogMessage(ex.ToString());
+        }
         public static void Purge()
         {
             debugLog.Clear();

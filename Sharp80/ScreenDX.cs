@@ -1,20 +1,19 @@
-﻿using System;
-using System.Drawing;
-using System.Runtime.InteropServices;
-
-using SharpDX;
-using SharpDX.DXGI;
+﻿using SharpDX;
 using SharpDX.Direct2D1;
 using SharpDX.DirectWrite;
+using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
-using DXBitmap = SharpDX.Direct2D1.Bitmap;
+using System;
+using System.Drawing;
+using System.Runtime.InteropServices;
 using Color = SharpDX.Color;
+using DXBitmap = SharpDX.Direct2D1.Bitmap;
 
 namespace Sharp80
 {
     public enum ViewMode { NormalView, MemoryView, DiskView, HelpView, DiskZapView, SetBreakpointView, JumpToView, OptionsView, RegisterView }
 
-    internal sealed class ScreenDX : Direct3D, IScreen, ISerializable
+    internal sealed class ScreenDX : Direct3D
     {
         private const Format PixelFormat = Format.R8G8B8A8_UNorm;
 
@@ -52,9 +51,9 @@ namespace Sharp80
         private byte diskZapFloppyNum, diskZapTrackNum, diskZapSectorNum;
         private bool diskZapSideOne;
 
-        private Computer computer;
+        public Computer Computer { get; set; }
 
-        private bool advancedView, wideCharMode, kanjiCharMode;
+        private bool advancedView;
 
         private bool initialized = false;
         private bool invalid = true;
@@ -99,13 +98,19 @@ namespace Sharp80
 
             diskZapFloppyNum = 0xFF;
         }
-        public void Run(IDXClient Form)
-        {
-            SetParentForm(Form); // need to do this before computing  targetsize
-            base.Run(DesiredLogicalSize);
-        }
 
-        public UIController UIC { get; set; }
+        public void Initialize(IDXClient Form)
+        {
+            SetParentForm(Form); // need to do this before computing targetsize
+            Initialize(DesiredLogicalSize);
+
+            InitCharGen();
+            LoadCharGen();
+
+            initialized = true;
+
+            Invalidate();
+        }
 
         public bool GreenScreen
         {
@@ -157,7 +162,7 @@ namespace Sharp80
                             StatusMessage = "Breakpoint View On";
                             break;
                         case ViewMode.JumpToView:
-                            computer.Stop(true);
+                            Computer.Stop(true);
                             StatusMessage = "Jump To View On";
                             break;
                         case ViewMode.MemoryView:
@@ -272,36 +277,43 @@ namespace Sharp80
                 if (diskViewFloppyNum != value)
                 {
                     diskViewFloppyNum = value;
-                    this.Invalidate();
+                    Invalidate();
                 }
             }
         }
-        public void Initialize(Computer Computer)
+        protected override void InitializeDX()
         {
-            try
+            base.InitializeDX();
+
+            var directWriteFactory = new SharpDX.DirectWrite.Factory();
+
+            foregroundBrushWhite = new SolidColorBrush(RenderTarget, Color.White);
+            foregroundBrushGreen = new SolidColorBrush(RenderTarget, new RawColor4(0.3f, 1.0f, 0.3f, 1f));
+            backgroundBrush = new SolidColorBrush(RenderTarget, Color4.Black);
+            statusBrush = new SolidColorBrush(RenderTarget, Color4.White) { Opacity = 1f };
+            driveOnBrush = new SolidColorBrush(RenderTarget, new RawColor4(0.4f, 0.4f, 0.4f, 0.3f));
+            driveActiveBrush = new SolidColorBrush(RenderTarget, new RawColor4(1f, 0, 0, 0.3f));
+
+            foregroundBrush = GreenScreen ? foregroundBrushGreen : foregroundBrushWhite;
+
+            textFormat = new TextFormat(directWriteFactory, "Consolas", 12)
             {
-                computer = Computer;
-
-                InitCharGen();
-                LoadCharGen();
-
-                SetVideoMode(false, false);
-
-                initialized = true;
-
-                Invalidate();
-            }
-            catch (Exception ex)
+                WordWrapping = WordWrapping.NoWrap,
+                TextAlignment = TextAlignment.Leading
+            };
+            statusTextFormat = new TextFormat(directWriteFactory, "Calibri", 18)
             {
-                throw new Exception("Screen DX Init error: " + ex.ToString());
-            }
+                WordWrapping = WordWrapping.NoWrap,
+                TextAlignment = TextAlignment.Trailing
+            };
+
+            RenderTarget.TextAntialiasMode = SharpDX.Direct2D1.TextAntialiasMode.Cleartype;
+
+            DoLayout();
         }
-
+        
         public void SetVideoMode(bool IsWide, bool IsKanji)
         {
-            wideCharMode = IsWide;
-            kanjiCharMode = IsKanji;
-
             if (IsWide && IsKanji)
             {
                 charGen = charGenKanjiWide;
@@ -403,7 +415,7 @@ namespace Sharp80
                             break;
                         case SharpDX.DirectInput.Key.Tab:
                             for (int i = diskZapFloppyNum + 1; i < diskZapFloppyNum + 4; i++)
-                                if (!computer.FloppyController.GetFloppy(i % 4).IsEmpty)
+                                if (!Computer.FloppyController.GetFloppy(i % 4).IsEmpty)
                                 {
                                     DiskZapFloppyNumber = (byte)(i % 4);
                                     break;
@@ -422,20 +434,20 @@ namespace Sharp80
                     switch (Key)
                     {
                         case SharpDX.DirectInput.Key.PageUp:
+                            memoryViewBaseAddress -= 0x1000;
+                            Invalidate();
+                            break;
                         case SharpDX.DirectInput.Key.Up:
-                            if (Shift)
-                                memoryViewBaseAddress -= 0x1000;
-                            else
-                                memoryViewBaseAddress -= 0x0100;
-                            this.Invalidate();
+                            memoryViewBaseAddress -= 0x0100;
+                            Invalidate();
                             break;
                         case SharpDX.DirectInput.Key.PageDown:
+                            memoryViewBaseAddress += 0x1000;
+                            Invalidate();
+                            break;
                         case SharpDX.DirectInput.Key.Down:
-                            if (Shift)
-                                memoryViewBaseAddress += 0x1000;
-                            else
-                                memoryViewBaseAddress += 0x0100;
-                            this.Invalidate();
+                            memoryViewBaseAddress += 0x0100;
+                            Invalidate();
                             break;
                         case SharpDX.DirectInput.Key.R:
                             this.Invalidate();
@@ -471,15 +483,15 @@ namespace Sharp80
                     switch (Key)
                     {
                         case SharpDX.DirectInput.Key.Space:
-                            if (this.ViewMode == ViewMode.SetBreakpointView)
+                            if (ViewMode == ViewMode.SetBreakpointView)
                             {
-                                computer.Processor.BreakPointOn = !computer.Processor.BreakPointOn;
-                                this.Invalidate();
+                                Computer.Processor.BreakPointOn = !Computer.Processor.BreakPointOn;
+                                Invalidate();
                             }
                             break;
                         case SharpDX.DirectInput.Key.Return:
                         case SharpDX.DirectInput.Key.Escape:
-                            this.ViewMode = ViewMode.NormalView;
+                            ViewMode = ViewMode.NormalView;
                             break;
                         case SharpDX.DirectInput.Key.D0: c = '0'; break;
                         case SharpDX.DirectInput.Key.D1: c = '1'; break;
@@ -500,7 +512,7 @@ namespace Sharp80
                     }
                     if (c != '\0')
                     {
-                        string addressString = Lib.ToHexString(this.ViewMode == ViewMode.SetBreakpointView ? computer.Processor.BreakPoint : computer.Processor.PC.val);
+                        string addressString = Lib.ToHexString(this.ViewMode == ViewMode.SetBreakpointView ? Computer.Processor.BreakPoint : Computer.Processor.PC.val);
                         addressString = addressString + c;
                         if (addressString.Length > 4)
                             addressString = addressString.Substring(addressString.Length - 4, 4);
@@ -511,9 +523,9 @@ namespace Sharp80
                                             out ushort addr))
                         {
                             if (this.ViewMode == ViewMode.SetBreakpointView)
-                                computer.Processor.BreakPoint = addr;
+                                Computer.Processor.BreakPoint = addr;
                             else
-                                computer.Processor.Jump(addr);
+                                Computer.Processor.Jump(addr);
                         }
 
                         this.Invalidate();
@@ -569,55 +581,18 @@ namespace Sharp80
                     break;
             }
         }
-
-        public void Serialize(System.IO.BinaryWriter Writer)
+        
+        public void Reset()
         {
-            Writer.Write(wideCharMode);
-            Writer.Write(kanjiCharMode);
-        }
-        public void Deserialize(System.IO.BinaryReader Reader)
-        {
-            SetVideoMode(Reader.ReadBoolean(), Reader.ReadBoolean());
             switch (ViewMode)
             {
                 case ViewMode.DiskZapView:
                     VerifyZapParamsOK();
                     break;
             }
-            this.Invalidate();
+            Invalidate();
         }
-
-        protected override void Initialize()
-        {
-            base.Initialize();
-
-            var directWriteFactory = new SharpDX.DirectWrite.Factory();
-
-            foregroundBrushWhite = new SolidColorBrush(RenderTarget, Color.White);
-            foregroundBrushGreen = new SolidColorBrush(RenderTarget, new RawColor4(0.3f, 1.0f, 0.3f, 1f));
-            backgroundBrush = new SolidColorBrush(RenderTarget, Color4.Black);
-            statusBrush = new SolidColorBrush(RenderTarget, Color4.White) { Opacity = 1f };
-            driveOnBrush = new SolidColorBrush(RenderTarget, new RawColor4(0.4f, 0.4f, 0.4f, 0.3f));
-            driveActiveBrush = new SolidColorBrush(RenderTarget, new RawColor4(1f, 0, 0, 0.3f));
-
-            foregroundBrush = GreenScreen ? foregroundBrushGreen : foregroundBrushWhite;
-
-            textFormat = new TextFormat(directWriteFactory, "Consolas", 12)
-            {
-                WordWrapping = WordWrapping.NoWrap,
-                TextAlignment = TextAlignment.Leading
-            };
-            statusTextFormat = new TextFormat(directWriteFactory, "Calibri", 18)
-            {
-                WordWrapping = WordWrapping.NoWrap,
-                TextAlignment = TextAlignment.Trailing
-            };
-
-            RenderTarget.TextAntialiasMode = SharpDX.Direct2D1.TextAntialiasMode.Cleartype;
-
-            DoLayout();
-        }
-
+        
         protected override void Draw()
         {
             if (initialized)
@@ -630,7 +605,7 @@ namespace Sharp80
                 if (invalid)
                     RenderTarget.Clear(Color.Black);
 
-                var dbs = computer.FloppyController.DriveBusyStatus;
+                var dbs = Computer.FloppyController.DriveBusyStatus;
                 if (dbs.HasValue)
                     RenderTarget.FillEllipse(driveLightEllipse, dbs.Value ? driveActiveBrush : driveOnBrush);
                 else
@@ -676,10 +651,10 @@ namespace Sharp80
                     if (!invalid)
                         ClearAdvancedInfoRegions();
 
-                    RenderTarget.DrawText(computer.GetInternalsReport(), textFormat, z80Rect, foregroundBrush);
-                    RenderTarget.DrawText(computer.GetDisassembly(), textFormat, disassemRect, foregroundBrush);
+                    RenderTarget.DrawText(Computer.GetInternalsReport(), textFormat, z80Rect, foregroundBrush);
+                    RenderTarget.DrawText(Computer.GetDisassembly(), textFormat, disassemRect, foregroundBrush);
                     RenderTarget.DrawText(
-                        computer.GetClockReport(true) + Environment.NewLine + computer.FloppyController.GetDriveStatusReport(),
+                        Computer.GetClockReport(true) + Environment.NewLine + Computer.FloppyController.GetDriveStatusReport(),
                         textFormat, infoRect, foregroundBrush);
                 }
 
@@ -691,7 +666,7 @@ namespace Sharp80
 
         private void DrawNormal()
         {
-            var mem = computer.Processor.Memory;
+            var mem = Computer.Processor.Memory;
 
             if (mem.ScreenWritten || invalid)
             {
@@ -704,7 +679,7 @@ namespace Sharp80
                     if (shadowScreen[k] != mem[memPtr] || invalid)
                         PaintCell(k, mem[memPtr], this.cells, charGen);
 
-                    if (wideCharMode) { i++; k++; memPtr++; }
+                    if (Computer.Screen.WideCharMode) { i++; k++; memPtr++; }
                 }
             }
         }
@@ -721,13 +696,13 @@ namespace Sharp80
         {
             if (invalid)
             {
-                byte[] text = UI.GetOptionsText(SoundOn: computer.Sound.On,
-                                                UseDriveNoise: computer.Sound.UseDriveNoise,
+                byte[] text = UI.GetOptionsText(SoundOn: Computer.Sound.On,
+                                                UseDriveNoise: Computer.Sound.UseDriveNoise,
                                                 GreenScreen: GreenScreen,
                                                 AutoStartOnReset: Settings.AutoStartOnReset,
                                                 Throttle: Settings.Throttle,
                                                 Z80Display: AdvancedView,
-                                                HistoricDisassembly: computer.HistoricDisassemblyMode,
+                                                HistoricDisassembly: Computer.HistoricDisassemblyMode,
                                                 FullScreen: IsFullScreen);
 
                 for (int i = 0; i < NUM_SCREEN_CHARS; i++)
@@ -738,7 +713,7 @@ namespace Sharp80
         {
             if (invalid)
             {
-                byte[] text = UI.GetBreakpointText(computer.Processor.BreakPoint, computer.Processor.BreakPointOn);
+                byte[] text = UI.GetBreakpointText(Computer.Processor.BreakPoint, Computer.Processor.BreakPointOn);
 
                 for (int i = 0; i < NUM_SCREEN_CHARS; i++)
                     PaintCell(i, text[i], cellsNormal, charGenNormal);
@@ -748,155 +723,24 @@ namespace Sharp80
         {
             if (invalid)
             {
-                byte[] text = UI.GetJumpToText(computer.Processor.PC.val);
+                byte[] text = UI.GetJumpToText(Computer.Processor.PC.val);
 
                 for (int i = 0; i < NUM_SCREEN_CHARS; i++)
                     PaintCell(i, text[i], cellsNormal, charGenNormal);
             }
         }
-        private void DrawDiskZapView()
+        private void DrawRegisterView()
         {
-            //if (invalid)
-            {
-                byte b;
+            byte[] text = UI.GetRegisterViewText(Computer.Processor.GetStatus());
 
-                Floppy d = computer.FloppyController.GetFloppy(diskZapFloppyNum);
-
-                byte[] data = d.GetSectorData(diskZapTrackNum, diskZapSideOne, diskZapSectorNum);
-
-                int numBytes = Math.Min(0x100, data.Length);
-
-                PaintCells(0x000, "Dsk  ");
-                PaintCell(0x040, (byte)(diskZapFloppyNum + (byte)'0'));
-                PaintCells(0x041, "    ");
-                PaintCells(0x080, "     ");
-
-                b = diskZapTrackNum;
-                PaintCells(0x0C0, "Trk  ");
-                PaintCell(0x100, GetHexChar((byte)(b >> 4)));
-                PaintCell(0x101, GetHexChar((byte)(b & 0x0F)));
-                PaintCells(0x102, "    ");
-                PaintCells(0x140, "     ");
-
-                b = diskZapSectorNum;
-                PaintCells(0x180, "Sec  ");
-                PaintCell(0x1C0, GetHexChar((byte)(b >> 4)));
-                PaintCell(0x1C1, GetHexChar((byte)(b & 0x0F)));
-                PaintCells(0x1C2, "   ");
-                PaintCells(0x200, "     ");
-
-                PaintCells(0x240, d.IsDoubleDensity(diskZapTrackNum, diskZapSideOne, diskZapSectorNum) ? "DD   " : "SD   ");
-                PaintCells(0x280, "     ");
-
-                if (d.NumSides > 1)
-                {
-                    PaintCells(0x2C0, "Side ");
-                    PaintCell(0x300, (byte)(diskZapSideOne ? '1' : '0'));
-                    PaintCells(0x301, "    ");
-                }
-                else
-                {
-                    PaintCells(0x2C0, "     ");
-                    PaintCells(0x300, "     ");
-                }
-
-                if (!d.IsEmpty)
-                {
-                    byte dam = d.GetDAM(diskZapTrackNum, diskZapSideOne, diskZapSectorNum);
-                    switch (dam)
-                    {
-                        case Floppy.DAM_NORMAL:
-                            PaintCells(0x340, "Std   ");
-                            break;
-                        case Floppy.DAM_DELETED:
-                            PaintCells(0x340, "Del   ");
-                            break;
-                        default:
-                            PaintCells(0x340, "      ");
-                            break;
-                    }
-                }
-                else
-                {
-                    PaintCells(0x340, "      ");
-                }
-                PaintCells(0x380, "     ");
-                PaintCells(0x3C0, "     ");
-
-                if (d.IsEmpty)
-                {
-                    PaintCells(0x05, " Drive ");
-                    PaintCell(0x00C, (byte)(diskZapFloppyNum + (byte)'0'));
-                    PaintCells(0x0D, " is empty.");
-
-                    for (int i = 0x017; i < NUM_SCREEN_CHARS_X; i++)
-                        PaintCell(i, 0x00);
-
-                    for (int j = 0x01; j < NUM_SCREEN_CHARS_Y; j++)
-                        for (int i = 0x08; i < NUM_SCREEN_CHARS_X; i++)
-                            PaintCell(i + j * NUM_SCREEN_CHARS_X, 0x00);
-                }
-                else if (data.Length == 0)
-                {
-                    PaintCells(0x05, " Sector is empty. ");
-
-                    for (int i = 0x017; i < NUM_SCREEN_CHARS_X; i++)
-                        PaintCell(i, 0x00);
-
-                    for (int j = 0x01; j < NUM_SCREEN_CHARS_Y; j++)
-                        for (int i = 0x08; i < NUM_SCREEN_CHARS_X; i++)
-                            PaintCell(i + j * NUM_SCREEN_CHARS_X, 0x00);
-                }
-                else
-                {
-                    int cell = 0;
-                    int rawCell = 0x30;
-
-                    for (int k = 0; k < 0x100; k++)
-                    {
-                        if ((k & 0x0F) == 0x00)
-                        {
-                            cell += 0x05;
-
-                            PaintCell(cell++, GetHexChar((byte)(k >> 4)));
-                            PaintCell(cell++, (byte)'0');
-                        }
-                        if (k < numBytes)
-                        {
-                            if (k % 2 == 0)
-                                PaintCell(cell++, 0x00);
-
-                            b = data[k];
-
-                            PaintCell(cell++, GetHexChar((byte)(b >> 4)));
-                            PaintCell(cell++, GetHexChar((byte)(b & 0x0F)));
-
-                            PaintCell(rawCell++, b);
-
-                            if ((k & 0x0F) == 0x0F)
-                            {
-                                // wrap to new line on screen
-                                rawCell += 0x30;
-                                cell += 0x20 - 15;
-                            }
-                        }
-                        else if ((k & 0x0F) == 0x00)
-                        {
-                            int charsLeft = NUM_SCREEN_CHARS_X - (cell % NUM_SCREEN_CHARS_X);
-                            for (int i = 0; i < charsLeft; i++)
-                            {
-                                PaintCell(cell++, 0x00);
-                            }
-                        }
-                    }
-                }
-            }
+            for (int i = 0; i < NUM_SCREEN_CHARS; i++)
+                PaintCell(i, text[i], cellsNormal, charGenNormal);
         }
         private void DrawDiskView()
         {
             if (invalid)
             {
-                byte[] text = UI.GetDiskView(computer.FloppyController, diskViewFloppyNum);
+                byte[] text = UI.GetDiskView(Computer.FloppyController, diskViewFloppyNum);
 
                 for (int i = 0; i < NUM_SCREEN_CHARS; i++)
                     PaintCell(i, text[i], cellsNormal, charGenNormal);
@@ -904,68 +748,15 @@ namespace Sharp80
         }
         private void DrawMemoryView()
         {
-            // TODO: Move to UI class
-
-            //if (invalid)
+            if (invalid)
             {
-                ushort memLoc;
+                byte[] text = UI.GetMemoryViewText(memoryViewBaseAddress, Computer.Processor.Memory);
 
-                int cell = 0;
-                int rawCell = 0x30;
-
-                for (int k = 0; k < 0x100; k++)
-                {
-                    if ((k & 0x0F) == 0x00)
-                    {
-                        ushort lineAddress = (ushort)(memoryViewBaseAddress + k);
-                        PaintCell(cell++, GetHexChar((byte)((lineAddress >> 12) & 0x0F)), cellsNormal, charGenNormal);
-                        PaintCell(cell++, GetHexChar((byte)((lineAddress >> 8) & 0x0F)), cellsNormal, charGenNormal);
-                        PaintCell(cell++, GetHexChar((byte)((lineAddress >> 4) & 0x0F)), cellsNormal, charGenNormal);
-                        PaintCell(cell++, GetHexChar((byte)((lineAddress) & 0x0F)), cellsNormal, charGenNormal);
-
-                        PaintCell(cell++, 0x00, cellsNormal, charGenNormal);
-                        PaintCell(cell++, 0x00, cellsNormal, charGenNormal);
-                    }
-                    memLoc = (ushort)(memoryViewBaseAddress + k);
-
-                    byte b = computer.Processor.Memory[memLoc];
-
-                    PaintCell(cell++, GetHexChar((byte)(b >> 4)), cellsNormal, charGenNormal);
-
-                    PaintCell(cell++, GetHexChar((byte)(b & 0x0F)), cellsNormal, charGenNormal);
-
-                    if (k % 2 == 1)
-                        PaintCell(cell++, 0x00, cellsNormal, charGenNormal);
-
-                    PaintCell(rawCell++, b, cellsNormal, charGenNormal);
-
-                    if ((k & 0x0F) == 0x0F)
-                    {
-                        // wrap to new line on screen
-                        rawCell += 0x30;
-                        cell += 0x20 - 14;
-                    }
-                }
+                for (int i = 0; i < NUM_SCREEN_CHARS; i++)
+                    PaintCell(i, text[i], cellsNormal, charGenNormal);
             }
         }
-        private void DrawRegisterView()
-        {
-            // TODO: move to UI class
-
-            //if (invalid)
-            {
-                var status = computer.Processor.GetStatus();
-
-                PaintCells(0, "REGISTER STATUS".PadRight(NUM_SCREEN_CHARS_X));
-                PaintCells(NUM_SCREEN_CHARS_X, "----------------------------------------------------------------");
-                PaintCells(2 * NUM_SCREEN_CHARS_X, string.Format("PC  {0}  SP  {1}", Lib.ToHexString(status.PC), Lib.ToHexString(status.SP)));
-                PaintCells(4 * NUM_SCREEN_CHARS_X, string.Format("AF  {0}  AF' {1}", Lib.ToHexString(status.AF), Lib.ToHexString(status.AFp)));
-                PaintCells(5 * NUM_SCREEN_CHARS_X, string.Format("BC  {0}  BC' {1}", Lib.ToHexString(status.BC), Lib.ToHexString(status.BCp)));
-                PaintCells(6 * NUM_SCREEN_CHARS_X, string.Format("DE  {0}  DE' {1}", Lib.ToHexString(status.DE), Lib.ToHexString(status.DEp)));
-                PaintCells(7 * NUM_SCREEN_CHARS_X, string.Format("HL  {0}  HL' {1}", Lib.ToHexString(status.HL), Lib.ToHexString(status.HLp)));
-                PaintCells(9 * NUM_SCREEN_CHARS_X, string.Format("IX  {0}  IY  {1}", Lib.ToHexString(status.IX), Lib.ToHexString(status.IY)));
-            }
-        }
+        
         private void DrawStatusMessage()
         {
             if (cyclesForMessageRemaining > 0)
@@ -1197,16 +988,31 @@ namespace Sharp80
                                          yOrigin + VIRTUAL_SCREEN_HEIGHT);
 
             // Bottom right corner
-            statusMsgRect = new RawRectangleF(this.Size.Width - 175,
-                                           this.Size.Height - 30,
-                                           this.Size.Width - SPACING,
-                                           this.Size.Height);
+            statusMsgRect = new RawRectangleF(Size.Width - 175,
+                                              Size.Height - 30,
+                                              Size.Width - SPACING,
+                                              Size.Height);
 
             this.Invalidate();
         }
+        private void DrawDiskZapView()
+        {
+            if (invalid)
+            {
+                var f = Computer.FloppyController.GetFloppy(DiskZapFloppyNumber);
+                var sectorData = f.GetSectorData(diskZapTrackNum, diskZapSideOne, diskZapSectorNum);
+                var dd = f.IsDoubleDensity(diskZapTrackNum, diskZapSideOne, diskZapSectorNum);
+                var dam = f.GetDAM(diskZapTrackNum, diskZapSideOne, diskZapSectorNum);
+
+                var text = UI.GetDiskZapText(sectorData, DiskZapFloppyNumber, diskZapTrackNum, diskZapSideOne, diskZapSectorNum, dd, f.NumSides, dam, f.IsEmpty);
+
+                for (int i = 0; i < NUM_SCREEN_CHARS; i++)
+                    PaintCell(i, text[i], cellsNormal, charGenNormal);
+            }
+        }
         private void VerifyZapParamsOK()
         {
-            var d = computer.FloppyController.GetFloppy(diskZapFloppyNum);
+            var d = Computer.FloppyController.GetFloppy(diskZapFloppyNum);
 
             if (d.IsEmpty)
             {
@@ -1236,18 +1042,9 @@ namespace Sharp80
                 if (diskZapSectorNum < d.LowestSectorNumber(diskZapTrackNum, diskZapSideOne))
                     diskZapSectorNum = d.LowestSectorNumber(diskZapTrackNum, diskZapSideOne);
             }
-            this.Invalidate();
+            Invalidate();
         }
 
-        private byte GetHexChar(byte Input)
-        {
-            if (Input < 0x0A)
-                Input += (byte)'0';
-            else
-                Input += ('A' - 10);
-            return Input;
-        }
-        
         private Size2F DesiredLogicalSize
         {
             get

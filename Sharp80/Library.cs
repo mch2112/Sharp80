@@ -84,6 +84,21 @@ namespace Sharp80
             //b[1] = (byte)(input & 0x00FF);
             //return ToHexString(b);
         }
+        public static string ToHexString(sbyte input)
+        {
+            return (input < 0 ? "-" : "") + ToHexString((byte)(Math.Abs(input)));
+        }
+        public static byte ToHexCharByte(int Input)
+        {
+            Input &= 0x0F;
+
+            if (Input < 0x0A)
+                Input += '0';
+            else
+                Input += ('A' - 10);
+
+            return (byte)Input;
+        }
         public static string ToHexString(uint input)
         {
             return input.ToString("X8");
@@ -184,12 +199,7 @@ namespace Sharp80
             else
                 return "+" + ToHexString(input);
         }
-
-        public static string ToHexString(sbyte input)
-        {
-            return (input < 0 ? "-" : "") + ToHexString((byte)(Math.Abs(input)));
-        }
-
+        
         public static string FirstText(string input)
         {
             // Returns the first blob of text in a line, such as the first word.

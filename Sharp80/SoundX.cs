@@ -118,25 +118,32 @@ namespace Sharp80
         }
         private void Loop()
         {
-            while (!IsDisposed)
+            try
             {
-                if (sourceVoice.State.BuffersQueued >= RING_SIZE)
+                while (!IsDisposed)
                 {
-                    bufferEndEvent.WaitOne(1);
-                }
-                else
-                {
-                    if (On && !Mute)
-                        frameBuffer.ReadFrame(memBuffers[ringCursor]);
+                    if (sourceVoice.State.BuffersQueued >= RING_SIZE)
+                    {
+                        bufferEndEvent.WaitOne(1);
+                    }
                     else
-                        frameBuffer.ReadSilentFrame(memBuffers[ringCursor]);
+                    {
+                        if (On && !Mute)
+                            frameBuffer.ReadFrame(memBuffers[ringCursor]);
+                        else
+                            frameBuffer.ReadSilentFrame(memBuffers[ringCursor]);
 
-                    audioBuffersRing[ringCursor].AudioDataPointer = memBuffers[ringCursor].Pointer;
+                        audioBuffersRing[ringCursor].AudioDataPointer = memBuffers[ringCursor].Pointer;
 
-                    sourceVoice.SubmitSourceBuffer(audioBuffersRing[ringCursor], null);
+                        sourceVoice.SubmitSourceBuffer(audioBuffersRing[ringCursor], null);
 
-                    ringCursor = ++ringCursor % RING_SIZE;
+                        ringCursor = ++ringCursor % RING_SIZE;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Log.LogException(ex);
             }
         }
         private Random r = new Random();
@@ -163,6 +170,7 @@ namespace Sharp80
 
             sourceVoice.DestroyVoice();
             sourceVoice.Dispose();
+            bufferEndEvent.Dispose();
             masteringVoice.Dispose();
             xaudio.Dispose();
         }

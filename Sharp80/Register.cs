@@ -50,17 +50,17 @@ namespace Sharp80.Processor
     internal class Register8Indirect : Register8
     {
         public Register16Compound Proxy { get; set; }
-            
+
         public Register8Indirect(Z80 Processor, Register16Compound Proxy, string Name) : base(Processor, Name)
         {
             this.Proxy = Proxy;
         }
         public override byte val
         {
-            get { return z80.Memory[Proxy.val]; } 
+            get { return z80.Memory[Proxy.val]; }
             set { z80.Memory[Proxy.val] = value; }
         }
-        
+
         public ushort ProxyVal { get { return Proxy.val; } }
 
         public override void inc() { this.val++; }
@@ -88,7 +88,6 @@ namespace Sharp80.Processor
         public abstract ushort val { get; set; }
         public Register16(Z80 Processor, string Name) : base(Processor, Name)
         {
-            
         }
         public override string ToString()
         {
@@ -101,7 +100,7 @@ namespace Sharp80.Processor
 
         public Register16Normal(Z80 Processor, string Name) : base(Processor, Name)
         {
-            this.val = 0;
+            
         }
 
         public override void inc()
@@ -113,23 +112,23 @@ namespace Sharp80.Processor
         {
             val--;
         }
-        public override bool Z { get { return this.val == 0; } }
-        public override bool NZ { get { return this.val != 0; } }
+        public override bool Z { get { return val == 0; } }
+        public override bool NZ { get { return val != 0; } }
 
         public byte hVal
         {
             get { return (byte)((val & 0xFF00) >> 8); }
-            set { this.val = (ushort)((this.val & 0x00FF) | (value << 8)); }
+            set { val = (ushort)((val & 0x00FF) | (value << 8)); }
         }
         public byte lVal
         {
             get { return (byte)(val & 0xFF); }
-            set { this.val = (ushort)((this.val & 0xFF00) | value); }
+            set { val = (ushort)((val & 0xFF00) | value); }
         }
 
         public void setVal(byte high, byte low)
         {
-            this.val = (ushort) ((high << 8) | low);
+            val = (ushort) ((high << 8) | low);
         }
     }
     internal class Register16Compound : Register16
@@ -152,8 +151,8 @@ namespace Sharp80.Processor
             get { return Lib.CombineBytes(L.val, H.val); }
             set
             {
-                this.L.val = (byte)(value & 0xFF);
-                this.H.val = (byte)((value & 0xFF00) >> 8);
+                L.val = (byte)(value & 0xFF);
+                H.val = (byte)((value & 0xFF00) >> 8);
             }
         }
         public override void inc()
@@ -188,7 +187,7 @@ namespace Sharp80.Processor
             get { return z80.Memory.GetWordAt(proxy.val); }
             set { z80.Memory.SetWordAt(proxy.val, value); }
         }
-        public override void inc() { this.val++; }
-        public override void dec() { this.val--; }
+        public override void inc() { val++; }
+        public override void dec() { val--; }
     }
 }

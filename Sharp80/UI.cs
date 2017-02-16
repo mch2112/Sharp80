@@ -5,13 +5,13 @@ using System.Text;
 
 namespace Sharp80
 {
-    public static class UI
+    internal static class UI
     {
         public const int NUM_HELP_SCREENS = 4;
 
         private static byte[][] helpText = new byte[NUM_HELP_SCREENS][];
 
-        private static int currentScreenNum = 0;
+        private static int currentHelpScreenNum = 0;
         private const int STANDARD_INDENT = 3;
 
         static UI()
@@ -21,7 +21,7 @@ namespace Sharp80
 
         public static byte[] GetHelpText()
         {
-            return UI.helpText[UI.currentScreenNum];
+            return UI.helpText[UI.currentHelpScreenNum];
         }
 
         public static byte[] GetOptionsText(bool SoundOn, bool UseDriveNoise, bool GreenScreen, bool AutoStartOnReset, bool Throttle, bool Z80Display, bool HistoricDisassembly, bool FullScreen)
@@ -62,7 +62,7 @@ namespace Sharp80
             if (FloppyNum.HasValue)
             {
                 bool diskLoaded = !FC.DriveIsUnloaded(FloppyNum.Value);
-                s +=    DrawDisk(FC, FloppyNum.Value) +
+                s += DrawDisk(FC, FloppyNum.Value) +
                         UI.Format() +
                         UI.Separator('-') +
                         UI.Format() +
@@ -122,7 +122,157 @@ namespace Sharp80
 
             return UI.Format(line1) + UI.Format(line2);
         }
+        public static byte[] GetDiskZapText(byte[] SectorData,
+                                            byte DriveNum,
+                                            byte TrackNum,
+                                            bool SideOne,
+                                            byte SectorNum,
+                                            bool DoubleDensity,
+                                            byte NumSides,
+                                            byte DAM,
+                                            bool IsEmpty
+                                            )
+        {
+            int numBytes = Math.Min(0x100, SectorData.Length);
 
+            byte[] cells = new byte[ScreenDX.NUM_SCREEN_CHARS];
+
+            WriteToByteArray(cells, 0x000, "Dsk  ");
+            cells[0x040] = Lib.ToHexCharByte(DriveNum);
+
+            WriteToByteArray(cells, 0x0C0, "Trk  ");
+            WriteToByteArrayHex(cells, 0x100, TrackNum);
+
+            WriteToByteArray(cells, 0x180, "Sec  ");
+            WriteToByteArrayHex(cells, 0x1C0, SectorNum);
+            
+            WriteToByteArray(cells, 0x240, DoubleDensity ? "DD" : "SD");
+
+            if (NumSides > 1)
+            {
+                WriteToByteArray(cells, 0x2C0, "Side ");
+                cells[0x300] = (byte)(SideOne ? '1' : '0');
+            }
+
+            if (!IsEmpty)
+            {
+                switch (DAM)
+                {
+                    case Floppy.DAM_NORMAL:
+                        WriteToByteArray(cells, 0x340, "Std");
+                        break;
+                    case Floppy.DAM_DELETED:
+                        WriteToByteArray(cells, 0x340, "Del");
+                        break;
+                }
+            }
+            
+            if (IsEmpty)
+            {
+                WriteToByteArray(cells, 0x006, string.Format("Drive {0} is empty.", DriveNum));
+            }
+            else if (numBytes == 0)
+            {
+                WriteToByteArray(cells, 0x006, string.Format("Sector {0} is empty.", SectorNum));
+            }
+            else
+            {
+                int cell = 0;
+                int rawCell = 0x30;
+
+                for (int k = 0; k < 0x100; k++)
+                {
+                    if ((k & 0x0F) == 0x00)
+                    {
+                        // new line
+                        cell += 0x05;
+                        WriteToByteArrayHex(cells, cell, (byte)k);
+                        cell += 2;
+                    }
+                    if (k < numBytes)
+                    {
+                        if (k % 2 == 0)
+                            cell++;
+
+                        byte b = SectorData[k];
+
+                        WriteToByteArrayHex(cells, cell, b);
+                        cell += 2;
+
+                        cells[rawCell++] = b;
+
+                        if ((k & 0x0F) == 0x0F)
+                        {
+                            // wrap to new line on screen
+                            rawCell += 0x30;
+                            cell += 0x20 - 15;
+                        }
+                    }
+                    else if ((k & 0x0F) == 0x00)
+                    {
+                        cell = k / 0x10 * ScreenDX.NUM_SCREEN_CHARS_X;
+                    }
+                }
+            }
+            return cells;
+        }
+        public static byte[] GetMemoryViewText(ushort MemoryViewBaseAddress, IMemory Memory)
+        {
+            byte[] cells = new byte[ScreenDX.NUM_SCREEN_CHARS];
+
+            int cell = 0;
+            int rawCell = 0x30;
+
+            for (int k = 0; k < 0x100; k++)
+            {
+                if ((k & 0x0F) == 0x00)
+                {
+                    ushort lineAddress = (ushort)(MemoryViewBaseAddress + k);
+                    cells[cell++] = Lib.ToHexCharByte((lineAddress >> 12) & 0x0F);
+                    cells[cell++] = Lib.ToHexCharByte((lineAddress >>  8) & 0x0F);
+                    cells[cell++] = Lib.ToHexCharByte((lineAddress >>  4) & 0x0F);
+                    cells[cell++] = Lib.ToHexCharByte((lineAddress      ) & 0x0F);
+                    cell += 2;
+                }
+
+                byte b = Memory[(ushort)(MemoryViewBaseAddress + k)];
+
+                WriteToByteArrayHex(cells, cell, b);
+                cell += 2;
+
+                if (k % 2 == 1)
+                    cell++;
+
+                cells[rawCell++] = b;
+
+                if ((k & 0x0F) == 0x0F)
+                {
+                    // wrap to new line on screen
+                    rawCell += 0x30;
+                    cell += 0x20 - 14;
+                }
+            }
+            return cells;
+        }
+        public static byte[] GetRegisterViewText(Z80_Status Status)
+        {
+            // TODO: move to UI class
+
+            //if (invalid)
+            {
+                return PadScreen(Encoding.ASCII.GetBytes(
+                    UI.Header("Z80 Register Status") +
+                    UI.Format() +
+                    UI.Indent(string.Format("PC  {0}  SP  {1}", Lib.ToHexString(Status.PC), Lib.ToHexString(Status.SP))) +
+                    UI.Format() + 
+                    UI.Indent(string.Format("AF  {0}  AF' {1}", Lib.ToHexString(Status.AF), Lib.ToHexString(Status.AFp))) +
+                    UI.Indent(string.Format("BC  {0}  BC' {1}", Lib.ToHexString(Status.BC), Lib.ToHexString(Status.BCp))) +
+                    UI.Indent(string.Format("DE  {0}  DE' {1}", Lib.ToHexString(Status.DE), Lib.ToHexString(Status.DEp))) +
+                    UI.Indent(string.Format("HL  {0}  HL' {1}", Lib.ToHexString(Status.HL), Lib.ToHexString(Status.HLp))) +
+                    UI.Format() + 
+                    UI.Indent(string.Format("IX  {0}  IY  {1}", Lib.ToHexString(Status.IX), Lib.ToHexString(Status.IY)))));
+            }
+        }
         public static byte[] GetBreakpointText(ushort Breakpoint, bool On)
         {
             return PadScreen(Encoding.ASCII.GetBytes(
@@ -156,7 +306,7 @@ namespace Sharp80
 
         public static void AdvanceHelp()
         {
-            UI.currentScreenNum = (UI.currentScreenNum + 1) % UI.NUM_HELP_SCREENS;
+            UI.currentHelpScreenNum = (UI.currentHelpScreenNum + 1) % UI.NUM_HELP_SCREENS;
         }
 
         private static void SetupHelpText()
@@ -337,6 +487,16 @@ namespace Sharp80
             else
                 return FilePath.Substring(0, 20) + "..." +
                        FilePath.Substring(FilePath.Length - ScreenDX.NUM_SCREEN_CHARS_X + 23);
+        }
+        private static void WriteToByteArray(byte[] Array, int Start, string Input)
+        {
+            for (int i = 0; i < Input.Length; i++)
+                Array[i + Start] = (byte)Input[i];
+        }
+        private static void WriteToByteArrayHex(byte[] Array, int Start, byte Input)
+        {
+            Array[Start] = Lib.ToHexCharByte((byte)(Input >> 4));
+            Array[Start + 1] = Lib.ToHexCharByte((byte)(Input & 0x0F));
         }
     }
 }

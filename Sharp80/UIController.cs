@@ -11,21 +11,14 @@ namespace Sharp80
         public Computer Computer { get; set; }
         private IDXClient parent;
         
-        private IScreen Screen { get; set; }
-
         private readonly ulong refreshRate;
 
-        public UIController(IScreen Screen, IDXClient Parent, ulong RefreshRate)
+        public UIController(IDXClient Parent, ulong RefreshRate)
         {
-            this.Screen = Screen;
             parent = Parent;
             refreshRate = RefreshRate;
         }
-
-        public void Initialize()
-        {
-            HardReset();
-        }
+        
         public void Start()
         {
             Computer.CancelStepOverOrOut();
@@ -57,7 +50,7 @@ namespace Sharp80
             return computer.RewindCassette();
         }
 #endif
-        public void HardReset()
+        public void HardReset(ScreenDX Screen)
         {
             if (Computer != null)
                 Computer.Dispose();
@@ -67,8 +60,6 @@ namespace Sharp80
             Computer.Sound.UseDriveNoise = Settings.DriveNoise;
             Computer.Processor.BreakPoint = Settings.Breakpoint;
             Computer.Processor.BreakPointOn = Settings.BreakpointOn;
-
-            Screen.Invalidate();
         }
         public void ResetKeyboard()
         {

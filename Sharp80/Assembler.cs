@@ -64,7 +64,7 @@ namespace Sharp80.Assembler
                                         MessageBoxButtons.OK,
                                         MessageBoxIcon.Information);
                     else
-                        MessageBox.Show(string.Format("{0} errors, see {1}.int for details.", errs, Path.GetFileNameWithoutExtension(originalFilePath), cmdFilePath),
+                        MessageBox.Show(string.Format("{0} errors, see {1}.int for details.", errs, Path.GetFileNameWithoutExtension(originalFilePath)),
                                         "Errors",
                                         MessageBoxButtons.OK,
                                         MessageBoxIcon.Information);

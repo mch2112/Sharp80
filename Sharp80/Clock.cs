@@ -22,7 +22,6 @@ namespace Sharp80
         private readonly ulong ticksPerIRQ;
 
         private ulong tickCount;
-        private double tickDelta;
         private ulong emuSpeedInHz;
         private ulong z80TicksOnLastMeasure;
         private ulong nextEmuSpeedMeasureTicks;
@@ -35,7 +34,6 @@ namespace Sharp80
 
         private bool throttle;
         private bool exitExec = false;
-        private bool soundPause;
 
         private Computer computer;
         private Processor.Z80 z80;
@@ -143,14 +141,6 @@ namespace Sharp80
         {
             if (!IsRunning)
                 ExecOne();
-        }
-        public void SoundPauseOn()
-        {
-            soundPause = true;
-        }
-        public void SoundPauseOff()
-        {
-            soundPause = false;
         }
         public void Wait()
         {
@@ -324,7 +314,7 @@ namespace Sharp80
                 }
                 else if (++skip > 10)
                 {
-                    QueryPerformanceCounter(ref realTimeElapsedTicks);
+                    NativeMethods.QueryPerformanceCounter(ref realTimeElapsedTicks);
                     var realTimeTicks = realTimeElapsedTicks - realTimeElapsedTicksOffset;
                     var virtualTicksReal = realTimeTicks * z80TicksPerRealtimeTick;
                     if (virtualTicksReal < tickCount)
@@ -336,7 +326,7 @@ namespace Sharp80
         private long skip = 0;
         private void SyncRealTimeOffset()
         {
-            QueryPerformanceCounter(ref realTimeElapsedTicks);
+            NativeMethods.QueryPerformanceCounter(ref realTimeElapsedTicks);
             long equivalentTicks = (long)(tickCount / z80TicksPerRealtimeTick);
             realTimeElapsedTicksOffset = realTimeElapsedTicks - equivalentTicks;
         }
@@ -372,13 +362,7 @@ namespace Sharp80
             waitTimeout = Reader.ReadUInt64();
             waitTrigger.Deserialize(Reader);
         }
-
-        // WINDOWS NATIVE
-        [DllImport("kernel32.dll")]
-        static extern int QueryPerformanceFrequency(ref long x);
-        [DllImport("kernel32.dll")]
-        static extern int QueryPerformanceCounter(ref long x);
-
+        
         private static double realTimeTicksPerSec;
         private static long realTimeElapsedTicks;
         private static long realTimeElapsedTicksOffset;
@@ -387,7 +371,7 @@ namespace Sharp80
         private void CalRealTimeClock()
         {
             long rtTicksPerSec = 0;
-            QueryPerformanceFrequency(ref rtTicksPerSec);
+            NativeMethods.QueryPerformanceFrequency(ref rtTicksPerSec);
             realTimeTicksPerSec = rtTicksPerSec;
             z80TicksPerRealtimeTick = (double)this.ticksPerSec / (double)rtTicksPerSec;
         }
@@ -395,7 +379,7 @@ namespace Sharp80
         {
             get
             {
-                QueryPerformanceCounter(ref realTimeElapsedTicks);
+                NativeMethods.QueryPerformanceCounter(ref realTimeElapsedTicks);
                 return realTimeElapsedTicks;
             }
         }
@@ -403,7 +387,7 @@ namespace Sharp80
         {
             get
             {
-                QueryPerformanceCounter(ref realTimeElapsedTicks);
+                NativeMethods.QueryPerformanceCounter(ref realTimeElapsedTicks);
                 return ((double)(realTimeElapsedTicks)) / realTimeTicksPerSec;
             }
         }

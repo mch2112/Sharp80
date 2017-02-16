@@ -45,11 +45,11 @@ namespace Sharp80
             ParentForm = Form;
             ParentForm.BackColor = System.Drawing.Color.Black;
         }
-        protected void Run(Size2F Size)
+        protected void Initialize(Size2F Size)
         {
             this.Size = Size;
             
-            Initialize();
+            InitializeDX();
 
             ParentForm.ResizeBegin += (o, args) => { isResizing++; };
             ParentForm.ResizeEnd += (o, args) =>
@@ -161,7 +161,7 @@ namespace Sharp80
                 }
             }
         }
-        protected virtual void Initialize()
+        protected virtual void InitializeDX()
         {
             swapChainDescription = new SwapChainDescription()
             {

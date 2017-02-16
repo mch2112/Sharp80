@@ -1,17 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using SharpDX.DirectInput;
 
 namespace Sharp80
 {
     internal sealed partial class Memory : IMemory
     {
-
-#pragma warning disable IDE1006 // Naming Styles
-        [DllImport("user32.dll")]
-        static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
-#pragma warning restore IDE1006 // Naming Styles
 
         const int KEYEVENTF_EXTENDEDKEY = 0x1;
         const int KEYEVENTF_KEYUP = 0x2;
@@ -215,8 +209,8 @@ namespace Sharp80
             // Annoying that it turns on when doing virtual shift-zero.
             if (System.Windows.Forms.Control.IsKeyLocked(System.Windows.Forms.Keys.CapsLock))
             {
-                keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY, (UIntPtr)0);
-                keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
+                NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY, (UIntPtr)0);
+                NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
                     (UIntPtr)0);
             }
         }
