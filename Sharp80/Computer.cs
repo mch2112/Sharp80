@@ -257,13 +257,21 @@ namespace Sharp80
             IntMgr.Deserialize(Reader);
             Screen.Deserialize(Reader);
         }
-        public int LoadCMDFile(string filePath)
+        public bool LoadCMDFile(string filePath)
         {
-            // returns -1 if the command file is not to be executed
-
             Stop(WaitForStop: true);
 
-            return Storage.LoadCMDFile(filePath, Processor.Memory);
+            var pc = Storage.LoadCMDFile(filePath, Processor.Memory);
+
+            if (pc.HasValue)
+            {
+                Processor.Jump(pc.Value);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
         public string DumpDisassembly(bool RelativeAddressesAsComments)
         {

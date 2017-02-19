@@ -1,9 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Text;
-using System.Windows.Forms;
 
 namespace Sharp80
 {
@@ -53,8 +49,10 @@ namespace Sharp80
         private const ulong MILLISECONDS_TO_MICROSECONDS = 1000ul;
         private const ulong DISK_REV_PER_SEC = 300 / 60; // 300 rpm
         private const ulong TRACK_FULL_ROTATION_TIME_IN_USEC = SECONDS_TO_MICROSECONDS / DISK_REV_PER_SEC; // 300 rpm
-        private const ulong INDEX_PULSE_WIDTH_IN_USEC = 10000 / FDC_CLOCK_MHZ;
-        private const ulong INDEX_PULSE_WIDTH_IN_DIVISIONS = INDEX_PULSE_WIDTH_IN_USEC * DISK_ANGLE_DIVISIONS / TRACK_FULL_ROTATION_TIME_IN_USEC;
+        private const ulong INDEX_PULSE_WIDTH_IN_USEC = 20 / FDC_CLOCK_MHZ;
+        private const ulong INDEX_PULSE_WIDTH_IN_DIVISIONS = 10000;//INDEX_PULSE_WIDTH_IN_USEC * DISK_ANGLE_DIVISIONS / TRACK_FULL_ROTATION_TIME_IN_USEC;
+        private const ulong INDEX_PULSE_START = 0;//10000;
+        private const ulong INDEX_PULSE_END = 10000;//20000;
         private const ulong MOTOR_OFF_DELAY_IN_USEC = 2 * SECONDS_TO_MICROSECONDS;
         private const ulong MOTOR_ON_DELAY_IN_USEC = 10;
         private const ulong TOTAL_BYTES_ON_DD_TRACK = 6250;
@@ -127,6 +125,7 @@ namespace Sharp80
                 }
             }
         }
+
         private bool SideOne { get; set; }
 
         // Operation state
@@ -180,11 +179,38 @@ namespace Sharp80
 
         // PUBLIC INTERFACE
 
+        public FloppyControllerStatus GetStatus()
+        {
+            var tdi = DiskAngle * (ulong)TrackData.Length / DISK_ANGLE_DIVISIONS;
+
+            var s = new FloppyControllerStatus()
+            {
+                OpStatus = opStatus.ToString(),
+                Busy = busy,
+                CommandStatus = command.ToString(),
+                TrackRegister = trackRegister,
+                SectorRegister = sectorRegister,
+                CommandRegister = commandRegister,
+                DataRegister = dataRegister,
+                DiskNum = currentDriveNumber,
+                PhysicalTrackNum = currentDrive.PhysicalTrackNumber,
+                DiskAngle = ((double)DiskAngle / DISK_ANGLE_DIVISIONS * 360).ToString("000.000") + " degrees",
+                TrackDataIndex = tdi,
+                ByteAtTrackDataIndex = TrackData[tdi],
+                IndexHole = IndexDetect,
+                DoubleDensity = doubleDensitySelected,
+                DRQ = drqStatus,
+                SeekError = seekErrorOrRecordNotFound,
+                LostData = lostData,
+                CrcError = crcError
+            };
+            return s;
+        }
         public Floppy GetFloppy(int DriveNumber)
         {
             return drives[DriveNumber].Floppy;
         }
-        
+
         public static ushort UpdateCRC(ushort crc, byte ByteRead, bool AllowReset, bool DoubleDensity)
         {
             if (AllowReset)
@@ -211,7 +237,7 @@ namespace Sharp80
         }
 
         // EXTERNAL INTERACTION AND INFORMATION
- 
+
         public void HardwareReset()
         {
             // This is a hardware reset, not an FDC command
@@ -246,9 +272,9 @@ namespace Sharp80
             if (commandPulseReq != null)
                 commandPulseReq.Expire();
 
-            motorOnPulseReq  = new PulseReq(MOTOR_ON_DELAY_IN_USEC, MotorOnCallback, true);
+            motorOnPulseReq = new PulseReq(MOTOR_ON_DELAY_IN_USEC, MotorOnCallback, true);
             motorOffPulseReq = new PulseReq(MOTOR_OFF_DELAY_IN_USEC, MotorOffCallback, true);
-            commandPulseReq  = new PulseReq();
+            commandPulseReq = new PulseReq();
         }
         public void LoadFloppy(byte DriveNum, string FilePath)
         {
@@ -467,7 +493,6 @@ namespace Sharp80
                     break;
                 case OpStatus.SeekingIDAM:
                 case OpStatus.ReadingAddressData:
-                    damBytesChecked = 0;
                     SeekAddressData(b, OpStatus.SeekingDAM, true);
                     delayBytes = 1;
                     break;
@@ -475,7 +500,7 @@ namespace Sharp80
                     if (damBytesChecked++ > (isDoubleDensity ? 43 : 30))
                     {
                         Log.LogToDebug(string.Format("Error: Seek Error / Record Not Found. Command: {0} OpStatus: {1}", command, opStatus));
-                        seekErrorOrRecordNotFound= true;
+                        seekErrorOrRecordNotFound = true;
                         opStatus = OpStatus.NMI;
                         delayTime = NMI_DELAY_IN_USEC;
                     }
@@ -521,19 +546,23 @@ namespace Sharp80
                         if (Log.DebugOn)
                             Log.LogToDebug(string.Format("Error: CRC Error. Command: {0} OpStatus: {1}", command, opStatus));
                         Log.LogMessage(string.Format("Data CRC Error - Drv: {0} Trk: {1} Side: {2} Sec: {3}", CurrentDriveNumber, trackRegister, sideOneExpected ? 1 : 0, sectorRegister));
-                    }
-                    if (!multipleRecords || crcError)
-                    {
-                        opStatus = OpStatus.NMI;
+                        //opStatus = OpStatus.SeekingIDAM;
                         delayTime = NMI_DELAY_IN_USEC;
+                        opStatus = OpStatus.NMI;
+                    }
+                    else if (!multipleRecords)
+                    {
+                        delayTime = NMI_DELAY_IN_USEC;
+                        opStatus = OpStatus.NMI;
                     }
                     else
                     {
                         // mutiple records
                         sectorRegister++;
-                        delayBytes = 1; 
+                        delayBytes = 1;
                         opStatus = OpStatus.SeekingIDAM;
                     }
+
                     break;
                 case OpStatus.NMI:
                     opStatus = OpStatus.OpDone;
@@ -577,7 +606,7 @@ namespace Sharp80
                     {
                         if (Log.DebugOn)
                             Log.LogToDebug(string.Format("Cancelling due to Write Protect: Command: {0} OpStatus: {1}", command, opStatus));
-                        
+
                         writeProtected = true;
                         opStatus = OpStatus.NMI;
                         delayTime = NMI_DELAY_IN_USEC;
@@ -686,7 +715,7 @@ namespace Sharp80
                     opStatus = OpStatus.OpDone;
                     DoNmi();
                     break;
-                    
+
             }
             if (busy)
                 SetCommandPulseReq(delayBytes, delayTime, WriteSectorCallback);
@@ -751,9 +780,9 @@ namespace Sharp80
                 case OpStatus.Prepare:
                     SyncTrackDataIndexOnNextIndexDetect();
                     ResetIndexCount();
-                    
+
                     isDoubleDensity = doubleDensitySelected;
-                    
+
                     if (delay)
                         opStatus = OpStatus.Delay;
                     else
@@ -772,7 +801,7 @@ namespace Sharp80
                     {
                         if (Log.DebugOn)
                             Log.LogToDebug(string.Format("Cancelling due to Write Protect: Command: {0} OpStatus: {1}", command, opStatus));
-                        
+
                         writeProtected = true;
                         opStatus = OpStatus.NMI;
                         delayTime = NMI_DELAY_IN_USEC;
@@ -893,13 +922,13 @@ namespace Sharp80
         {
             ulong delayTime = 0;
             int delayBytes = 0;
-            
+
             byte b = ReadByte(true);
 
             switch (opStatus)
             {
                 case OpStatus.Prepare:
-                    
+
                     SyncTrackDataIndexOnNextIndexDetect();
                     ResetIndexCount();
 
@@ -912,6 +941,7 @@ namespace Sharp80
 
                 case OpStatus.Delay:
                     delayTime = STANDARD_DELAY_TIME_IN_USEC;
+                    opStatus = OpStatus.SeekingIndexHole;
                     break;
                 case OpStatus.SeekingIndexHole:
                     if (IndexesFound > 0)
@@ -963,10 +993,13 @@ namespace Sharp80
 
         private void SeekAddressData(byte ByteRead, OpStatus NextStatus, bool Check)
         {
+            damBytesChecked++;
             switch (opStatus)
             {
                 case OpStatus.SeekingIDAM:
-                    if (ByteRead == Floppy.IDAM && currentDrive.Floppy.TrackHasIDAMAt(currentDrive.PhysicalTrackNumber, SideOne, (uint)TrackDataIndex, out isDoubleDensity))
+                    if (ByteRead == Floppy.IDAM &&
+                        currentDrive.Floppy.TrackHasIDAMAt(currentDrive.PhysicalTrackNumber, SideOne, (uint)TrackDataIndex, out isDoubleDensity)
+                        && isDoubleDensity == doubleDensitySelected)
                     {
                         Log.LogToDebug(string.Format("IDAM Found. Command: {0} OpStatus: {1} Track Register: {2} Sector Register: {3} Side Sel Verify: {4} Indexes Found: {5}", command, opStatus, trackRegister, sectorRegister, sideSelectVerify, IndexesFound));
                         opStatus = OpStatus.ReadingAddressData;
@@ -985,7 +1018,13 @@ namespace Sharp80
                 case OpStatus.ReadingAddressData:
                     readAddressData[readAddressIndex++] = ByteRead;
                     if (readAddressIndex == ADDRESS_DATA_CRC_HIGH_BYTE)
+                    { 
                         crcCalc = crc;
+                    }
+                    else if (readAddressIndex == ADDRESS_DATA_CRC_LOW_BYTE)
+                    {
+                        damBytesChecked = 0;
+                    }
                     else if (readAddressIndex >= READ_ADDRESS_DATA_BYTES)
                     {
                         if (Check && (trackRegister != readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE] ||
@@ -1003,14 +1042,12 @@ namespace Sharp80
                         else
                         {
                             if (Log.DebugOn)
-                                Log.LogToDebug(string.Format("Correct Address Found. Command: {0} OpStatus: {1} " + 
+                                Log.LogToDebug(string.Format("Correct Address Found. Command: {0} OpStatus: {1} " +
                                                              "Track Register: {2} Sector Register: {3} Side Sel Verify: {4} Indexes Found: {5}",
                                                              command, opStatus, trackRegister, sectorRegister, sideSelectVerify, IndexesFound));
 
                             sectorLength = Floppy.GetDataLengthFromCode(readAddressData[ADDRESS_DATA_SECTOR_SIZE_BYTE]);
-
-                            opStatus = NextStatus;
-
+                            
                             crcHigh = readAddressData[ADDRESS_DATA_CRC_HIGH_BYTE];
                             crcLow = readAddressData[ADDRESS_DATA_CRC_LOW_BYTE];
                             crcError = crcCalc != Lib.CombineBytes(crcLow, crcHigh);
@@ -1019,6 +1056,11 @@ namespace Sharp80
                                 if (Log.DebugOn)
                                     Log.LogToDebug(string.Format("Address CRC Error - Drv: {0} Trk: {1} Side: {2} Sec: {3}",
                                         CurrentDriveNumber, trackRegister, sideOneExpected ? 1 : 0, sectorRegister));
+                                opStatus = OpStatus.SeekingIDAM;
+                            }
+                            else
+                            {
+                                opStatus = NextStatus;
                             }
                         }
                     }
@@ -1076,7 +1118,7 @@ namespace Sharp80
 
             ulong bytesToAdvance = (ulong)Bytes + DelayInUsec / ByteTime;
             ulong delayTime = DelayInUsec + (ulong)Bytes * ByteTime;
-            
+
             if (delayTime > 0)
             {
                 if (Log.DebugOn)
@@ -1090,7 +1132,7 @@ namespace Sharp80
                 Callback();
             }
         }
-        
+
         // SNAPSHOTS
 
         public void Serialize(System.IO.BinaryWriter Writer)
@@ -1100,7 +1142,7 @@ namespace Sharp80
             Writer.Write(commandRegister);
             Writer.Write(dataRegister);
             Writer.Write(statusRegister);
-            
+
             Writer.Write((int)command);
             Writer.Write((int)opStatus);
 
@@ -1126,7 +1168,7 @@ namespace Sharp80
             Writer.Write(trackWritten);
             Writer.Write(indexesFound);
             Writer.Write(indexFoundLastCheck);
-            
+
             Writer.Write(crc);
             Writer.Write(crcCalc);
             Writer.Write(crcHigh);
@@ -1168,7 +1210,7 @@ namespace Sharp80
             lastStepDirUp = Reader.ReadBoolean();
             writeProtected = Reader.ReadBoolean();
             motorOn = Reader.ReadBoolean();
-            
+
             Array.Copy(Reader.ReadBytes(READ_ADDRESS_DATA_BYTES), readAddressData, READ_ADDRESS_DATA_BYTES);
             readAddressIndex = Reader.ReadByte();
 
@@ -1231,11 +1273,11 @@ namespace Sharp80
             commandPulseReq.Deserialize(Reader, callback);
             if (!commandPulseReq.Expired)
                 computer.Clock.RegisterPulseReq(commandPulseReq);
-            
+
             motorOnPulseReq.Deserialize(Reader, MotorOnCallback);
             if (!motorOnPulseReq.Expired)
                 computer.Clock.RegisterPulseReq(motorOnPulseReq);
-            
+
             motorOffPulseReq.Deserialize(Reader, MotorOffCallback);
             if (!motorOffPulseReq.Expired)
                 computer.Clock.RegisterPulseReq(motorOffPulseReq);
@@ -1249,8 +1291,8 @@ namespace Sharp80
             if (string.IsNullOrWhiteSpace(Floppy.FilePath))
                 if (Log.DebugOn)
                     Log.LogMessage("Floppy has no file path.");
-            else
-                Storage.SaveDefaultDriveFileName(DriveNum, Floppy.FilePath);
+                else
+                    Storage.SaveDefaultDriveFileName(DriveNum, Floppy.FilePath);
         }
         private byte ReadByte(bool AllowResetCRC)
         {
@@ -1276,7 +1318,7 @@ namespace Sharp80
         {
             crc = isDoubleDensity ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET;
         }
-        
+
         // REGISTER I/O
 
         public void FdcIoEvent(byte portNum, byte value, bool isOut)
@@ -1338,7 +1380,7 @@ namespace Sharp80
 
             if (Log.DebugOn)
                 Log.LogToDebug(string.Format("Get status register: {0}", Lib.ToHexString(statusRegister)));
-            
+
             ports.SetPortArray(statusRegister, (byte)0xF0);
 
             computer.IntMgr.FdcNmiLatch.Unlatch();
@@ -1354,7 +1396,7 @@ namespace Sharp80
         private void GetSectorRegister()
         {
             ports.SetPortArray(sectorRegister, (byte)0xF2);
-            
+
             if (Log.DebugOn)
                 Log.LogToDebug(string.Format("Get sector register: {0}", Lib.ToHexString(sectorRegister)));
         }
@@ -1511,7 +1553,7 @@ namespace Sharp80
 
             if (Lib.IsBitSet(value, 6))
                 clock.Wait();
-            
+
             doubleDensitySelected = Lib.IsBitSet(value, 7);
 
             if (motorOn)
@@ -1570,7 +1612,7 @@ namespace Sharp80
             //    02H - Index Hole
             //    01H - Busy
 
-            //    Type II Command Status values are:
+            //    Type II / III Command Status values are:
             //    80H - Not ready
             //    40H - NA (Read) / Write Protect (Write)
             //    20H - Deleted (Read) / Write Fault (Write)
@@ -1596,7 +1638,7 @@ namespace Sharp80
                 //statusRegister |= 0x06;
                 //statusRegister = 0; // not ready + track zero + index hole
             }
-            
+
             {
                 switch (command)
                 {
@@ -1670,9 +1712,9 @@ namespace Sharp80
             }
 
             // TODO: should these be here?
-           // drqStatus = false;
-           // seekErrorOrRecordNotFound = false;
-          //  lostData = false;
+            // drqStatus = false;
+            // seekErrorOrRecordNotFound = false;
+            //  lostData = false;
         }
 
         // INTERRUPTS
@@ -1690,7 +1732,7 @@ namespace Sharp80
         }
 
         // SPIN SIMULATION
-        
+
         private ulong ByteTime
         {
             get
@@ -1706,8 +1748,9 @@ namespace Sharp80
         {
             get
             {
-                bool indexDetect = motorOn && DiskAngle < INDEX_PULSE_WIDTH_IN_DIVISIONS; 
-        
+                var da = DiskAngle;
+                bool indexDetect = motorOn && DiskAngle > INDEX_PULSE_START && DiskAngle < INDEX_PULSE_END;
+
                 if (indexDetect && syncOnNext)
                 {
                     syncOnNext = false;
@@ -1794,7 +1837,7 @@ namespace Sharp80
 
             if (indexDetected && !indexFoundLastCheck)
                 indexesFound++;
-            
+
             indexFoundLastCheck = indexDetected;
         }
     }

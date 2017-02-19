@@ -36,7 +36,11 @@ namespace Sharp80
             fdcNmiLatch         = new Trigger(null, null, TriggerLock: false, CanFireOnEnable: true);
             fdcMotorOffNmiLatch = new Trigger(null, null, TriggerLock: false, CanFireOnEnable: true);
 
-            resetButtonLatch = new Trigger(() => { computer.Clock.RegisterPulseReq(new PulseReq(200000, () => resetButtonLatch.Unlatch(), false)); },
+            resetButtonLatch = new Trigger(
+                () => { computer.Clock.RegisterPulseReq(
+                    new PulseReq(200000, () => {
+                        resetButtonLatch.Unlatch();
+                    }, false)); },
                                               null,
                                               TriggerLock: true,
                                               CanFireOnEnable: false)
@@ -82,6 +86,8 @@ namespace Sharp80
 
             if (!resetButtonLatch.Latched)
                 result |= 0x20;
+            else
+                System.Diagnostics.Debug.WriteLine("foo");
 
             computer.Ports.SetPortArray(result, 0xE4);
         }

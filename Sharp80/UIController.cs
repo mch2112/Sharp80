@@ -24,22 +24,7 @@ namespace Sharp80
             Computer.CancelStepOverOrOut();
             Computer.Start();
         }
-
-        public bool LoadCMDFile(string FilePath)
-        {
-            try
-            {
-                int pc = Computer.LoadCMDFile(FilePath);
-                
-                Computer.Processor.Jump((ushort)pc);
-
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+        
 #if CASSETTE
         public void LoadCassette(string FilePath)
         {

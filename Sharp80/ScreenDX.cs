@@ -11,7 +11,7 @@ using DXBitmap = SharpDX.Direct2D1.Bitmap;
 
 namespace Sharp80
 {
-    public enum ViewMode { NormalView, MemoryView, DiskView, HelpView, DiskZapView, SetBreakpointView, JumpToView, OptionsView, RegisterView }
+    public enum ViewMode { NormalView, MemoryView, DiskView, HelpView, DiskZapView, SetBreakpointView, JumpToView, OptionsView, RegisterView, FloppyControllerView }
 
     internal sealed class ScreenDX : Direct3D
     {
@@ -48,7 +48,7 @@ namespace Sharp80
 
         private byte? diskViewFloppyNum;
 
-        private byte diskZapFloppyNum, diskZapTrackNum, diskZapSectorNum;
+        private byte diskZapFloppyNum, diskZapTrackNum, diskZapSectorIndex;
         private bool diskZapSideOne;
 
         public Computer Computer { get; set; }
@@ -184,6 +184,9 @@ namespace Sharp80
                             break;
                         case ViewMode.RegisterView:
                             StatusMessage = "Register View On";
+                            break;
+                        case ViewMode.FloppyControllerView:
+                            StatusMessage = "Floppy Controller View On";
                             break;
                         case ViewMode.NormalView:
                             StatusMessage = "Normal View";
@@ -372,23 +375,13 @@ namespace Sharp80
                             VerifyZapParamsOK();
                             break;
                         case SharpDX.DirectInput.Key.Left:
-                            if (Shift)
-                                if (diskZapSectorNum > 10)
-                                    diskZapSectorNum -= 10;
-                                else
-                                    diskZapSectorNum = 0;
-                            else
-                                diskZapSectorNum--;
+                            if (diskZapSectorIndex > 0)
+                                diskZapSectorIndex--;
                             VerifyZapParamsOK();
                             break;
                         case SharpDX.DirectInput.Key.Right:
-                            if (Shift)
-                                if (diskZapSectorNum < 0xF0)
-                                    diskZapSectorNum += 10;
-                                else
-                                    diskZapSectorNum = 0xFE;
-                            else
-                                diskZapSectorNum++;
+                            if (diskZapSectorIndex < 0xFD)
+                                diskZapSectorIndex++;
                             VerifyZapParamsOK();
                             break;
                         case SharpDX.DirectInput.Key.PageUp:
@@ -458,10 +451,11 @@ namespace Sharp80
                     }
                     break;
                 case ViewMode.RegisterView:
+                case ViewMode.FloppyControllerView:
                     switch (Key)
                     {
                         case SharpDX.DirectInput.Key.Escape:
-                            this.viewMode = ViewMode.NormalView;
+                            ViewMode = ViewMode.NormalView;
                             break;
                     }
                     break;
@@ -485,7 +479,7 @@ namespace Sharp80
                         case SharpDX.DirectInput.Key.Space:
                             if (ViewMode == ViewMode.SetBreakpointView)
                             {
-                                Computer.Processor.BreakPointOn = !Computer.Processor.BreakPointOn;
+                                Settings.BreakpointOn = Computer.Processor.BreakPointOn = !Computer.Processor.BreakPointOn;
                                 Invalidate();
                             }
                             break;
@@ -522,13 +516,16 @@ namespace Sharp80
                                             System.Globalization.CultureInfo.InvariantCulture,
                                             out ushort addr))
                         {
-                            if (this.ViewMode == ViewMode.SetBreakpointView)
-                                Computer.Processor.BreakPoint = addr;
+                            if (ViewMode == ViewMode.SetBreakpointView)
+                            {
+                                Settings.Breakpoint = Computer.Processor.BreakPoint = addr;
+                            }
                             else
+                            {
                                 Computer.Processor.Jump(addr);
+                            }
                         }
-
-                        this.Invalidate();
+                        Invalidate();
                     }
                     break;
                 case ViewMode.DiskView:
@@ -640,6 +637,9 @@ namespace Sharp80
                     case ViewMode.RegisterView:
                         DrawRegisterView();
                         break;
+                    case ViewMode.FloppyControllerView:
+                        DrawFloppyControllerStatusView();
+                        break;
                 }
 
                 //renderTarget.DrawRectangle(new RawRectangleF(cells[0].Left, cells[0].Top, cells[0x3ff].Right, cells[0x3ff].Bottom), foregroundBrush);
@@ -676,8 +676,7 @@ namespace Sharp80
                 ushort memPtr = Memory.VIDEO_MEMORY_BLOCK;
                 for (int i = 0; i < NUM_SCREEN_CHARS; ++i, ++k, ++memPtr)
                 {
-                    if (shadowScreen[k] != mem[memPtr] || invalid)
-                        PaintCell(k, mem[memPtr], this.cells, charGen);
+                    PaintCell(k, mem[memPtr], cells, charGen);
 
                     if (Computer.Screen.WideCharMode) { i++; k++; memPtr++; }
                 }
@@ -686,77 +685,54 @@ namespace Sharp80
         private void DrawHelpView()
         {
             if (invalid)
-            {
-                byte[] helpText = UI.GetHelpText();
-                for (int i = 0; i < NUM_SCREEN_CHARS; i++)
-                    PaintCell(i, helpText[i], cellsNormal, charGenNormal);
-            }
+                DrawView(UI.GetHelpText());
         }
         private void DrawOptionsView()
         {
             if (invalid)
-            {
-                byte[] text = UI.GetOptionsText(SoundOn: Computer.Sound.On,
-                                                UseDriveNoise: Computer.Sound.UseDriveNoise,
-                                                GreenScreen: GreenScreen,
-                                                AutoStartOnReset: Settings.AutoStartOnReset,
-                                                Throttle: Settings.Throttle,
-                                                Z80Display: AdvancedView,
-                                                HistoricDisassembly: Computer.HistoricDisassemblyMode,
-                                                FullScreen: IsFullScreen);
-
-                for (int i = 0; i < NUM_SCREEN_CHARS; i++)
-                    PaintCell(i, text[i], cellsNormal, charGenNormal);
-            }
+                DrawView(UI.GetOptionsText(SoundOn: Computer.Sound.On,
+                                           UseDriveNoise: Computer.Sound.UseDriveNoise,
+                                           GreenScreen: GreenScreen,
+                                           AutoStartOnReset: Settings.AutoStartOnReset,
+                                           Throttle: Settings.Throttle,
+                                           Z80Display: AdvancedView,
+                                           HistoricDisassembly: Computer.HistoricDisassemblyMode,
+                                           FullScreen: IsFullScreen));
         }
         private void DrawSetBreakpointView()
         {
             if (invalid)
-            {
-                byte[] text = UI.GetBreakpointText(Computer.Processor.BreakPoint, Computer.Processor.BreakPointOn);
-
-                for (int i = 0; i < NUM_SCREEN_CHARS; i++)
-                    PaintCell(i, text[i], cellsNormal, charGenNormal);
-            }
+                DrawView(UI.GetBreakpointText(Computer.Processor.BreakPoint, Computer.Processor.BreakPointOn));
         }
         private void DrawJumpToView()
         {
             if (invalid)
-            {
-                byte[] text = UI.GetJumpToText(Computer.Processor.PC.val);
-
-                for (int i = 0; i < NUM_SCREEN_CHARS; i++)
-                    PaintCell(i, text[i], cellsNormal, charGenNormal);
-            }
+                DrawView(UI.GetJumpToText(Computer.Processor.PC.val));
         }
         private void DrawRegisterView()
         {
-            byte[] text = UI.GetRegisterViewText(Computer.Processor.GetStatus());
-
-            for (int i = 0; i < NUM_SCREEN_CHARS; i++)
-                PaintCell(i, text[i], cellsNormal, charGenNormal);
+            DrawView(UI.GetRegisterViewText(Computer.Processor.GetStatus()));
+        }
+        private void DrawFloppyControllerStatusView()
+        {
+            DrawView(UI.GetFloppyControllerStatus(Computer.FloppyController.GetStatus()));
         }
         private void DrawDiskView()
         {
             if (invalid)
-            {
-                byte[] text = UI.GetDiskView(Computer.FloppyController, diskViewFloppyNum);
-
-                for (int i = 0; i < NUM_SCREEN_CHARS; i++)
-                    PaintCell(i, text[i], cellsNormal, charGenNormal);
-            }
+                DrawView(UI.GetDiskView(Computer.FloppyController, diskViewFloppyNum));
         }
         private void DrawMemoryView()
         {
             if (invalid)
-            {
-                byte[] text = UI.GetMemoryViewText(memoryViewBaseAddress, Computer.Processor.Memory);
-
-                for (int i = 0; i < NUM_SCREEN_CHARS; i++)
-                    PaintCell(i, text[i], cellsNormal, charGenNormal);
-            }
+                DrawView(UI.GetMemoryViewText(memoryViewBaseAddress, Computer.Processor.Memory));
         }
-        
+        private void DrawView(byte[] View)
+        {
+            for (int i = 0; i < NUM_SCREEN_CHARS; i++)
+                PaintCell(i, View[i], cellsNormal, charGenNormal);
+            invalid = false;
+        }
         private void DrawStatusMessage()
         {
             if (cyclesForMessageRemaining > 0)
@@ -1000,14 +976,14 @@ namespace Sharp80
             if (invalid)
             {
                 var f = Computer.FloppyController.GetFloppy(DiskZapFloppyNumber);
-                var sectorData = f.GetSectorData(diskZapTrackNum, diskZapSideOne, diskZapSectorNum);
-                var dd = f.IsDoubleDensity(diskZapTrackNum, diskZapSideOne, diskZapSectorNum);
-                var dam = f.GetDAM(diskZapTrackNum, diskZapSideOne, diskZapSectorNum);
+                var sd = f?.GetSectorDescriptor(diskZapTrackNum, diskZapSideOne, diskZapSectorIndex);
+                byte[] text;
 
-                var text = UI.GetDiskZapText(sectorData, DiskZapFloppyNumber, diskZapTrackNum, diskZapSideOne, diskZapSectorNum, dd, f.NumSides, dam, f.IsEmpty);
+                text = UI.GetDiskZapText(DiskZapFloppyNumber, diskZapTrackNum, diskZapSideOne, f.NumSides, sd, f.IsEmpty);
 
                 for (int i = 0; i < NUM_SCREEN_CHARS; i++)
                     PaintCell(i, text[i], cellsNormal, charGenNormal);
+
             }
         }
         private void VerifyZapParamsOK()
@@ -1018,7 +994,7 @@ namespace Sharp80
             {
                 diskZapSideOne = false;
                 diskZapTrackNum = 0;
-                diskZapSectorNum = 0;
+                diskZapSectorIndex = 0;
             }
             else
             {
@@ -1033,14 +1009,10 @@ namespace Sharp80
 
                 // Allow for sectors starting at zero or one
 
-                if (diskZapSectorNum == 0xFF)
-                    diskZapSectorNum = 0x00;
-
-                if (diskZapSectorNum > d.HighestSectorNumber(diskZapTrackNum, diskZapSideOne))
-                    diskZapSectorNum = d.HighestSectorNumber(diskZapTrackNum, diskZapSideOne);
-
-                if (diskZapSectorNum < d.LowestSectorNumber(diskZapTrackNum, diskZapSideOne))
-                    diskZapSectorNum = d.LowestSectorNumber(diskZapTrackNum, diskZapSideOne);
+                if (diskZapSectorIndex >= d.SectorCount(diskZapTrackNum, diskZapSideOne))
+                    diskZapSectorIndex = (byte)(d.SectorCount(diskZapTrackNum, diskZapSideOne) - 1);
+                else if (diskZapSectorIndex < 0)
+                    diskZapSectorIndex = 0;
             }
             Invalidate();
         }

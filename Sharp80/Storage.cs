@@ -130,7 +130,7 @@ namespace Sharp80
 
             writer.Close();
         }
-        public static int LoadCMDFile(string FilePath, IMemory mem)
+        public static ushort? LoadCMDFile(string FilePath, IMemory mem)
         {
             // Returns the address to start executing
 
@@ -139,7 +139,7 @@ namespace Sharp80
             byte[] data = new byte[0x101];
 
             ushort destAddress;
-            int execAddress = -1;
+            ushort? execAddress = null;
 
             if (File.Exists(FilePath))
             {
@@ -233,13 +233,15 @@ namespace Sharp80
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Log.LogException(ex);
+                    return null;
                 }
             }
             else
             {
-                throw new Exception("CMD file not found.");
+                return null;
             }
             return execAddress;
         }

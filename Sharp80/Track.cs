@@ -16,8 +16,8 @@ namespace Sharp80
 
             this.TrackNumber = TrackNumber;
             this.SideOne = SideOne;
-            this.Data = new byte[TrackLength];
-            this.DoubleDensityArray = new bool[0];
+            Data = new byte[TrackLength];
+            DoubleDensityArray = new bool[0];
             sectors = new List<Sector>();
         }
 
@@ -27,28 +27,8 @@ namespace Sharp80
         { get { return Data.Length; } }
         public bool? DoubleDensity 
         { get; private set; }
-        public byte HighestSectorNumber
-        {
-            get
-            {
-                if (sectors.Count == 0)
-                    return 0;
-                else
-                    return sectors.Max(ss => ss.SectorNumber);
-            }
-        }
-        public byte LowestSectorNumber
-        {
-            get 
-            {
-                if (sectors.Count == 0)
-                    return 0;
-                else
-                    return sectors.Min(ss => ss.SectorNumber); 
-            }
-        }
-        public int SectorCount
-        { get { return sectors.Count; } }
+        public byte SectorCount
+        { get { return (byte)sectors.Count; } }
         public bool Formatted
         {
             get { return sectors.Count > 0; }
@@ -63,7 +43,7 @@ namespace Sharp80
 
                 this.Data = Data;
                 this.DoubleDensityArray = DoubleDensityArray;
-                this.sectors.Clear();
+                sectors.Clear();
 
                 int physicalSectorIndex = 0;
                 ushort crc = 0xFFFF;
@@ -78,18 +58,18 @@ namespace Sharp80
                         if (!doubleDensity)
                             crc = 0xFFFF;
                     }
-                    while (fetchByte(Data, ref i, ref crc, true, doubleDensity) != Floppy.IDAM);
+                    while (FetchByte(Data, ref i, ref crc, true, doubleDensity) != Floppy.IDAM);
 
                     uint idamLocation = i - 1;
-                    byte trackNumber = fetchByte(Data, ref i, ref crc, false, doubleDensity);
-                    bool sideOne = ((fetchByte(Data, ref i, ref crc, false, doubleDensity) & 0x01) == 0x01);
-                    byte sectorNumber = fetchByte(Data, ref i, ref crc, false, doubleDensity);
-                    uint sectorDataLength = Floppy.GetDataLengthFromCode((byte)(fetchByte(Data, ref i, ref crc, false, doubleDensity) & 0x03));
+                    byte trackNumber = FetchByte(Data, ref i, ref crc, false, doubleDensity);
+                    bool sideOne = ((FetchByte(Data, ref i, ref crc, false, doubleDensity) & 0x01) == 0x01);
+                    byte sectorNumber = FetchByte(Data, ref i, ref crc, false, doubleDensity);
+                    uint sectorDataLength = Floppy.GetDataLengthFromCode((byte)(FetchByte(Data, ref i, ref crc, false, doubleDensity) & 0x03));
 
                     ushort actualAddressCRC = crc;
 
-                    byte high = fetchByte(Data, ref i, ref crc, false, doubleDensity);
-                    byte low = fetchByte(Data, ref i, ref crc, false, doubleDensity);
+                    byte high = FetchByte(Data, ref i, ref crc, false, doubleDensity);
+                    byte low = FetchByte(Data, ref i, ref crc, false, doubleDensity);
 
                     ushort recordedAddressCRC = Lib.CombineBytes(low, high);
 
@@ -102,7 +82,7 @@ namespace Sharp80
                         else
                             crc = Floppy.CRC_RESET_A1_A1_A1;
                     }
-                    while (!isDAM(fetchByte(Data, ref i, ref crc, true, doubleDensity)) && limit-- >= 0);
+                    while (!IsDAM(FetchByte(Data, ref i, ref crc, true, doubleDensity)) && limit-- >= 0);
 
                     if (limit < 0)
                     {
@@ -115,11 +95,11 @@ namespace Sharp80
                     uint dataEnd = i + sectorDataLength;
 
                     for (int j = 0; j < sectorDataLength; j++)
-                        fetchByte(Data, ref i, ref crc, false, doubleDensity);
+                        FetchByte(Data, ref i, ref crc, false, doubleDensity);
 
                     ushort actualDataCRC = crc;
-                    high = fetchByte(Data, ref i, ref crc, false, doubleDensity);
-                    low = fetchByte(Data, ref i, ref crc, false, doubleDensity);
+                    high = FetchByte(Data, ref i, ref crc, false, doubleDensity);
+                    low = FetchByte(Data, ref i, ref crc, false, doubleDensity);
                     ushort recordedDataCRC = Lib.CombineBytes(low, high);
 
                     Sector s = new Sector(trackNumber,
@@ -162,8 +142,9 @@ namespace Sharp80
                              + 598; // typical Track end filler
 
                     int i;
+                    byte filler = DoubleDensity == true ? Floppy.FILLER_BYTE_DD : Floppy.FILLER_BYTE_SD;
                     for (i = Data.Length - 1; i > lastByte; i--)
-                        if (this.Data[i] != Floppy.FILLER_BYTE)
+                        if (this.Data[i] != filler)
                             break;
 
                     if (Data.Length > i + 100)
@@ -202,6 +183,17 @@ namespace Sharp80
             else
                 return s.DAM;
         }
+        internal SectorDescriptor GetSector(byte SectorIndex)
+        {
+            if (sectors.Count == 0)
+                return null;
+            else if (SectorIndex < 0)
+                SectorIndex = 0;
+            else if (SectorIndex >= sectors.Count)
+                SectorIndex = (byte)(sectors.Count - 1);
+
+            return sectors.OrderBy(s => s.SectorNumber).Skip(SectorIndex).First()?.ToSectorDescriptor(Data);
+        }
         public bool IsDoubleDensity(byte SectorNumber)
         {
             Sector s = sectors.FirstOrDefault(ss => ss.SectorNumber == SectorNumber);
@@ -236,11 +228,11 @@ namespace Sharp80
         {
             return sectors.Select(s => s.ToSectorDescriptor(this.Data)).ToList();
         }
-        private static bool isDAM(byte Byte)
+        private static bool IsDAM(byte Byte)
         {
             return (Byte >= 0xF8) && (Byte <= 0xFB);
         }
-        private static byte fetchByte(byte[] Data, ref uint i, ref ushort crc, bool AllowResetCRC, bool DoubleDensity)
+        private static byte FetchByte(byte[] Data, ref uint i, ref ushort crc, bool AllowResetCRC, bool DoubleDensity)
         {
             byte b = 0;
             if (i < Data.Length)

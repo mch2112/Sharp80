@@ -27,6 +27,8 @@ namespace Sharp80
 
         public MainForm()
         {
+            Dialogs.Parent = this;
+
             screen = new ScreenDX(Settings.AdvancedView,
                                   ViewMode.HelpView,
                                   DISPLAY_MESSAGE_CYCLE_DURATION,
@@ -101,7 +103,8 @@ namespace Sharp80
                 startTimer = null;
             }
             uic.Start();
-            screen.ViewMode = ViewMode.NormalView;
+            if (screen.ViewMode == ViewMode.HelpView)
+                screen.ViewMode = ViewMode.NormalView;
             screen.StatusMessage = "Running...";
         }
         private bool leftShiftPressed = false;
@@ -243,6 +246,9 @@ namespace Sharp80
                                 screen.StatusMessage = "Collecting trace info...";
                             }
                             break;
+                        case SharpDX.DirectInput.Key.D:
+                            ToggleView(ViewMode.FloppyControllerView);
+                            break;
                         case SharpDX.DirectInput.Key.H:
                             ToggleHistoricDisassembly();
                             break;
@@ -277,8 +283,7 @@ namespace Sharp80
                             break;
                         case SharpDX.DirectInput.Key.Y:
                             string path = uic.Computer.Assemble();
-                            if (path.Length > 0)
-                                uic.LoadCMDFile(path);
+                            LoadCMDFile(path, true);
                             break;
                         case SharpDX.DirectInput.Key.G:
                             screen.GreenScreen = !screen.GreenScreen;
@@ -326,6 +331,7 @@ namespace Sharp80
                         case SharpDX.DirectInput.Key.F9:
                             repeatKey = SharpDX.DirectInput.Key.F9;
                             uic.Computer.SingleStep();
+                            screen.Invalidate();
                             break;
                         case SharpDX.DirectInput.Key.F10:
                             uic.Computer.StepOver();
@@ -347,8 +353,8 @@ namespace Sharp80
                     break;
                 case ViewMode.DiskZapView:
                 case ViewMode.MemoryView:
-                case ViewMode.RegisterView:
-                    if (IsPressed)
+                case ViewMode.FloppyControllerView:
+                    if (IsPressed && !IsAltPressed && !IsControlPressed)
                     {
                         repeatKey = Key;
                         screen.SendChar(Key, IsShifted);
@@ -358,7 +364,8 @@ namespace Sharp80
                 case ViewMode.HelpView:
                 case ViewMode.SetBreakpointView:
                 case ViewMode.JumpToView:
-                    if (IsPressed)
+                case ViewMode.RegisterView:
+                    if (IsPressed && !IsAltPressed && !IsControlPressed)
                         screen.SendChar(Key, IsShifted);
                     break;
                 case ViewMode.DiskView:
@@ -404,11 +411,10 @@ namespace Sharp80
         {
             if (HardReset)
             {
-                SaveFloppies(out bool cancel);
-                if (cancel)
-                    return;
-                else
+                if (SaveFloppies())
                     uic.HardReset(screen);
+                else
+                    return;
             }
             else
             {
@@ -551,7 +557,7 @@ namespace Sharp80
 
             if (path.Length > 0)
             {
-                if (SaveFloppyIfRequired(DriveNum) != DialogResult.Cancel)
+                if (SaveFloppyIfRequired(DriveNum))
                 {
                     uic.Computer.LoadFloppy(DriveNum, path);
                     Settings.DefaultFloppyDirectory = Path.GetDirectoryName(path);
@@ -563,7 +569,7 @@ namespace Sharp80
         }
         private void EjectFloppy(byte DriveNum)
         {
-            if (SaveFloppyIfRequired(DriveNum) != DialogResult.Cancel)
+            if (SaveFloppyIfRequired(DriveNum))
                 uic.Computer.EjectFloppy(DriveNum);
             
             screen.Invalidate();
@@ -594,26 +600,24 @@ namespace Sharp80
                                   SelectFileInDialog: SelectFileInDialog);
         }
 
-
-        private DialogResult SaveFloppyIfRequired(byte DriveNum)
+        // returns true if it's ok to continue the pending operation
+        private bool SaveFloppyIfRequired(byte DriveNum)
         {
-            DialogResult dr;
-            // Return true to cancel save, false if OK to save
-            if (uic.Computer.FloppyController.DiskHasChanged(DriveNum) ?? false)
-                dr = MessageBox.Show(string.Format("Drive {0} has changed. Save it?", DriveNum),
-                                                   "Save Changed Drive?",
-                                                   MessageBoxButtons.YesNoCancel,
-                                                   MessageBoxIcon.Question);
-            else
-                dr = DialogResult.No;
+            bool? save = false;
 
-            if (dr == DialogResult.Yes)
+            if (uic.Computer.FloppyController.DiskHasChanged(DriveNum) ?? false)
+                save = Dialogs.AskYesNoCancel(string.Format("Drive {0} has changed. Save it?", DriveNum));
+
+            if (!save.HasValue)
+                return false;
+
+            if (save.Value)
             {
                 if (string.IsNullOrWhiteSpace(uic.Computer.FloppyController.FloppyFilePath(DriveNum)))
                 {
                     var path = GetFloppyFilePath("Choose path to save floppy", Settings.DefaultFloppyDirectory, true, false, true);
                     if (string.IsNullOrWhiteSpace(path))
-                        return DialogResult.Cancel;
+                        return false;
                     else
                     {
                         uic.Computer.FloppyController.GetFloppy(DriveNum).FilePath = path;
@@ -622,7 +626,7 @@ namespace Sharp80
                 }
                 uic.Computer.FloppyController.SaveFloppy(DriveNum);
             }
-            return dr;
+            return true;
         }
         private void MakeFloppyFromCmdFile()
         {
@@ -665,7 +669,7 @@ namespace Sharp80
 
         private void MakeAndLoadBlankFloppy(bool Formatted, byte DriveNumber)
         {
-            if (SaveFloppyIfRequired(DriveNum: DriveNumber) != DialogResult.Cancel)
+            if (SaveFloppyIfRequired(DriveNum: DriveNumber))
             {
                 var f = Storage.MakeBlankFloppy(Formatted);
 
@@ -673,13 +677,24 @@ namespace Sharp80
                     uic.Computer.LoadFloppy(DriveNumber, f);
             }
         }
-        private void LoadCMDFile()
+        private void LoadCMDFile(string Path = "", bool SuppressNormalInform = false)
         {
-            string path = GetCommandFile(Settings.LastCmdFile);
+            if (String.IsNullOrWhiteSpace(Path))
+                Path = GetCommandFile(Settings.LastCmdFile);
 
-            if (path.Length > 0)
-                if (uic.LoadCMDFile(path))
-                    Settings.LastCmdFile = path;
+            if (Path.Length > 0)
+            {
+                if (uic.Computer.LoadCMDFile(Path))
+                {
+                    if (!SuppressNormalInform)
+                        Dialogs.InformUser("CMD File loaded.");
+                    Settings.LastCmdFile = Path;
+                }
+                else
+                {
+                    Dialogs.AlertUser("CMD File load failed.");
+                }
+            }
         }
         private void Exit()
         {
@@ -723,8 +738,8 @@ namespace Sharp80
         }
         private string UserSelectFile(bool Save, string DefaultPath, string Title, string Filter, string DefaultExtension, bool SelectFileInDialog)
         {
-            string dir = DefaultPath.Length > 0 ? System.IO.Path.GetDirectoryName(DefaultPath) :
-                                                  System.IO.Path.GetDirectoryName(Application.ExecutablePath);
+            string dir = DefaultPath.Length > 0 ? Path.GetDirectoryName(DefaultPath) :
+                                                  Path.GetDirectoryName(Application.ExecutablePath);
 
             FileDialog dialog;
 
@@ -756,7 +771,7 @@ namespace Sharp80
             string path = dialog.FileName;
 
             if (dr == DialogResult.OK && path.Length > 0)
-                if (Save || System.IO.File.Exists(path))
+                if (Save || File.Exists(path))
                     return path;
 
             return string.Empty;
@@ -764,25 +779,20 @@ namespace Sharp80
         }
         private void DumpDissasembly()
         {
-            Storage.SaveTextFile(Lib.GetAppPath() + "Disassembly_Dump.txt", uic.Computer.DumpDisassembly(true));
-            MessageBox.Show("Disassembly saved to 'Disassembly_Dump.txt'", "Disassembly Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Storage.SaveTextFile(Path.Combine(Lib.GetAppPath(), "Disassembly_Dump.txt"), uic.Computer.DumpDisassembly(true));
+            Dialogs.InformUser("Disassembly saved to \"Disassembly_Dump.txt\"");
         }
 
         private void Form_FormClosing(object sender, FormClosingEventArgs e)
         {
-            SaveFloppies(out bool cancel);
-
-            if (cancel)
-            {
-                e.Cancel = true;
-            }
-            else
-            {
+            if (SaveFloppies())
                 Log.SaveLog();
-            }
+            else
+                e.Cancel = true;
         }
 
-        private void SaveFloppies(out bool Cancel)
+        // returns false if the user cancelled a needed save
+        private bool SaveFloppies()
         {
             // returns true on user cancel
 
@@ -790,13 +800,10 @@ namespace Sharp80
             {
                 Storage.SaveDefaultDriveFileName(b, uic.Computer.FloppyController.FloppyFilePath(b));
 
-                if (SaveFloppyIfRequired(b) == DialogResult.Cancel)
-                {
-                    Cancel = true;
-                    return;
-                }
+                if (!SaveFloppyIfRequired(b))
+                    return false;
             }
-            Cancel = false;
+            return true;
         }
 
         private void Form_Activated(object sender, EventArgs e)

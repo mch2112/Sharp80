@@ -42,6 +42,9 @@ namespace Sharp80
         {
             get
             {
+                if (Location >= 0x37e0 && Location <= 0x37ff)
+                    System.Diagnostics.Debug.WriteLine("Model 1 FDC attempt?");
+
                 unchecked
                 {
                     if ((Location & 0xFF00) == KEYBOARD_MEMORY_BLOCK)  // Keyboard Memory Map
@@ -76,12 +79,16 @@ namespace Sharp80
             {
                 unchecked
                 {
-                    if ((Location & 0xFC00) == VIDEO_MEMORY_BLOCK)
-                        ScreenWritten |= (mem[Location] != value);
-#if !NOROM
-                if (Location >= firstRAMByte)
-#endif
-                    mem[Location] = value;
+                    if (Location >= firstRAMByte)
+                    {
+                        if ((Location & 0xFC00) == VIDEO_MEMORY_BLOCK)
+                            ScreenWritten |= (mem[Location] != value);
+                        mem[Location] = value;
+                    }
+                    else
+                    {
+                        Log.LogToDebug(string.Format("Write attempt {0:X2} to ROM Locdtion {1:X4}", Location, value));
+                    }
                 }
             }
         }
@@ -123,6 +130,9 @@ namespace Sharp80
         {
             byte[] b = Resources.ModelIIIRom;
             Array.Copy(b, mem, b.Length);
+
+            // TODO: Validate the rom should have this:
+            mem[14312] = mem[14313] = 63;
 
             firstRAMByte = 0x3C00;
         }

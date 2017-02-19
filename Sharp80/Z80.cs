@@ -72,12 +72,24 @@ namespace Sharp80.Processor
         private bool restoreInterruptsNow;
         private byte im2Vector = 0xFF;         // For IM2 only
         private bool halted;
+        private ushort breakpoint = 0;
 
         public ushort NextPC { get; private set; }
 
         // User vectors
 
-        public ushort BreakPoint { get; set; } = 0;
+        public ushort BreakPoint
+        {
+            get { return breakpoint; }
+            set
+            {
+                if (breakpoint != value)
+                {
+                    breakpoint = value;
+                    skipOneBreakpoint = PC.val == value && !computer.IsRunning;
+                }
+            }
+        }
         public bool BreakPointOn { get; set; } = false;
         private ushort? systemBreakPoint = null;
         private bool skipOneBreakpoint = false;
@@ -265,9 +277,9 @@ namespace Sharp80.Processor
             }
 
             if (Log.TraceOn)
-                Log.LogToTrace(this.GetLineInfo(PC.val));
+                Log.LogToTrace(GetLineInfo(PC.val));
 
-            CurrentInstruction = this.GetInstructionAt(PC.val);
+            CurrentInstruction = GetInstructionAt(PC.val);
             retVal = ExecuteInstruction(CurrentInstruction);
 
             if (RestoreInterrupts)
@@ -304,7 +316,10 @@ namespace Sharp80.Processor
         public void Jump(ushort Address)
         {
             computer.Stop(true);
-            PC.val = Address;
+            if (PC.val != Address)
+            {
+                PC.val = Address;
+            }
         }
         // Returns ticks used
         private ushort ExecuteInstruction(Instruction Instruction)
@@ -315,16 +330,16 @@ namespace Sharp80.Processor
 
                 Debug.Assert(this.RecordExtraTicks == false);
 
-                this.NextPC = PC.val;
-                this.NextPC += Instruction.Size;
+                NextPC = PC.val;
+                NextPC += Instruction.Size;
 
                 Debug.Assert(this.RecordExtraTicks == false);
 
                 Instruction.Execute();
 
-                this.PC.val = this.NextPC;
+                PC.val = NextPC;
 
-                this.IncrementR(Instruction.RIncrement);
+                IncrementR(Instruction.RIncrement);
             }
             catch (Exception ex)
             {
@@ -375,12 +390,10 @@ namespace Sharp80.Processor
                 switch (interruptMode)
                 {
                     case 1:
-                        PC.val = 0x0038;
-                        WZ.val = PC.val;
+                        WZ.val = PC.val = 0x0038;
                         return 13000;
                     case 2:
-                        PC.val = (ushort)(I.val * 0x100 + im2Vector);
-                        WZ.val = PC.val;
+                        WZ.val = PC.val = (ushort)(I.val * 0x100 + im2Vector);
                         return 19000;
                     default:
                         Log.LogMessage(string.Format("Interrupt Mode {0} Not Supported", interruptMode));

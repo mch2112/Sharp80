@@ -18,7 +18,7 @@ namespace Sharp80
         private const ushort OFFSET_MASK = 0x3FFF;
         private const ushort DOUBLE_DENSITY_MASK = 0x8000;
         private const byte WRITE_PROTECT_BYTE = 0x00;
-        private const byte NO_WRITE_PROTECT_BYTE = 0x00; 
+        private const byte NO_WRITE_PROTECT_BYTE = 0x00;
         private const byte NUM_TRACKS_BYTE = 0x01;
         private const byte TRACK_LEN_LOW_BYTE = 0x02;
         private const byte TRACK_LEN_HIGH_BYTE = 0x03;
@@ -29,7 +29,7 @@ namespace Sharp80
         private const byte SING_DENS_SING_BYTE_FLAG = 0x40;
         private const byte IGNORE_SING_DENS_FLAG = 0x80;
         private const byte WRITE_PROTECT_VAL = 0xFF;
-        
+
         public DMK() : base()
         {
         }
@@ -38,15 +38,15 @@ namespace Sharp80
         {
             Deserialize(DiskData);
         }
-      
+
         public static Floppy MakeFloppyFromFile(byte[] b, string filename)
         {
             var fn = Floppy.ConvertWindowsFilePathToTRSDOSFileName(filename);
 
-            byte neededSectors  = (byte)Math.Ceiling((double)b.Length / (double)0x100);
+            byte neededSectors = (byte)Math.Ceiling((double)b.Length / (double)0x100);
             byte neededGranules = (byte)Math.Ceiling((double)neededSectors / (double)0x003);
-            byte neededTracks   = (byte)Math.Ceiling((double)neededGranules / (double)0x006);
-            
+            byte neededTracks = (byte)Math.Ceiling((double)neededGranules / (double)0x006);
+
             // for now only using tracks after the directory track, so about 85K max.
             // could make more room by using tracks 0 to 16.
 
@@ -54,7 +54,7 @@ namespace Sharp80
                 return null; // TODO: Error message
 
             var sectors = GetDiskSectorDescriptors(NumTracks: 40, DoubleSided: false, DoubleDensity: true);
-            
+
             byte trackNum = 18;
             byte sectorNum = 0;
             int cmdFileCursor = 0;
@@ -161,6 +161,10 @@ namespace Sharp80
         {
             return SafeGetTrack(TrackNumber, SideOne).GetSectorData(SectorNumber);
         }
+        public override SectorDescriptor GetSectorDescriptor(byte TrackNumber, bool SideOne, byte SectorIndex)
+        {
+            return SafeGetTrack(TrackNumber, SideOne).GetSector(SectorIndex);
+        }
         public override byte GetDAM(byte TrackNumber, bool SideOne, byte SectorNumber)
         {
             return SafeGetTrack(TrackNumber, SideOne).GetDAM(SectorNumber);
@@ -197,7 +201,7 @@ namespace Sharp80
             Deserialize(Reader.ReadBytes(dataLength));
             FilePath = Reader.ReadString();
         }
-        
+
         private void UpdateDoubleDensity()
         {
             if (tracksSide0.Concat(tracksSide1).Any(t => !t.DoubleDensity.HasValue))
@@ -209,7 +213,7 @@ namespace Sharp80
             else
                 DoubleDensity = null;
         }
-        
+
         private static List<SectorDescriptor> GetDiskSectorDescriptors(byte NumTracks, bool DoubleSided, bool DoubleDensity)
         {
             const int SECTOR_SIZE = 0x100;
@@ -267,7 +271,7 @@ namespace Sharp80
             var gatSector = sectors.First(s => s.TrackNumber == 17 && !s.SideOne && s.SectorNumber == startingSectorNumber);
             gatSector.SectorData[0x00] = 0x01; // GAT 
             gatSector.SectorData[0x11] = 0x3F; // GAT 
-            
+
             gatSector.SectorData[0xCE] = 0xD3; // "PASSWORD"
             gatSector.SectorData[0xCF] = 0x8F;
 
@@ -347,7 +351,7 @@ namespace Sharp80
 
                 int fillerBytes = track.First().DoubleDensity ? 62 : 32;
                 for (int k = 0; k < fillerBytes; k++)
-                    bytes.Add(FILLER_BYTE);
+                    bytes.Add(FILLER_BYTE_DD);
 
                 foreach (var sector in track)
                 {
@@ -406,7 +410,7 @@ namespace Sharp80
                     bytes.Add(low);
                 }
                 while (bytes.Count < trackStartIndex + STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN)
-                    bytes.Add(FILLER_BYTE);
+                    bytes.Add(FILLER_BYTE_DD);
             }
 
             var f = new DMK(bytes.ToArray())
@@ -428,12 +432,12 @@ namespace Sharp80
 
             return new DMK(data);
         }
-        
+
         private byte[] GetTrackHeader(Track Track)
         {
             byte[] header = new byte[TRACK_HEADER_LEN];
             bool[] dd = Track.DoubleDensityArray;
-            ushort[] il = GetIdamLocations(Track.Data, dd, 0, Track.Data.Length);
+            ushort[] il = GetIdamLocationsFromRaw(Track.Data, dd, 0, Track.Data.Length);
             byte sectorCount = (byte)Math.Min(dd.Length, il.Length);
             for (byte i = 0; i < sectorCount; i++)
             {
@@ -447,7 +451,28 @@ namespace Sharp80
             }
             return header;
         }
-        private ushort[] GetIdamLocations(byte[] DiskData, bool[] DoubleDensity, int Start, int Length)
+        private ushort[] GetIdamLocations(byte[] DiskData, bool[] DoubleDensity, int Start)
+        {
+            List<ushort> idams = new List<ushort>();
+            for (int i = 0; i < TRACK_HEADER_LEN; i+=2)
+            {
+                ushort us = (ushort)(DiskData[Start + i] + (DiskData[Start + i + 1] << 8));
+                if (us > 0)
+                {
+                    DoubleDensity[i / 2] = ((us & DOUBLE_DENSITY_MASK) == DOUBLE_DENSITY_MASK);
+                    us &= OFFSET_MASK;
+                    if (DiskData[Start + us] != IDAM)
+                        Debug.WriteLine(String.Format("BAD IDAM at location {0:X}", Start));
+                    idams.Add(us);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return idams.ToArray();
+        }
+        private ushort[] GetIdamLocationsFromRaw(byte[] DiskData, bool[] DoubleDensity, int Start, int Length)
         {
             var locations = new List<ushort>();
             int doubleDensityIndex = 0;
@@ -456,7 +481,7 @@ namespace Sharp80
             {
                 if (DiskData[i] == IDAM)
                 {
-                    locations.Add((ushort)(i - Start));
+                    locations.Add((ushort)(i - Start + TRACK_HEADER_LEN));
 
                     int skipFactor = DoubleDensity[doubleDensityIndex] ? 1 : 2;
 
@@ -485,7 +510,7 @@ namespace Sharp80
             int marker;
             int nextMarker = IdamLocations.Length > 0 ? IdamLocations[0] : TrackLength;
 
-            const int LOOK_AHEAD = 0x10;
+            int lookAheadBytes = Math.Min(0x38, nextMarker & 0xFFFE);
             bool singleDensity = false;
 
             for (int i = 0; i < IdamLocations.Length; i++)
@@ -495,34 +520,33 @@ namespace Sharp80
                 if ((i == IdamLocations.Length - 1) || (IdamLocations[i + 1] == 0))
                     nextMarker = TrackLength;
                 else
-                {
                     nextMarker = IdamLocations[i + 1];
-                }
 
                 if (singleDensity)
-                    for (int j = marker - LOOK_AHEAD + 1; j < nextMarker - LOOK_AHEAD; j += 2)
+                    for (int j = marker - lookAheadBytes + 1; j < nextMarker - lookAheadBytes; j += 2)
                     {
-                        if (DiskData[diskCursor + TRACK_HEADER_LEN + j] == DiskData[diskCursor + TRACK_HEADER_LEN + j - 1])
+                        if (DiskData[diskCursor + j] == DiskData[diskCursor + j - 1])
                         {
                             nukeMask[j] = true;
                             nukeCount++;
+                        }
+                        else
+                        {
+                        //    throw new Exception();
                         }
                     }
             }
 
             trackData = new byte[TrackLength - nukeCount];
             ushort m = 0;
-            nukeCount = 0;
             int k = 0;
             for (int i = 0; i < TrackLength; i++)
             {
                 if (k < IdamLocations.Length && IdamLocations[k] == i)
                     IdamLocations[k++] = m;
 
-                if (nukeMask[i])
-                    nukeCount++;
-                else
-                    trackData[m++] = DiskData[diskCursor + TRACK_HEADER_LEN + i];
+                if (!nukeMask[i])
+                    trackData[m++] = DiskData[diskCursor + i];
             }
             for (int i = 0; i < IdamLocations.Length; i++)
                 if (IdamLocations[i] > 0 && trackData[IdamLocations[i]] != Floppy.IDAM)
@@ -539,7 +563,7 @@ namespace Sharp80
             int trackLength = tracksSide0.Concat(tracksSide1).Max(t => t.Data.Length);
 
             int numTracks;
-            
+
             if (numSides == 2)
                 numTracks = Math.Max(tracksSide0.Count, tracksSide1.Count);
             else
@@ -575,7 +599,7 @@ namespace Sharp80
                         Array.Copy(header, 0, diskData, diskCursor, TRACK_HEADER_LEN);
                         Array.Copy(t.Data, 0, diskData, diskCursor + TRACK_HEADER_LEN, Math.Min(t.Data.Length, diskData.Length - diskCursor));
                         for (int k = diskCursor + TRACK_HEADER_LEN + t.Data.Length; k < diskCursor + TRACK_HEADER_LEN + trackLength; k++)
-                            diskData[k] = FILLER_BYTE;
+                            diskData[k] = FILLER_BYTE_DD;
                         diskCursor += trackLength + TRACK_HEADER_LEN;
                     }
                     else
@@ -627,7 +651,7 @@ namespace Sharp80
                             bool needUndoubling = false;
                             for (int k = 0; k < doubleDensity.Length; k++)
                             {
-                                ushort header = (ushort)(Lib.CombineBytes(DiskData[diskCursor + k * 2], DiskData[diskCursor + k * 2 + 1]));
+                                ushort header = Lib.CombineBytes(DiskData[diskCursor + k * 2], DiskData[diskCursor + k * 2 + 1]);
                                 doubleDensity[k] = ((header & DOUBLE_DENSITY_MASK) == DOUBLE_DENSITY_MASK);
                                 needUndoubling |= (header > 0x0001) && !doubleDensity[k];
                             }
@@ -635,7 +659,8 @@ namespace Sharp80
                             byte[] trackData;
                             if (needUndoubling)
                             {
-                                trackData = UndoubleTrack(DiskData, diskCursor, trackLength, GetIdamLocations(DiskData, doubleDensity, diskCursor + TRACK_HEADER_LEN, trackLength), doubleDensity);
+                                //trackData = UndoubleTrack(DiskData, diskCursor, trackLength, GetIdamLocations(DiskData, doubleDensity, diskCursor), doubleDensity);
+                                trackData = UndoubleTrack(DiskData, diskCursor, trackLength, GetIdamLocationsFromRaw(DiskData, doubleDensity, diskCursor + TRACK_HEADER_LEN, trackLength), doubleDensity);
                             }
                             else
                             {

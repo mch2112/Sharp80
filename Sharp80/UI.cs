@@ -58,32 +58,32 @@ namespace Sharp80
 
         internal static byte[] GetDiskView(FloppyController FC, byte? FloppyNum)
         {
-            string s = UI.Header("Sharp 80 Floppy Disk Status - [F3] to show or hide");
+            string s = Header("Sharp 80 Floppy Disk Status - [F3] to show or hide");
             if (FloppyNum.HasValue)
             {
                 bool diskLoaded = !FC.DriveIsUnloaded(FloppyNum.Value);
                 s += DrawDisk(FC, FloppyNum.Value) +
-                        UI.Format() +
-                        UI.Separator('-') +
-                        UI.Format() +
-                        UI.Format(string.Format("Drive {0} Commands", FloppyNum.Value)) +
-                        UI.Format() +
-                        UI.Format("[L] Load Floppy from file") +
-                        UI.Format("[T] Load TRSDOS floppy");
+                        Format() +
+                        Separator('-') +
+                        Format() +
+                        Format(string.Format("Drive {0} Commands", FloppyNum.Value)) +
+                        Format() +
+                        Format("[L] Load Floppy from file") +
+                        Format("[T] Load TRSDOS floppy");
 
                 if (diskLoaded)
                 {
-                    s += UI.Format("[E] Eject floppy") +
-                         UI.Format(string.Format("[W] Toggle write protection {0}", FC.IsWriteProtected(FloppyNum.Value).Value ? "[ON] /  OFF " : " ON  / [OFF]")) +
-                         UI.Format("[Z] Disk Zap View");
+                    s += Format("[E] Eject floppy") +
+                         Format(string.Format("[W] Toggle write protection {0}", FC.IsWriteProtected(FloppyNum.Value).Value ? "[ON] /  OFF " : " ON  / [OFF]")) +
+                         Format("[Z] Disk Zap View");
                 }
                 else
                 {
-                    s += UI.Format("[B] Insert blank formatted floppy") +
-                         UI.Format("[U] Insert unformatted floppy");
+                    s += Format("[B] Insert blank formatted floppy") +
+                         Format("[U] Insert unformatted floppy");
                 }
-                s += UI.Format() +
-                     UI.Format("[Escape] Back to all drives");
+                s += Format() +
+                     Format("[Escape] Back to all drives");
             }
             else
             {
@@ -122,48 +122,53 @@ namespace Sharp80
 
             return UI.Format(line1) + UI.Format(line2);
         }
-        public static byte[] GetDiskZapText(byte[] SectorData,
-                                            byte DriveNum,
+        public static byte[] GetDiskZapText(byte DriveNum,
                                             byte TrackNum,
                                             bool SideOne,
-                                            byte SectorNum,
-                                            bool DoubleDensity,
                                             byte NumSides,
-                                            byte DAM,
+                                            SectorDescriptor sd,
                                             bool IsEmpty
                                             )
         {
-            int numBytes = Math.Min(0x100, SectorData.Length);
+            int numBytes = Math.Min(0x100, sd?.SectorData.Length ?? 0);
 
             byte[] cells = new byte[ScreenDX.NUM_SCREEN_CHARS];
 
-            WriteToByteArray(cells, 0x000, "Dsk  ");
+            WriteToByteArray(cells, 0x000, "Dsk");
             cells[0x040] = Lib.ToHexCharByte(DriveNum);
 
-            WriteToByteArray(cells, 0x0C0, "Trk  ");
+            WriteToByteArray(cells, 0x0C0, "Trk");
             WriteToByteArrayHex(cells, 0x100, TrackNum);
-
-            WriteToByteArray(cells, 0x180, "Sec  ");
-            WriteToByteArrayHex(cells, 0x1C0, SectorNum);
             
-            WriteToByteArray(cells, 0x240, DoubleDensity ? "DD" : "SD");
-
             if (NumSides > 1)
             {
-                WriteToByteArray(cells, 0x2C0, "Side ");
+                WriteToByteArray(cells, 0x280, "Side");
                 cells[0x300] = (byte)(SideOne ? '1' : '0');
             }
 
-            if (!IsEmpty)
+            if (sd != null)
             {
-                switch (DAM)
+                WriteToByteArray(cells, 0x180, "Sec");
+                WriteToByteArrayHex(cells, 0x1C0, sd.SectorNumber);
+
+                WriteToByteArray(cells, 0x200, sd.DoubleDensity ? "DD" : "SD");
+
+                if (sd.TrackNumber != TrackNum)
+                    WriteToByteArrayHex(cells, 0x140, sd.TrackNumber);
+
+                if (!IsEmpty)
                 {
-                    case Floppy.DAM_NORMAL:
-                        WriteToByteArray(cells, 0x340, "Std");
-                        break;
-                    case Floppy.DAM_DELETED:
-                        WriteToByteArray(cells, 0x340, "Del");
-                        break;
+                    switch (sd.DAM)
+                    {
+                        case Floppy.DAM_NORMAL:
+                            WriteToByteArray(cells, 0x300, "Std");
+                            break;
+                        case Floppy.DAM_DELETED:
+                            WriteToByteArray(cells, 0x300, "Del");
+                            break;
+                    }
+                    if (sd.CrcError)
+                        WriteToByteArray(cells, 0x380, "CRC");
                 }
             }
             
@@ -171,9 +176,9 @@ namespace Sharp80
             {
                 WriteToByteArray(cells, 0x006, string.Format("Drive {0} is empty.", DriveNum));
             }
-            else if (numBytes == 0)
+            else if (sd == null || numBytes == 0)
             {
-                WriteToByteArray(cells, 0x006, string.Format("Sector {0} is empty.", SectorNum));
+                WriteToByteArray(cells, 0x006, "Sector {0:X2} is empty.");
             }
             else
             {
@@ -194,7 +199,7 @@ namespace Sharp80
                         if (k % 2 == 0)
                             cell++;
 
-                        byte b = SectorData[k];
+                        byte b = sd.SectorData[k];
 
                         WriteToByteArrayHex(cells, cell, b);
                         cell += 2;
@@ -254,24 +259,38 @@ namespace Sharp80
             }
             return cells;
         }
+        public static byte[] GetFloppyControllerStatus(FloppyControllerStatus Status)
+        {
+            return PadScreen(Encoding.ASCII.GetBytes(
+                Header("Floppy Controller Status") +
+                Format() +
+                Indent(string.Format("OpStatus:       {0}", Status.OpStatus)) +
+                Indent(string.Format("State:          {0} {1}", Status.Busy ? "BUSY" : "    ", Status.DRQ ? "DRQ" : "   ")) +
+                Indent("Command Status: " + Status.CommandStatus) +
+                Format() +
+                Indent(string.Format("Track / Sector Register:   {0:X2}  / {1:X2}", Status.TrackRegister, Status.SectorRegister)) +
+                Indent(string.Format("Command / Data Register:   {0:X2}  / {1:X2}", Status.CommandRegister, Status.DataRegister)) +
+                Indent(string.Format("Density:                   {0}", Status.DoubleDensity ? "Double" : "Single")) +
+                Format() +
+                Indent(string.Format("Physical Disk Data: Dsk {0} Trk {1:X2} {2} ", Status.DiskNum, Status.PhysicalTrackNum, Status.DiskAngle)) +
+                Indent(string.Format("Track Data Index: {0:X4} [{1:X2}]", Status.TrackDataIndex, Status.ByteAtTrackDataIndex)) +
+                Indent("Index Hole:       " + (Status.IndexHole ? "DETECTED" : "")) +
+                Indent(string.Format("Errors:{0}{1}{2}", Status.SeekError ? " SEEK" : "", Status.LostData ? " LOST DATA" : "", Status.CrcError ? " CRC ERROR" : ""))
+                ));
+        }
         public static byte[] GetRegisterViewText(Z80_Status Status)
         {
-            // TODO: move to UI class
-
-            //if (invalid)
-            {
-                return PadScreen(Encoding.ASCII.GetBytes(
-                    UI.Header("Z80 Register Status") +
-                    UI.Format() +
-                    UI.Indent(string.Format("PC  {0}  SP  {1}", Lib.ToHexString(Status.PC), Lib.ToHexString(Status.SP))) +
-                    UI.Format() + 
-                    UI.Indent(string.Format("AF  {0}  AF' {1}", Lib.ToHexString(Status.AF), Lib.ToHexString(Status.AFp))) +
-                    UI.Indent(string.Format("BC  {0}  BC' {1}", Lib.ToHexString(Status.BC), Lib.ToHexString(Status.BCp))) +
-                    UI.Indent(string.Format("DE  {0}  DE' {1}", Lib.ToHexString(Status.DE), Lib.ToHexString(Status.DEp))) +
-                    UI.Indent(string.Format("HL  {0}  HL' {1}", Lib.ToHexString(Status.HL), Lib.ToHexString(Status.HLp))) +
-                    UI.Format() + 
-                    UI.Indent(string.Format("IX  {0}  IY  {1}", Lib.ToHexString(Status.IX), Lib.ToHexString(Status.IY)))));
-            }
+            return PadScreen(Encoding.ASCII.GetBytes(
+                Header("Z80 Register Status") +
+                Format() +
+                Indent(string.Format("PC  {0}  SP  {1}", Lib.ToHexString(Status.PC), Lib.ToHexString(Status.SP))) +
+                Format() +
+                Indent(string.Format("AF  {0}  AF' {1}", Lib.ToHexString(Status.AF), Lib.ToHexString(Status.AFp))) +
+                Indent(string.Format("BC  {0}  BC' {1}", Lib.ToHexString(Status.BC), Lib.ToHexString(Status.BCp))) +
+                Indent(string.Format("DE  {0}  DE' {1}", Lib.ToHexString(Status.DE), Lib.ToHexString(Status.DEp))) +
+                Indent(string.Format("HL  {0}  HL' {1}", Lib.ToHexString(Status.HL), Lib.ToHexString(Status.HLp))) +
+                Format() +
+                Indent(string.Format("IX  {0}  IY  {1}", Lib.ToHexString(Status.IX), Lib.ToHexString(Status.IY)))));
         }
         public static byte[] GetBreakpointText(ushort Breakpoint, bool On)
         {
@@ -301,9 +320,13 @@ namespace Sharp80
                 UI.Indent("Type [0]-[9] or [A]-[F] to enter a hexadecimal") +
                 UI.Indent("jump location.") +
                 UI.Format() +
-                UI.Indent("[Enter] when done.")));
+                UI.Indent("[Enter] to jump.") +
+                UI.Indent("[Escape] to cancel.")));
         }
-
+        public static byte[] GetBlankText()
+        {
+            return PadScreen(new byte[0]);
+        }
         public static void AdvanceHelp()
         {
             UI.currentHelpScreenNum = (UI.currentHelpScreenNum + 1) % UI.NUM_HELP_SCREENS;

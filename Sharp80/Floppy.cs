@@ -17,7 +17,8 @@ namespace Sharp80
         public const byte IDAM = 0xFE;
         public const byte DAM_NORMAL = 0xFB;
         public const byte DAM_DELETED = 0xF8;
-        public const byte FILLER_BYTE = 0x4E;
+        public const byte FILLER_BYTE_DD = 0x4E;
+        public const byte FILLER_BYTE_SD = 0xFF;
 
         public const ushort CRC_RESET = 0xFFFF;
         public const ushort CRC_RESET_A1_A1 = 0x968B;
@@ -148,18 +149,15 @@ namespace Sharp80
             return f ?? new DMK();
         }
 
-        public byte HighestSectorNumber(byte TrackNumber, bool SideOne)
+        public byte SectorCount(byte TrackNumber, bool SideOne)
         {
-            return SafeGetTrack(TrackNumber, SideOne).HighestSectorNumber;
-        }
-        public byte LowestSectorNumber(byte TrackNumber, bool SideOne)
-        {
-            return SafeGetTrack(TrackNumber, SideOne).LowestSectorNumber;
+            return SafeGetTrack(TrackNumber, SideOne).SectorCount;
         }
 
         public abstract byte[] Serialize(bool ForceDMK);
         public abstract void WriteTrackData(byte TrackNumber, bool SideOne, byte[] Data, bool[] DoubleDensity);
         public abstract byte[] GetSectorData(byte TrackNumber, bool SideOne, byte SectorNumber);
+        public abstract SectorDescriptor GetSectorDescriptor(byte TrackNumber, bool SideOne, byte SectorNumber);
         public abstract byte GetDAM(byte TrackNumber, bool SideOne, byte SectorNumber);
         public abstract byte[] GetTrackData(byte TrackNumber, bool SideOne);
         public abstract bool IsDoubleDensity(byte TrackNumber, bool SideOne, byte SectorNumber);

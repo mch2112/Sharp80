@@ -33,7 +33,7 @@ namespace Sharp80
             if (DebugOn && TraceOn)
             {
                 string m = DateTime.Now.ToString("hh:mm:ss.ffffff") + ": " + Message;
-                System.Diagnostics.Debug.WriteLine(m);
+                Debug.WriteLine(m);
                 
                 debugLog.Add(m);
 

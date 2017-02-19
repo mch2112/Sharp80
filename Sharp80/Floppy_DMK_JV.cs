@@ -76,7 +76,7 @@ namespace Sharp80
                     if (!sd.InUse)
                         sd.SectorSizeCode = (byte)(JV3_SECTOR_SIZE_MASK - sd.SectorSizeCode);
 
-                    sd.SectorSize = Floppy.GetDataLengthFromCode(sd.SectorSizeCode);
+                    sd.SectorSize = GetDataLengthFromCode(sd.SectorSizeCode);
                     sectors.Add(sd);
                 }
 
@@ -96,9 +96,18 @@ namespace Sharp80
                     q++;
                     if (sd.InUse)
                     {
-
                         sd.SectorData = new byte[sd.SectorSize];
-                        Array.Copy(DiskData, diskCursor, sd.SectorData, 0, sd.SectorSize);
+                        if (DiskData.Length - diskCursor < sd.SectorSize) // not enough data for sector
+                        {
+                            if (DiskData.Length > diskCursor) // try to get some data
+                                Array.Copy(DiskData, diskCursor, sd.SectorData, 0, DiskData.Length - diskCursor);
+                            diskCursor = DiskData.Length;
+                            Log.LogMessage(string.Format("JV3 File has invalid length, can't fill track {0} sector {1}", sd.TrackNumber, sd.SectorNumber));
+                        }
+                        else
+                        {
+                            Array.Copy(DiskData, diskCursor, sd.SectorData, 0, sd.SectorSize);
+                        }
                     }
                     diskCursor += sd.SectorSize;
                 }
