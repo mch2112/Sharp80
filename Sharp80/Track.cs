@@ -1,322 +1,458 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Sharp80
 {
-    internal sealed class Track
+    internal class Track
     {
-        private List<Sector> sectors;
+        public byte PhysicalTrackNum { get; }
+        public bool SideOne { get; }
+        public int LengthWithHeader { get; }
+        public bool Changed { get; private set; } = false;
 
-        public Track(int TrackLength, byte TrackNumber, bool SideOne)
+        private byte[] Data { get; }
+        private ushort[] header;
+        private bool? density = null;
+        private bool[] densityMap = null;
+
+        public const int MAX_LENGTH_WITH_HEADER = 0x2940;
+        public const int DEFAULT_LENGTH_WITH_HEADER = 0x1900;
+        private const int HEADER_LENGTH_BYTES = 0x80;
+        public const int DEFAULT_LENGTH_WITHOUT_HEADER = 0x1900 - HEADER_LENGTH_BYTES;
+        private const int HEADER_LENGTH = 0x40;
+        private const ushort DOUBLE_DENSITY_MASK = 0x8000;
+        private const ushort OFFSET_MASK = 0x3FFF;
+        private const ushort HEADER_MASK = DOUBLE_DENSITY_MASK | OFFSET_MASK;
+
+        public Track(byte PhysicalTrackNum, bool SideOne, byte[] Data, bool SingleDensitySingleByte)
         {
-            if (TrackLength > Floppy.MAX_TRACK_LENGTH)
-                throw new Exception("Track too long.");
-
-            this.TrackNumber = TrackNumber;
+            this.PhysicalTrackNum = PhysicalTrackNum;
             this.SideOne = SideOne;
-            Data = new byte[TrackLength];
-            DoubleDensityArray = new bool[0];
-            sectors = new List<Sector>();
-        }
 
-        public byte TrackNumber { get; private set; }
-        public bool SideOne { get; private set; }
-        public int Length
-        { get { return Data.Length; } }
-        public bool? DoubleDensity 
-        { get; private set; }
-        public byte SectorCount
-        { get { return (byte)sectors.Count; } }
-        public bool Formatted
-        {
-            get { return sectors.Count > 0; }
-        }
+            // TODO: Strip out unused bit 14
+            header = Data.Slice(0, HEADER_LENGTH_BYTES).ToUShortArray();
 
-        public void Deserialize(byte[] Data, bool[] DoubleDensityArray)
-        {
-            try
+            this.Data = Data.Slice(HEADER_LENGTH_BYTES);
+            SetDensity();
+
+            if (SingleDensitySingleByte && density != true)
             {
-                if (Data.Length > Floppy.MAX_TRACK_LENGTH)
-                    throw new Exception("Track too long.");
-
-                this.Data = Data;
-                this.DoubleDensityArray = DoubleDensityArray;
-                sectors.Clear();
-
-                int physicalSectorIndex = 0;
-                ushort crc = 0xFFFF;
-                for (uint i = 0; i < Data.Length; i++)
-                {
-                    bool doubleDensity = DoubleDensityArray[physicalSectorIndex];
-
-                    do
-                    {
-                        if (i >= Data.Length)
-                            return;
-                        if (!doubleDensity)
-                            crc = 0xFFFF;
-                    }
-                    while (FetchByte(Data, ref i, ref crc, true, doubleDensity) != Floppy.IDAM);
-
-                    uint idamLocation = i - 1;
-                    byte trackNumber = FetchByte(Data, ref i, ref crc, false, doubleDensity);
-                    bool sideOne = ((FetchByte(Data, ref i, ref crc, false, doubleDensity) & 0x01) == 0x01);
-                    byte sectorNumber = FetchByte(Data, ref i, ref crc, false, doubleDensity);
-                    uint sectorDataLength = Floppy.GetDataLengthFromCode((byte)(FetchByte(Data, ref i, ref crc, false, doubleDensity) & 0x03));
-
-                    ushort actualAddressCRC = crc;
-
-                    byte high = FetchByte(Data, ref i, ref crc, false, doubleDensity);
-                    byte low = FetchByte(Data, ref i, ref crc, false, doubleDensity);
-
-                    ushort recordedAddressCRC = Lib.CombineBytes(low, high);
-
-                    int limit = doubleDensity ? 43 : 30;
-
-                    do
-                    {
-                        if (!doubleDensity)
-                            crc = Floppy.CRC_RESET;
-                        else
-                            crc = Floppy.CRC_RESET_A1_A1_A1;
-                    }
-                    while (!IsDAM(FetchByte(Data, ref i, ref crc, true, doubleDensity)) && limit-- >= 0);
-
-                    if (limit < 0)
-                    {
-                        Log.LogMessage(string.Format("No DAM found: Track {0} Physical Sector {1}", this, physicalSectorIndex));
-                        continue;
-                    }
-                    byte dam = Data[i - 1];
-
-                    uint dataStart = i;
-                    uint dataEnd = i + sectorDataLength;
-
-                    for (int j = 0; j < sectorDataLength; j++)
-                        FetchByte(Data, ref i, ref crc, false, doubleDensity);
-
-                    ushort actualDataCRC = crc;
-                    high = FetchByte(Data, ref i, ref crc, false, doubleDensity);
-                    low = FetchByte(Data, ref i, ref crc, false, doubleDensity);
-                    ushort recordedDataCRC = Lib.CombineBytes(low, high);
-
-                    Sector s = new Sector(trackNumber,
-                                          sideOne,
-                                          sectorNumber,
-                                          idamLocation,
-                                          doubleDensity,
-                                          dam,
-                                          dataStart,
-                                          dataEnd,
-                                          (actualAddressCRC != recordedAddressCRC),
-                                          (actualDataCRC != recordedDataCRC));
-
-                    sectors.Add(s);
-
-                    if (s.AddressCRCError)
-                        Log.LogMessage(string.Format("Address CRC Error: {0} ", s));
-
-                    if (s.DataCRCError)
-                        Log.LogMessage(string.Format("Data CRC Error: {0} ", s));
-
-                    physicalSectorIndex++;
-
-                }
+                this.Data = this.Data.Double().Truncate(MAX_LENGTH_WITH_HEADER);
+                if (!density.HasValue)
+                    throw new NotImplementedException("TODO: Handle case where singledensitysinglebyte contains double density data.");
             }
-            finally
+
+            LengthWithHeader = Data.Length;
+            densityMap = null;
+        }
+
+        private void SetDensity()
+        {
+            if (header.All(h => h >= DOUBLE_DENSITY_MASK || h == 0))
+                density = true;
+            else if (header.All(h => h < DOUBLE_DENSITY_MASK))
+                density = false;
+            else
+                density = null;
+        }
+
+        public Track(byte PhysicalTrackNum, bool SideOne, int Length) : this(PhysicalTrackNum, SideOne, new byte[Length], false)
+        {
+
+        }
+        public static byte[] ToTrackBytes(IEnumerable<SectorDescriptor> Sectors, int Length = 0)
+        {
+            byte[] ret = new byte[MAX_LENGTH_WITH_HEADER * 2]; // big
+
+            int i = 0;
+            ret.SetValues(ref i, HEADER_LENGTH_BYTES, (byte)0x00);
+
+            bool ddAll = Sectors.All(s => s.DoubleDensity);
+
+            int headerCursor = 0;
+
+            if (ddAll)
             {
-                if (sectors.Count > 0)
+                ret.SetValues(ref i, 80, (byte)0x4E);
+                ret.SetValues(ref i, 12, (byte)0x00);
+                ret.SetValues(ref i,  3, (byte)0xF6);
+                ret.SetValues(ref i,  1, (byte)0xFC);
+                ret.SetValues(ref i, 50, (byte)0x4E);
+            }
+            else
+            {
+                // times two for doubled bytes
+                ret.SetValues(ref i, 40 * 2, (byte)0xFF);
+                ret.SetValues(ref i,  6 * 2, (byte)0x00);
+                ret.SetValues(ref i,  1 * 2, (byte)0xFC);
+                ret.SetValues(ref i, 26 * 2, (byte)0xFF);
+            }
+            byte sideNum;
+            byte dataLengthCode;
+            byte b;
+            foreach (var s in Sectors)
+            {
+                sideNum = (byte)(s.SideOne ? 1 : 0);
+                dataLengthCode = Floppy.GetDataLengthCode(s.SectorData.Length);
+                ushort crc;
+                if (s.DoubleDensity)
                 {
-                    if (sectors.All(s => s.DoubleDensity))
-                        this.DoubleDensity = true;
-                    else if (sectors.All(s => !s.DoubleDensity))
-                        this.DoubleDensity = false;
-                    else
-                        this.DoubleDensity = null;
+                    crc = Floppy.CRC_RESET_A1_A1_A1_FE;
 
-                    uint lastByte = sectors.Max(s => s.DataEndIndex);
-                    lastByte += 2   // CRC
-                              + 54  // Typical Sector End Filler
-                             + 598; // typical Track end filler
+                    ret.SetValues(ref i, 12, (byte)0x00);
+                    ret.SetValues(ref i, 3, (byte)0xA1);
 
-                    int i;
-                    byte filler = DoubleDensity == true ? Floppy.FILLER_BYTE_DD : Floppy.FILLER_BYTE_SD;
-                    for (i = Data.Length - 1; i > lastByte; i--)
-                        if (this.Data[i] != filler)
-                            break;
-
-                    if (Data.Length > i + 100)
-                    {
-                        var temp = Data;
-                        Data = new byte[i];
-                        Array.Copy(temp, Data, i);
-                    }
+                    Lib.SplitBytes((ushort)(i + DOUBLE_DENSITY_MASK), out ret[headerCursor], out ret[headerCursor + 1]);
                 }
                 else
                 {
-                    this.DoubleDensity = null;
+                    crc = Floppy.CRC_RESET;
+
+                    ret.SetValues(ref i, 6 * 2, (byte)0x00);
+
+                    Lib.SplitBytes((ushort)i, out ret[headerCursor], out ret[headerCursor + 1]);
+
                 }
-                System.Diagnostics.Debug.WriteLine(string.Format("Loaded Track: {0} Sector Order: ({1})", this.TrackNumber, string.Join(",", this.sectors.Select(s => s.SectorNumber.ToString()))));
+                ret.SetValues(ref i, !s.DoubleDensity, Floppy.IDAM, s.TrackNumber, sideNum, s.SectorNumber, dataLengthCode);
+
+                crc = Lib.Crc(crc, s.TrackNumber, sideNum, s.SectorNumber, dataLengthCode);
+                Lib.SplitBytes(crc, out byte crcLow, out byte crcHigh);
+
+                if (s.DoubleDensity)
+                {
+                    ret.SetValues(ref i, false, crcHigh, crcLow);
+                    ret.SetValues(ref i, 22, (byte)0x4E);
+                    ret.SetValues(ref i, 12, (byte)0x00);
+                    ret.SetValues(ref i, false, (byte)0xA1, (byte)0xA1, (byte)0xA1, s.DAM);
+
+                    crc = Lib.Crc(Floppy.CRC_RESET_A1_A1_A1, 0xFB);
+                    for (int j = 0; j < s.SectorData.Length; j++)
+                    {
+                        b = s.SectorData[j];
+                        ret[i++] = b;
+                        crc = Lib.Crc(crc, b);
+                    }
+
+                    if (s.CrcError)
+                        crc = (ushort)~crc; // trash the crc
+
+                    Lib.SplitBytes(crc, out crcLow, out crcHigh);
+
+                    ret.SetValues(ref i, false, crcHigh, crcLow);
+
+                    ret.SetValues(ref i, 54, (byte)0x4E);
+                }
+                else // single density
+                {
+                    ret.SetValues(ref i, true, crcHigh, crcLow);
+                    ret.SetValues(ref i, 11 * 2, (byte)0xFF);
+                    ret.SetValues(ref i, 6 * 2, (byte)0x00);
+                    ret.SetValues(ref i, 1 * 2, s.DAM);
+
+                    crc = Floppy.CRC_RESET;
+
+                    for (int j = 0; j < s.SectorData.Length; j++)
+                    {
+                        b = s.SectorData[j];
+                        ret[i++] = b;
+                        ret[i++] = b;
+                        crc = Lib.Crc(crc, b);
+                    }
+
+                    if (s.CrcError)
+                        crc = (ushort)~crc; // trash the crc
+
+                    Lib.SplitBytes(crc, out crcLow, out crcHigh);
+                    ret.SetValues(ref i,  1 * 2, crcHigh);
+                    ret.SetValues(ref i,  1 * 2, crcLow);
+                    ret.SetValues(ref i, 27 * 2, (byte)0xFF);
+                }
+            }
+            if (ddAll)
+                for (; i < MAX_LENGTH_WITH_HEADER; i++)
+                    ret[i] = 0x4E;
+            else
+                for (; i < MAX_LENGTH_WITH_HEADER; i++)
+                    ret[i] = 0xFF;
+
+            i -= 500;
+
+            if (Length > 0)
+            {
+                ret = ret.Slice(0, Length);
+            }
+            else
+            {
+                if (i > DEFAULT_LENGTH_WITH_HEADER)
+                    ret = ret.Slice(0, MAX_LENGTH_WITH_HEADER);
+                else if (i > 0x14E0)
+                    ret = ret.Slice(0, DEFAULT_LENGTH_WITH_HEADER);
+                else if (i > 0x0CC0)
+                    ret = ret.Slice(0, 0x14E0);
+                else
+                    ret = ret.Slice(0, 0x0CC0);
+            }
+            return ret;
+        }
+        private ushort[] Header
+        {
+            get
+            {
+                if (header == null)
+                    RebuildHeader();
+                return header;
             }
         }
-        public byte[] GetSectorData(byte SectorNumber)
+        private bool GetDensity(int Index)
         {
-            Sector s = sectors.FirstOrDefault(ss => ss.SectorNumber == SectorNumber);
+            if (density.HasValue)
+                return density.Value;
 
-            if (s == null)
-                return new byte[0];
+            if (densityMap == null)
+                RebuildDensity();
 
-            byte[] data = new byte[s.DataEndIndex - s.DataStartIndex];
-
-            Array.Copy(this.Data, s.DataStartIndex, data, 0, data.Length);
-
-            return data;
+            return densityMap[Index];
         }
-        public byte GetDAM(byte SectorNumber)
+        private void SetDensity(int Index, bool Value)
         {
-            Sector s = sectors.FirstOrDefault(ss => ss.SectorNumber == SectorNumber);
-
-            if (s == null)
+            if (density != Value)
+            {
+                if (densityMap == null)
+                    RebuildDensity();
+                densityMap[Index] = Value;
+            }
+        }
+        public int DataLength
+        {
+            get { return Data.Length; }
+        }
+        public byte[] Deserialize()
+        {
+            return Header.ToByteArray().Concat(Data);
+        }
+        public byte ReadByte(int TrackIndex, bool? DoubleDensity)
+        {
+            if (DoubleDensity.HasValue && DoubleDensity != GetDensity(TrackIndex))
                 return 0;
-            else
-                return s.DAM;
-        }
-        internal SectorDescriptor GetSector(byte SectorIndex)
-        {
-            if (sectors.Count == 0)
-                return null;
-            else if (SectorIndex < 0)
-                SectorIndex = 0;
-            else if (SectorIndex >= sectors.Count)
-                SectorIndex = (byte)(sectors.Count - 1);
 
-            return sectors.OrderBy(s => s.SectorNumber).Skip(SectorIndex).First()?.ToSectorDescriptor(Data);
+            var b = Data[TrackIndex];
+#if DEBUG
+            if (DoubleDensity.HasValue && !DoubleDensity.Value)
+                if (Data[TrackIndex + 1] != b &&
+                    Data[Math.Max(0, TrackIndex - 1)] != b)
+                    throw new Exception("Density Inconsistency");
+#endif
+            return b;
         }
-        public bool IsDoubleDensity(byte SectorNumber)
+        public void WriteByte(int TrackIndex, bool DoubleDensity, byte Value)
         {
-            Sector s = sectors.FirstOrDefault(ss => ss.SectorNumber == SectorNumber);
+            header = null;
+            Changed = true;
 
-            if (s == null)
-                return false;
-            else
-                return s.DoubleDensity;
-        }
-        public bool HasIDAMAt(uint Index, out bool DoubleDensity)
-        {
-            Sector s = sectors.FirstOrDefault(ss => ss.IdamLocation == Index);
-
-            if (s == null)
+            if (DoubleDensity)
             {
-                DoubleDensity = false;
-                return false;
+                Data[TrackIndex] = Value;
+                if (density != true)
+                    SetDensity(TrackIndex, true);
             }
             else
             {
-                DoubleDensity = s.DoubleDensity;
-                return true;
+                TrackIndex &= 0xFFFFFFE;
+                Data[TrackIndex] = Value;
+                Data[TrackIndex + 1] = Value;
+                if (density != false)
+                {
+                    SetDensity(TrackIndex, false);
+                    SetDensity(TrackIndex + 1, false);
+                }
             }
         }
-        
-        public byte[] Data
-        { get; private set; }
-        public bool[] DoubleDensityArray
-        { get; private set; }
+        public bool HasIdamAt(int TrackIndex, bool DoubleDensity)
+        {
+            if (Header == null)
+                RebuildHeader();
 
+            ushort target = (ushort)(TrackIndex + HEADER_LENGTH_BYTES + (DoubleDensity ? DOUBLE_DENSITY_MASK : 0));
+
+            return Header.Any(us => (us & HEADER_MASK) == target);
+        }
+        public SectorDescriptor GetSectorDescriptor(byte SectorIndex)
+        {
+            if (SectorIndex > HEADER_LENGTH || Header[SectorIndex] == 0)
+                return SectorDescriptor.Empty;
+
+            bool density = Header[SectorIndex] >= DOUBLE_DENSITY_MASK;
+            int offset = (Header[SectorIndex] & OFFSET_MASK) - HEADER_LENGTH_BYTES;
+            int byteMultiple = density ? 1 : 2;
+            if (Data[offset] != Floppy.IDAM)
+            {
+                Log.LogToDebug(string.Format("Missing IDAM Track {0} Side {1} SectorIndex {2}.", this.PhysicalTrackNum, this.SideOne ? 1 : 0, SectorIndex));
+                return SectorDescriptor.Empty;
+            }
+            
+            byte dam = 0x00;
+            int dataStart = 0x00;
+            bool deleted = false;
+            for(int i = offset + 6 * byteMultiple; i < offset + (6 + (density ? 43 : 30)) * byteMultiple; i += byteMultiple)
+            {
+                if (FloppyController.IsDAM(Data[i], out deleted))
+                {
+                    dam = Data[i];
+                    dataStart = i + byteMultiple;
+                    break;
+                }
+            }
+
+            var sizeCode = Data[offset + 4 * byteMultiple];
+            var dataLength = Floppy.GetDataLengthFromCode(sizeCode);
+
+            var sd = new SectorDescriptor()
+            {
+                TrackNumber = Data[offset + 1 * byteMultiple],
+                SideOne = Data[offset + 2 * byteMultiple] > 0,
+                SectorNumber = Data[offset + 3 * byteMultiple],
+                SectorSizeCode = sizeCode,
+                SectorSize = dataLength,
+                DoubleDensity = density,
+                SectorData = new byte[dataLength]
+            };
+
+            if (dam == 0x00)
+            {
+                sd.CrcError = true;
+                sd.InUse = false;
+            }
+            else
+            {
+                sd.DAM = dam;
+                sd.InUse = !deleted;
+                ushort actualCrc = Lib.Crc(sd.DoubleDensity ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET, sd.DAM);
+                for (int i = 0; i < dataLength; i++)
+                {
+                    sd.SectorData[i] = Data[dataStart + i * byteMultiple];
+                    actualCrc = Lib.Crc(actualCrc, sd.SectorData[i]);
+                }
+                ushort recordedCrc = Lib.CombineBytes(Data[dataStart + (dataLength + 1) * byteMultiple], Data[dataStart + dataLength * byteMultiple]);
+                sd.CrcError = actualCrc != recordedCrc;
+            }
+            return sd;
+        }
         public List<SectorDescriptor> ToSectorDescriptors()
         {
-            return sectors.Select(s => s.ToSectorDescriptor(this.Data)).ToList();
+            throw new NotImplementedException("Track.ToSectorDescriptors()");
         }
-        private static bool IsDAM(byte Byte)
+        public byte NumSectors
         {
-            return (Byte >= 0xF8) && (Byte <= 0xFB);
+            get { return (byte)Header.Count(h => h > 0); }
         }
-        private static byte FetchByte(byte[] Data, ref uint i, ref ushort crc, bool AllowResetCRC, bool DoubleDensity)
+        public bool Formatted
         {
-            byte b = 0;
-            if (i < Data.Length)
+            get { return NumSectors > 0; }
+        }
+        private byte FetchByte(ref int TrackIndex, ref ushort Crc, bool AllowResetCRC, bool DoubleDensityMode)
+        {
+            if (GetDensity(TrackIndex) != DoubleDensityMode)
             {
-                b = Data[i];
-                crc = FloppyController.UpdateCRC(crc, b, AllowResetCRC, DoubleDensity);
+                throw new NotImplementedException("TODO: Handle case where reading from wrong density.");
             }
-            i++;
+            byte b = 0;
+            if (TrackIndex < Data.Length)
+            {
+                b = Data[TrackIndex];
+                Crc = FloppyController.UpdateCRC(Crc, b, AllowResetCRC, DoubleDensityMode);
+            }
+            TrackIndex++;
+            if (!DoubleDensityMode)
+                TrackIndex++;
             return b;
+        }
+        private void RebuildHeader()
+        {
+            var header = new ushort[HEADER_LENGTH];
+
+            int headerCursor = 0;
+
+            int end = Data.Length - 10;
+            int i = 4;
+            while (i < end)
+            {
+                bool density = GetDensity(i);
+
+                if (Data[i] == Floppy.IDAM)
+                {
+                    if (density)
+                    {
+                        if (Data[i - 1] != 0xA1 || Data[i - 2] != 0xA1 || Data[i - 3] != 0xA1)
+                        {
+                            i++;
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        if (Data[i - 2] != 0x00)
+                        {
+                            i += 2;
+                            continue;
+                        }
+                    }
+
+                    // commit without checking address crc, since could be intensional error
+                    header[headerCursor++] = (ushort)(i + HEADER_LENGTH_BYTES + (density ? DOUBLE_DENSITY_MASK : 0));
+
+                    // now skip forward past the sector contents
+                    // advance to length
+                    if (density) i += 4; else i += 8;
+                    i += Floppy.GetDataLengthFromCode(Data[i]) * (density ? 1 : 2);
+                    i += 20; // filler minimum
+                }
+                else
+                {
+                    if (density)
+                        i++;
+                    else
+                        i += 2;
+                }
+            }
+            this.header = header;
+        }
+        public void RebuildDensity()
+        {
+            SetDensity();
+            
+            if (density.HasValue)
+            {
+                densityMap = null;
+            }
+            else
+            {
+                densityMap = new bool[Data.Length];
+
+                int idamOffset = 0x10;
+                bool d = Header[0] >= DOUBLE_DENSITY_MASK;
+                int i = 0;
+                for (int j = 1; j < Header.Length && Header[j] > 0; j++)
+                {
+                    int end = (Header[j] & OFFSET_MASK) - HEADER_LENGTH_BYTES - idamOffset;
+                    for (; i < end; i++)
+                        densityMap[i] = d;
+                    d = Header[j] >= DOUBLE_DENSITY_MASK;
+                }
+                for (; i < densityMap.Length; i++)
+                    densityMap[i] = d;
+            }
+        }
+        public bool DoubleDensity
+        {
+            get { return density != false; }
         }
         public override string ToString()
         {
-            return string.Format("Track {0} Side {1}", this.TrackNumber, this.SideOne ? 1 : 0);
-        }
-        private class Sector
-        {
-            public Sector(byte TrackNumber, bool SideOne, byte SectorNumber, uint IdamLocation, bool DoubleDensity, byte DAM, uint DataStartIndex, uint DataEndIndex, bool AddressCRCError, bool DataCRCError)
-            {
-                this.TrackNumber = TrackNumber;
-                this.SideOne = SideOne;
-                this.SectorNumber = SectorNumber;
-                this.IdamLocation = IdamLocation;
-                this.DoubleDensity = DoubleDensity;
-                this.DAM = DAM;
-                this.DataStartIndex = DataStartIndex;
-                this.DataEndIndex = DataEndIndex;
-                this.AddressCRCError = AddressCRCError;
-                this.DataCRCError = DataCRCError;
-            }
-
-            public SectorDescriptor ToSectorDescriptor(byte[] TrackData)
-            {
-                SectorDescriptor sd = new SectorDescriptor(this.TrackNumber, this.SectorNumber);
-                sd.SideOne = this.SideOne;
-                sd.CrcError = this.AddressCRCError || this.DataCRCError;
-                sd.DAM = this.DAM;
-                sd.DoubleDensity = this.DoubleDensity;
-                sd.InUse = true;
-                sd.NonIbm = false;
-                sd.SectorSize = (ushort)(this.DataEndIndex - this.DataStartIndex);
-                sd.SectorSizeCode = Floppy.GetDataLengthCode(sd.SectorSize);
-                sd.SectorData = new byte[sd.SectorSize];
-                Array.Copy(TrackData, this.DataStartIndex, sd.SectorData, 0, sd.SectorSize);
-
-                return sd;
-            }
-
-            public byte TrackNumber { get; private set; }
-            public bool SideOne { get; private set; }
-            public byte SectorNumber { get; private set; }
-            public bool DoubleDensity { get; private set; }
-            public byte DAM { get; private set; }
-            public uint IdamLocation { get; private set; }
-            public uint DataStartIndex { get; private set; }
-            public uint DataEndIndex { get; private set; }
-            public bool AddressCRCError { get; private set; }
-            public bool DataCRCError { get; private set; }
-
-            public override string ToString()
-            {
-                return string.Format("Side: {0} Trk: {1} Sec: {2} {3} CRC: {4}",
-                                     SideOne ? 1 : 0,
-                                     TrackNumber,
-                                     SectorNumber,
-                                     DoubleDensity ? "DDen" : "SDen",
-                                     (AddressCRCError || DataCRCError) ? "Bad" : "OK");
-            }
-
-            public bool Compare(Sector other, byte[] ThisData, byte[] OtherData)
-            {
-                bool same = other.TrackNumber == this.TrackNumber &&
-                         (other.SideOne == this.SideOne) &&
-                          other.SectorNumber == this.SectorNumber;
-
-                if (!same)
-                    return false;
-
-                uint j = other.DataStartIndex;
-                for (uint i = this.DataStartIndex; i < this.DataEndIndex; i++)
-                    if (ThisData[i] != OtherData[j])
-                        return false;
-
-                return true;
-            }
+            return string.Format("Track {0} Side {1}", this.PhysicalTrackNum, SideOne ? 1 : 0);
         }
     }
 }

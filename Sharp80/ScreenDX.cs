@@ -363,8 +363,9 @@ namespace Sharp80
         {
             invalid = true;
         }
-        public void SendChar(SharpDX.DirectInput.Key Key, bool Shift)
+        public bool SendChar(SharpDX.DirectInput.Key Key, bool Shift)
         {
+            bool processed = true;
             switch (ViewMode)
             {
                 case ViewMode.DiskZapView:
@@ -408,17 +409,17 @@ namespace Sharp80
                             break;
                         case SharpDX.DirectInput.Key.Tab:
                             for (int i = diskZapFloppyNum + 1; i < diskZapFloppyNum + 4; i++)
-                                if (!Computer.FloppyController.GetFloppy(i % 4).IsEmpty)
+                                if (Computer.FloppyController.GetFloppy(i % 4) != null)
                                 {
                                     DiskZapFloppyNumber = (byte)(i % 4);
                                     break;
                                 }
                             break;
                         case SharpDX.DirectInput.Key.R:
-                            this.Invalidate();
+                            Invalidate();
                             break;
                         case SharpDX.DirectInput.Key.Escape:
-                            this.ViewMode = ViewMode.DiskView;
+                            ViewMode = ViewMode.DiskView;
                             diskViewFloppyNum = diskZapFloppyNum;
                             break;
                     }
@@ -443,10 +444,16 @@ namespace Sharp80
                             Invalidate();
                             break;
                         case SharpDX.DirectInput.Key.R:
-                            this.Invalidate();
+                            Invalidate();
                             break;
                         case SharpDX.DirectInput.Key.Escape:
-                            this.ViewMode = ViewMode.NormalView;
+                            ViewMode = ViewMode.NormalView;
+                            break;
+                        case SharpDX.DirectInput.Key.Space:
+                            Invalidate();
+                            break;
+                        default:
+                            processed = false;
                             break;
                     }
                     break;
@@ -577,6 +584,7 @@ namespace Sharp80
                     }
                     break;
             }
+            return processed;
         }
         
         public void Reset()
@@ -979,7 +987,7 @@ namespace Sharp80
                 var sd = f?.GetSectorDescriptor(diskZapTrackNum, diskZapSideOne, diskZapSectorIndex);
                 byte[] text;
 
-                text = UI.GetDiskZapText(DiskZapFloppyNumber, diskZapTrackNum, diskZapSideOne, f.NumSides, sd, f.IsEmpty);
+                text = UI.GetDiskZapText(DiskZapFloppyNumber, diskZapTrackNum, diskZapSideOne, f.DoubleSided, sd, f == null);
 
                 for (int i = 0; i < NUM_SCREEN_CHARS; i++)
                     PaintCell(i, text[i], cellsNormal, charGenNormal);
@@ -990,7 +998,7 @@ namespace Sharp80
         {
             var d = Computer.FloppyController.GetFloppy(diskZapFloppyNum);
 
-            if (d.IsEmpty)
+            if (d == null)
             {
                 diskZapSideOne = false;
                 diskZapTrackNum = 0;
@@ -998,7 +1006,7 @@ namespace Sharp80
             }
             else
             {
-                if (d.NumSides < 2)
+                if (!d.DoubleSided)
                     diskZapSideOne = false;
 
                 if (diskZapTrackNum == 0xFF)
@@ -1008,7 +1016,6 @@ namespace Sharp80
                     diskZapTrackNum = (byte)(Math.Max(0, d.NumTracks - 1));
 
                 // Allow for sectors starting at zero or one
-
                 if (diskZapSectorIndex >= d.SectorCount(diskZapTrackNum, diskZapSideOne))
                     diskZapSectorIndex = (byte)(d.SectorCount(diskZapTrackNum, diskZapSideOne) - 1);
                 else if (diskZapSectorIndex < 0)

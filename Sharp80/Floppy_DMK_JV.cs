@@ -21,13 +21,20 @@ namespace Sharp80
         public static Floppy FromJV3(byte[] DiskData)
         {
             List<SectorDescriptor> sectors = new List<SectorDescriptor>();
+
             int diskCursor = 0;
             bool? writeProt = null;
             while (diskCursor < DiskData.Length)
             {
+                // Read sector Headers
                 for (int i = diskCursor; i < diskCursor + JV3_HEADER_SIZE; i += 3)
                 {
-                    var sd = new SectorDescriptor(TrackNumber: DiskData[i], SectorNumber: DiskData[i + 1]);
+                    var sd = new SectorDescriptor()
+                    {
+                        TrackNumber = DiskData[i],
+                        SectorNumber = DiskData[i + 1]
+                    };
+
                     byte flags = DiskData[i + 2];
 
                     sd.InUse = sd.TrackNumber != JV3_SECTOR_FREE || sd.SectorNumber != JV3_SECTOR_FREE || ((flags & SECTOR_FREE_FLAGS) != SECTOR_FREE_FLAGS);
@@ -57,7 +64,7 @@ namespace Sharp80
 
                     sd.SideOne = (flags & JV3_SIDE_ONE) == JV3_SIDE_ONE;
                     sd.CrcError = (flags & JV3_CRC_ERROR) == JV3_CRC_ERROR;
-                    sd.NonIbm = (flags & JV3_NON_IBM) == JV3_NON_IBM;
+                    //sd.NonIbm = (flags & JV3_NON_IBM) == JV3_NON_IBM;
 
                     // Sector Size Codes
                     // Size    IBM size   SECTOR_SIZE field SECTOR_SIZE field
@@ -73,6 +80,7 @@ namespace Sharp80
                         case 0x02: sd.SectorSizeCode = 0x03; break;
                         case 0x03: sd.SectorSizeCode = 0x02; break;
                     }
+
                     if (!sd.InUse)
                         sd.SectorSizeCode = (byte)(JV3_SECTOR_SIZE_MASK - sd.SectorSizeCode);
 
@@ -87,26 +95,24 @@ namespace Sharp80
                 else
                     writeProt = (DiskData[diskCursor++] != 0xFF);
 
-                while (!sectors.Last().InUse)
-                    sectors.RemoveAt(sectors.IndexOf(sectors.Last()));
-
                 int q = 0;
                 foreach (var sd in sectors)
                 {
                     q++;
                     if (sd.InUse)
                     {
-                        sd.SectorData = new byte[sd.SectorSize];
                         if (DiskData.Length - diskCursor < sd.SectorSize) // not enough data for sector
                         {
                             if (DiskData.Length > diskCursor) // try to get some data
-                                Array.Copy(DiskData, diskCursor, sd.SectorData, 0, DiskData.Length - diskCursor);
+                                sd.SectorData = DiskData.Slice(diskCursor, DiskData.Length);
+                            else
+                                sd.SectorData = new byte[sd.SectorSize];
                             diskCursor = DiskData.Length;
                             Log.LogMessage(string.Format("JV3 File has invalid length, can't fill track {0} sector {1}", sd.TrackNumber, sd.SectorNumber));
                         }
                         else
                         {
-                            Array.Copy(DiskData, diskCursor, sd.SectorData, 0, sd.SectorSize);
+                            sd.SectorData = DiskData.Slice(diskCursor, diskCursor + sd.SectorSize);
                         }
                     }
                     diskCursor += sd.SectorSize;
@@ -119,10 +125,9 @@ namespace Sharp80
         }
         private byte[] SerializeToJV3()
         {
-            var sectors = tracksSide0.Concat(tracksSide1)
-                                     .SelectMany(t => t.ToSectorDescriptors())
-                                     .OrderBy(s => s.TrackNumber)
-                                     .ToList();
+            var sectors = tracks.SelectMany(t => t.ToSectorDescriptors())
+                                .OrderBy(s => s.TrackNumber)
+                                .ToList();
 
             byte[] temp = new byte[JV3_HEADER_SIZE * (int)(Math.Ceiling((double)sectors.Count / (double)JV3_SECTORS_PER_HEADER)) + 2 + this.NumTracks * MAX_TRACK_LENGTH];
 
@@ -157,10 +162,10 @@ namespace Sharp80
                                     temp[cursor] |= (ss.DoubleDensity ? (byte)0x20 : (byte)0x60);
                                     break;
                                 case 0xF9:
-                                    temp[cursor] |= (byte)0x40;
+                                    temp[cursor] |= 0x40;
                                     break;
                                 case 0xFA:
-                                    temp[cursor] |= (byte)0x20;
+                                    temp[cursor] |= 0x20;
                                     break;
                                 case DAM_NORMAL: // 0x00
                                     break;
@@ -202,13 +207,15 @@ namespace Sharp80
             for (byte i = 0; i < numTracks; i++)
                 for (byte j = 0; j < SECTORS_PER_TRACK; j++)
                 {
-                    var sd = new SectorDescriptor(i, j)
+                    var sd = new SectorDescriptor()
                     {
+                        TrackNumber = i,
+                        SectorNumber = j,
                         CrcError = false,
                         DAM = (i == 17) ? DAM_DELETED : DAM_NORMAL,
                         DoubleDensity = false,
                         InUse = true,
-                        NonIbm = false,
+                        //NonIbm = false,
                         SectorSize = SECTOR_LENGTH,
                         SectorSizeCode = GetDataLengthCode(SECTOR_LENGTH),
                         SideOne = false,
@@ -227,7 +234,7 @@ namespace Sharp80
             const int SECTORS_PER_TRACK = 10;
             const int SECTOR_SIZE = 0x100;
 
-            var tracks = tracksSide0.Where(t => !t.SideOne)
+            var sectors = tracks.Where(t => !t.SideOne)
                                     .SelectMany(t => t.ToSectorDescriptors())
                                     .Where(s => s.SectorNumber >= 0 && s.SectorNumber < SECTORS_PER_TRACK && s.SectorSize == SECTOR_SIZE)
                                     .OrderBy(s => s.SectorNumber)
@@ -236,9 +243,9 @@ namespace Sharp80
             byte[] data = new byte[tracks.Count() * SECTORS_PER_TRACK * SECTOR_SIZE];
 
             int cursor = 0;
-            foreach (var t in tracks)
+            foreach (var s in sectors)
             {
-                Array.Copy(t.SectorData, 0, data, cursor, SECTOR_SIZE);
+                Array.Copy(s.SectorData, 0, data, cursor, SECTOR_SIZE);
                 cursor += SECTOR_SIZE;
             }
             return data;

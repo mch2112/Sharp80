@@ -31,10 +31,10 @@ namespace Sharp80
             rtcIntLatch = new Trigger(null,
                                       null,
                                       TriggerLock: true,
-                                      CanFireOnEnable: true);
+                                      CanLatchBeforeEnabled: true);
 
-            fdcNmiLatch         = new Trigger(null, null, TriggerLock: false, CanFireOnEnable: true);
-            fdcMotorOffNmiLatch = new Trigger(null, null, TriggerLock: false, CanFireOnEnable: true);
+            fdcNmiLatch         = new Trigger(null, null, TriggerLock: false, CanLatchBeforeEnabled: true);
+            fdcMotorOffNmiLatch = new Trigger(null, null, TriggerLock: false, CanLatchBeforeEnabled: true);
 
             resetButtonLatch = new Trigger(
                 () => { computer.Clock.RegisterPulseReq(
@@ -43,7 +43,7 @@ namespace Sharp80
                     }, false)); },
                                               null,
                                               TriggerLock: true,
-                                              CanFireOnEnable: false)
+                                              CanLatchBeforeEnabled: false)
                                    { Enabled = true };
 
             ioIntLatch = new Trigger(null, null);

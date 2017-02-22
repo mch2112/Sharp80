@@ -102,35 +102,33 @@ namespace Sharp80
             var d = fc.GetFloppy(DiskNum);
 
             string line1;
-            if (d.IsEmpty)
+            if (d == null)
                 line1 = string.Format("Drive #{0}: Unloaded", DiskNum);
             else
-                line1 = string.Format("Drive #{0}: {1} | {2} | {3} Tks | {4} Sec{5}{6}",
+                line1 = string.Format("Drive #{0}: {1} | {2} Tks | {3}{4}",
                                       DiskNum,
-                                      ((d.NumSides > 1) ? "Dbl Side" : "Sgl Side"),
-                                      (d.DoubleDensity.HasValue ? (d.DoubleDensity.Value ? "Dbl Den" : "Sgl Den") : "Mix Den"),
+                                      ((d.DoubleSided) ? "Dbl Side" : "Sgl Side"),
                                       d.NumTracks,
-                                      d.SectorsPerTrack,
                                       d.WriteProtected ? " | WP" : string.Empty,
                                       d.Formatted ? string.Empty : " | UNFORMATTED");
 
             string line2;
-            if (d.IsEmpty)
+            if (d == null)
                 line2 = String.Empty;
             else
                 line2 = FitFilePath(d.FilePath);
 
-            return UI.Format(line1) + UI.Format(line2);
+            return Format(line1) + Format(line2);
         }
         public static byte[] GetDiskZapText(byte DriveNum,
                                             byte TrackNum,
                                             bool SideOne,
-                                            byte NumSides,
+                                            bool DoubleSided,
                                             SectorDescriptor sd,
                                             bool IsEmpty
                                             )
         {
-            int numBytes = Math.Min(0x100, sd?.SectorData.Length ?? 0);
+            int numBytes = Math.Min(0x100, sd?.SectorData?.Length ?? 0);
 
             byte[] cells = new byte[ScreenDX.NUM_SCREEN_CHARS];
 
@@ -140,7 +138,7 @@ namespace Sharp80
             WriteToByteArray(cells, 0x0C0, "Trk");
             WriteToByteArrayHex(cells, 0x100, TrackNum);
             
-            if (NumSides > 1)
+            if (DoubleSided)
             {
                 WriteToByteArray(cells, 0x280, "Side");
                 cells[0x300] = (byte)(SideOne ? '1' : '0');
@@ -178,7 +176,7 @@ namespace Sharp80
             }
             else if (sd == null || numBytes == 0)
             {
-                WriteToByteArray(cells, 0x006, "Sector {0:X2} is empty.");
+                WriteToByteArray(cells, 0x006, "Sector is empty.");
             }
             else
             {
@@ -264,13 +262,14 @@ namespace Sharp80
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Floppy Controller Status") +
                 Format() +
+                Indent(string.Format("Drive Num:      {0}", Status.DiskNum)) +
                 Indent(string.Format("OpStatus:       {0}", Status.OpStatus)) +
                 Indent(string.Format("State:          {0} {1}", Status.Busy ? "BUSY" : "    ", Status.DRQ ? "DRQ" : "   ")) +
                 Indent("Command Status: " + Status.CommandStatus) +
                 Format() +
                 Indent(string.Format("Track / Sector Register:   {0:X2}  / {1:X2}", Status.TrackRegister, Status.SectorRegister)) +
                 Indent(string.Format("Command / Data Register:   {0:X2}  / {1:X2}", Status.CommandRegister, Status.DataRegister)) +
-                Indent(string.Format("Density:                   {0}", Status.DoubleDensity ? "Double" : "Single")) +
+                Indent(string.Format("Density Mode:                   {0}", Status.DoubleDensity ? "Double" : "Single")) +
                 Format() +
                 Indent(string.Format("Physical Disk Data: Dsk {0} Trk {1:X2} {2} ", Status.DiskNum, Status.PhysicalTrackNum, Status.DiskAngle)) +
                 Indent(string.Format("Track Data Index: {0:X4} [{1:X2}]", Status.TrackDataIndex, Status.ByteAtTrackDataIndex)) +

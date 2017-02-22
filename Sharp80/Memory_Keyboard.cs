@@ -93,7 +93,7 @@ namespace Sharp80
             AddKey(VirtualKey.LEFTSHIFT, 0x3880, 0x01);
             AddKey(VirtualKey.RIGHTSHIFT, 0x3880, 0x02);
 
-            AddComplexMapping(Key.D2, VirtualKey.D2, false, VirtualKey.AT, true);
+            AddComplexMapping(Key.D2, VirtualKey.D2, false, VirtualKey.AT, false);
             AddComplexMapping(Key.D6, VirtualKey.D6, false, VirtualKey.NONE, false);
             AddComplexMapping(Key.D7, VirtualKey.D7, false, VirtualKey.D6, true);
             AddComplexMapping(Key.D8, VirtualKey.D8, false, VirtualKey.COLON, true);

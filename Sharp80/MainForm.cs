@@ -159,7 +159,7 @@ namespace Sharp80
 
                 var poll = keyboard.Poll();
 
-                if (this.IsActive)
+                if (IsActive)
                 {
                     if (poll.Length > 0)
                     {
@@ -202,7 +202,6 @@ namespace Sharp80
             {
                 repeatKey = SharpDX.DirectInput.Key.Unknown;
                 repeatKeyCount = 0;
-                return;
             }
             if (IsPressed)
             {
@@ -354,11 +353,20 @@ namespace Sharp80
                 case ViewMode.DiskZapView:
                 case ViewMode.MemoryView:
                 case ViewMode.FloppyControllerView:
-                    if (IsPressed && !IsAltPressed && !IsControlPressed)
+                    if (!IsAltPressed && !IsControlPressed)
                     {
-                        repeatKey = Key;
-                        screen.SendChar(Key, IsShifted);
+                        if (IsPressed)
+                        {
+                            repeatKey = Key;
+                            if (!screen.SendChar(Key, IsShifted))
+                                uic.Computer.NotifyKeyboardChange(Key, true);
+                        }
+                        else
+                        {
+                            uic.Computer.NotifyKeyboardChange(Key, false);
+                        }
                     }
+
                     break;
                 case ViewMode.OptionsView:
                 case ViewMode.HelpView:
@@ -651,31 +659,24 @@ namespace Sharp80
             if (path.Length > 0)
             {
                 var f = Storage.MakeBlankFloppy(Formatted);
-                if (!f.IsEmpty)
-                {
-                    if (Storage.SaveBinaryFile(path, f.Serialize(ForceDMK: true)))
-                        MessageBox.Show("Created floppy OK.",
-                                        "Created floppy",
-                                        MessageBoxButtons.OK,
-                                        MessageBoxIcon.Information);
-                    else
-                        MessageBox.Show(string.Format("Failed to create floppy with filename {0}.", path),
-                                        "Create floppy failed",
-                                        MessageBoxButtons.OK,
-                                        MessageBoxIcon.Error);
-                }
+                f.FilePath = path;
+                if (Storage.SaveBinaryFile(path, f.Serialize(ForceDMK: true)))
+                    MessageBox.Show("Created floppy OK.",
+                                    "Created floppy",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Information);
+                else
+                    MessageBox.Show(string.Format("Failed to create floppy with filename {0}.", path),
+                                    "Create floppy failed",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error);
             }
         }
 
         private void MakeAndLoadBlankFloppy(bool Formatted, byte DriveNumber)
         {
             if (SaveFloppyIfRequired(DriveNum: DriveNumber))
-            {
-                var f = Storage.MakeBlankFloppy(Formatted);
-
-                if (!f.IsEmpty)
-                    uic.Computer.LoadFloppy(DriveNumber, f);
-            }
+                uic.Computer.LoadFloppy(DriveNumber, Storage.MakeBlankFloppy(Formatted));
         }
         private void LoadCMDFile(string Path = "", bool SuppressNormalInform = false)
         {

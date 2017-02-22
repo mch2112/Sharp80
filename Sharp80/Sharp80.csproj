@@ -114,6 +114,7 @@
     <Compile Include="Cassette.cs" />
     <Compile Include="Clock.cs" />
     <Compile Include="Computer.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="FloppyControllerStatus.cs" />
     <Compile Include="ISound.cs" />
     <Compile Include="MainForm.cs">

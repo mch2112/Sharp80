@@ -23,7 +23,7 @@ namespace Sharp80
         public byte DiskNum { get; set; }
         public byte PhysicalTrackNum { get; set; }
         public string DiskAngle { get; set; }
-        public ulong TrackDataIndex { get; set; }
+        public int TrackDataIndex { get; set; }
         public byte ByteAtTrackDataIndex { get; set; }
         public bool IndexHole { get; set; }
     }

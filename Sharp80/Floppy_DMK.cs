@@ -29,19 +29,26 @@ namespace Sharp80
         private const byte SING_DENS_SING_BYTE_FLAG = 0x40;
         private const byte IGNORE_SING_DENS_FLAG = 0x80;
         private const byte WRITE_PROTECT_VAL = 0xFF;
-
-        public DMK() : base()
-        {
-        }
-
+        
         public DMK(byte[] DiskData)
         {
             Deserialize(DiskData);
         }
-
+        public DMK(System.IO.BinaryReader Reader)
+        {
+            Deserialize(Reader);
+        }
+        public override Track GetTrack(int TrackNum, bool SideOne)
+        {
+            return tracks.FirstOrDefault(t => t.PhysicalTrackNum == TrackNum && t.SideOne == SideOne);
+        }
+        public override SectorDescriptor GetSectorDescriptor(byte TrackNum, bool SideOne, byte SectorIndex)
+        {
+            return GetTrack(TrackNum, SideOne)?.GetSectorDescriptor(SectorIndex);
+        }
         public static Floppy MakeFloppyFromFile(byte[] b, string filename)
         {
-            var fn = Floppy.ConvertWindowsFilePathToTRSDOSFileName(filename);
+            var fn = ConvertWindowsFilePathToTRSDOSFileName(filename);
 
             byte neededSectors = (byte)Math.Ceiling((double)b.Length / (double)0x100);
             byte neededGranules = (byte)Math.Ceiling((double)neededSectors / (double)0x003);
@@ -149,37 +156,6 @@ namespace Sharp80
                              : MakeUnformattedFloppy(NumTracks: NumTracks,
                                                      DoubleSided: DoubleSided);
         }
-        public override bool IsDoubleDensity(byte TrackNumber, bool SideOne, byte SectorNumber)
-        {
-            return SafeGetTrack(TrackNumber, SideOne).IsDoubleDensity(SectorNumber);
-        }
-        public override byte[] GetTrackData(byte TrackNumber, bool SideOne)
-        {
-            return SafeGetTrack(TrackNumber, SideOne).Data;
-        }
-        public override byte[] GetSectorData(byte TrackNumber, bool SideOne, byte SectorNumber)
-        {
-            return SafeGetTrack(TrackNumber, SideOne).GetSectorData(SectorNumber);
-        }
-        public override SectorDescriptor GetSectorDescriptor(byte TrackNumber, bool SideOne, byte SectorIndex)
-        {
-            return SafeGetTrack(TrackNumber, SideOne).GetSector(SectorIndex);
-        }
-        public override byte GetDAM(byte TrackNumber, bool SideOne, byte SectorNumber)
-        {
-            return SafeGetTrack(TrackNumber, SideOne).GetDAM(SectorNumber);
-        }
-
-        public override void WriteTrackData(byte TrackNumber, bool SideOne, byte[] Data, bool[] DoubleDensity)
-        {
-            if (!writeProtected)
-            {
-                SafeGetTrack(TrackNumber, SideOne).Deserialize(Data, DoubleDensity);
-                UpdateDoubleDensity();
-                Changed = true;
-            }
-        }
-
         public override byte[] Serialize(bool ForceDMK)
         {
             if (ForceDMK)
@@ -195,25 +171,11 @@ namespace Sharp80
                         return SerializeToDMK();
                 }
         }
-        public override void Deserialize(System.IO.BinaryReader Reader)
+        
+        public override byte SectorCount(byte TrackNumber, bool SideOne)
         {
-            int dataLength = Reader.ReadInt32();
-            Deserialize(Reader.ReadBytes(dataLength));
-            FilePath = Reader.ReadString();
+            return tracks.FirstOrDefault(t => t.PhysicalTrackNum == TrackNumber && t.SideOne == SideOne)?.NumSectors ?? 0;
         }
-
-        private void UpdateDoubleDensity()
-        {
-            if (tracksSide0.Concat(tracksSide1).Any(t => !t.DoubleDensity.HasValue))
-                DoubleDensity = null;
-            else if (tracksSide0.Concat(tracksSide1).All(t => t.DoubleDensity.Value))
-                DoubleDensity = true;
-            else if (tracksSide0.Concat(tracksSide1).All(t => !t.DoubleDensity.Value))
-                DoubleDensity = false;
-            else
-                DoubleDensity = null;
-        }
-
         private static List<SectorDescriptor> GetDiskSectorDescriptors(byte NumTracks, bool DoubleSided, bool DoubleDensity)
         {
             const int SECTOR_SIZE = 0x100;
@@ -231,8 +193,10 @@ namespace Sharp80
                     byte secNum = startingSectorNumber;
                     for (byte k = 0; k < sectorsPerTrack; k++)
                     {
-                        var sd = new SectorDescriptor(i, secNum)
+                        var sd = new SectorDescriptor()
                         {
+                            TrackNumber = i,
+                            SectorNumber = secNum,
                             SideOne = j > 0,
                             InUse = true,
                             SectorSize = SECTOR_SIZE,
@@ -240,7 +204,6 @@ namespace Sharp80
                             SectorData = new byte[SECTOR_SIZE],
                             DAM = DAM_NORMAL,
                             DoubleDensity = DoubleDensity,
-                            NonIbm = false,
                             CrcError = false
                         };
 
@@ -305,115 +268,34 @@ namespace Sharp80
         {
             byte numTracks = (byte)(Sectors.Max(s => s.TrackNumber) + 1);
             bool doubleSided = Sectors.Exists(s => s.SideOne);
+            byte numSides = (byte)(doubleSided ? 2 : 1);
 
-            var tracks = Sectors.OrderBy(s => s.SideOne)
-                                .OrderBy(s => s.TrackNumber)
-                                .GroupBy(s => new { TrackNumber = s.TrackNumber, SideOne = s.SideOne });
+            byte[] bytes = new byte[Track.MAX_LENGTH_WITH_HEADER * 80 * 2 + DISK_HEADER_LENGTH];
 
-            var bytes = new List<byte>((STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN) * tracks.Count())
-            {
-                WriteProtected ? WRITE_PROTECT_BYTE : ZERO_BYTE, // Not write protected
-                numTracks
-            };
-            Lib.SplitBytes(STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN, out byte low, out byte high);
-            bytes.Add(low);
-            bytes.Add(high);
+            bytes[0] = WriteProtected ? WRITE_PROTECT_BYTE : ZERO_BYTE; // Not write protected
+            bytes[1] = numTracks;
+            Lib.SplitBytes(STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN, out bytes[2], out bytes[3]);
 
-            byte b = SING_DENS_SING_BYTE_FLAG;
+            byte b = 0;
             if (!doubleSided)
                 b |= SINGLE_SIDED_FLAG;
-            bytes.Add(b);
+            bytes[4] = b;
 
             for (int i = 0x05; i < DISK_HEADER_LENGTH; i++)
-                bytes.Add(ZERO_BYTE);
+                bytes[i] = ZERO_BYTE;
 
-            ushort crc;
-
-            foreach (var track in tracks)
-            {
-                int trackStartIndex = bytes.Count;
-                int numSectors = track.Count();
-                var sectors = track.GetEnumerator();
-                for (byte j = 0; j < TRACK_HEADER_SECTORS; j++)
+            int k = DISK_HEADER_LENGTH;
+            for (int i = 0; i < numTracks; i++)
+            { 
+                for (int j = 0; j < numSides; j++)
                 {
-                    if (sectors.MoveNext())
-                    {
-                        Lib.SplitBytes(sectors.Current.DoubleDensity ? DOUBLE_DENSITY_MASK : (ushort)0x0001, out low, out high);
-                        bytes.Add(low);
-                        bytes.Add(high);
-                    }
-                    else
-                    {
-                        bytes.Add(ZERO_BYTE);
-                        bytes.Add(ZERO_BYTE);
-                    }
+                    var trkBytes = Track.ToTrackBytes(Sectors.Where(s => s.TrackNumber == i && (s.SideOne == (j == 1))), Track.DEFAULT_LENGTH_WITH_HEADER);
+                    Array.Copy(trkBytes, 0, bytes, k, trkBytes.Length);
+                    k += trkBytes.Length;
                 }
-
-                int fillerBytes = track.First().DoubleDensity ? 62 : 32;
-                for (int k = 0; k < fillerBytes; k++)
-                    bytes.Add(FILLER_BYTE_DD);
-
-                foreach (var sector in track)
-                {
-                    int sectorStartIndex = bytes.Count;
-
-                    fillerBytes = track.First().DoubleDensity ? 34 : 17;
-                    for (int k = 0; k < fillerBytes; k++)
-                        bytes.Add(ZERO_BYTE);
-
-                    if (sector.DoubleDensity)
-                    {
-                        bytes.Add(0xA1);
-                        bytes.Add(0xA1);
-                        bytes.Add(0xA1);
-                        bytes.Add(IDAM);
-                        crc = CRC_RESET_A1_A1_A1_FE;
-                    }
-                    else
-                    {
-                        bytes.Add(IDAM);
-                        crc = CRC_RESET_FE;
-                    }
-
-                    byte[] nextBytes = new byte[] { sector.TrackNumber, sector.SideOne ? (byte)0x01 : ZERO_BYTE, sector.SectorNumber, sector.SectorSizeCode };
-
-                    foreach (byte bb in nextBytes)
-                    {
-                        bytes.Add(bb);
-                        crc = Lib.Crc(crc, bb);
-                    }
-
-                    Lib.SplitBytes(crc, out low, out high);
-                    bytes.Add(high);
-                    bytes.Add(low);
-
-                    // filler
-                    fillerBytes = sector.DoubleDensity ? 34 : 12;
-                    for (int k = 0; k < fillerBytes; k++)
-                        bytes.Add(0x00);
-
-                    crc = sector.DoubleDensity ? CRC_RESET_A1_A1_A1 : CRC_RESET;
-
-                    // DAM
-                    bytes.Add(sector.DAM);
-                    crc = Lib.Crc(crc, sector.DAM);
-
-                    for (int k = 0; k < sector.SectorSize; k++)
-                    {
-                        bytes.Add(sector.SectorData[k]);
-                        crc = Lib.Crc(crc, sector.SectorData[k]);
-                    }
-                    if (sector.CrcError)
-                        crc = (ushort)~crc;
-                    Lib.SplitBytes(crc, out low, out high);
-                    bytes.Add(high);
-                    bytes.Add(low);
-                }
-                while (bytes.Count < trackStartIndex + STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN)
-                    bytes.Add(FILLER_BYTE_DD);
             }
 
-            var f = new DMK(bytes.ToArray())
+            var f = new DMK(bytes.Slice(0, k))
             {
                 OriginalFileType = OriginalFileType
             };
@@ -432,186 +314,54 @@ namespace Sharp80
 
             return new DMK(data);
         }
-
-        private byte[] GetTrackHeader(Track Track)
-        {
-            byte[] header = new byte[TRACK_HEADER_LEN];
-            bool[] dd = Track.DoubleDensityArray;
-            ushort[] il = GetIdamLocationsFromRaw(Track.Data, dd, 0, Track.Data.Length);
-            byte sectorCount = (byte)Math.Min(dd.Length, il.Length);
-            for (byte i = 0; i < sectorCount; i++)
-            {
-                ushort headerVal = (ushort)(il[i] + TRACK_HEADER_LEN);
-                if (dd[i])
-                    headerVal |= DOUBLE_DENSITY_MASK;
-
-                Lib.SplitBytes(headerVal, out byte low, out byte high);
-                header[i * 2] = low;
-                header[i * 2 + 1] = high;
-            }
-            return header;
-        }
-        private ushort[] GetIdamLocations(byte[] DiskData, bool[] DoubleDensity, int Start)
-        {
-            List<ushort> idams = new List<ushort>();
-            for (int i = 0; i < TRACK_HEADER_LEN; i+=2)
-            {
-                ushort us = (ushort)(DiskData[Start + i] + (DiskData[Start + i + 1] << 8));
-                if (us > 0)
-                {
-                    DoubleDensity[i / 2] = ((us & DOUBLE_DENSITY_MASK) == DOUBLE_DENSITY_MASK);
-                    us &= OFFSET_MASK;
-                    if (DiskData[Start + us] != IDAM)
-                        Debug.WriteLine(String.Format("BAD IDAM at location {0:X}", Start));
-                    idams.Add(us);
-                }
-                else
-                {
-                    break;
-                }
-            }
-            return idams.ToArray();
-        }
-        private ushort[] GetIdamLocationsFromRaw(byte[] DiskData, bool[] DoubleDensity, int Start, int Length)
-        {
-            var locations = new List<ushort>();
-            int doubleDensityIndex = 0;
-            int end = Start + Length;
-            for (int i = Start; i < end && doubleDensityIndex < DoubleDensity.Length; i++)
-            {
-                if (DiskData[i] == IDAM)
-                {
-                    locations.Add((ushort)(i - Start + TRACK_HEADER_LEN));
-
-                    int skipFactor = DoubleDensity[doubleDensityIndex] ? 1 : 2;
-
-                    i += 4 * skipFactor;
-                    ushort sectorLength = GetDataLengthFromCode(DiskData[i++]);
-
-                    // skip crc
-                    i += 2 * skipFactor;
-
-                    // skip data
-                    while (i < end && !IsDAM(DiskData[i]))
-                        i += skipFactor;
-
-                    i += sectorLength * skipFactor;
-
-                    doubleDensityIndex++;
-                }
-            }
-            return locations.ToArray();
-        }
-        private byte[] UndoubleTrack(byte[] DiskData, int diskCursor, ushort TrackLength, ushort[] IdamLocations, bool[] doubleDensity)
-        {
-            byte[] trackData;
-            bool[] nukeMask = new bool[TrackLength];
-            int nukeCount = 0;
-            int marker;
-            int nextMarker = IdamLocations.Length > 0 ? IdamLocations[0] : TrackLength;
-
-            int lookAheadBytes = Math.Min(0x38, nextMarker & 0xFFFE);
-            bool singleDensity = false;
-
-            for (int i = 0; i < IdamLocations.Length; i++)
-            {
-                singleDensity = !doubleDensity[i];
-                marker = nextMarker;
-                if ((i == IdamLocations.Length - 1) || (IdamLocations[i + 1] == 0))
-                    nextMarker = TrackLength;
-                else
-                    nextMarker = IdamLocations[i + 1];
-
-                if (singleDensity)
-                    for (int j = marker - lookAheadBytes + 1; j < nextMarker - lookAheadBytes; j += 2)
-                    {
-                        if (DiskData[diskCursor + j] == DiskData[diskCursor + j - 1])
-                        {
-                            nukeMask[j] = true;
-                            nukeCount++;
-                        }
-                        else
-                        {
-                        //    throw new Exception();
-                        }
-                    }
-            }
-
-            trackData = new byte[TrackLength - nukeCount];
-            ushort m = 0;
-            int k = 0;
-            for (int i = 0; i < TrackLength; i++)
-            {
-                if (k < IdamLocations.Length && IdamLocations[k] == i)
-                    IdamLocations[k++] = m;
-
-                if (!nukeMask[i])
-                    trackData[m++] = DiskData[diskCursor + i];
-            }
-            for (int i = 0; i < IdamLocations.Length; i++)
-                if (IdamLocations[i] > 0 && trackData[IdamLocations[i]] != Floppy.IDAM)
-                    throw new Exception("IDAM Not found: undouble");
-            return trackData;
-        }
-        private bool IsDAM(byte Byte)
-        {
-            return (Byte >= 0xF8) && (Byte <= 0xFB);
-        }
-
+        
         private byte[] SerializeToDMK()
         {
-            int trackLength = tracksSide0.Concat(tracksSide1).Max(t => t.Data.Length);
-
-            int numTracks;
-
-            if (numSides == 2)
-                numTracks = Math.Max(tracksSide0.Count, tracksSide1.Count);
-            else
-                numTracks = tracksSide0.Count;
+            int trackLength = tracks.Max(t => t.LengthWithHeader);
+            byte numTracks = NumTracks;
+            int numSides = DoubleSided ? 2 : 1;
 
             byte[] diskData = new byte[DISK_HEADER_LENGTH + numTracks * numSides * (trackLength + TRACK_HEADER_LEN)];
 
             diskData[WRITE_PROTECT_BYTE] = writeProtected ? WRITE_PROTECT_VAL : NO_WRITE_PROTECT_BYTE;
-            diskData[NUM_TRACKS_BYTE] = this.numTracks;
+            diskData[NUM_TRACKS_BYTE] = numTracks;
             Lib.SplitBytes((ushort)(trackLength + TRACK_HEADER_LEN), out diskData[TRACK_LEN_LOW_BYTE], out diskData[TRACK_LEN_HIGH_BYTE]);
             if (numSides == 1)
                 diskData[FLAGS_BYTE] |= SINGLE_SIDED_FLAG;
-
-            if (true /*this.singleDensitySingleByte */)
-                diskData[FLAGS_BYTE] |= SING_DENS_SING_BYTE_FLAG;
-            if (this.ignoreDensity)
-                diskData[FLAGS_BYTE] |= IGNORE_SING_DENS_FLAG;
 
             int diskCursor = DISK_HEADER_LENGTH;
 
             byte[] emptyTrack = null;
 
-            for (int i = 0; i < this.numTracks; i++)
+            for (int i = 0; i < numTracks; i++)
             {
-                for (int j = 0; j < this.numSides; j++)
+                for (int j = 0; j < numSides; j++)
                 {
-                    Track t;
-                    List<Track> tracks = (j == 0) ? this.tracksSide0 : this.tracksSide1;
-                    if (i < tracks.Count)
-                    {
-                        t = tracks[i];
-                        byte[] header = GetTrackHeader(t);
-                        Array.Copy(header, 0, diskData, diskCursor, TRACK_HEADER_LEN);
-                        Array.Copy(t.Data, 0, diskData, diskCursor + TRACK_HEADER_LEN, Math.Min(t.Data.Length, diskData.Length - diskCursor));
-                        for (int k = diskCursor + TRACK_HEADER_LEN + t.Data.Length; k < diskCursor + TRACK_HEADER_LEN + trackLength; k++)
-                            diskData[k] = FILLER_BYTE_DD;
-                        diskCursor += trackLength + TRACK_HEADER_LEN;
-                    }
-                    else
+                    var t = tracks.FirstOrDefault(tt => tt.PhysicalTrackNum == i && tt.SideOne == (j == 1));
+                    if (t == null)
                     {
                         emptyTrack = emptyTrack ?? new byte[trackLength];
                         Array.Copy(emptyTrack, 0, diskData, diskCursor, emptyTrack.Length);
+                    }
+                    else
+                    {
+                        var d = t.Deserialize();
+                        Array.Copy(d, 0, diskData, diskCursor, d.Length);
+                        for (int k = diskCursor + d.Length; k < diskCursor + trackLength; k++)
+                            diskData[k] = (t.DoubleDensity == true) ? FILLER_BYTE_DD : FILLER_BYTE_SD;
+                        diskCursor += trackLength + TRACK_HEADER_LEN;
                     }
                 }
             }
             byte[] ret = new byte[diskCursor];
             Array.Copy(diskData, 0, ret, 0, ret.Length);
             return ret;
+        }
+        public override void Deserialize(System.IO.BinaryReader Reader)
+        {
+            int dataLength = Reader.ReadInt32();
+            Deserialize(Reader.ReadBytes(dataLength));
+            FilePath = Reader.ReadString();
         }
         private void Deserialize(byte[] DiskData)
         {
@@ -626,55 +376,35 @@ namespace Sharp80
                 }
 
                 writeProtected = DiskData[WRITE_PROTECT_BYTE] == WRITE_PROTECT_VAL;
-                numTracks = DiskData[NUM_TRACKS_BYTE];
-                ushort trackLength = (ushort)(Lib.CombineBytes(DiskData[TRACK_LEN_LOW_BYTE], DiskData[TRACK_LEN_HIGH_BYTE]) - TRACK_HEADER_LEN);
-                numSides = ((DiskData[FLAGS_BYTE] & SINGLE_SIDED_FLAG) == SINGLE_SIDED_FLAG) ? (byte)1 : (byte)2;
+                ushort trackLength = Lib.CombineBytes(DiskData[TRACK_LEN_LOW_BYTE], DiskData[TRACK_LEN_HIGH_BYTE]);
+                int numSides = ((DiskData[FLAGS_BYTE] & SINGLE_SIDED_FLAG) == SINGLE_SIDED_FLAG) ? 1 : 2;
+
                 singleDensitySingleByte = (DiskData[FLAGS_BYTE] & SING_DENS_SING_BYTE_FLAG) == SING_DENS_SING_BYTE_FLAG;
                 ignoreDensity = (DiskData[FLAGS_BYTE] & IGNORE_SING_DENS_FLAG) == IGNORE_SING_DENS_FLAG;
-
                 alwaysSingleByte = singleDensitySingleByte || ignoreDensity;
+
+                if (ignoreDensity)
+                    throw new NotImplementedException("Need to handle DMK ignore density mode");
 
                 int diskCursor = DISK_HEADER_LENGTH;
 
-                for (byte i = 0; i < numTracks; i++)
+                byte trackNum = 0;
+                while (diskCursor < DiskData.Length)
                 {
-                    for (int j = 0; j < numSides; j++)
+                    for (int sideNum = 0; sideNum < numSides; sideNum++)
                     {
                         if (DiskData.Length < diskCursor + trackLength)
                         {
-                            Log.LogMessage(string.Format("Unexpected End to DMK File on Track {0} at byte {1}", i, diskCursor));
+                            Log.LogMessage(string.Format("Unexpected End to DMK File on Track {0} at byte {1}", trackNum, diskCursor));
                         }
                         else
                         {
-                            bool[] doubleDensity = new bool[TRACK_HEADER_LEN / 2];
-
-                            bool needUndoubling = false;
-                            for (int k = 0; k < doubleDensity.Length; k++)
-                            {
-                                ushort header = Lib.CombineBytes(DiskData[diskCursor + k * 2], DiskData[diskCursor + k * 2 + 1]);
-                                doubleDensity[k] = ((header & DOUBLE_DENSITY_MASK) == DOUBLE_DENSITY_MASK);
-                                needUndoubling |= (header > 0x0001) && !doubleDensity[k];
-                            }
-                            needUndoubling &= !ignoreDensity && !alwaysSingleByte;
-                            byte[] trackData;
-                            if (needUndoubling)
-                            {
-                                //trackData = UndoubleTrack(DiskData, diskCursor, trackLength, GetIdamLocations(DiskData, doubleDensity, diskCursor), doubleDensity);
-                                trackData = UndoubleTrack(DiskData, diskCursor, trackLength, GetIdamLocationsFromRaw(DiskData, doubleDensity, diskCursor + TRACK_HEADER_LEN, trackLength), doubleDensity);
-                            }
-                            else
-                            {
-                                trackData = new byte[trackLength];
-                                Array.Copy(DiskData, diskCursor + TRACK_HEADER_LEN, trackData, 0, trackLength);
-                            }
-
-                            Track t = SafeGetTrack(i, j > 0);
-                            t.Deserialize(trackData, doubleDensity);
-                            diskCursor += trackLength + TRACK_HEADER_LEN;
+                            tracks.Add(new Track(trackNum, sideNum == 1, DiskData.Slice(diskCursor, diskCursor + trackLength), singleDensitySingleByte));
+                            diskCursor += trackLength;
                         }
                     }
+                    trackNum++;
                 }
-                UpdateDoubleDensity();
             }
             catch (Exception ex)
             {

@@ -10,20 +10,20 @@ namespace Sharp80
         private bool enabled;
         private bool latched;
         private bool triggerLock;
-        private bool canFireOnEnable;
+        private bool canLatchBeforeEnabled;
 
         public delegate void LatchDelegate();
 
         private event LatchDelegate Fired;
         private event LatchDelegate Reset;
 
-        public Trigger(LatchDelegate FireCallback, LatchDelegate ResetCallback, bool TriggerLock = false, bool CanFireOnEnable = false)
+        public Trigger(LatchDelegate FireCallback, LatchDelegate ResetCallback, bool TriggerLock = false, bool CanLatchBeforeEnabled = false)
         {
             Fired += FireCallback;
             Reset += ResetCallback;
 
             triggerLock = TriggerLock;
-            canFireOnEnable = CanFireOnEnable;
+            canLatchBeforeEnabled = CanLatchBeforeEnabled;
         }
 
         public bool Triggered { get; private set; }
@@ -34,7 +34,7 @@ namespace Sharp80
             get { return enabled; }
             set
             {
-                update(Enabled: value, Latched: null);
+                Update(Enabled: value, Latched: null);
             }
         }
         public bool Latched
@@ -44,11 +44,11 @@ namespace Sharp80
 
         public void Latch()
         {
-            update(Enabled: null, Latched: true);
+            Update(Enabled: null, Latched: true);
         }
         public void Unlatch()
         {
-            update(Enabled: null, Latched: false);
+            Update(Enabled: null, Latched: false);
         }
 
         public void Serialize(System.IO.BinaryWriter Writer)
@@ -56,7 +56,7 @@ namespace Sharp80
             Writer.Write(enabled);
             Writer.Write(latched);
             Writer.Write(triggerLock);
-            Writer.Write(canFireOnEnable);
+            Writer.Write(canLatchBeforeEnabled);
             Writer.Write(Triggered);
         }
         public void Deserialize(System.IO.BinaryReader Reader)
@@ -64,27 +64,43 @@ namespace Sharp80
             enabled = Reader.ReadBoolean();
             latched = Reader.ReadBoolean();
             triggerLock = Reader.ReadBoolean();
-            canFireOnEnable = Reader.ReadBoolean();
+            canLatchBeforeEnabled = Reader.ReadBoolean();
             Triggered = Reader.ReadBoolean();
         }
 
-        private void update(bool? Enabled, bool? Latched)
+        private void Update(bool? Enabled, bool? Latched)
         {
             System.Diagnostics.Debug.Assert(!Enabled.HasValue || !Latched.HasValue);
 
-            bool wasLatchedAndEnabled = this.latched && this.enabled;
+            bool wasLatchedAndEnabled = latched && enabled;
 
-            this.enabled = Enabled ?? this.enabled;
-            this.latched = Latched ?? this.latched;
+            enabled = Enabled ?? enabled;
+
+            if (Latched == true && (enabled || canLatchBeforeEnabled))
+                latched = true;
+            else
+                latched = Latched ?? latched;
 
             if (latched && enabled)
             {
-                if (!wasLatchedAndEnabled && (Latched.HasValue || canFireOnEnable))
+                if (!Triggered)
                 {
                     Triggered = true;
-                    if (Fired != null)
-                        Fired();
+                    Fired?.Invoke();
                 }
+                //if (wasLatchedAndEnabled)
+                //{
+                //    if (!Triggered)
+                //    {
+                //        Triggered = true;
+                //        Fired?.Invoke();
+                //    }
+                //}
+                //else if (Latched.HasValue || canLatchBeforeEnabled)
+                //{
+                //    Triggered = true;
+                //    Fired?.Invoke();
+                //}
             }
             else
             {
@@ -92,8 +108,7 @@ namespace Sharp80
                     ResetTrigger();
 
                 if (wasLatchedAndEnabled)
-                    if (Reset != null)
-                        Reset();
+                    Reset?.Invoke();
             }
         }
     }

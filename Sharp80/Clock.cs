@@ -81,7 +81,7 @@ namespace Sharp80
             waitTrigger = new Trigger(() => { if (Log.DebugOn) Log.LogToDebug(string.Format("CPU Wait ON")); },
                                       () => { if (Log.DebugOn) Log.LogToDebug(string.Format("CPU Wait OFF")); },
                                       TriggerLock: false,
-                                      CanFireOnEnable: false)
+                                      CanLatchBeforeEnabled: false)
                          { Enabled = true };
         }
 

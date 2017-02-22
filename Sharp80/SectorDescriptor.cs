@@ -13,16 +13,19 @@ namespace Sharp80
         public byte DAM { get; set; }
         public bool SideOne { get; set; }
         public bool CrcError { get; set; }
-        public bool NonIbm { get; set; }
-        public bool InUse { get; set; }
+        public bool InUse { get; set; } = true;
         public ushort SectorSize { get; set; }
         public byte SectorSizeCode { get; set; }
         public byte[] SectorData { get; set; }
-        public SectorDescriptor(byte TrackNumber, byte SectorNumber)
+        public SectorDescriptor()
         {
-            this.TrackNumber = TrackNumber;
-            this.SectorNumber = SectorNumber;
-            this.InUse = true;
+        }
+        public static SectorDescriptor Empty
+        {
+            get
+            {
+                return new SectorDescriptor() { InUse = false };
+            }
         }
         public override string ToString()
         {

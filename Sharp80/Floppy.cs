@@ -26,17 +26,11 @@ namespace Sharp80
         public const ushort CRC_RESET_A1_A1_A1_FE = 0xB230;
         public const ushort CRC_RESET_FE = 0xEF21;
 
-        protected List<Track> tracksSide0, tracksSide1;
+        protected List<Track> tracks;
 
         protected bool writeProtected;
-        protected byte numTracks;
-        protected byte numSides;
 
-        public Floppy()
-        {
-            this.Reset();
-        }
-
+        protected Floppy() { }
         public Floppy(byte[] Data) { throw new Exception("Need to deserialize"); }
         public Floppy(BinaryReader Reader)
             : this(Reader.ReadInt32(), Reader)
@@ -48,28 +42,12 @@ namespace Sharp80
             FilePath = Reader.ReadString();
         }
         public string FilePath { get; set; }
-        public byte NumSides
-        {
-            get { return numSides; }
-        }
-        public byte NumTracks
-        {
-            get { return numTracks; }
-        }
-        public byte SectorsPerTrack
-        {
-            get { return (byte)tracksSide0.Concat(tracksSide1).Max(t => t.SectorCount); }
-        }
+        public bool Formatted { get { return tracks.Any(t => t.Formatted); } }
+
+        private bool changed = false;
         public bool Changed
-        {
-            get; protected set;
-        }
-        public bool Formatted { get { return tracksSide0.Count > 0 && tracksSide0[0].Formatted; } }
-        public bool? DoubleDensity
-        {
-            get;
-            protected set;
-        }
+        { get { return changed || tracks.Any(t => t.Changed); } }
+
         public bool WriteProtected
         {
             get { return writeProtected; }
@@ -77,17 +55,22 @@ namespace Sharp80
             {
                 if (writeProtected != value)
                 {
-                    Changed = true;
+                    changed = true;
                     writeProtected = value;
                 }
             }
         }
-        public virtual bool IsEmpty
+        public byte NumTracks
         {
-            get { return numTracks == 0; }
+            get { return (byte)(tracks.Max(t => t.PhysicalTrackNum) + 1); }
+        }
+        public bool DoubleSided
+        {
+            get { return tracks.Any(t => t.SideOne); }
         }
         public FileType OriginalFileType { get; protected set; }
-
+        public abstract SectorDescriptor GetSectorDescriptor(byte TrackNum, bool SideOne, byte SectorIndex);
+        public abstract byte SectorCount(byte TrackNumber, bool SideOne);
         public static Floppy LoadDisk(string FilePath)
         {
             Floppy f = null;
@@ -99,7 +82,7 @@ namespace Sharp80
                 //var s = String.Join(", ", bb.Select(b => "0x" + b.ToString("X2")));
 
                 f = LoadDisk(diskData, FilePath);
-                if (!f.IsEmpty)
+                if (f != null)
                     f.FilePath = FilePath;
             }
             catch (Exception ex)
@@ -146,41 +129,19 @@ namespace Sharp80
                         break;
                 }
             }
-            return f ?? new DMK();
-        }
-
-        public byte SectorCount(byte TrackNumber, bool SideOne)
-        {
-            return SafeGetTrack(TrackNumber, SideOne).SectorCount;
+            return f;
         }
 
         public abstract byte[] Serialize(bool ForceDMK);
-        public abstract void WriteTrackData(byte TrackNumber, bool SideOne, byte[] Data, bool[] DoubleDensity);
-        public abstract byte[] GetSectorData(byte TrackNumber, bool SideOne, byte SectorNumber);
-        public abstract SectorDescriptor GetSectorDescriptor(byte TrackNumber, bool SideOne, byte SectorNumber);
-        public abstract byte GetDAM(byte TrackNumber, bool SideOne, byte SectorNumber);
-        public abstract byte[] GetTrackData(byte TrackNumber, bool SideOne);
-        public abstract bool IsDoubleDensity(byte TrackNumber, bool SideOne, byte SectorNumber);
+        //public abstract void WriteTrackData(byte TrackNumber, bool SideOne, byte[] Data, bool[] DoubleDensity);
+        //public abstract byte[] GetSectorData(byte TrackNumber, bool SideOne, byte SectorNumber);
+        //public abstract SectorDescriptor GetSectorDescriptor(byte TrackNumber, bool SideOne, byte SectorNumber);
+        //public abstract byte[] GetTrackData(byte TrackNumber, bool SideOne);
+        //public abstract bool IsDoubleDensity(byte TrackNumber, bool SideOne, byte SectorNumber);
 
-        public bool TrackHasIDAMAt(byte TrackNumber, bool SideOne, uint Index, out bool DoubleDensity)
-        {
-            return SafeGetTrack(TrackNumber, SideOne).HasIDAMAt(Index, out DoubleDensity);
-        }
+        public abstract Track GetTrack(int TrackNum, bool SideOne);
 
-        protected Track SafeGetTrack(byte TrackNumber, bool SideOne)
-        {
-            var tracks = SideOne ? tracksSide1 : tracksSide0;
-
-            while (TrackNumber >= tracks.Count)
-            {
-                tracks.Add(new Track(STANDARD_TRACK_LENGTH_DOUBLE_DENSITY, TrackNumber, SideOne));
-                numTracks = (byte)Math.Max(numTracks, tracks.Count);
-            }
-
-            return tracks[TrackNumber];
-        }
-
-        public static byte GetDataLengthCode(ushort DataLength)
+        public static byte GetDataLengthCode(int DataLength)
         {
             switch (DataLength)
             {
@@ -203,36 +164,25 @@ namespace Sharp80
             }
         }
 
-        public void Serialize(System.IO.BinaryWriter Writer)
+        public void Serialize(BinaryWriter Writer)
         {
-            if (this.IsEmpty)
-            {
-                Writer.Write(0);
-                Writer.Write(String.Empty);
-            }
-            else
-            {
-                byte[] b = this.Serialize(ForceDMK: true);
+            byte[] b = Serialize(ForceDMK: true);
 
-                Writer.Write(b.Length);
-                Writer.Write(b);
-                Writer.Write(this.FilePath);
-            }
+            Writer.Write(b.Length);
+            Writer.Write(b);
+            Writer.Write(FilePath);
         }
 
         public abstract void Deserialize(BinaryReader Reader);
 
         protected void Reset()
         {
-            numSides = 1;
-            numTracks = 0;
             writeProtected = false;
 
-            Changed = false;
+            changed = false;
             FilePath = string.Empty;
 
-            tracksSide0 = new List<Track>();
-            tracksSide1 = new List<Track>();
+            tracks = new List<Track>();
         }
         protected static string ConvertWindowsFilePathToTRSDOSFileName(string WinPath)
         {

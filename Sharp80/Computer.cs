@@ -172,7 +172,7 @@ namespace Sharp80
             if (FilePath.Length > 0)
                 FloppyController.LoadFloppy(DriveNum, FilePath);
             else
-                FloppyController.RemoveDisk(DriveNum);
+                FloppyController.UnloadDrive(DriveNum);
 
             if (DriveNum == 0 && !HasRunYet)
                 Ports.NoDrives = FloppyController.DriveIsUnloaded(0);
@@ -198,7 +198,7 @@ namespace Sharp80
             if (running)
                 Stop(WaitForStop: true);
 
-            FloppyController.RemoveDisk(DriveNum);
+            FloppyController.UnloadDrive(DriveNum);
 
             if (running)
                 Start();

@@ -211,17 +211,20 @@ namespace Sharp80
         }
         public static bool IsBitSet(byte Input, byte BitNum)
         {
-            return (Input & Lib.BIT[BitNum]) != 0;
+            return (Input & BIT[BitNum]) != 0;
             //return ((Input & (0x01 << BitNum)) != 0);
         }
-        public static ushort Crc(ushort StartingCRC, byte Data)
+        public static ushort Crc(ushort StartingCRC, params byte[] Data)
         {
             ushort crc = StartingCRC;
-            ushort mask = (ushort)(Data << 8);
-            for (int i = 0; i < 8; i++)
+            foreach (var d in Data)
             {
-                crc = (ushort)((crc << 1) ^ ((((crc ^ mask) & 0x8000) == 0x8000) ? 0x1021 : 0));
-                mask <<= 1;
+                ushort mask = (ushort)(d << 8);
+                for (int i = 0; i < 8; i++)
+                {
+                    crc = (ushort)((crc << 1) ^ ((((crc ^ mask) & 0x8000) == 0x8000) ? 0x1021 : 0));
+                    mask <<= 1;
+                }
             }
             return crc;
         }
