@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3
 
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Windows.Forms;
 
@@ -708,6 +709,10 @@ namespace Sharp80
         }
         private void Exit()
         {
+            Close();
+        }
+        protected override void OnClosing(CancelEventArgs e)
+        {
             Settings.Save();
 
             if (!screen.IsDisposed)
@@ -717,7 +722,7 @@ namespace Sharp80
             if (!keyboard.IsDisposed)
                 keyboard.Dispose();
 
-            Close();
+            base.OnClosing(e);
         }
         private string GetTRS80File(string DefaultPath)
         {

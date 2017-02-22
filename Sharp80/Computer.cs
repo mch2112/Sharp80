@@ -199,7 +199,7 @@ namespace Sharp80
         }
         public void LoadTrsDosFloppy(byte DriveNum)
         {
-            LoadFloppy(DriveNum, new DMK(Resources.TRSDOS));
+            LoadFloppy(DriveNum, new DMK(Resources.TRSDOS) { FilePath = Floppy.FILE_NAME_TRSDOS });
             Storage.SaveDefaultDriveFileName(DriveNum, Floppy.FILE_NAME_TRSDOS);
         }
         public void EjectFloppy(byte DriveNum)
@@ -210,6 +210,7 @@ namespace Sharp80
                 Stop(WaitForStop: true);
 
             FloppyController.UnloadDrive(DriveNum);
+            Storage.SaveDefaultDriveFileName(DriveNum, String.Empty);
 
             if (running)
                 Start();
