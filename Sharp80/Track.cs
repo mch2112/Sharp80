@@ -1,9 +1,9 @@
-﻿using System;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sharp80
 {
@@ -35,8 +35,8 @@ namespace Sharp80
             this.PhysicalTrackNum = PhysicalTrackNum;
             this.SideOne = SideOne;
 
-            // TODO: Strip out unused bit 14
-            header = Data.Slice(0, HEADER_LENGTH_BYTES).ToUShortArray();
+            // Combine to single ushort, strip out unused bit 14
+            header = Data.Slice(0, HEADER_LENGTH_BYTES).ToUShortArray().Select(h => (ushort)(h & (OFFSET_MASK | DOUBLE_DENSITY_MASK))).ToArray();
 
             this.Data = Data.Slice(HEADER_LENGTH_BYTES);
             SetDensity();
