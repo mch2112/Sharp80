@@ -16,7 +16,12 @@ namespace Sharp80
         {
             if (End < 0)
                 End = Source.Length;
-            
+            else
+                End = Math.Min(End, Source.Length);
+
+            if (Start == 0 && End == Source.Length)
+                return Source;
+
             var length = End - Start;
 
             var ret = new T[length];

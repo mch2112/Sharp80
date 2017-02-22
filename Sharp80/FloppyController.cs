@@ -16,7 +16,7 @@ namespace Sharp80
             {
                 get; set; 
             }
-            public bool WriteProtected { get { return Floppy.WriteProtected; } set { Floppy.WriteProtected = value; } }
+            public bool WriteProtected { get { return Floppy?.WriteProtected ?? false; } set { Floppy.WriteProtected = value; } }
             public DriveState()
             {
                 PhysicalTrackNumber = 0;

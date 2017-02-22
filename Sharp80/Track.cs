@@ -28,6 +28,8 @@ namespace Sharp80
         private const ushort OFFSET_MASK = 0x3FFF;
         private const ushort HEADER_MASK = DOUBLE_DENSITY_MASK | OFFSET_MASK;
 
+        private List<SectorDescriptor> sectorDescriptorCache = null;
+
         public Track(byte PhysicalTrackNum, bool SideOne, byte[] Data, bool SingleDensitySingleByte)
         {
             this.PhysicalTrackNum = PhysicalTrackNum;
@@ -71,18 +73,22 @@ namespace Sharp80
 
             int headerCursor = 0;
 
+            // In some places we use fewer bytes than the 1773 tech reference states so that we can fit
+            // 18 DD sectors (or 10 SD sectors) in a standard length track. Not sure why WD made it
+            // so the standard doesn't work.
+
             if (ddAll)
             {
-                ret.SetValues(ref i, 80, (byte)0x4E);
+                ret.SetValues(ref i, 10, (byte)0x4E); /* standard is 80 */
                 ret.SetValues(ref i, 12, (byte)0x00);
                 ret.SetValues(ref i,  3, (byte)0xF6);
                 ret.SetValues(ref i,  1, (byte)0xFC);
-                ret.SetValues(ref i, 50, (byte)0x4E);
+                ret.SetValues(ref i, 50, (byte)0x4E); /* standard is 50 */
             }
             else
             {
                 // times two for doubled bytes
-                ret.SetValues(ref i, 10 * 2, (byte)0xFF); /* tech datasheet says 30, not 10 -- saving space to fit 10 SD sectors on standard disk */
+                ret.SetValues(ref i, 10 * 2, (byte)0xFF); /* tech datasheet says 30, not 10 */
                 ret.SetValues(ref i,  6 * 2, (byte)0x00);
                 ret.SetValues(ref i,  1 * 2, (byte)0xFC);
                 ret.SetValues(ref i, 26 * 2, (byte)0xFF);
@@ -125,7 +131,7 @@ namespace Sharp80
                     ret.SetValues(ref i, 12, (byte)0x00);
                     ret.SetValues(ref i, false, (byte)0xA1, (byte)0xA1, (byte)0xA1, s.DAM);
 
-                    crc = Lib.Crc(Floppy.CRC_RESET_A1_A1_A1, 0xFB);
+                    crc = Lib.Crc(Floppy.CRC_RESET_A1_A1_A1, s.DAM);
                     for (int j = 0; j < s.SectorData.Length; j++)
                     {
                         b = s.SectorData[j];
@@ -140,7 +146,7 @@ namespace Sharp80
 
                     ret.SetValues(ref i, false, crcHigh, crcLow);
 
-                    ret.SetValues(ref i, 54, (byte)0x4E);
+                    ret.SetValues(ref i, 20, (byte)0x4E); /* standard is 54 */
                 }
                 else // single density
                 {
@@ -168,30 +174,16 @@ namespace Sharp80
                     ret.SetValues(ref i, 17 * 2, (byte)0xFF); /* spec says 27, not 17 */
                 }
             }
-            if (ddAll)
-                for (; i < MAX_LENGTH_WITH_HEADER; i++)
-                    ret[i] = 0x4E;
-            else
-                for (; i < MAX_LENGTH_WITH_HEADER; i++)
-                    ret[i] = 0xFF;
-
-            i -= 500;
-
+           
             if (Length > 0)
-            {
-                ret = ret.Slice(0, Length);
-            }
+
+                ret = ret.Pad(Length, ddAll ? Floppy.FILLER_BYTE_DD : Floppy.FILLER_BYTE_SD).Slice(0, Length);
+
+            else if (i <= 0x0CC0)
+                ret = ret.Pad(0x0CC0, Floppy.FILLER_BYTE_SD);
             else
-            {
-                if (i > DEFAULT_LENGTH_WITH_HEADER)
-                    ret = ret.Slice(0, MAX_LENGTH_WITH_HEADER);
-                else if (i > 0x14E0)
-                    ret = ret.Slice(0, DEFAULT_LENGTH_WITH_HEADER);
-                else if (i > 0x0CC0)
-                    ret = ret.Slice(0, 0x14E0);
-                else
-                    ret = ret.Slice(0, 0x0CC0);
-            }
+                ret = ret.Pad(DEFAULT_LENGTH_WITH_HEADER, ddAll ? Floppy.FILLER_BYTE_DD : Floppy.FILLER_BYTE_SD).Slice(0, MAX_LENGTH_WITH_HEADER);
+
             return ret;
         }
         private ushort[] Header
@@ -281,64 +273,76 @@ namespace Sharp80
         }
         public SectorDescriptor GetSectorDescriptor(byte SectorIndex)
         {
-            if (SectorIndex > HEADER_LENGTH || Header[SectorIndex] == 0)
-                return SectorDescriptor.Empty;
+            sectorDescriptorCache = sectorDescriptorCache ?? GetSectorDescriptorCache();
 
-            bool density = Header[SectorIndex] >= DOUBLE_DENSITY_MASK;
-            int offset = (Header[SectorIndex] & OFFSET_MASK) - HEADER_LENGTH_BYTES;
-            int byteMultiple = density ? 1 : 2;
-            if (Data[offset] != Floppy.IDAM)
-            {
-                Log.LogToDebug(string.Format("Missing IDAM Track {0} Side {1} SectorIndex {2}.", this.PhysicalTrackNum, this.SideOne ? 1 : 0, SectorIndex));
-                return SectorDescriptor.Empty;
-            }
-            
-            byte dam = 0x00;
-            int dataStart = 0x00;
-            bool deleted = false;
-            for(int i = offset + 6 * byteMultiple; i < offset + (6 + (density ? 43 : 30)) * byteMultiple; i += byteMultiple)
-            {
-                if (FloppyController.IsDAM(Data[i], out deleted))
-                {
-                    dam = Data[i];
-                    dataStart = i + byteMultiple;
-                    break;
-                }
-            }
-
-            var sizeCode = Data[offset + 4 * byteMultiple];
-            var dataLength = Floppy.GetDataLengthFromCode(sizeCode);
-
-            var sd = new SectorDescriptor()
-            {
-                TrackNumber = Data[offset + 1 * byteMultiple],
-                SideOne = Data[offset + 2 * byteMultiple] > 0,
-                SectorNumber = Data[offset + 3 * byteMultiple],
-                SectorSizeCode = sizeCode,
-                SectorSize = dataLength,
-                DoubleDensity = density,
-                SectorData = new byte[dataLength]
-            };
-
-            if (dam == 0x00)
-            {
-                sd.CrcError = true;
-                sd.InUse = false;
-            }
+            if (SectorIndex < sectorDescriptorCache.Count)
+                return sectorDescriptorCache[SectorIndex];
             else
+                return SectorDescriptor.Empty;
+        }
+        private List<SectorDescriptor> GetSectorDescriptorCache()
+        {
+            var sds = new List<SectorDescriptor>();
+
+            for (int SectorIndex = 0; SectorIndex < HEADER_LENGTH && Header[SectorIndex] > 0; SectorIndex++)
             {
-                sd.DAM = dam;
-                sd.InUse = !deleted;
-                ushort actualCrc = Lib.Crc(sd.DoubleDensity ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET, sd.DAM);
-                for (int i = 0; i < dataLength; i++)
+                bool density = Header[SectorIndex] >= DOUBLE_DENSITY_MASK;
+                int offset = (Header[SectorIndex] & OFFSET_MASK) - HEADER_LENGTH_BYTES;
+                int byteMultiple = density ? 1 : 2;
+                if (Data[offset] != Floppy.IDAM)
                 {
-                    sd.SectorData[i] = Data[dataStart + i * byteMultiple];
-                    actualCrc = Lib.Crc(actualCrc, sd.SectorData[i]);
+                    Log.LogToDebug(string.Format("Missing IDAM Track {0} Side {1} SectorIndex {2}.", this.PhysicalTrackNum, this.SideOne ? 1 : 0, SectorIndex));
+                    continue;
                 }
-                ushort recordedCrc = Lib.CombineBytes(Data[dataStart + (dataLength + 1) * byteMultiple], Data[dataStart + dataLength * byteMultiple]);
-                sd.CrcError = actualCrc != recordedCrc;
+
+                byte dam = 0x00;
+                int dataStart = 0x00;
+                bool deleted = false;
+                for (int i = offset + 6 * byteMultiple; i < offset + (6 + (density ? 43 : 30)) * byteMultiple; i += byteMultiple)
+                {
+                    if (FloppyController.IsDAM(Data[i], out deleted))
+                    {
+                        dam = Data[i];
+                        dataStart = i + byteMultiple;
+                        break;
+                    }
+                }
+
+                var sizeCode = Data[offset + 4 * byteMultiple];
+                var dataLength = Floppy.GetDataLengthFromCode(sizeCode);
+
+                var sd = new SectorDescriptor()
+                {
+                    TrackNumber = Data[offset + 1 * byteMultiple],
+                    SideOne = Data[offset + 2 * byteMultiple] > 0,
+                    SectorNumber = Data[offset + 3 * byteMultiple],
+                    SectorSizeCode = sizeCode,
+                    SectorSize = dataLength,
+                    DoubleDensity = density,
+                    SectorData = new byte[dataLength]
+                };
+
+                if (dam == 0x00)
+                {
+                    sd.CrcError = true;
+                    sd.InUse = false;
+                }
+                else
+                {
+                    sd.DAM = dam;
+                    sd.InUse = !deleted;
+                    ushort actualCrc = Lib.Crc(sd.DoubleDensity ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET, sd.DAM);
+                    for (int i = 0; i < dataLength; i++)
+                    {
+                        sd.SectorData[i] = Data[dataStart + i * byteMultiple];
+                        actualCrc = Lib.Crc(actualCrc, sd.SectorData[i]);
+                    }
+                    ushort recordedCrc = Lib.CombineBytes(Data[dataStart + (dataLength + 1) * byteMultiple], Data[dataStart + dataLength * byteMultiple]);
+                    sd.CrcError = actualCrc != recordedCrc;
+                }
+                sds.Add(sd);
             }
-            return sd;
+            return sds.OrderBy(s => s.SectorNumber).ToList();
         }
         public List<SectorDescriptor> ToSectorDescriptors()
         {
