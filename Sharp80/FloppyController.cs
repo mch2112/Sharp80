@@ -1,3 +1,6 @@
+/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
 using System;
 using System.IO;
 
@@ -314,19 +317,12 @@ namespace Sharp80
         private void LoadDrive(byte DriveNum, Floppy Floppy)
         {
             drives[DriveNum].Floppy = Floppy;
-            
-            Storage.SaveDefaultDriveFileName(DriveNum, Floppy?.FilePath ?? String.Empty);
             UpdateTrack();
-
-            if (String.IsNullOrWhiteSpace(Floppy?.FilePath))
-                if (Log.DebugOn)
-                    Log.LogMessage("Floppy has no file path.");
         }
         public void UnloadDrive(byte DriveNum)
         {
             LoadDrive(DriveNum, null);
             UpdateTrack();
-            Storage.SaveDefaultDriveFileName(DriveNum, String.Empty);
         }
 
         public string GetDriveStatusReport()

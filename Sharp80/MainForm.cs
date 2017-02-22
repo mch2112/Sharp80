@@ -1,4 +1,7 @@
-﻿using System;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using System;
 using System.IO;
 using System.Windows.Forms;
 
@@ -542,6 +545,10 @@ namespace Sharp80
         private void LoadFloppy(byte DriveNum)
         {
             string path = Storage.GetDefaultDriveFileName(DriveNum);
+
+            if (Floppy.IsFileNameToken(path))
+                path = String.Empty;
+
             bool selectFile = true;
 
             if (String.IsNullOrWhiteSpace(path))
@@ -569,7 +576,6 @@ namespace Sharp80
                 {
                     uic.Computer.LoadFloppy(DriveNum, path);
                     Settings.DefaultFloppyDirectory = Path.GetDirectoryName(path);
-                    Storage.SaveDefaultDriveFileName(DriveNum, path);
                 }
             }
 
@@ -676,7 +682,10 @@ namespace Sharp80
         private void MakeAndLoadBlankFloppy(bool Formatted, byte DriveNumber)
         {
             if (SaveFloppyIfRequired(DriveNum: DriveNumber))
+            {
                 uic.Computer.LoadFloppy(DriveNumber, Storage.MakeBlankFloppy(Formatted));
+                Storage.SaveDefaultDriveFileName(DriveNumber, Formatted ? Floppy.FILE_NAME_BLANK : Floppy.FILE_NAME_UNFORMATTED);
+            }
         }
         private void LoadCMDFile(string Path = "", bool SuppressNormalInform = false)
         {
@@ -799,8 +808,6 @@ namespace Sharp80
 
             for (byte b = 0; b < 4; b++)
             {
-                Storage.SaveDefaultDriveFileName(b, uic.Computer.FloppyController.FloppyFilePath(b));
-
                 if (!SaveFloppyIfRequired(b))
                     return false;
             }

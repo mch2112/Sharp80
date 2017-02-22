@@ -1,3 +1,6 @@
+/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -55,11 +58,17 @@ namespace Sharp80
                     fileName = Settings.Disk3Filename;
                     break;
             }
-            if (File.Exists(fileName))
+            if (File.Exists(fileName) || Floppy.IsFileNameToken(fileName))
                 return fileName;
             else
                 return String.Empty;
         }
+
+        /// <summary>
+        /// Should be called when the floppy is put in the drive. Note that the
+        /// floppy's file path may be empty but we may want to save a token
+        /// value like {{BLANK}}
+        /// </summary>
         public static void SaveDefaultDriveFileName(byte DriveNum, string FilePath)
         {
             switch (DriveNum)
@@ -80,9 +89,12 @@ namespace Sharp80
         }
         public static Floppy MakeBlankFloppy(bool Formatted)
         {
-            return DMK.MakeBlankFloppy(NumTracks: 40,
+            var f = DMK.MakeBlankFloppy(NumTracks: 40,
                                            DoubleSided: false,
                                            Formatted: Formatted);
+            f.FilePath = Formatted ? Floppy.FILE_NAME_BLANK : Floppy.FILE_NAME_UNFORMATTED;
+
+            return f;
         }
         public static void SaveCMDFile(string Title, string FilePath, ushort[] Origin, byte[][] Data, ushort TransferAddress)
         {

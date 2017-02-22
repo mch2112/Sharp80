@@ -1,14 +1,8 @@
-﻿#region Using directives
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
 using System.IO;
-using System.Text;
-using System.Windows.Forms;
-
-#endregion
 
 namespace Sharp80
 {
@@ -169,10 +163,26 @@ namespace Sharp80
             if (running)
                 Stop(WaitForStop: true);
 
-            if (FilePath.Length > 0)
-                FloppyController.LoadFloppy(DriveNum, FilePath);
-            else
-                FloppyController.UnloadDrive(DriveNum);
+            switch (FilePath)
+            {
+                case Floppy.FILE_NAME_TRSDOS:
+                    LoadTrsDosFloppy(DriveNum);
+                    break;
+                case Floppy.FILE_NAME_BLANK:
+                    LoadFloppy(DriveNum, Storage.MakeBlankFloppy(true));
+                    break;
+                case Floppy.FILE_NAME_UNFORMATTED:
+                    LoadFloppy(DriveNum, Storage.MakeBlankFloppy(false));
+                    break;
+                case "":
+                    FloppyController.UnloadDrive(DriveNum);
+                    break;
+                default:
+                    FloppyController.LoadFloppy(DriveNum, FilePath);
+                    break;
+            }
+
+            Storage.SaveDefaultDriveFileName(DriveNum, FilePath);
 
             if (DriveNum == 0 && !HasRunYet)
                 Ports.NoDrives = FloppyController.DriveIsUnloaded(0);
@@ -190,6 +200,7 @@ namespace Sharp80
         public void LoadTrsDosFloppy(byte DriveNum)
         {
             LoadFloppy(DriveNum, new DMK(Resources.TRSDOS));
+            Storage.SaveDefaultDriveFileName(DriveNum, Floppy.FILE_NAME_TRSDOS);
         }
         public void EjectFloppy(byte DriveNum)
         {

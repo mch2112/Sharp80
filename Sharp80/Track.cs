@@ -313,13 +313,13 @@ namespace Sharp80
 
                 var sd = new SectorDescriptor()
                 {
-                    TrackNumber = Data[offset + 1 * byteMultiple],
-                    SideOne = Data[offset + 2 * byteMultiple] > 0,
-                    SectorNumber = Data[offset + 3 * byteMultiple],
+                    TrackNumber =    Data[offset + 1 * byteMultiple],
+                    SideOne =        Data[offset + 2 * byteMultiple] > 0,
+                    SectorNumber =   Data[offset + 3 * byteMultiple],
                     SectorSizeCode = sizeCode,
-                    SectorSize = dataLength,
-                    DoubleDensity = density,
-                    SectorData = new byte[dataLength]
+                    SectorSize =     dataLength,
+                    DoubleDensity =  density,
+                    SectorData =     new byte[dataLength]
                 };
 
                 if (dam == 0x00)

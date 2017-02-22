@@ -1,3 +1,6 @@
+/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +11,10 @@ namespace Sharp80
     internal abstract class Floppy : ISerializable
     {
         public enum FileType { DMK, JV1, JV3 }
+
+        public const string FILE_NAME_TRSDOS =      "{{TRSDOS}}";
+        public const string FILE_NAME_BLANK =       "{{BLANK}}";
+        public const string FILE_NAME_UNFORMATTED = "{{UNFORMATTED}}";
 
         public const byte MAX_TRACKS = 80;
         public const int STANDARD_TRACK_LENGTH_DOUBLE_DENSITY = 0x1880;
@@ -257,6 +264,10 @@ namespace Sharp80
             if (a == 0)
                 a = 1;
             return a;
+        }
+        public static bool IsFileNameToken(string Path)
+        {
+            return Path == FILE_NAME_UNFORMATTED || Path == FILE_NAME_BLANK || Path == FILE_NAME_TRSDOS;
         }
     }
 }
