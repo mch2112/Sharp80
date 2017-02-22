@@ -14,7 +14,7 @@ namespace Sharp80
         public int LengthWithHeader { get; }
         public bool Changed { get; private set; } = false;
 
-        private byte[] Data { get; }
+        private byte[] Data { get; set; }
         private ushort[] header;
         private bool? density = null;
         private bool[] densityMap = null;
@@ -39,12 +39,8 @@ namespace Sharp80
             this.Data = Data.Slice(HEADER_LENGTH_BYTES);
             SetDensity();
 
-            if (SingleDensitySingleByte && density != true)
-            {
-                this.Data = this.Data.Double().Truncate(MAX_LENGTH_WITH_HEADER);
-                if (!density.HasValue)
-                    throw new NotImplementedException("TODO: Handle case where singledensitysinglebyte contains double density data.");
-            }
+            if (SingleDensitySingleByte)
+                ConvertFromSingleByte();
 
             LengthWithHeader = Data.Length;
             densityMap = null;
@@ -447,6 +443,45 @@ namespace Sharp80
                 }
                 for (; i < densityMap.Length; i++)
                     densityMap[i] = d;
+            }
+        }
+        private void ConvertFromSingleByte()
+        {
+            switch (density)
+            {
+                case true:
+                    // do nothing: single byte is what we want 
+                    break;
+                case false:
+                    // just duplicate bytes everywhere
+                    Data = Data.Double().Truncate(MAX_LENGTH_WITH_HEADER);
+                    for (int i = 0; i < Header.Length; i++)
+                         Header[i] *= 2; // don't need to worry about the DD flag
+                    break;
+                default: // mixed density
+                    RebuildDensity();
+
+                    if (densityMap == null || densityMap.Length != Data.Length)
+                        throw new Exception("Error generating density map in Track.ConvertFromSingleByte");
+
+                    // Adjust the data
+                    var sdDoubled = new List<byte>();
+                    for (int i = 0; i < densityMap.Length; i++)
+                    {
+                        sdDoubled.Add(Data[i]);
+                        if (!densityMap[i])
+                            sdDoubled.Add(Data[i]);
+                    }
+
+                    Data = sdDoubled.ToArray();
+                    Data = Data.Pad(DEFAULT_LENGTH_WITHOUT_HEADER, Floppy.FILLER_BYTE_DD);
+
+                    for (int i = 0; i < Header.Length && Header[i] > 0; i++)
+                        Header[i] += (ushort)(densityMap.Take((Header[i] & OFFSET_MASK) - HEADER_LENGTH_BYTES).Count(d => !d));
+
+                    densityMap = null; // no longer valid
+
+                    break;
             }
         }
         public bool DoubleDensity

@@ -87,5 +87,27 @@ namespace Sharp80
                     Array[Start++] = v;
             }
         }
+
+        /// <summary>
+        /// Pads an array to minimum length with given value
+        /// NOTE: The origiinal array might be returned!
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="Array"></param>
+        /// <param name="Length">The minimum desired length</param>
+        /// <param name="Value">The value to pad with</param>
+        /// <returns></returns>
+        public static T[] Pad<T>(this T[] Array, int Length, T Value)
+        {
+            if (Array.Length >= Length)
+                return Array;
+            
+            var ret = Array.Concat(new T[Length - Array.Length]);
+
+            for (int i = Array.Length; i < Length; i++)
+                ret[i] = Value;
+
+            return ret;
+        }
     }
 }

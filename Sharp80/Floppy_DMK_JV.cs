@@ -20,7 +20,7 @@ namespace Sharp80
 
         public static Floppy FromJV3(byte[] DiskData)
         {
-            List<SectorDescriptor> sectors = new List<SectorDescriptor>();
+            var sectors = new List<SectorDescriptor>();
 
             int diskCursor = 0;
             bool? writeProt = null;
@@ -64,7 +64,9 @@ namespace Sharp80
 
                     sd.SideOne = (flags & JV3_SIDE_ONE) == JV3_SIDE_ONE;
                     sd.CrcError = (flags & JV3_CRC_ERROR) == JV3_CRC_ERROR;
-                    //sd.NonIbm = (flags & JV3_NON_IBM) == JV3_NON_IBM;
+                    
+                    // No reason to use this:
+                    // sd.NonIbm = (flags & JV3_NON_IBM) == JV3_NON_IBM;
 
                     // Sector Size Codes
                     // Size    IBM size   SECTOR_SIZE field SECTOR_SIZE field
@@ -73,17 +75,10 @@ namespace Sharp80
                     // 0x100      01            0                 3
                     // 0x200      02            3                 0
                     // 0x400      03            2                 1
-                    switch (flags & JV3_SECTOR_SIZE_MASK)
-                    {
-                        case 0x00: sd.SectorSizeCode = 0x01; break;
-                        case 0x01: sd.SectorSizeCode = 0x00; break;
-                        case 0x02: sd.SectorSizeCode = 0x03; break;
-                        case 0x03: sd.SectorSizeCode = 0x02; break;
-                    }
 
-                    if (!sd.InUse)
-                        sd.SectorSizeCode = (byte)(JV3_SECTOR_SIZE_MASK - sd.SectorSizeCode);
-
+                    // JV3 sector size code is stored in a weird way
+                    sd.SectorSizeCode = (byte)((flags & JV3_SECTOR_SIZE_MASK) ^ (sd.InUse ? 1 : 2));
+                    
                     sd.SectorSize = GetDataLengthFromCode(sd.SectorSizeCode);
                     sectors.Add(sd);
                 }
@@ -117,7 +112,6 @@ namespace Sharp80
                     }
                     diskCursor += sd.SectorSize;
                 }
-                sectors.RemoveAll(s => !s.InUse);
             }
             return DMK.MakeFloppy(Sectors: sectors,
                                     WriteProtected: writeProt.Value,
@@ -126,6 +120,7 @@ namespace Sharp80
         private byte[] SerializeToJV3()
         {
             var sectors = tracks.SelectMany(t => t.ToSectorDescriptors())
+                                .OrderBy(s => s.SideOne)
                                 .OrderBy(s => s.TrackNumber)
                                 .ToList();
 
