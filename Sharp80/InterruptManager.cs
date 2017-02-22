@@ -37,14 +37,13 @@ namespace Sharp80
             fdcMotorOffNmiLatch = new Trigger(null, null, TriggerLock: false, CanLatchBeforeEnabled: true);
 
             resetButtonLatch = new Trigger(
-                () => { computer.Clock.RegisterPulseReq(
-                    new PulseReq(200000, () => {
-                        resetButtonLatch.Unlatch();
-                    }, false)); },
-                                              null,
-                                              TriggerLock: true,
-                                              CanLatchBeforeEnabled: false)
-                                   { Enabled = true };
+                                () => { computer.Clock.RegisterPulseReq(new PulseReq(200000, () => { resetButtonLatch.Unlatch(); }, false)); },
+                                null,
+                                TriggerLock: true,
+                                CanLatchBeforeEnabled: false)
+                                {
+                                    Enabled = true
+                                };
 
             ioIntLatch = new Trigger(null, null);
             casRisingEdgeIntLatch = new Trigger(null, null);
@@ -86,9 +85,7 @@ namespace Sharp80
 
             if (!resetButtonLatch.Latched)
                 result |= 0x20;
-            else
-                System.Diagnostics.Debug.WriteLine("foo");
-
+            
             computer.Ports.SetPortArray(result, 0xE4);
         }
         public byte InterruptEnableStatus

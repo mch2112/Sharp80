@@ -269,7 +269,7 @@ namespace Sharp80
                 Format() +
                 Indent(string.Format("Track / Sector Register:   {0:X2}  / {1:X2}", Status.TrackRegister, Status.SectorRegister)) +
                 Indent(string.Format("Command / Data Register:   {0:X2}  / {1:X2}", Status.CommandRegister, Status.DataRegister)) +
-                Indent(string.Format("Density Mode:                   {0}", Status.DoubleDensity ? "Double" : "Single")) +
+                Indent(string.Format("Density Mode:              {0}", Status.DoubleDensity ? "Double" : "Single")) +
                 Format() +
                 Indent(string.Format("Physical Disk Data: Dsk {0} Trk {1:X2} {2} ", Status.DiskNum, Status.PhysicalTrackNum, Status.DiskAngle)) +
                 Indent(string.Format("Track Data Index: {0:X4} [{1:X2}]", Status.TrackDataIndex, Status.ByteAtTrackDataIndex)) +
@@ -359,7 +359,7 @@ namespace Sharp80
                 UI.Format(new string[] { "[\\] or [Shift]+[2]", "[@]               " }, true) +
                 UI.Format(new string[] { "[Caps Lock]",         "[Shift] + [0]     " }, true) +
                 UI.Format() +
-                UI.Format(new string[] { "[Shift]+[End]",       "Reset Button      " }, true) +
+                UI.Format(new string[] { "[Alt]+[End]",       "Reset Button      " }, true) +
                 UI.Format() +
                 UI.Footer(footerText)));
 

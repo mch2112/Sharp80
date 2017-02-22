@@ -20,7 +20,7 @@ namespace Sharp80
         public void Reset()
         {
             PhysicalScreen.Invalidate();
-            SetVideoMode();
+            SetVideoMode(false, false);
         }
         public void SetVideoMode(bool WideCharMode, bool KanjiCharMode)
         {
