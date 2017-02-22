@@ -15,7 +15,7 @@ namespace Sharp80
         public static T[] Slice<T>(this T[] Source, int Start, int End = -1)
         {
             if (End < 0)
-                End = Source.Length + End;
+                End = Source.Length;
             
             var length = End - Start;
 

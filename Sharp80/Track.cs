@@ -86,7 +86,7 @@ namespace Sharp80
             else
             {
                 // times two for doubled bytes
-                ret.SetValues(ref i, 40 * 2, (byte)0xFF);
+                ret.SetValues(ref i, 10 * 2, (byte)0xFF); /* tech datasheet says 30, not 10 -- saving space to fit 10 SD sectors on standard disk */
                 ret.SetValues(ref i,  6 * 2, (byte)0x00);
                 ret.SetValues(ref i,  1 * 2, (byte)0xFC);
                 ret.SetValues(ref i, 26 * 2, (byte)0xFF);
@@ -115,8 +115,8 @@ namespace Sharp80
                     ret.SetValues(ref i, 6 * 2, (byte)0x00);
 
                     Lib.SplitBytes((ushort)i, out ret[headerCursor], out ret[headerCursor + 1]);
-
                 }
+                headerCursor += 2;
                 ret.SetValues(ref i, !s.DoubleDensity, Floppy.IDAM, s.TrackNumber, sideNum, s.SectorNumber, dataLengthCode);
 
                 crc = Lib.Crc(crc, s.TrackNumber, sideNum, s.SectorNumber, dataLengthCode);
@@ -154,7 +154,7 @@ namespace Sharp80
                     ret.SetValues(ref i, 1 * 2, s.DAM);
 
                     crc = Floppy.CRC_RESET;
-
+                    crc = Lib.Crc(crc, s.DAM);
                     for (int j = 0; j < s.SectorData.Length; j++)
                     {
                         b = s.SectorData[j];
@@ -169,7 +169,7 @@ namespace Sharp80
                     Lib.SplitBytes(crc, out crcLow, out crcHigh);
                     ret.SetValues(ref i,  1 * 2, crcHigh);
                     ret.SetValues(ref i,  1 * 2, crcLow);
-                    ret.SetValues(ref i, 27 * 2, (byte)0xFF);
+                    ret.SetValues(ref i, 17 * 2, (byte)0xFF); /* spec says 27, not 17 */
                 }
             }
             if (ddAll)
@@ -238,6 +238,9 @@ namespace Sharp80
         {
             if (DoubleDensity.HasValue && DoubleDensity != GetDensity(TrackIndex))
                 return 0;
+
+            if (DoubleDensity == false)
+                TrackIndex &= 0x7FFFFFFE;
 
             var b = Data[TrackIndex];
 #if DEBUG

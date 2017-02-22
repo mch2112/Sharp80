@@ -1440,7 +1440,7 @@ namespace Sharp80
                     lostData = false;
                     seekErrorOrRecordNotFound = false;
                     crcError = false;
-                    writeProtected = false;
+                    writeProtected = currentDrive.WriteProtected;
                     sectorDeleted = false;
                     busy = true;
                 }
