@@ -87,6 +87,9 @@ namespace Sharp80
             };
 
             uiTimer.Start();
+
+            if (Settings.FullScreen)
+                ToggleFullScreen();
         }
 
         private void OnUserCommand(UserCommand Command)
@@ -387,8 +390,6 @@ namespace Sharp80
 
         private void ToggleFullScreen()
         {
-            System.Diagnostics.Debug.WriteLine("Toggling full screen...");
-
             var fs = !screen.IsFullScreen;
 
             if (fs)
@@ -407,7 +408,7 @@ namespace Sharp80
                 ClientSize = new System.Drawing.Size((int)(previousClientHeight * (screen.AdvancedView ? ScreenDX.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenDX.WINDOWED_ASPECT_RATIO_NORMAL)),
                                                            previousClientHeight);
             }
-            screen.IsFullScreen = fs;
+            Settings.FullScreen = screen.IsFullScreen = fs;
         }
         private void DoSnapshot(bool Save)
         {

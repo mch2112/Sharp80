@@ -18,6 +18,7 @@ namespace Sharp80
         private static string disk2Filename;
         private static string disk3Filename;
         private static bool? driveNoise;
+        private static bool? fullScreen;
         private static bool? greenScreen;
         private static string lastAsmFile;
         private static string lastCmdFile;
@@ -122,6 +123,15 @@ namespace Sharp80
             }
             set { driveNoise = value; }
         }
+        public static bool FullScreen
+        {
+            get
+            {
+                fullScreen = fullScreen ?? Properties.Settings.Default.full_screen;
+                return fullScreen.Value;
+            }
+            set { fullScreen = value; }
+        }
         public static bool GreenScreen
         {
             get
@@ -201,6 +211,8 @@ namespace Sharp80
                 psd.disk3 = disk3Filename;
             if (driveNoise.HasValue)
                 psd.drive_noise = driveNoise.Value;
+            if (fullScreen.HasValue)
+                psd.full_screen = fullScreen.Value;
             if (greenScreen.HasValue)
                 psd.green_screen = greenScreen.Value;
             if (!String.IsNullOrWhiteSpace(lastAsmFile))
@@ -213,6 +225,7 @@ namespace Sharp80
                 psd.sound = soundOn.Value;
             if (throttle.HasValue)
                 psd.throttle = throttle.Value;
+
             Properties.Settings.Default.Save();
         }
     }

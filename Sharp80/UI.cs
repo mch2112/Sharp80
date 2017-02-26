@@ -13,38 +13,7 @@ namespace Sharp80
 
         private const int STANDARD_INDENT = 3;
         
-        public static byte[] GetOptionsText(bool SoundOn, bool UseDriveNoise, bool GreenScreen, bool AutoStartOnReset, bool Throttle, bool Z80Display, bool HistoricDisassembly, bool FullScreen)
-        {
-            return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Sharp 80 Options - [F2] to show/hide") +
-                Indent(string.Format("[Alt]+[S] Sound                    {0}",
-                    SoundOn ? "[ON] /  OFF" : " ON  / [OFF]")) +
-                (SoundOn
-                    ? Indent(string.Format("[Alt]+[T] Drive Noise              {0}",
-                        UseDriveNoise ? "[ON] /  OFF" : " ON  / [OFF]"))
-                    : Format()) +
-                Format() +
-                Indent(string.Format("[Alt]+[G] Screen Color             {0}",
-                    GreenScreen ? " WHITE  / [GREEN]" : "[WHITE]  /  GREEN")) +
-                Format() +
-                Indent(string.Format("[Alt]+[A] Auto Start on Reset      {0}",
-                    AutoStartOnReset ? "[ON] /  OFF" : " ON  / [OFF]")) +
-                Format() +
-                Indent(string.Format("[F12] Throttle                     {0}",
-                    Throttle ? "[NORMAL] / FAST" : " NORMAL / [FAST]")) +
-                Format() +
-                Indent(string.Format("[F4] Z80 Internals Display         {0}",
-                    Z80Display ? "[ON] /  OFF" : " ON  / [OFF]")) +
-                (Z80Display
-                    ? Indent(string.Format("[Alt]+[H] Disassembly Mode         {0}",
-                        !HistoricDisassembly ? "[NORMAL] /  HISTORIC" : " NORMAL  / [HISTORIC]"))
-                    : Format()) +
-                Format() +
-                Indent(string.Format("[Alt]+[Enter] Full-Screen View     {0}",
-                    FullScreen ? " ON  / [OFF]" : "[ON] /  OFF ")) +
-                Format()));
-        }
-
+        
         internal static byte[] GetDiskView(FloppyController FC, byte? FloppyNum)
         {
             string s = Header("Sharp 80 Floppy Disk Status - [F3] to show or hide");

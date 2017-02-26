@@ -214,5 +214,17 @@ namespace Sharp80.Properties {
                 this["green_screen"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool full_screen {
+            get {
+                return ((bool)(this["full_screen"]));
+            }
+            set {
+                this["full_screen"] = value;
+            }
+        }
     }
 }

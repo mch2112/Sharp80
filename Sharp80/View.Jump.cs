@@ -32,21 +32,10 @@ namespace Sharp80
                     c = Key.ToChar();
                     break;
             }
-            if (c != '\0')
+            if (Computer.Processor.PC.val.RotateAddress(c, out ushort newPc))
             {
-                string addressString = Lib.ToHexString(Computer.Processor.PC.val);
-                addressString = addressString + c;
-                if (addressString.Length > 4)
-                    addressString = addressString.Substring(addressString.Length - 4, 4);
-
-                if (ushort.TryParse(addressString,
-                                    System.Globalization.NumberStyles.AllowHexSpecifier,
-                                    System.Globalization.CultureInfo.InvariantCulture,
-                                    out ushort addr))
-                {
-                    Computer.Processor.Jump(addr);
-                    processed = true;
-                }
+                Computer.Processor.Jump(newPc);
+                processed = true;
             }
             return processed || base.processKey(Key);
         }

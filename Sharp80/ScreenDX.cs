@@ -108,7 +108,7 @@ namespace Sharp80
                     Settings.AdvancedView = AdvancedView;
                     break;
                 case UserCommand.GreenScreen:
-                    GreenScreen = !GreenScreen;
+                    Settings.GreenScreen = GreenScreen = !GreenScreen;
                     break;
             }
         }
@@ -555,19 +555,6 @@ namespace Sharp80
                         { i++; k++; memPtr++; }
                 }
             }
-        }
-        
-        private void DrawOptionsView()
-        {
-            if (invalid)
-                DrawView(UI.GetOptionsText(SoundOn: Computer.Sound.On,
-                                           UseDriveNoise: Computer.Sound.UseDriveNoise,
-                                           GreenScreen: GreenScreen,
-                                           AutoStartOnReset: Settings.AutoStartOnReset,
-                                           Throttle: Settings.Throttle,
-                                           Z80Display: AdvancedView,
-                                           HistoricDisassembly: Computer.HistoricDisassemblyMode,
-                                           FullScreen: IsFullScreen));
         }
         private void DrawFloppyControllerStatusView()
         {

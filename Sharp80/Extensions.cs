@@ -133,5 +133,24 @@ namespace Sharp80
         {
             return (Input & BIT[BitNum]) != 0;
         }
+        public static bool RotateAddress(this ushort Input, char c, out ushort Output)
+        {
+            if (c != '\0')
+            {
+                string str = Lib.ToHexString(Input) + c;
+                if (str.Length > 4)
+                    str = str.Substring(str.Length - 4, 4);
+
+                return ushort.TryParse(str,
+                                    System.Globalization.NumberStyles.AllowHexSpecifier,
+                                    System.Globalization.CultureInfo.InvariantCulture,
+                                    out Output);
+            }
+            else
+            {
+                Output = 0;
+                return false;
+            }
+        }
     }
 }

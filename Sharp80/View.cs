@@ -71,6 +71,7 @@ namespace Sharp80
             {
                 new ViewNormal();
                 new ViewHelp();
+                new ViewOptions();
                 new ViewDisk();
                 new ViewBreakpoint();
                 new ViewJump();
@@ -106,6 +107,9 @@ namespace Sharp80
                             return true;
                         case KeyCode.F1:
                             CurrentMode = ViewMode.HelpView;
+                            return true;
+                        case KeyCode.F2:
+                            CurrentMode = ViewMode.OptionsView;
                             return true;
                         case KeyCode.F3:
                             CurrentMode = ViewMode.DiskView;

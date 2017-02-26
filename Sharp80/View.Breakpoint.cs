@@ -31,22 +31,11 @@ namespace Sharp80
             }
 
             bool processed = false;
-            if (c != '\0')
+            if (Computer.Processor.BreakPoint.RotateAddress(c, out ushort newBp))
             {
-                string addressString = Lib.ToHexString(Computer.Processor.BreakPoint);
-                addressString = addressString + c;
-                if (addressString.Length > 4)
-                    addressString = addressString.Substring(addressString.Length - 4, 4);
-
-                if (ushort.TryParse(addressString,
-                                    System.Globalization.NumberStyles.AllowHexSpecifier,
-                                    System.Globalization.CultureInfo.InvariantCulture,
-                                    out ushort addr))
-                {
-                    Computer.Processor.BreakPoint = addr;
-                    Invalidate();
-                    processed = true;
-                }
+                Computer.Processor.BreakPoint = newBp;
+                Invalidate();
+                processed = true;
             }
             return processed || base.processKey(Key);
         }

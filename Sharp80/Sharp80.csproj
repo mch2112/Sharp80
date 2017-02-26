@@ -169,6 +169,7 @@
     <Compile Include="View.Normal.cs" />
     <Compile Include="View.CPU.cs" />
     <Compile Include="View.Memory.cs" />
+    <Compile Include="View.Options.cs" />
     <Compile Include="WinDialogs.cs" />
     <Compile Include="Z80_Status.cs" />
     <EmbeddedResource Include="MainForm.resx">
