@@ -40,7 +40,7 @@ namespace Sharp80
         public void Deserialize(System.IO.BinaryReader Reader)
         {
             SetVideoMode(Reader.ReadBoolean(), Reader.ReadBoolean());
-            PhysicalScreen.Reset();
+            //PhysicalScreen.Reset();
         }
     }
 }

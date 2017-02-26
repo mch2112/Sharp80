@@ -95,8 +95,8 @@ namespace Sharp80
                 bool oldNmiEnabled = fdcNmiLatch.Enabled;
                 bool oldMotorOrDrqNmiEnabled = fdcMotorOffNmiLatch.Enabled;
 
-                fdcNmiLatch.Enabled = Lib.IsBitSet(value, 7);
-                fdcMotorOffNmiLatch.Enabled = Lib.IsBitSet(value, 6);
+                fdcNmiLatch.Enabled =         value.IsBitSet(7);
+                fdcMotorOffNmiLatch.Enabled = value.IsBitSet(6);
 
                 if (Log.DebugOn)
                 {
@@ -145,13 +145,13 @@ namespace Sharp80
             }
             set
             {
-                rs232ErrorIntLatch.Enabled     = Lib.IsBitSet(value, 6);
-                rs232ReceiveIntLatch.Enabled   = Lib.IsBitSet(value, 5);
-                rs232XmitIntLatch.Enabled      = Lib.IsBitSet(value, 4);
-                ioIntLatch.Enabled             = Lib.IsBitSet(value, 3);
-                rtcIntLatch.Enabled            = Lib.IsBitSet(value, 2);
-                casFallingEdgeIntLatch.Enabled = Lib.IsBitSet(value, 1);
-                casRisingEdgeIntLatch.Enabled  = Lib.IsBitSet(value, 0);
+                rs232ErrorIntLatch.Enabled     = value.IsBitSet(6);
+                rs232ReceiveIntLatch.Enabled   = value.IsBitSet(5);
+                rs232XmitIntLatch.Enabled      = value.IsBitSet(4);
+                ioIntLatch.Enabled             = value.IsBitSet(3);
+                rtcIntLatch.Enabled            = value.IsBitSet(2);
+                casFallingEdgeIntLatch.Enabled = value.IsBitSet(1);
+                casRisingEdgeIntLatch.Enabled  = value.IsBitSet(0);
 
                 if (Log.DebugOn)
                     Log.LogToDebug(rtcIntLatch.Enabled ? "Enabled RTC Interrupts" : "Disabled RTC Interrupts");

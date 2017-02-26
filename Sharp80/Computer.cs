@@ -83,6 +83,8 @@ namespace Sharp80
 
         public void Start()
         {
+            CancelStepOverOrOut();
+
             HasRunYet = true;
              
             Clock.Start();
@@ -132,6 +134,11 @@ namespace Sharp80
         {
             Processor.CancelStepOverOrOut();
         }
+        public bool Throttle
+        {
+            get { return Clock.Throttle; }
+            set { Clock.Throttle = value; }
+        }
         public void Reset()
         {
             if (Ready)
@@ -140,6 +147,7 @@ namespace Sharp80
                 Screen.Reset();
             }
         }
+
         // FLOPPY SUPPORT
 
         public bool HasDrivesAvailable
@@ -269,6 +277,7 @@ namespace Sharp80
             IntMgr.Deserialize(Reader);
             Screen.Deserialize(Reader);
         }
+
         public bool LoadCMDFile(string filePath)
         {
             Stop(WaitForStop: true);
@@ -314,9 +323,9 @@ namespace Sharp80
         {
             return Processor.GetDisassembly();
         }
-        public void NotifyKeyboardChange(SharpDX.DirectInput.Key Key, bool IsPressed)
+        public bool NotifyKeyboardChange(KeyState Key)
         {
-            Processor.Memory.NotifyKeyboardChange(Key, IsPressed);
+            return Processor.Memory.NotifyKeyboardChange(Key);
         }
         public void ResetKeyboard()
         {

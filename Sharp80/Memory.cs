@@ -43,7 +43,7 @@ namespace Sharp80
             get
             {
                 if (Location >= 0x37e0 && Location <= 0x37ff)
-                    System.Diagnostics.Debug.WriteLine("Model 1 FDC attempt?");
+                    Debug.WriteLine("Model 1 FDC attempt?");
 
                 unchecked
                 {

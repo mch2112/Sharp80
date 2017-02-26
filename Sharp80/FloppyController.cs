@@ -384,9 +384,9 @@ namespace Sharp80
             switch (opStatus)
             {
                 case OpStatus.Prepare:
-                    verify = Lib.IsBitSet(commandRegister, 2);
+                    verify = commandRegister.IsBitSet(2);
                     stepRateInUsec = stepRates[commandRegister & 0x03];
-                    updateRegisters = command == Command.Seek || command == Command.Restore || Lib.IsBitSet(commandRegister, 4);
+                    updateRegisters = command == Command.Seek || command == Command.Restore || commandRegister.IsBitSet(4);
                     opStatus = OpStatus.Step;
                     break;
                 case OpStatus.Step:
@@ -481,9 +481,9 @@ namespace Sharp80
 
                     ResetCRC();
 
-                    sideSelectVerify = Lib.IsBitSet(commandRegister, 1);
-                    sideOneExpected = Lib.IsBitSet(commandRegister, 3);
-                    multipleRecords = Lib.IsBitSet(commandRegister, 4);
+                    sideSelectVerify =commandRegister.IsBitSet(1);
+                    sideOneExpected = commandRegister.IsBitSet(3);
+                    multipleRecords = commandRegister.IsBitSet(4);
 
                     if (delay)
                         opStatus = OpStatus.Delay;
@@ -589,10 +589,10 @@ namespace Sharp80
 
                     crc = 0xFFFF;
 
-                    sideOneExpected = Lib.IsBitSet(commandRegister, 3);
-                    delay = Lib.IsBitSet(commandRegister, 2);
-                    sideSelectVerify = Lib.IsBitSet(commandRegister, 1);
-                    markSectorDeleted = Lib.IsBitSet(commandRegister, 0);
+                    sideOneExpected =   commandRegister.IsBitSet(3);
+                    delay =             commandRegister.IsBitSet(2);
+                    sideSelectVerify =  commandRegister.IsBitSet(1);
+                    markSectorDeleted = commandRegister.IsBitSet(0);
 
                     if (delay)
                         opStatus = OpStatus.Delay;
@@ -735,7 +735,7 @@ namespace Sharp80
                 case OpStatus.Prepare:
                     ResetIndexCount();
 
-                    delay = Lib.IsBitSet(commandRegister, 2);
+                    delay = commandRegister.IsBitSet(2);
 
                     if (delay)
                         opStatus = OpStatus.Delay;
@@ -1467,15 +1467,15 @@ namespace Sharp80
                         TypeOneCommandCallback();
                         break;
                     case Command.Step:
-                        if (Lib.IsBitSet(value, 6))
-                            if (Lib.IsBitSet(value, 5))
+                        if (value.IsBitSet(6))
+                            if (value.IsBitSet(5))
                                 lastStepDirUp = false;
                             else
                                 lastStepDirUp = true;
                         TypeOneCommandCallback();
                         break;
                     case Command.ReadSector:
-                        delay = Lib.IsBitSet(commandRegister, 2);
+                        delay = commandRegister.IsBitSet(2);
                         ReadSectorCallback();
                         break;
                     case Command.WriteSector:
@@ -1502,11 +1502,11 @@ namespace Sharp80
                         opStatus = OpStatus.OpDone;
                         break;
                     case Command.ReadTrack:
-                        delay = Lib.IsBitSet(commandRegister, 2);
+                        delay = commandRegister.IsBitSet(2);
                         ReadTrackCallback();
                         break;
                     case Command.WriteTrack:
-                        delay = Lib.IsBitSet(commandRegister, 2);
+                        delay = commandRegister.IsBitSet(2);
                         WriteTrackCallback();
                         break;
                     default:
@@ -1538,13 +1538,13 @@ namespace Sharp80
         {
             byte? floppyNum = null;
 
-            if (Lib.IsBitSet(value, 0))
+            if (value.IsBitSet(0))
                 floppyNum = 0;
-            else if (Lib.IsBitSet(value, 1))
+            else if (value.IsBitSet(1))
                 floppyNum = 1;
-            else if (Lib.IsBitSet(value, 2))
+            else if (value.IsBitSet(2))
                 floppyNum = 2;
-            else if (Lib.IsBitSet(value, 3))
+            else if (value.IsBitSet(3))
                 floppyNum = 3;
 
             if (floppyNum.HasValue && CurrentDriveNumber != floppyNum.Value)
@@ -1553,17 +1553,17 @@ namespace Sharp80
                 CurrentDriveNumber = floppyNum.Value;
             }
 
-            bool sideOne = Lib.IsBitSet(value, 4);
+            bool sideOne = value.IsBitSet(4);
             if (this.SideOne != sideOne)
             {
                 this.SideOne = sideOne;
                 Log.LogToDebug(string.Format("FDC Side select: {0}", sideOne ? 1 : 0));
             }
 
-            if (Lib.IsBitSet(value, 6))
+            if (value.IsBitSet(6))
                 clock.Wait();
 
-            doubleDensitySelected = Lib.IsBitSet(value, 7);
+            doubleDensitySelected = value.IsBitSet(7);
 
             if (motorOn)
                 MotorOnCallback();

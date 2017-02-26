@@ -8,6 +8,10 @@ namespace Sharp80
 {
     public static class Extensions
     {
+
+        private static readonly byte[] BIT = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
+        //private static readonly byte[] NOT = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F };
+
         /// <summary>
         /// Get the subarray, inclusive for start index, exclusive for end index.
         /// Negative End means take the rest of the array
@@ -27,7 +31,7 @@ namespace Sharp80
             var ret = new T[length];
             for (int i = 0; i < length; i++)
                 ret[i] = Source[i + Start];
-            
+
             return ret;
         }
         public static T[] Concat<T>(this T[] Array1, T[] Array2)
@@ -44,7 +48,7 @@ namespace Sharp80
 
             ushort[] ret = new ushort[Source.Length / 2];
             int j = 0;
-            for (int i = 0; i < Source.Length; i+= 2, j++)
+            for (int i = 0; i < Source.Length; i += 2, j++)
             {
                 ret[j] = (ushort)((Source[i + 1] << 8) | (Source[i]));
             }
@@ -106,13 +110,28 @@ namespace Sharp80
         {
             if (Array.Length >= Length)
                 return Array;
-            
+
             var ret = Array.Concat(new T[Length - Array.Length]);
 
             for (int i = Array.Length; i < Length; i++)
                 ret[i] = Value;
 
             return ret;
+        }
+        public static bool ArrayEquals<T>(this T[] Source, T[] Other)
+        {
+            return Source.SequenceEqual(Other);
+
+            //if (Source.Length != Other.Length)
+            //    return false;
+            //for (int i = 0; i < Source.Length; i++)
+            //    if (!EqualityComparer<T>.Default.Equals(Source[i], Other[i]))
+            //        return false;
+            //return true;
+        }
+        public static bool IsBitSet(this byte Input, byte BitNum)
+        {
+            return (Input & BIT[BitNum]) != 0;
         }
     }
 }

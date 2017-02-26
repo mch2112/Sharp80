@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using SharpDX.DirectInput;
 
 namespace Sharp80
 {
@@ -17,158 +16,160 @@ namespace Sharp80
         }
 
         private Dictionary<VirtualKey, Tuple<ushort, byte, byte>> keyAddresses;
-        private Dictionary<Key, VirtualKey> basicMappings = new Dictionary<Key, VirtualKey>();
-        private Dictionary<Tuple<Key, bool>, Tuple<VirtualKey, bool>> complexMappings = new Dictionary<Tuple<Key, bool>, Tuple<VirtualKey, bool>>();
+        private Dictionary<KeyCode, VirtualKey> basicMappings = new Dictionary<KeyCode, VirtualKey>();
+        private Dictionary<Tuple<KeyCode, bool>, Tuple<VirtualKey, bool>> complexMappings = new Dictionary<Tuple<KeyCode, bool>, Tuple<VirtualKey, bool>>();
 
         private bool isLeftShifted = false;
         private bool isRightShifted = false;
 
         private bool IsShiftedPhysical { get { return isLeftShifted || isRightShifted;  } }
 
-        private Key fakedInputKey          = Key.Unknown;
+        private KeyCode fakedInputKey      = KeyCode.None;
         private VirtualKey fakedVirtualKey = VirtualKey.NONE;
         
         private void SetupDXKeyboardMatrix()
         {
             keyAddresses = new Dictionary<VirtualKey, Tuple<ushort, byte, byte>>();
 
-            AddKey(VirtualKey.AT, 0x3801, 0x01, Key.Backslash);
-            AddKey(VirtualKey.A, 0x3801, 0x02, Key.A);
-            AddKey(VirtualKey.B, 0x3801, 0x04, Key.B);
-            AddKey(VirtualKey.C, 0x3801, 0x08, Key.C);
-            AddKey(VirtualKey.D, 0x3801, 0x10, Key.D);
-            AddKey(VirtualKey.E, 0x3801, 0x20, Key.E);
-            AddKey(VirtualKey.F, 0x3801, 0x40, Key.F);
-            AddKey(VirtualKey.G, 0x3801, 0x80, Key.G);
+            AddKey(VirtualKey.AT, 0x3801, 0x01, KeyCode.Backslash);
+            AddKey(VirtualKey.A, 0x3801, 0x02, KeyCode.A);
+            AddKey(VirtualKey.B, 0x3801, 0x04, KeyCode.B);
+            AddKey(VirtualKey.C, 0x3801, 0x08, KeyCode.C);
+            AddKey(VirtualKey.D, 0x3801, 0x10, KeyCode.D);
+            AddKey(VirtualKey.E, 0x3801, 0x20, KeyCode.E);
+            AddKey(VirtualKey.F, 0x3801, 0x40, KeyCode.F);
+            AddKey(VirtualKey.G, 0x3801, 0x80, KeyCode.G);
 
-            AddKey(VirtualKey.H, 0x3802, 0x01, Key.H);
-            AddKey(VirtualKey.I, 0x3802, 0x02, Key.I);
-            AddKey(VirtualKey.J, 0x3802, 0x04, Key.J);
-            AddKey(VirtualKey.K, 0x3802, 0x08, Key.K);
-            AddKey(VirtualKey.L, 0x3802, 0x10, Key.L);
-            AddKey(VirtualKey.M, 0x3802, 0x20, Key.M);
-            AddKey(VirtualKey.N, 0x3802, 0x40, Key.N);
-            AddKey(VirtualKey.O, 0x3802, 0x80, Key.O);
+            AddKey(VirtualKey.H, 0x3802, 0x01, KeyCode.H);
+            AddKey(VirtualKey.I, 0x3802, 0x02, KeyCode.I);
+            AddKey(VirtualKey.J, 0x3802, 0x04, KeyCode.J);
+            AddKey(VirtualKey.K, 0x3802, 0x08, KeyCode.K);
+            AddKey(VirtualKey.L, 0x3802, 0x10, KeyCode.L);
+            AddKey(VirtualKey.M, 0x3802, 0x20, KeyCode.M);
+            AddKey(VirtualKey.N, 0x3802, 0x40, KeyCode.N);
+            AddKey(VirtualKey.O, 0x3802, 0x80, KeyCode.O);
 
-            AddKey(VirtualKey.P, 0x3804, 0x01, Key.P);
-            AddKey(VirtualKey.Q, 0x3804, 0x02, Key.Q);
-            AddKey(VirtualKey.R, 0x3804, 0x04, Key.R);
-            AddKey(VirtualKey.S, 0x3804, 0x08, Key.S);
-            AddKey(VirtualKey.T, 0x3804, 0x10, Key.T);
-            AddKey(VirtualKey.U, 0x3804, 0x20, Key.U);
-            AddKey(VirtualKey.V, 0x3804, 0x40, Key.V);
-            AddKey(VirtualKey.W, 0x3804, 0x80, Key.W);
+            AddKey(VirtualKey.P, 0x3804, 0x01, KeyCode.P);
+            AddKey(VirtualKey.Q, 0x3804, 0x02, KeyCode.Q);
+            AddKey(VirtualKey.R, 0x3804, 0x04, KeyCode.R);
+            AddKey(VirtualKey.S, 0x3804, 0x08, KeyCode.S);
+            AddKey(VirtualKey.T, 0x3804, 0x10, KeyCode.T);
+            AddKey(VirtualKey.U, 0x3804, 0x20, KeyCode.U);
+            AddKey(VirtualKey.V, 0x3804, 0x40, KeyCode.V);
+            AddKey(VirtualKey.W, 0x3804, 0x80, KeyCode.W);
 
-            AddKey(VirtualKey.X, 0x3808, 0x01, Key.X);
-            AddKey(VirtualKey.Y, 0x3808, 0x02, Key.Y);
-            AddKey(VirtualKey.Z, 0x3808, 0x04, Key.Z);
+            AddKey(VirtualKey.X, 0x3808, 0x01, KeyCode.X);
+            AddKey(VirtualKey.Y, 0x3808, 0x02, KeyCode.Y);
+            AddKey(VirtualKey.Z, 0x3808, 0x04, KeyCode.Z);
 
-            AddKey(VirtualKey.D0, 0x3810, 0x01, Key.NumberPad0);
-            AddKey(VirtualKey.D1, 0x3810, 0x02, Key.D1);
-            AddKey(VirtualKey.D2, 0x3810, 0x04, Key.NumberPad2);
-            AddKey(VirtualKey.D3, 0x3810, 0x08, Key.NumberPad3, Key.D3);
-            AddKey(VirtualKey.D4, 0x3810, 0x10, Key.NumberPad4, Key.D4);
-            AddKey(VirtualKey.D5, 0x3810, 0x20, Key.NumberPad5, Key.D5);
-            AddKey(VirtualKey.D6, 0x3810, 0x40, Key.NumberPad6);
-            AddKey(VirtualKey.D7, 0x3810, 0x80, Key.NumberPad7);
+            AddKey(VirtualKey.D0, 0x3810, 0x01, KeyCode.NumberPad0);
+            AddKey(VirtualKey.D1, 0x3810, 0x02, KeyCode.D1);
+            AddKey(VirtualKey.D2, 0x3810, 0x04, KeyCode.NumberPad2);
+            AddKey(VirtualKey.D3, 0x3810, 0x08, KeyCode.NumberPad3, KeyCode.D3);
+            AddKey(VirtualKey.D4, 0x3810, 0x10, KeyCode.NumberPad4, KeyCode.D4);
+            AddKey(VirtualKey.D5, 0x3810, 0x20, KeyCode.NumberPad5, KeyCode.D5);
+            AddKey(VirtualKey.D6, 0x3810, 0x40, KeyCode.NumberPad6);
+            AddKey(VirtualKey.D7, 0x3810, 0x80, KeyCode.NumberPad7);
 
-            AddKey(VirtualKey.D8, 0x3820, 0x01, Key.NumberPad8);
-            AddKey(VirtualKey.D9, 0x3820, 0x02, Key.NumberPad9);
+            AddKey(VirtualKey.D8, 0x3820, 0x01, KeyCode.NumberPad8);
+            AddKey(VirtualKey.D9, 0x3820, 0x02, KeyCode.NumberPad9);
             AddKey(VirtualKey.COLON, 0x3820, 0x04);
             AddKey(VirtualKey.SEMICOLON, 0x3820, 0x08);
-            AddKey(VirtualKey.COMMA, 0x3820, 0x10, Key.Comma);
+            AddKey(VirtualKey.COMMA, 0x3820, 0x10, KeyCode.Comma);
             AddKey(VirtualKey.MINUS, 0x3820, 0x20);
-            AddKey(VirtualKey.PERIOD, 0x3820, 0x40, Key.Period);
-            AddKey(VirtualKey.SLASH, 0x3820, 0x80, Key.Slash);
+            AddKey(VirtualKey.PERIOD, 0x3820, 0x40, KeyCode.Period);
+            AddKey(VirtualKey.SLASH, 0x3820, 0x80, KeyCode.Slash);
 
-            AddKey(VirtualKey.ENTER, 0x3840, 0x01, Key.Return);
-            AddKey(VirtualKey.CLEAR, 0x3840, 0x02, Key.Home);
-            AddKey(VirtualKey.BREAK, 0x3840, 0x04, Key.Escape);
-            AddKey(VirtualKey.UPARROW, 0x3840, 0x08, Key.Up);
-            AddKey(VirtualKey.DOWNARROW, 0x3840, 0x10, Key.Down);
-            AddKey(VirtualKey.LEFTARROW, 0x3840, 0x20, Key.Left, Key.Back, Key.LeftBracket, Key.Delete);
-            AddKey(VirtualKey.RIGHTARROW, 0x3840, 0x40, Key.Right, Key.Tab, Key.RightBracket);
-            AddKey(VirtualKey.SPACEBAR, 0x3840, 0x80, Key.Space);
+            AddKey(VirtualKey.ENTER, 0x3840, 0x01, KeyCode.Return);
+            AddKey(VirtualKey.CLEAR, 0x3840, 0x02, KeyCode.Home);
+            AddKey(VirtualKey.BREAK, 0x3840, 0x04, KeyCode.Escape);
+            AddKey(VirtualKey.UPARROW, 0x3840, 0x08, KeyCode.Up);
+            AddKey(VirtualKey.DOWNARROW, 0x3840, 0x10, KeyCode.Down);
+            AddKey(VirtualKey.LEFTARROW, 0x3840, 0x20, KeyCode.Left, KeyCode.Back, KeyCode.LeftBracket, KeyCode.Delete);
+            AddKey(VirtualKey.RIGHTARROW, 0x3840, 0x40, KeyCode.Right, KeyCode.Tab, KeyCode.RightBracket);
+            AddKey(VirtualKey.SPACEBAR, 0x3840, 0x80, KeyCode.Space);
 
             AddKey(VirtualKey.LEFTSHIFT, 0x3880, 0x01);
             AddKey(VirtualKey.RIGHTSHIFT, 0x3880, 0x02);
 
-            AddComplexMapping(Key.D2, VirtualKey.D2, false, VirtualKey.AT, false);
-            AddComplexMapping(Key.D6, VirtualKey.D6, false, VirtualKey.NONE, false);
-            AddComplexMapping(Key.D7, VirtualKey.D7, false, VirtualKey.D6, true);
-            AddComplexMapping(Key.D8, VirtualKey.D8, false, VirtualKey.COLON, true);
-            AddComplexMapping(Key.D9, VirtualKey.D9, false, VirtualKey.D8, true);
-            AddComplexMapping(Key.D0, VirtualKey.D0, false, VirtualKey.D9, true);
-            AddComplexMapping(Key.Apostrophe, VirtualKey.D7, true, VirtualKey.D2, true);
-            AddComplexMapping(Key.Semicolon, VirtualKey.SEMICOLON, false, VirtualKey.COLON, false);
-            AddComplexMapping(Key.Minus, VirtualKey.MINUS, false, VirtualKey.NONE, false);
-            AddComplexMapping(Key.Equals, VirtualKey.MINUS, true, VirtualKey.SEMICOLON, true);
-            AddComplexMapping(Key.Capital, VirtualKey.D0, true, VirtualKey.D0, true);
+            AddComplexMapping(KeyCode.D2, VirtualKey.D2, false, VirtualKey.AT, false);
+            AddComplexMapping(KeyCode.D6, VirtualKey.D6, false, VirtualKey.NONE, false);
+            AddComplexMapping(KeyCode.D7, VirtualKey.D7, false, VirtualKey.D6, true);
+            AddComplexMapping(KeyCode.D8, VirtualKey.D8, false, VirtualKey.COLON, true);
+            AddComplexMapping(KeyCode.D9, VirtualKey.D9, false, VirtualKey.D8, true);
+            AddComplexMapping(KeyCode.D0, VirtualKey.D0, false, VirtualKey.D9, true);
+            AddComplexMapping(KeyCode.Apostrophe, VirtualKey.D7, true, VirtualKey.D2, true);
+            AddComplexMapping(KeyCode.Semicolon, VirtualKey.SEMICOLON, false, VirtualKey.COLON, false);
+            AddComplexMapping(KeyCode.Minus, VirtualKey.MINUS, false, VirtualKey.NONE, false);
+            AddComplexMapping(KeyCode.Equals, VirtualKey.MINUS, true, VirtualKey.SEMICOLON, true);
+            AddComplexMapping(KeyCode.Capital, VirtualKey.D0, true, VirtualKey.D0, true);
         }
 
-        private void AddComplexMapping(Key PhysicalKey, VirtualKey VirtualKeyUnshifted, bool VirtualShiftUnshifted, VirtualKey VirtualKeyShifted, bool VirtualShiftShifted)
+        private void AddComplexMapping(KeyCode PhysicalKey, VirtualKey VirtualKeyUnshifted, bool VirtualShiftUnshifted, VirtualKey VirtualKeyShifted, bool VirtualShiftShifted)
         {
-            complexMappings.Add(new Tuple<Key, bool>(PhysicalKey, false), new Tuple<VirtualKey, bool>(VirtualKeyUnshifted, VirtualShiftUnshifted));
-            complexMappings.Add(new Tuple<Key, bool>(PhysicalKey, true), new Tuple<VirtualKey, bool>(VirtualKeyShifted, VirtualShiftShifted));
+            complexMappings.Add(new Tuple<KeyCode, bool>(PhysicalKey, false), new Tuple<VirtualKey, bool>(VirtualKeyUnshifted, VirtualShiftUnshifted));
+            complexMappings.Add(new Tuple<KeyCode, bool>(PhysicalKey, true), new Tuple<VirtualKey, bool>(VirtualKeyShifted, VirtualShiftShifted));
         }
 
-        private void AddKey(VirtualKey VirtualKey, ushort Address, byte Mask, params Key[] PhysicalKeys)
+        private void AddKey(VirtualKey VirtualKey, ushort Address, byte Mask, params KeyCode[] PhysicalKeys)
         {
             keyAddresses.Add(VirtualKey, new Tuple<ushort, byte, byte>(Address, Mask, (byte) ~Mask));
             foreach (var pk in PhysicalKeys)
                 basicMappings.Add(pk, VirtualKey);
         }
 
-        public void NotifyKeyboardChange(Key Key, bool IsPressed)
+        public bool NotifyKeyboardChange(KeyState Key)
         {
-            if (Key == Key.LeftShift)
+            if (Key.Key == KeyCode.LeftShift)
             {
-                isLeftShifted = IsPressed;
+                isLeftShifted = Key.Pressed;
             }
-            if (Key == Key.RightShift)
+            if (Key.Key == KeyCode.RightShift)
             {
-                isRightShifted = IsPressed;
+                isRightShifted = Key.Pressed;
             }
 
             DoKeyChange(isLeftShifted, VirtualKey.LEFTSHIFT);
             DoKeyChange(isRightShifted, VirtualKey.RIGHTSHIFT);
 
-            if (Key == Key.LeftShift || Key == Key.RightShift)
-                return;
+            if (Key.Key == KeyCode.LeftShift || Key.Key == KeyCode.RightShift)
+                return true;
             
-            if (Key == Key.Capital && IsPressed == false)
+            if (Key.Key == KeyCode.Capital && Key.Pressed == false)
                 TurnCapsLockOff();
 
-            VirtualKey k = VirtualKey.NONE;
+            var k = VirtualKey.NONE;
 
-            if (fakedInputKey != Key.Unknown)
+            if (fakedInputKey != KeyCode.None)
             {
-                bool ret = Key == fakedInputKey;
+                bool ret = Key.Key == fakedInputKey;
 
                 DoKeyChange(false, fakedVirtualKey);
-                fakedInputKey = Key.Unknown;
+                fakedInputKey = KeyCode.None;
                 fakedVirtualKey = VirtualKey.NONE;
 
                 if (ret)
-                    return;
+                    return true;
             }
 
-            if (!basicMappings.TryGetValue(Key, out k))
+            if (!basicMappings.TryGetValue(Key.Key, out k))
             {
-                if (!IsPressed)
-                    return;
+                if (!Key.Pressed)
+                    return false;
 
-                if (!complexMappings.TryGetValue(new Tuple<Key, bool>(Key, IsShiftedPhysical), out Tuple<VirtualKey, bool> cm))
-                    return;
+                if (!complexMappings.TryGetValue(new Tuple<KeyCode, bool>(Key.Key, IsShiftedPhysical), out Tuple<VirtualKey, bool> cm))
+                    return false;
 
                 DoKeyChange(cm.Item2, VirtualKey.RIGHTSHIFT);
                 if (!cm.Item2)
                     DoKeyChange(false, VirtualKey.LEFTSHIFT);
 
                 k = fakedVirtualKey = cm.Item1;
-                fakedInputKey = Key;
+                fakedInputKey = Key.Key;
             }
-            DoKeyChange(IsPressed, k);
+            DoKeyChange(Key.Pressed, k);
+
+            return true;
         }
 
         private void DoKeyChange(bool IsPressed, VirtualKey k)

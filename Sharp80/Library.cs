@@ -23,7 +23,7 @@ namespace Sharp80
                 ds.Write(data, 0, data.Length);
             }
             var o = output.ToArray();
-            System.Diagnostics.Debug.Assert(arrayequals(Decompress(o), data));
+            System.Diagnostics.Debug.Assert(Decompress(o).ArrayEquals(data));
             return o;
         }
         public static byte[] Decompress(byte[] data)
@@ -38,15 +38,7 @@ namespace Sharp80
             var o = output.ToArray();
             return o;
         }
-        public static bool arrayequals(byte[] b1, byte[] b2)
-        {
-            if (b1.Length != b2.Length)
-                return false;
-            for (int i = 0; i < b1.Length; i++)
-                if (b1[i] != b2[i])
-                    return false;
-            return true;
-        }
+        
         //public static string ToHexString(byte[] bytes)
         //{
         //    char[] chars = new char[bytes.Length * 2];
@@ -119,7 +111,7 @@ namespace Sharp80
                 if (i > 0)
                     s += " ";
 
-                s += Lib.ToHexString(memory[index++]);
+                s += ToHexString(memory[index++]);
             }
 
             return s;
@@ -132,9 +124,10 @@ namespace Sharp80
 			if (l > 0xFFFF)
 				throw new Exception("Hex To Byte Overflow");
 
-            ushort us;
-            if (!ushort.TryParse(input, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture, out us))
+            if (!ushort.TryParse(input, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture, out ushort us))
+            {
                 throw new Exception("Hex To Byte Error");
+            }
 
 #endif
             return ushort.Parse(input, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture);
@@ -146,8 +139,7 @@ namespace Sharp80
             ulong l = Convert.ToUInt64(input, 16);
 			if (l > 0xFF)
 				throw new Exception("Hex To Byte Overflow");
-            byte b;
-            if (!byte.TryParse(input, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture, out b))
+            if (!byte.TryParse(input, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture, out byte b))
                 throw new Exception("Hex To Byte Error");
 #endif
             return byte.Parse(input, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture);
@@ -199,21 +191,19 @@ namespace Sharp80
             else
                 return "+" + ToHexString(input);
         }
-        
+        /// <summary>
+        /// Returns the first blob of text in a line, such as the first word. Space delimited.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
         public static string FirstText(string input)
         {
-            // Returns the first blob of text in a line, such as the first word.
-            // Space delimited
             if (input.Contains(" "))
                 return input.Substring(0, input.IndexOf(' '));
             else
                 return input;
         }
-        public static bool IsBitSet(byte Input, byte BitNum)
-        {
-            return (Input & BIT[BitNum]) != 0;
-            //return ((Input & (0x01 << BitNum)) != 0);
-        }
+        
         public static ushort Crc(ushort StartingCRC, params byte[] Data)
         {
             ushort crc = StartingCRC;

@@ -13,7 +13,7 @@ namespace Sharp80
         void SetWordAt(ushort Address, ushort Value);
 
         bool ScreenWritten { get; set; }
-        void NotifyKeyboardChange(SharpDX.DirectInput.Key Key, bool IsPressed);
+        bool NotifyKeyboardChange(KeyState Key);
         void ResetKeyboard();
     }
 }

@@ -7,22 +7,25 @@ namespace Sharp80.Processor
 {
     internal sealed partial class Z80
     {
-        private void load_a_xxmm(Register8Indirect XX)
-        {
-            System.Diagnostics.Debug.Assert(XX.Equals(BCM) || XX.Equals(DEM));
-            A.val = XX.val;
-            WZ.val = XX.ProxyVal;
-            WZ.inc();
-        }
-        private void load_xxmm_a(Register8Indirect XX)
-        {
-            // Note for *BM1: MEMPTR_low = (rp + 1) & #FF,  MEMPTR_hi = 0
+        private static readonly byte[] BIT = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
+        private static readonly byte[] NOT = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F };
 
-            System.Diagnostics.Debug.Assert(XX.Equals(BCM) || XX.Equals(DEM));
-            XX.val = A.val;
+        //private void load_a_xxmm(Register8Indirect XX)
+        //{
+        //    System.Diagnostics.Debug.Assert(XX.Equals(BCM) || XX.Equals(DEM));
+        //    A.val = XX.val;
+        //    WZ.val = XX.ProxyVal;
+        //    WZ.inc();
+        //}
+        //private void load_xxmm_a(Register8Indirect XX)
+        //{
+        //    // Note for *BM1: MEMPTR_low = (rp + 1) & #FF,  MEMPTR_hi = 0
 
-            WZ.setVal(A.val, (byte)((XX.ProxyVal + 1) & 0xFF));
-        }
+        //    System.Diagnostics.Debug.Assert(XX.Equals(BCM) || XX.Equals(DEM));
+        //    XX.val = A.val;
+
+        //    WZ.setVal(A.val, (byte)((XX.ProxyVal + 1) & 0xFF));
+        //}
         private void load(Register8 r1, Register8 r2)
         {
             r1.val = r2.val;
@@ -130,11 +133,11 @@ namespace Sharp80.Processor
             BC.dec();
             b = (byte)((b + A.val) & 0xFF);
 
-            F.val &= (byte)(S_SF | S_ZF | S_CF);
+            F.val &= (S_SF | S_ZF | S_CF);
 
             VF = BC.NZ;
-            F5 = Lib.IsBitSet(b, 1);
-            F3 = Lib.IsBitSet(b, 3);
+            F5 = b.IsBitSet(1);
+            F3 = b.IsBitSet(3);
         }
         private void ldir()
         {
@@ -234,8 +237,8 @@ namespace Sharp80.Processor
             
             System.Diagnostics.Debug.Assert(HF == (((A.val ^ hlMem ^ diff) & S_HF) == S_HF));
            
-            F5 = Lib.IsBitSet(diff, 1);
-            F3 = Lib.IsBitSet(diff, 3);
+            F5 = diff.IsBitSet(1);
+            F3 = diff.IsBitSet(3);
         }
         private void halt()
         {
@@ -324,8 +327,8 @@ namespace Sharp80.Processor
         private void bitHLM(int shift)
         {
             bit(HLM.val, shift);
-            F3 = Lib.IsBitSet(WZ.hVal, 3);
-            F5 = Lib.IsBitSet(WZ.hVal, 5);
+            F3 = WZ.hVal.IsBitSet(3);
+            F5 = WZ.hVal.IsBitSet(5);
         }
         private void bit(Register8 r, int shift)
         {
@@ -345,7 +348,7 @@ namespace Sharp80.Processor
         }
         private void bit(byte val, int shift)
         {
-            F.val &= (byte)(R_NF & R_F3 & R_F5 & R_SF);
+            F.val &= (R_NF & R_F3 & R_F5 & R_SF);
             F.val |= S_HF;
 
             ZF = ((val >> shift) & BIT_0_MASK) == 0x00;
@@ -360,11 +363,11 @@ namespace Sharp80.Processor
 
         private void set(Register8 r, byte bit)
         {
-            r.val |= Lib.BIT[bit];
+            r.val |= BIT[bit];
         }
         private void res(Register8 r, byte bit)
         {
-            r.val &= Lib.NOT[bit];
+            r.val &= NOT[bit];
         }
 
         private void set(Register8Indexed r, byte b) { set((Register8)r, b); WZ.val = r.OffsetAddress; }

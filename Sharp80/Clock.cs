@@ -335,7 +335,7 @@ namespace Sharp80
             if (pulseReqs.Count == 0)
                 nextPulseReqTick = UInt64.MaxValue;
             else
-                nextPulseReqTick = pulseReqs.Min(r => r.Trigger);
+                nextPulseReqTick = 0;// pulseReqs.Min(r => r.Trigger); <-- causes threading issue 
         }
 
         // SNAPSHOTS

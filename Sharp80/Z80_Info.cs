@@ -15,14 +15,14 @@ namespace Sharp80.Processor
             byte b = 0x00;
             do
             {
-                flagsToString[b] = (Lib.IsBitSet(b, 7) ? "S" : "-") +
-                                   (Lib.IsBitSet(b, 6) ? "Z" : "-") +
-                                   (Lib.IsBitSet(b, 5) ? "5" : "-") +
-                                   (Lib.IsBitSet(b, 4) ? "H" : "-") +
-                                   (Lib.IsBitSet(b, 3) ? "3" : "-") +
-                                   (Lib.IsBitSet(b, 2) ? "V" : "-") +
-                                   (Lib.IsBitSet(b, 1) ? "N" : "-") +
-                                   (Lib.IsBitSet(b, 0) ? "C" : "-");
+                flagsToString[b] = (b.IsBitSet(7) ? "S" : "-") +
+                                   (b.IsBitSet(6) ? "Z" : "-") +
+                                   (b.IsBitSet(5) ? "5" : "-") +
+                                   (b.IsBitSet(4) ? "H" : "-") +
+                                   (b.IsBitSet(3) ? "3" : "-") +
+                                   (b.IsBitSet(2) ? "V" : "-") +
+                                   (b.IsBitSet(1) ? "N" : "-") +
+                                   (b.IsBitSet(0) ? "C" : "-");
             }
             while (b++ < 0xFF);
         }

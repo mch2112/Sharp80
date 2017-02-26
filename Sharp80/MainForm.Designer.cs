@@ -23,12 +23,22 @@
                 base.Dispose(disposing);
 
                 if (!screen.IsDisposed)
+                {
                     screen.Dispose();
-                if (!uic.IsDisposed)
-                    uic.Dispose();
+                }
+                if (!computer.IsDisposed)
+                {
+                    if (computer.Ready)
+                    {
+                        computer.HardwareReset();
+                        computer.ShutDown();
+                    }
+                    computer.Dispose();
+                }
                 if (!keyboard.IsDisposed)
+                {
                     keyboard.Dispose();
-                
+                }
                 isDisposing = false;
             }
         }
@@ -54,10 +64,8 @@
             this.Name = "MainForm";
             this.Activated += new System.EventHandler(this.Form_Activated);
             this.Deactivate += new System.EventHandler(this.Form_Deactivate);
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form_FormClosing);
             this.Load += new System.EventHandler(this.Form_Load);
             this.ResumeLayout(false);
-
         }
 
         #endregion

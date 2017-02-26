@@ -17,10 +17,7 @@ namespace Sharp80
                 }
             }
         }
-
-        public static readonly byte[] BIT = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
-        public static readonly byte[] NOT = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F };
-
+        
         public static readonly bool[,] TABLE_HALF_BORROW;
 
         public static readonly sbyte[] TWOSCOMP =

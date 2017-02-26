@@ -257,6 +257,69 @@ namespace Sharp80
             }
             return execAddress;
         }
+        public static string GetFloppyFilePath(string Prompt, string DefaultPath, bool Save, bool SelectFileInDialog, bool DskOnly)
+        {
+            string ext = DskOnly ? "dsk" : Path.GetExtension(DefaultPath);
+
+            if (string.IsNullOrWhiteSpace(ext))
+                ext = "dsk";
+
+            return Dialogs.UserSelectFile(Save: Save,
+                                          DefaultPath: DefaultPath,
+                                          Title: Prompt,
+                                          Filter: DskOnly ? "TRS-80 DSK Files (*.dsk)|*.dsk|All Files (*.*)|*.*"
+                                                          : "TRS-80 DSK Files (*.dsk;*.dmk;*.jv1;*.jv3)|*.dsk;*.dmk;*.jv1;*.jv3|All Files (*.*)|*.*",
+                                          DefaultExtension: ext,
+                                          SelectFileInDialog: SelectFileInDialog);
+        }
+
+        // returns false if the user cancelled a needed save
+        public static bool SaveFloppies(FloppyController FloppyController)
+        {
+            // returns true on user cancel
+            for (byte b = 0; b < 4; b++)
+            {
+                if (!SaveFloppyIfRequired(FloppyController, b))
+                    return false;
+            }
+            return true;
+        }
+        public static bool SaveFloppyIfRequired(FloppyController FloppyController, byte DriveNum)
+        {
+            bool? save = false;
+
+            if (FloppyController.DiskHasChanged(DriveNum) ?? false)
+                save = Dialogs.AskYesNoCancel(string.Format("Drive {0} has changed. Save it?", DriveNum));
+
+            if (!save.HasValue)
+                return false;
+
+            if (save.Value)
+            {
+                if (string.IsNullOrWhiteSpace(FloppyController.FloppyFilePath(DriveNum)))
+                {
+                    var path = GetFloppyFilePath("Choose path to save floppy", Settings.DefaultFloppyDirectory, true, false, true);
+                    if (string.IsNullOrWhiteSpace(path))
+                        return false;
+                    else
+                    {
+                        FloppyController.GetFloppy(DriveNum).FilePath = path;
+                        SaveDefaultDriveFileName(DriveNum, path);
+                    }
+                }
+                FloppyController.SaveFloppy(DriveNum);
+            }
+            return true;
+        }
+        public static bool MakeFloppyFromFile(string FilePath)
+        {
+            byte[] diskImage = DMK.MakeFloppyFromFile(LoadBinaryFile(FilePath), Path.GetFileName(FilePath)).Serialize(ForceDMK: true);
+
+            if (diskImage.Length > 0)
+                return SaveBinaryFile(Path.ChangeExtension(FilePath, "DMK"), diskImage);
+            else
+                return false;
+        }
     }
 }
 

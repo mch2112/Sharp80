@@ -140,7 +140,7 @@ namespace Sharp80
                     case 0xEE:
                     case 0xEF:
                         // Update double width and Kanji character settings
-                        computer.Screen.SetVideoMode(Lib.IsBitSet(value, 2), !Lib.IsBitSet(value, 3));
+                        computer.Screen.SetVideoMode(value.IsBitSet(2), !value.IsBitSet(3));
 #if CASSETTE
                         computer.CassettePower(Lib.IsBitSet(value, 1));
 #endif
