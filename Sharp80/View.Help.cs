@@ -99,6 +99,7 @@ namespace Sharp80
                 default:
                     return base.processKey(Key);
             }
+            Invalidate();
             return true;
         }
     }

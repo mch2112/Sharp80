@@ -74,7 +74,7 @@ namespace Sharp80
         {
             var FC = Computer.FloppyController;
 
-            string s = Header("Sharp 80 Floppy Disk Status - [F3] to show or hide");
+            string s = Header("Sharp 80 Floppy Disk Status");
             if (DriveNumber.HasValue)
             {
                 bool diskLoaded = !FC.DriveIsUnloaded(DriveNumber.Value);

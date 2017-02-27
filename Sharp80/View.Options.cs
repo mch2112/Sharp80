@@ -17,7 +17,7 @@ namespace Sharp80
         protected override byte[] GetViewBytes()
         {
             return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Sharp 80 Options - [F2] to show/hide") +
+                Header("Sharp 80 Options") +
                 Indent(string.Format("[Alt]+[S] Sound                    {0}",
                     Computer.Sound.On ? "[ON] /  OFF" : " ON  / [OFF]")) +
                 (Computer.Sound.On
