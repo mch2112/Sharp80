@@ -164,12 +164,14 @@
     <Compile Include="View.Breakpoint.cs" />
     <Compile Include="View.cs" />
     <Compile Include="View.Disk.cs" />
+    <Compile Include="View.FloppyController.cs" />
     <Compile Include="View.Help.cs" />
     <Compile Include="View.Jump.cs" />
     <Compile Include="View.Normal.cs" />
     <Compile Include="View.CPU.cs" />
     <Compile Include="View.Memory.cs" />
     <Compile Include="View.Options.cs" />
+    <Compile Include="View.Zap.cs" />
     <Compile Include="WinDialogs.cs" />
     <Compile Include="Z80_Status.cs" />
     <EmbeddedResource Include="MainForm.resx">

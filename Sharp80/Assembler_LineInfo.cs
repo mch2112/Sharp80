@@ -165,13 +165,13 @@ namespace Sharp80.Assembler
                     string bytes = String.Empty;
 
                     if (Byte0.HasValue)
-                        bytes += Lib.ToHexString(Byte0.Value) + SPACE;
+                        bytes += Byte0.Value.ToHexString() + SPACE;
                     if (Byte1.HasValue)
-                        bytes += Lib.ToHexString(Byte1.Value) + SPACE;
+                        bytes += Byte1.Value.ToHexString() + SPACE;
                     if (Byte2.HasValue)
-                        bytes += Lib.ToHexString(Byte2.Value) + SPACE;
+                        bytes += Byte2.Value.ToHexString() + SPACE;
                     if (Byte3.HasValue)
-                        bytes += Lib.ToHexString(Byte3.Value) + SPACE;
+                        bytes += Byte3.Value.ToHexString() + SPACE;
 
                     bytes = bytes.PadRight(13);
 
@@ -179,7 +179,7 @@ namespace Sharp80.Assembler
 
                     bytes = bytes.PadRight(26);
 
-                    return Lib.ToHexString(Address) +
+                    return Address.ToHexString() +
                            ":  " +
                            bytes +
                            Mnemonic +
@@ -208,10 +208,10 @@ namespace Sharp80.Assembler
                         s.AppendLine();
                         var i = Instruction;
                         s.AppendFormat("       {0} {1} {2} {3}               {4,-18}\r\n",
-                                 Lib.ToHexString(i.Op0),
-                                 i.Size < 2 ? "  " : i.OpcodeLength < 2 ? "XX" : Lib.ToHexString(i.Op1),
+                                 i.Op0.ToHexString(),
+                                 i.Size < 2 ? "  " : i.OpcodeLength < 2 ? "XX" : i.Op1.ToHexString(),
                                  i.Size < 3 ? "  " : "XX",
-                                 i.Size < 4 ? "  " : i.OpcodeLength < 3 ? "XX" : Lib.ToHexString(i.Op3),
+                                 i.Size < 4 ? "  " : i.OpcodeLength < 3 ? "XX" : i.Op3.ToHexString(),
                                  i.Name()
                                  );
                     }

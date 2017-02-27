@@ -271,27 +271,27 @@ namespace Sharp80.Processor
         {
             if (s.Contains("NN"))
             {
-                s = s.Replace("NN", Lib.ToHexString(Lib.CombineBytes(Memory[(ushort)(PC + this.OpcodeInitialLength)], Memory[(ushort)(PC + this.OpcodeInitialLength + 1)])));
+                s = s.Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeInitialLength)], Memory[PC.Offset(OpcodeInitialLength + 1)]).ToHexString());
             }
             else if (s.Contains("(N)"))
             {
-                s = s.Replace("(N)", " (" + Lib.ToHexString(Memory[(ushort)(PC + this.size - 1)]) + ")");
+                s = s.Replace("(N)", " (" + (Memory[PC.Offset(size - 1)]).ToHexString() + ")");
             }
             else if (s.Contains(" N") && (!s.Contains(" NZ")) & (!s.Contains(" NC")))
             {
-                s = s.Replace(" N", " " + Lib.ToHexString(Memory[(ushort)(PC + this.size - 1)]));
+                s = s.Replace(" N", " " + (Memory[PC.Offset(size - 1)]).ToHexString());
             }
 
             if (s.Contains("+d"))
             {
-                byte b = Memory[(ushort)(PC + this.OpcodeInitialLength)];
-                s = s.Replace("+d", Lib.ByteToTwosCompHexString(b));
+                byte b = Memory[PC.Offset(OpcodeInitialLength)];
+                s = s.Replace("+d", b.ToTwosCompHexString());
             }
             else if (s.Contains(" e"))
             {
-                byte b = Memory[(ushort)(PC + this.OpcodeInitialLength)];
-                sbyte x = Lib.TwosComp(b);
-                s = s.Replace(" e", " " + Lib.ByteToTwosCompHexString(b) + " {" + Lib.ToHexString((ushort)(PC + this.size + x)) + "}");
+                byte b = Memory[PC.Offset(OpcodeInitialLength)];
+                sbyte x = b.TwosComp();
+                s = s.Replace(" e", " " + b.ToTwosCompHexString() + " {" + PC.Offset(size + x).ToHexString() + "}");
             }
 
             return s;
@@ -299,7 +299,7 @@ namespace Sharp80.Processor
         
         public override string ToString()
         {
-            return this.name;
+            return name;
         }
     }
 }

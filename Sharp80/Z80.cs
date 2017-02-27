@@ -177,14 +177,14 @@ namespace Sharp80.Processor
         {
             get
             {
-                return Memory[(ushort)(PC.val + CurrentInstruction.OpcodeInitialLength)];
+                return Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialLength)];
             }
         }
         public byte ByteAtPCPlusOpCodeInitialLengthPlusOne
         {
             get
             {
-                return Memory[(ushort)(PC.val + CurrentInstruction.OpcodeInitialLength + 1)];
+                return Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialLength + 1)];
             }
         }
         public ushort WordAtPCPlusInitialOpcodeLength
@@ -192,8 +192,7 @@ namespace Sharp80.Processor
             get
             {
                 Debug.Assert(CurrentInstruction.OpcodeInitialLength == CurrentInstruction.OpcodeLength);
-
-                return Memory.GetWordAt((ushort)((PC.val + CurrentInstruction.OpcodeInitialLength) & 0xFFFF));
+                return Memory.GetWordAt(PC.val.Offset(CurrentInstruction.OpcodeInitialLength));
             }
         }
 
@@ -303,7 +302,7 @@ namespace Sharp80.Processor
         
         public void StepOver()
         {
-            systemBreakPoint = (ushort)(PC.val + this.GetInstructionAt(PC.val).Size);
+            systemBreakPoint = PC.val.Offset(GetInstructionAt(PC.val).Size);
         }
         public void StepOut()
         {
@@ -379,7 +378,7 @@ namespace Sharp80.Processor
 
                 if (halted)
                 {
-                    PushWord((ushort)(PC.val + 2));
+                    PushWord(PC.val.Offset(2));
                     halted = false;
                 }
                 else
@@ -421,7 +420,7 @@ namespace Sharp80.Processor
             IFF1 = false;   // Leave IFF2 alone to restore IFF1 after the NMI
             if (halted)
             {
-                PushWord((ushort)(PC.val + 2));
+                PushWord(PC.val.Offset(2));
                 halted = false;
             }
             else

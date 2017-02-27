@@ -45,7 +45,7 @@ namespace Sharp80
                 Header("Set breakpoint location") +
                 Format() +
                 Indent("Breakpoint is currently " + (Computer.Processor.BreakPointOn ? "ON" : "OFF")) +
-                Indent("Breakpoint Value (Hexadecimal): " + Lib.ToHexString(Computer.Processor.BreakPoint)) +
+                Indent("Breakpoint Value (Hexadecimal): " + Computer.Processor.BreakPoint.ToHexString()) +
                 Format() +
                 Separator() +
                 Indent("Type [0]-[9] or [A]-[F] to enter a hexadecimal") +

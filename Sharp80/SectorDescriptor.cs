@@ -29,7 +29,7 @@ namespace Sharp80
         }
         public override string ToString()
         {
-            return string.Format("Track: {0} Side: {1} Sector: {2} Double Density: {3} Length: {4}{5}", this.TrackNumber, this.SideOne ? "1" : "0", this.SectorNumber, this.DoubleDensity, Lib.ToHexString(SectorSize), this.InUse ? string.Empty : " Unused");
+            return string.Format("Track: {0} Side: {1} Sector: {2} Double Density: {3} Length: {4}{5}", TrackNumber, SideOne ? "1" : "0", SectorNumber, DoubleDensity, SectorSize.ToHexString(), InUse ? string.Empty : " Unused");
         }
     }
 }

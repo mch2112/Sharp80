@@ -124,7 +124,7 @@ namespace Sharp80
                     blockSize = Math.Min(0x100, Data[i].Length - cursor);
                     writer.Write((byte)0x01);   // block marker
                     writer.Write((byte)(blockSize + 2)); // 0x02 == 256 bytes
-                    Lib.SplitBytes(dest, out lowDest, out highDest);
+                    dest.Split(out lowDest, out highDest);
                     writer.Write(lowDest);
                     writer.Write(highDest);
                     while (blockSize-- > 0)
@@ -136,7 +136,7 @@ namespace Sharp80
             }
             writer.Write((byte)0x02);  // transfer address marker
             writer.Write((byte)0x02);  // transfer address length
-            Lib.SplitBytes(TransferAddress, out lowDest, out highDest);
+            TransferAddress.Split(out lowDest, out highDest);
             writer.Write(lowDest);
             writer.Write(highDest);
 

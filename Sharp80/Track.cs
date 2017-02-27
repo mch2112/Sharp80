@@ -108,7 +108,7 @@ namespace Sharp80
                     ret.SetValues(ref i, 12, (byte)0x00);
                     ret.SetValues(ref i, 3, (byte)0xA1);
 
-                    Lib.SplitBytes((ushort)(i + DOUBLE_DENSITY_MASK), out ret[headerCursor], out ret[headerCursor + 1]);
+                    ((ushort)(i + DOUBLE_DENSITY_MASK)).Split(out ret[headerCursor], out ret[headerCursor + 1]);
                 }
                 else
                 {
@@ -116,13 +116,13 @@ namespace Sharp80
 
                     ret.SetValues(ref i, 6 * 2, (byte)0x00);
 
-                    Lib.SplitBytes((ushort)i, out ret[headerCursor], out ret[headerCursor + 1]);
+                    ((ushort)i).Split(out ret[headerCursor], out ret[headerCursor + 1]);
                 }
                 headerCursor += 2;
                 ret.SetValues(ref i, !s.DoubleDensity, Floppy.IDAM, s.TrackNumber, sideNum, s.SectorNumber, dataLengthCode);
 
                 crc = Lib.Crc(crc, s.TrackNumber, sideNum, s.SectorNumber, dataLengthCode);
-                Lib.SplitBytes(crc, out byte crcLow, out byte crcHigh);
+                crc.Split(out byte crcLow, out byte crcHigh);
 
                 if (s.DoubleDensity)
                 {
@@ -142,7 +142,7 @@ namespace Sharp80
                     if (s.CrcError)
                         crc = (ushort)~crc; // trash the crc
 
-                    Lib.SplitBytes(crc, out crcLow, out crcHigh);
+                    crc.Split(out crcLow, out crcHigh);
 
                     ret.SetValues(ref i, false, crcHigh, crcLow);
 
@@ -168,7 +168,7 @@ namespace Sharp80
                     if (s.CrcError)
                         crc = (ushort)~crc; // trash the crc
 
-                    Lib.SplitBytes(crc, out crcLow, out crcHigh);
+                    crc.Split(out crcLow, out crcHigh);
                     ret.SetValues(ref i,  1 * 2, crcHigh);
                     ret.SetValues(ref i,  1 * 2, crcLow);
                     ret.SetValues(ref i, 17 * 2, (byte)0xFF); /* spec says 27, not 17 */

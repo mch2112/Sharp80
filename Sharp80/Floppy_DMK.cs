@@ -116,7 +116,9 @@ namespace Sharp80
             dirSector.SectorData[19] = 0x5C;
 
             // File length
-            Lib.SplitBytes((ushort)(neededSectors), out dirSector.SectorData[20], out dirSector.SectorData[21]);
+            //Lib.SplitBytes((ushort)(neededSectors), out dirSector.SectorData[20], out dirSector.SectorData[21]);
+            dirSector.SectorData[20] = neededSectors;
+            dirSector.SectorData[21] = 0;
 
             trackNum = 18;
             byteNum = 22;
@@ -274,7 +276,7 @@ namespace Sharp80
 
             bytes[0] = WriteProtected ? WRITE_PROTECT_BYTE : ZERO_BYTE; // Not write protected
             bytes[1] = numTracks;
-            Lib.SplitBytes(STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN, out bytes[2], out bytes[3]);
+            ((ushort)(STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN)).Split(out bytes[2], out bytes[3]);
 
             byte b = 0;
             if (!doubleSided)
@@ -309,7 +311,7 @@ namespace Sharp80
 
             data[0] = NO_WRITE_PROTECT_BYTE; // Not write Protected
             data[1] = NumTracks;
-            Lib.SplitBytes((STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN), out data[2], out data[3]);
+            ((ushort)(STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN)).Split(out data[2], out data[3]);
             data[4] = DoubleSided ? ZERO_BYTE : SINGLE_SIDED_FLAG;    // assumes double density
 
             return new DMK(data);
@@ -325,7 +327,7 @@ namespace Sharp80
 
             diskData[WRITE_PROTECT_BYTE] = writeProtected ? WRITE_PROTECT_VAL : NO_WRITE_PROTECT_BYTE;
             diskData[NUM_TRACKS_BYTE] = numTracks;
-            Lib.SplitBytes((ushort)(trackLength + TRACK_HEADER_LEN), out diskData[TRACK_LEN_LOW_BYTE], out diskData[TRACK_LEN_HIGH_BYTE]);
+            ((ushort)(trackLength + TRACK_HEADER_LEN)).Split(out diskData[TRACK_LEN_LOW_BYTE], out diskData[TRACK_LEN_HIGH_BYTE]);
             if (numSides == 1)
                 diskData[FLAGS_BYTE] |= SINGLE_SIDED_FLAG;
 

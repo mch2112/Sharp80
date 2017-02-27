@@ -54,21 +54,21 @@ namespace Sharp80
 
             if (Save)
             {
-                var saveDialog = new SaveFileDialog();
-
-                dialog = saveDialog;
-                saveDialog.OverwritePrompt = true;
+                dialog = new SaveFileDialog()
+                {
+                    OverwritePrompt = true
+                };
             }
             else
             {
-                var openDialog = new OpenFileDialog();
-                dialog = openDialog;
-
-                openDialog.Multiselect = false;
-                openDialog.CheckPathExists = true;
+                dialog = new OpenFileDialog()
+                {
+                    Multiselect = false,
+                    CheckPathExists = true
+                };
             }
             dialog.Title = Title;
-            dialog.FileName = (SelectFileInDialog && DefaultPath.Length > 0) ? System.IO.Path.GetFileName(DefaultPath) : string.Empty;
+            dialog.FileName = (SelectFileInDialog && DefaultPath.Length > 0) ? Path.GetFileName(DefaultPath) : string.Empty;
             dialog.InitialDirectory = dir;
             dialog.ValidateNames = true;
             dialog.Filter = Filter;
@@ -84,6 +84,33 @@ namespace Sharp80
                     return path;
 
             return string.Empty;
+        }
+        public static string GetCmdFilePath(string DefaultPath)
+        {
+            return UserSelectFile(Save: false,
+                                  DefaultPath: DefaultPath,
+                                  Title: "Select File",
+                                  Filter: "TRS-80 Files (*.cmd; *.bas; *.txt)|*.cmd;*.bas;*.txt|All Files (*.*)|*.*",
+                                  DefaultExtension: "cmd",
+                                  SelectFileInDialog: true);
+        }
+        public static string GetCommandFile(string DefaultPath)
+        {
+            return UserSelectFile(Save: false,
+                                  DefaultPath: DefaultPath,
+                                  Title: "Select CMD File",
+                                  Filter: "TRS-80 CMD Files (*.cmd)|*.cmd|All Files (*.*)|*.*",
+                                  DefaultExtension: "cmd",
+                                  SelectFileInDialog: true);
+        }
+        public static string GetSnapshotFile(string DefaultPath, bool Save)
+        {
+            return UserSelectFile(Save: Save,
+                                  DefaultPath: DefaultPath,
+                                  Title: Save ? "Save Snapshot File" : "Load Snapshot File",
+                                  Filter: "TRS-80 Snapshot Files (*.snp)|*.snp|All Files (*.*)|*.*",
+                                  DefaultExtension: "snp",
+                                  SelectFileInDialog: true);
         }
     }
 }

@@ -285,9 +285,9 @@ namespace Sharp80.Assembler
                     foreach (char c in msg)
                     {
                         if (first)
-                            AddLine(lp.Label + "\tDEFB\t" + Lib.ToHexString(c) + "H ;" + lp.Comment, SourceFileLine, linesToAdd);
+                            AddLine(lp.Label + "\tDEFB\t" + c.ToHexString() + "H ;" + lp.Comment, SourceFileLine, linesToAdd);
                         else
-                            AddLine("\tDEFB\t" + Lib.ToHexString(c) + "H", SourceFileLine, linesToAdd);
+                            AddLine(           "\tDEFB\t" + c.ToHexString() + "H",                SourceFileLine, linesToAdd);
                         first = false;
                     }
                     suppressLine = true;
@@ -633,7 +633,7 @@ namespace Sharp80.Assembler
 
             if (Symbol == "$")
                 if (currentLP != null)
-                    return (ushort)(currentLP.Address + Offset);
+                    return currentLP.Address.Offset(Offset);
                 else
                     throw new Exception();
 
@@ -671,7 +671,7 @@ namespace Sharp80.Assembler
             sVal = GetNumericValue(s, ForceHex);
             if (sVal.HasValue)
             {
-                ret = (ushort)(sVal.Value + Offset);
+                ret = sVal.Value.Offset(Offset);
             }
             else if (currentLP.SymbolTable.ContainsKey(s))
             {
@@ -861,7 +861,7 @@ namespace Sharp80.Assembler
             return "SYMBOL TABLE" + Environment.NewLine +
                    "==================================" + Environment.NewLine +
                    String.Join(Environment.NewLine,
-                    symbolTable.Select(kv => kv.Key.PadRight(15) + Lib.ToHexString(kv.Value.Address) + " (Line " + kv.Value.SourceFileLine + ", " + kv.Value.Mnemonic + ")"));
+                    symbolTable.Select(kv => kv.Key.PadRight(15) + kv.Value.Address.ToHexString() + " (Line " + kv.Value.SourceFileLine + ", " + kv.Value.Mnemonic + ")"));
         }
         private void LoadProgramToBuffer(byte[] Buffer, out ushort lowAddress, out ushort highAddress)
         {
@@ -872,8 +872,8 @@ namespace Sharp80.Assembler
             {
                 if (lp.Size > 0)
                 {
-                    lowAddress = (ushort)Math.Min(lowAddress, lp.Address);
-                    highAddress = (ushort)Math.Max(highAddress, lp.Address + lp.Size);
+                    lowAddress = Math.Min(lowAddress, lp.Address);
+                    highAddress = Math.Max(highAddress, lp.Address.Offset(lp.Size));
                 }
 
                 if (lp.Size > 0)
@@ -922,7 +922,7 @@ namespace Sharp80.Assembler
                 ushort[] org = new ushort[1];
                 org[0] = lowAddress;
 
-                var startAddress = (ushort)(GetSymbolValue(unit[0], "ENTRY") ?? lowAddress);
+                var startAddress = GetSymbolValue(unit[0], "ENTRY") ?? lowAddress;
 
                 Storage.SaveCMDFile(title, cmdFilePath, org, segment, startAddress);
             }

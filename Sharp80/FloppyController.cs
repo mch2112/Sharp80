@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3
 
 using System;
+using System.Linq;
 using System.IO;
 
 namespace Sharp80
@@ -17,7 +18,7 @@ namespace Sharp80
             public bool OnTrackZero { get { return PhysicalTrackNumber == 0; } }
             public byte PhysicalTrackNumber
             {
-                get; set; 
+                get; set;
             }
             public bool WriteProtected { get { return Floppy?.WriteProtected ?? false; } set { Floppy.WriteProtected = value; } }
             public DriveState()
@@ -40,17 +41,17 @@ namespace Sharp80
         { Reset, Restore, Seek, Step, ReadSector, WriteSector, ReadTrack, WriteTrack, ReadAddress, ForceInterrupt, ForceInterruptImmediate, Invalid }
         private enum OpStatus
         { Prepare, Delay, Step, CheckVerify, VerifyTrack, CheckingWriteProtectStatus, SetDrq, DrqCheck, SeekingIndexHole, SeekingIDAM, ReadingAddressData, CheckingAddressData, SeekingDAM, ReadingData, WritingData, WriteFiller, WriteFilter2, WriteDAM, WriteCRCHigh, WriteCRCLow, ReadCRCHigh, ReadCRCLow, Finalize, NMI, OpDone }
-        
+
         private PortSet ports;
         private Clock clock;
         private Computer computer;
-        
+
         private const int MAX_TRACKS = 80;                                  // Really should be 76 for 1793
         private const ulong DISK_ANGLE_DIVISIONS = 1000000ul;            // measure billionths of a rotation
         private const ulong SECONDS_TO_MICROSECONDS = 1000000ul;
         private const ulong MILLISECONDS_TO_MICROSECONDS = 1000ul;
         private const ulong DISK_REV_PER_SEC = 300 / 60; // 300 rpm
-            private const ulong TRACK_FULL_ROTATION_TIME_IN_USEC = SECONDS_TO_MICROSECONDS / DISK_REV_PER_SEC; // 300 rpm
+        private const ulong TRACK_FULL_ROTATION_TIME_IN_USEC = SECONDS_TO_MICROSECONDS / DISK_REV_PER_SEC; // 300 rpm
         private const ulong INDEX_PULSE_WIDTH_IN_USEC = 20 / FDC_CLOCK_MHZ;
         private const ulong INDEX_PULSE_WIDTH_IN_DIVISIONS = 10000;//INDEX_PULSE_WIDTH_IN_USEC * DISK_ANGLE_DIVISIONS / TRACK_FULL_ROTATION_TIME_IN_USEC;
         private const ulong INDEX_PULSE_START = 0;//10000;
@@ -89,12 +90,12 @@ namespace Sharp80
 
         private Track track;
         private int trackDataIndex;
-        
+
         // FDC Hardware Registers
         private byte commandRegister;
         private byte dataRegister;
-        private byte trackRegister; 
-        private byte sectorRegister; 
+        private byte trackRegister;
+        private byte sectorRegister;
         private byte statusRegister;
 
         // FDC Flags, etc.
@@ -162,12 +163,12 @@ namespace Sharp80
                                        20 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ,
                                        30 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ };
 
-            
+
 
             drives = new DriveState[NUM_DRIVES];
             for (int i = 0; i < NUM_DRIVES; i++)
                 drives[i] = new DriveState();
-            
+
             CurrentDriveNumber = 0x00;
 
             HardwareReset();
@@ -345,6 +346,10 @@ namespace Sharp80
                     return null;
             }
         }
+        public bool AnyDriveLoaded
+        {
+            get { return drives.Any(d => !d.IsUnloaded); }
+        }
         public bool DriveIsUnloaded(byte DriveNum)
         {
             return drives[DriveNum].IsUnloaded;
@@ -520,9 +525,8 @@ namespace Sharp80
                 case OpStatus.ReadingData:
                     if (drq)
                     {
-                        if (Log.DebugOn)
-                            Log.LogToDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1} TrackRegister: {2} SectorRegister {3} Bytes Read: {4}",
-                                                         command, opStatus, trackRegister, sectorRegister, bytesRead));
+                        Log.LogToDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1} TrackRegister: {2} SectorRegister {3} Bytes Read: {4}",
+                                                      command, opStatus, trackRegister, sectorRegister, bytesRead));
                         lostData = true;
                     }
                     if (++bytesRead >= sectorLength)
@@ -530,8 +534,7 @@ namespace Sharp80
                         crcCalc = crc;
                         opStatus = OpStatus.ReadCRCHigh;
                     }
-                    if (Log.DebugOn)
-                        Log.LogToDebug(string.Format("FDC Write to data register: {0}", Lib.ToHexString(b)));
+                    Log.LogToDebug(string.Format("FDC Write to data register: {0}", b.ToHexString()));
                     dataRegister = b;
                     SetDRQ();
                     delayBytes = 1;
@@ -547,8 +550,7 @@ namespace Sharp80
                     // crcError = crc != 0x0000;
                     if (crcError)
                     {
-                        if (Log.DebugOn)
-                            Log.LogToDebug(string.Format("Error: CRC Error. Command: {0} OpStatus: {1}", command, opStatus));
+                        Log.LogToDebug(string.Format("Error: CRC Error. Command: {0} OpStatus: {1}", command, opStatus));
                         Log.LogMessage(string.Format("Data CRC Error - Drv: {0} Trk: {1} Side: {2} Sec: {3}", CurrentDriveNumber, trackRegister, sideOneExpected ? 1 : 0, sectorRegister));
                         //opStatus = OpStatus.SeekingIDAM;
                         delayTime = NMI_DELAY_IN_USEC;
@@ -682,7 +684,7 @@ namespace Sharp80
                     if (--bytesToWrite == 0)
                     {
                         opStatus = OpStatus.WriteCRCHigh;
-                        Lib.SplitBytes(crc, out crcLow, out crcHigh);
+                        crc.Split(out crcLow, out crcHigh);
                     }
                     else
                     {
@@ -857,7 +859,7 @@ namespace Sharp80
                                 case 0xF7:
                                     // write 2 bytes CRC
                                     crcCalc = crc;
-                                    Lib.SplitBytes(crc, out crcLow, out crcHigh);
+                                    crc.Split(out crcLow, out crcHigh);
                                     b = crcHigh;
                                     opStatus = OpStatus.WriteCRCLow;
                                     doDrq = false;
@@ -871,7 +873,7 @@ namespace Sharp80
                             {
                                 case 0xF7:
                                     // write 2 bytes CRC
-                                    Lib.SplitBytes(crc, out crcLow, out crcHigh);
+                                    crc.Split(out crcLow, out crcHigh);
                                     b = crcHigh;
                                     opStatus = OpStatus.WriteCRCLow;
                                     doDrq = false;
@@ -1386,42 +1388,37 @@ namespace Sharp80
         {
             UpdateStatus();
 
-            if (Log.DebugOn)
-                Log.LogToDebug(string.Format("Get status register: {0}", Lib.ToHexString(statusRegister)));
+            Log.LogToDebug(string.Format("Get status register: {0}", statusRegister.ToHexString()));
 
-            ports.SetPortArray(statusRegister, (byte)0xF0);
+            ports.SetPortArray(statusRegister, 0xF0);
 
             computer.IntMgr.FdcNmiLatch.Unlatch();
             computer.IntMgr.FdcMotorOffNmiLatch.Unlatch();
         }
         private void GetTrackRegister()
         {
-            ports.SetPortArray(trackRegister, (byte)0xF1);
+            ports.SetPortArray(trackRegister, 0xF1);
 
             if (Log.DebugOn)
-                Log.LogToDebug(string.Format("Get track register: {0}", Lib.ToHexString(trackRegister)));
+                Log.LogToDebug(string.Format("Get track register: {0}", trackRegister.ToHexString()));
         }
         private void GetSectorRegister()
         {
-            ports.SetPortArray(sectorRegister, (byte)0xF2);
-
-            if (Log.DebugOn)
-                Log.LogToDebug(string.Format("Get sector register: {0}", Lib.ToHexString(sectorRegister)));
+            ports.SetPortArray(sectorRegister, 0xF2);
+            Log.LogToDebug(string.Format("Get sector register: {0}", sectorRegister.ToHexString()));
         }
         private void GetDataRegister()
         {
-            if (Log.DebugOn)
-                Log.LogToDebug(string.Format("Read data register: {0}", Lib.ToHexString(dataRegister)));
-            ports.SetPortArray(dataRegister, (byte)0xF3);
+            Log.LogToDebug(string.Format("Read data register: {0}", dataRegister.ToHexString()));
+            ports.SetPortArray(dataRegister, 0xF3);
             drq = drqStatus = false;
         }
         private void SetCommandRegister(byte value)
         {
             command = GetCommand(value);
 
-            if (Log.DebugOn)
-                Log.LogToDebug(string.Format("Setting command register: FDC Command {0} - Drv {1} [{2}]",
-                                             command, CurrentDriveNumber, Lib.ToHexString(value)));
+            Log.LogToDebug(string.Format("Setting command register: FDC Command {0} - Drv {1} [{2}]",
+                                            command, CurrentDriveNumber, value.ToHexString()));
 
             try
             {
@@ -1497,7 +1494,7 @@ namespace Sharp80
                     case Command.ForceInterrupt:
                         Log.LogMessage(string.Format("Unimplemented FDC Command: {0} [{1}]",
                                                         command.ToString(),
-                                                        Lib.ToHexString(commandRegister)));
+                                                        commandRegister.ToHexString()));
                         DoNmi();
                         opStatus = OpStatus.OpDone;
                         break;
@@ -1515,24 +1512,24 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogMessage(string.Format("Error setting command register: {0} FDC Command: Drv {1} - {2} [{3}]", ex, CurrentDriveNumber, command, Lib.ToHexString(value)));
+                Log.LogMessage(string.Format("Error setting command register: {0} FDC Command: Drv {1} - {2} [{3}]", ex, CurrentDriveNumber, command, value.ToHexString()));
             }
         }
         private void SetTrackRegister(byte value)
         {
             trackRegister = value;
-            Log.LogToDebug(string.Format("Set track register: {0}", Lib.ToHexString(trackRegister)));
+            Log.LogToDebug(string.Format("Set track register: {0}", trackRegister.ToHexString()));
         }
         private void SetSectorRegister(byte value)
         {
             sectorRegister = value;
-            Log.LogToDebug(string.Format("Set sector register: {0}", Lib.ToHexString(sectorRegister)));
+            Log.LogToDebug(string.Format("Set sector register: {0}", sectorRegister.ToHexString()));
         }
         private void SetDataRegister(byte value)
         {
             dataRegister = value;
             drq = drqStatus = false;
-            Log.LogToDebug(string.Format("Set data register: {0}", Lib.ToHexString(dataRegister)));
+            Log.LogToDebug(string.Format("Set data register: {0}", dataRegister.ToHexString()));
         }
         private void FdcDiskSelect(byte value)
         {
@@ -1549,7 +1546,7 @@ namespace Sharp80
 
             if (floppyNum.HasValue && CurrentDriveNumber != floppyNum.Value)
             {
-                Log.LogToDebug(string.Format("FDC Disk select: {0}", Lib.ToHexString(floppyNum.Value)));
+                Log.LogToDebug(string.Format("FDC Disk select: {0}", floppyNum.Value.ToHexString()));
                 CurrentDriveNumber = floppyNum.Value;
             }
 

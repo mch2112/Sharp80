@@ -44,7 +44,7 @@ namespace Sharp80.Processor
 
         public override string ToString()
         {
-            return Lib.ToHexString(val);
+            return val.ToHexString();
         }
     }
     internal class Register8Indirect : Register8
@@ -79,7 +79,7 @@ namespace Sharp80.Processor
         {
             get
             {
-                return (ushort)(Proxy.val + Lib.TwosComp(z80.ByteAtPCPlusInitialOpCodeLength));
+                return (ushort)(Proxy.val + z80.ByteAtPCPlusInitialOpCodeLength.TwosComp());
             }
         }
     }
@@ -91,7 +91,7 @@ namespace Sharp80.Processor
         }
         public override string ToString()
         {
-            return Lib.ToHexString(val);
+            return val.ToHexString();
         }
     }
     internal class Register16Normal : Register16

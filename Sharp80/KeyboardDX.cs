@@ -32,6 +32,16 @@ namespace Sharp80
         {
             return keyboard.GetCurrentState().IsPressed(Key);
         }
+        public void UpdateModifierKeys(out bool LeftShift, out bool RightShift, out bool LeftAlt, out bool RightAlt, out bool LeftControl, out bool RightControl)
+        {
+            var cs = keyboard.GetCurrentState();
+            LeftShift =    IsPressed(Key.LeftShift);
+            RightShift =   IsPressed(Key.RightShift);
+            LeftAlt =      IsPressed(Key.LeftAlt);
+            RightAlt =     IsPressed(Key.RightAlt);
+            LeftControl =  IsPressed(Key.LeftControl);
+            RightControl = IsPressed(Key.RightControl);
+        }
         public void Dispose()
         {
             if (!keyboard.IsDisposed)

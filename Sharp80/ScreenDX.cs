@@ -45,11 +45,6 @@ namespace Sharp80
 
         private ViewMode viewMode;
 
-        private byte? diskViewFloppyNum;
-
-        private byte diskZapFloppyNum, diskZapTrackNum, diskZapSectorIndex;
-        private bool diskZapSideOne;
-
         public Computer Computer { get; set; }
 
         private bool advancedView;
@@ -93,8 +88,6 @@ namespace Sharp80
             cellsNormal = new RawRectangleF[NUM_SCREEN_CHARS];
             cellsWide = new RawRectangleF[NUM_SCREEN_CHARS];
             shadowScreen = new byte[NUM_SCREEN_CHARS];
-
-            diskZapFloppyNum = 0xFF;
 
             View.OnUserCommand += View_OnUserCommand;
         }
@@ -222,31 +215,6 @@ namespace Sharp80
                 Marshal.StructureToPtr(rc, Msg.LParam, true);
             }
         }
-
-        private byte DiskZapFloppyNumber
-        {
-            get { return diskZapFloppyNum; }
-            set
-            {
-                if (diskZapFloppyNum != value)
-                {
-                    diskZapFloppyNum = value;
-                    VerifyZapParamsOK();
-                }
-            }
-        }
-        public byte? DiskViewFloppyNumber
-        {
-            get { return diskViewFloppyNum; }
-            set
-            {
-                if (diskViewFloppyNum != value)
-                {
-                    diskViewFloppyNum = value;
-                    Invalidate();
-                }
-            }
-        }
         protected override void InitializeDX()
         {
             base.InitializeDX();
@@ -325,172 +293,7 @@ namespace Sharp80
         {
             invalid = true;
         }
-        //public bool SendChar(SharpDX.DirectInput.Key Key, bool Shift)
-        //{
-        //    bool processed = true;
-        //    switch (ViewMode)
-        //    {
-        //        case ViewMode.DiskZapView:
-        //            switch (Key)
-        //            {
-        //                case SharpDX.DirectInput.Key.Space:
-        //                    diskZapSideOne = !diskZapSideOne;
-        //                    VerifyZapParamsOK();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.Left:
-        //                    if (diskZapSectorIndex > 0)
-        //                        diskZapSectorIndex--;
-        //                    VerifyZapParamsOK();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.Right:
-        //                    if (diskZapSectorIndex < 0xFD)
-        //                        diskZapSectorIndex++;
-        //                    VerifyZapParamsOK();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.PageUp:
-        //                case SharpDX.DirectInput.Key.Up:
-        //                    if (Shift)
-        //                        if (diskZapTrackNum > 10)
-        //                            diskZapTrackNum -= 10;
-        //                        else
-        //                            diskZapTrackNum = 0;
-        //                    else
-        //                        diskZapTrackNum--;
-        //                    VerifyZapParamsOK();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.PageDown:
-        //                case SharpDX.DirectInput.Key.Down:
-        //                    if (Shift)
-        //                        if (diskZapTrackNum < Floppy.MAX_TRACKS - 10)
-        //                            diskZapTrackNum += 10;
-        //                        else
-        //                            diskZapTrackNum = Floppy.MAX_TRACKS;
-        //                    else
-        //                        diskZapTrackNum++;
-        //                    VerifyZapParamsOK();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.Tab:
-        //                    for (int i = diskZapFloppyNum + 1; i < diskZapFloppyNum + 4; i++)
-        //                        if (Computer.FloppyController.GetFloppy(i % 4) != null)
-        //                        {
-        //                            DiskZapFloppyNumber = (byte)(i % 4);
-        //                            break;
-        //                        }
-        //                    break;
-        //                case SharpDX.DirectInput.Key.R:
-        //                    Invalidate();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.Escape:
-        //                    ViewMode = ViewMode.DiskView;
-        //                    diskViewFloppyNum = diskZapFloppyNum;
-        //                    break;
-        //            }
-        //            break;
-        //        case ViewMode.MemoryView:
-        //            switch (Key)
-        //            {
-        //                case SharpDX.DirectInput.Key.PageUp:
-        //                    memoryViewBaseAddress -= 0x1000;
-        //                    Invalidate();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.Up:
-        //                    memoryViewBaseAddress -= 0x0100;
-        //                    Invalidate();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.PageDown:
-        //                    memoryViewBaseAddress += 0x1000;
-        //                    Invalidate();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.Down:
-        //                    memoryViewBaseAddress += 0x0100;
-        //                    Invalidate();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.R:
-        //                    Invalidate();
-        //                    break;
-        //                case SharpDX.DirectInput.Key.Escape:
-        //                    ViewMode = ViewMode.NormalView;
-        //                    break;
-        //                case SharpDX.DirectInput.Key.Space:
-        //                    Invalidate();
-        //                    break;
-        //                default:
-        //                    processed = false;
-        //                    break;
-        //            }
-        //            break;
-        //        case ViewMode.RegisterView:
-        //        case ViewMode.FloppyControllerView:
-        //            switch (Key)
-        //            {
-        //                case SharpDX.DirectInput.Key.Escape:
-        //                    ViewMode = ViewMode.NormalView;
-        //                    break;
-        //            }
-        //            break;
-        //        case ViewMode.DiskView:
-        //            if (DiskViewFloppyNumber.HasValue)
-        //            {
-        //                switch (Key)
-        //                {
-        //                    case SharpDX.DirectInput.Key.Z:
-        //                        if (diskViewFloppyNum.HasValue)
-        //                        {
-        //                            DiskZapFloppyNumber = DiskViewFloppyNumber.Value;
-        //                            ViewMode = ViewMode.DiskZapView;
-        //                        }
-        //                        break;
-        //                    case SharpDX.DirectInput.Key.Escape:
-        //                        DiskViewFloppyNumber = null;
-        //                        break;
-        //                }
-        //            }
-        //            else
-        //            {
-        //                switch (Key)
-        //                {
-        //                    case SharpDX.DirectInput.Key.D0:
-        //                        DiskViewFloppyNumber = 0;
-        //                        break;
-        //                    case SharpDX.DirectInput.Key.D1:
-        //                        DiskViewFloppyNumber = 1;
-        //                        break;
-        //                    case SharpDX.DirectInput.Key.D2:
-        //                        DiskViewFloppyNumber = 2;
-        //                        break;
-        //                    case SharpDX.DirectInput.Key.D3:
-        //                        DiskViewFloppyNumber = 3;
-        //                        break;
-        //                    case SharpDX.DirectInput.Key.Escape:
-        //                        this.ViewMode = ViewMode.NormalView;
-        //                        break;
-        //                }
-        //            }
-        //            this.Invalidate();
-        //            break;
-        //        case ViewMode.OptionsView:
-        //            switch (Key)
-        //            {
-        //                case SharpDX.DirectInput.Key.Escape:
-        //                    this.ViewMode = ViewMode.NormalView;
-        //                    break;
-        //            }
-        //            break;
-        //    }
-        //    return processed;
-        //}
-        
-        //public void Reset()
-        //{
-        //    switch (ViewMode)
-        //    {
-        //        case ViewMode.DiskZapView:
-        //            VerifyZapParamsOK();
-        //            break;
-        //    }
-        //    Invalidate();
-        //}
-        
+
         protected override void Draw()
         {
             if (initialized)
@@ -556,15 +359,6 @@ namespace Sharp80
                 }
             }
         }
-        private void DrawFloppyControllerStatusView()
-        {
-            DrawView(UI.GetFloppyControllerStatus(Computer.FloppyController.GetStatus()));
-        }
-        private void DrawDiskView()
-        {
-            if (invalid)
-                DrawView(UI.GetDiskView(Computer.FloppyController, diskViewFloppyNum));
-        }
         private void DrawView(byte[] View)
         {
             if (View == null)
@@ -598,20 +392,6 @@ namespace Sharp80
             RenderTarget.FillRectangle(infoRect, backgroundBrush);
             RenderTarget.FillRectangle(z80Rect, backgroundBrush);
             RenderTarget.FillRectangle(disassemRect, backgroundBrush);
-        }
-
-        private void PaintCells(int StartingCell, string String)
-        {
-            for (int i = 0; i < String.Length; i++)
-                PaintCell(StartingCell++, String[i]);
-        }
-        private void PaintCell(int cell, char c)
-        {
-            PaintCell(cell, (byte)c, cellsNormal, charGenNormal);
-        }
-        private void PaintCell(int cell, byte c)
-        {
-            PaintCell(cell, c, cellsNormal, charGenNormal);
         }
         private void PaintCell(int cell, byte c, RawRectangleF[] Cells, DXBitmap[] Chars)
         {
@@ -815,51 +595,7 @@ namespace Sharp80
 
             Invalidate();
         }
-        private void DrawDiskZapView()
-        {
-            if (invalid)
-            {
-                var f = Computer.FloppyController.GetFloppy(DiskZapFloppyNumber);
-                var sd = f?.GetSectorDescriptor(diskZapTrackNum, diskZapSideOne, diskZapSectorIndex);
-                byte[] text;
-
-                text = UI.GetDiskZapText(DiskZapFloppyNumber, diskZapTrackNum, diskZapSideOne, f.DoubleSided, sd, f == null);
-
-                for (int i = 0; i < NUM_SCREEN_CHARS; i++)
-                    PaintCell(i, text[i], cellsNormal, charGenNormal);
-
-            }
-        }
-        private void VerifyZapParamsOK()
-        {
-            var d = Computer.FloppyController.GetFloppy(diskZapFloppyNum);
-
-            if (d == null)
-            {
-                diskZapSideOne = false;
-                diskZapTrackNum = 0;
-                diskZapSectorIndex = 0;
-            }
-            else
-            {
-                if (!d.DoubleSided)
-                    diskZapSideOne = false;
-
-                if (diskZapTrackNum == 0xFF)
-                    diskZapTrackNum = 0;
-
-                if (diskZapTrackNum >= d.NumTracks)
-                    diskZapTrackNum = (byte)(Math.Max(0, d.NumTracks - 1));
-
-                // Allow for sectors starting at zero or one
-                if (diskZapSectorIndex >= d.SectorCount(diskZapTrackNum, diskZapSideOne))
-                    diskZapSectorIndex = (byte)(d.SectorCount(diskZapTrackNum, diskZapSideOne) - 1);
-                else if (diskZapSectorIndex < 0)
-                    diskZapSectorIndex = 0;
-            }
-            Invalidate();
-        }
-
+        
         private Size2F DesiredLogicalSize
         {
             get

@@ -114,10 +114,10 @@ namespace Sharp80.Processor
             foreach (Instruction i in li)
             {
                 sb.AppendFormat("| {0} {1} {2} {3} | {4,-18}|    {5:0#}    |   {6}   |   \r\n",
-                                 Lib.ToHexString(i.Op0),
-                                 i.Size < 2 ? "  " : i.OpcodeLength < 2 ? "XX" : Lib.ToHexString(i.Op1),
+                                 i.Op0.ToHexString(),
+                                 i.Size < 2 ? "  " : i.OpcodeLength < 2 ? "XX" : i.Op1.ToHexString(),
                                  i.Size < 3 ? "  " : "XX",
-                                 i.Size < 4 ? "  " : i.OpcodeLength < 3 ? "XX" : Lib.ToHexString(i.Op3),
+                                 i.Size < 4 ? "  " : i.OpcodeLength < 3 ? "XX" : i.Op3.ToHexString(),
                                  i.Name(),
                                  i.TStates,
                                  ((i.TStatesAlt > 0) ? (i.TStates + i.TStatesAlt).ToString("0#") : "  "));

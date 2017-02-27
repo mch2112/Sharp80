@@ -196,7 +196,7 @@ namespace Sharp80.Assembler
                     {
                         var val = NumericValue;
                         if (val.HasValue)
-                            return Lib.ToHexString(val.Value);
+                            return val.Value.ToHexString();
                     }
                     return RawText;
                 }
@@ -222,27 +222,27 @@ namespace Sharp80.Assembler
                 if (IndexDisplacement.HasValue)
                 {
                     if ((IndexDisplacement.Value & 0x80) > 0)
-                        index = " - " + Lib.ToHexString(Math.Abs((sbyte)(IndexDisplacement.Value)));
+                        index = " - " + Math.Abs((sbyte)(IndexDisplacement.Value)).ToHexString();
                     else
-                        index = " + " + Lib.ToHexString(IndexDisplacement.Value);
+                        index = " + " + IndexDisplacement.Value.ToHexString();
                     text = text.Replace("+D", index);
                 }
                 else if (IsNumeric)
                 {
                     if (LineInfo.Operand0 == this && SingleDigitArg(LineInfo.Mnemonic))
                     {
-                        text = Lib.ToHexString((byte)NumericValue.Value).Substring(1);
+                        text = NumericValue.Value.ToHexChar();
                     }
                     else
                     {
                         switch (LineInfo.DataSize)
                         {
                             case 1:
-                                text = Lib.ToHexString((byte)NumericValue.Value);
+                                text = ((byte)NumericValue.Value).ToHexString();
                                 break;
                             case 0: // meta instructions
                             case 2:
-                                text = Lib.ToHexString(NumericValue.Value);
+                                text = NumericValue.Value.ToHexString();
                                 break;
                         }
                     }

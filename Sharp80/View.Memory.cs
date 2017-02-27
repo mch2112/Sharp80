@@ -57,14 +57,14 @@ namespace Sharp80
                 if ((k & 0x0F) == 0x00)
                 {
                     ushort lineAddress = (ushort)(baseAddress + k);
-                    cells[cell++] = Lib.ToHexCharByte((lineAddress >> 12) & 0x0F);
-                    cells[cell++] = Lib.ToHexCharByte((lineAddress >> 8) & 0x0F);
-                    cells[cell++] = Lib.ToHexCharByte((lineAddress >> 4) & 0x0F);
-                    cells[cell++] = Lib.ToHexCharByte((lineAddress) & 0x0F);
+                    cells[cell++] = ((lineAddress >> 12) & 0x0F).ToHexCharByte();
+                    cells[cell++] = ((lineAddress >> 8)  & 0x0F).ToHexCharByte();
+                    cells[cell++] = ((lineAddress >> 4)  & 0x0F).ToHexCharByte();
+                    cells[cell++] = ((lineAddress)       & 0x0F).ToHexCharByte();
                     cell += 2;
                 }
 
-                byte b = Computer.Processor.Memory[(ushort)(baseAddress + k)];
+                byte b = Computer.Processor.Memory[baseAddress.Offset(k)];
 
                 WriteToByteArrayHex(cells, cell, b);
                 cell += 2;

@@ -9,23 +9,7 @@ namespace Sharp80.Processor
     {
         private static readonly byte[] BIT = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
         private static readonly byte[] NOT = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F };
-
-        //private void load_a_xxmm(Register8Indirect XX)
-        //{
-        //    System.Diagnostics.Debug.Assert(XX.Equals(BCM) || XX.Equals(DEM));
-        //    A.val = XX.val;
-        //    WZ.val = XX.ProxyVal;
-        //    WZ.inc();
-        //}
-        //private void load_xxmm_a(Register8Indirect XX)
-        //{
-        //    // Note for *BM1: MEMPTR_low = (rp + 1) & #FF,  MEMPTR_hi = 0
-
-        //    System.Diagnostics.Debug.Assert(XX.Equals(BCM) || XX.Equals(DEM));
-        //    XX.val = A.val;
-
-        //    WZ.setVal(A.val, (byte)((XX.ProxyVal + 1) & 0xFF));
-        //}
+        
         private void load(Register8 r1, Register8 r2)
         {
             r1.val = r2.val;
@@ -200,7 +184,7 @@ namespace Sharp80.Processor
                 WZ.inc();
                 RecordExtraTicks = true;
                 NextPC -= 2;
-                System.Diagnostics.Debug.Assert(this.PC.val == NextPC);
+                Debug.Assert(this.PC.val == NextPC);
             }
         }
         private void cpi()
@@ -235,7 +219,7 @@ namespace Sharp80.Processor
                 diff--;
             }
             
-            System.Diagnostics.Debug.Assert(HF == (((A.val ^ hlMem ^ diff) & S_HF) == S_HF));
+            Debug.Assert(HF == (((A.val ^ hlMem ^ diff) & S_HF) == S_HF));
            
             F5 = diff.IsBitSet(1);
             F3 = diff.IsBitSet(3);
@@ -284,7 +268,7 @@ namespace Sharp80.Processor
             else
                 A.val += (byte)diff;
 
-            F.val = (byte)SZ53P(A.val);
+            F.val = SZ53P(A.val);
             NF = nf;
             CF = (cf || ((lowNibble < 0x0A) ? (highNibble > 0x09) : (highNibble > 0x08)));
             HF = (nf ? (hf && (lowNibble < 0x06)) : (lowNibble > 0x09));
@@ -389,11 +373,9 @@ namespace Sharp80.Processor
 	
             F.val = SZ53(sum & 0xFF);
             CF = sum > 0xFF;
-            //HF = ((a ^ sum ^ val) & S_HF) == S_HF;
-
             HF = ((a & 0x0F) + (val & 0x0F)) > 0x0F;
 
-            System.Diagnostics.Debug.Assert(HF == (((a ^ sum ^ val) & S_HF) == S_HF));
+            Debug.Assert(HF == (((a ^ sum ^ val) & S_HF) == S_HF));
 
             VF = ((a ^ val ^ 0x80) & (val ^ sum) & 0x80) == 0x80;
 
@@ -405,7 +387,8 @@ namespace Sharp80.Processor
         }
         private void add(Register16 r1, Register16 r2)
         {
-            WZ.val = (ushort)(r1.val + 1);
+            WZ.val = r1.val;
+            WZ.inc();
 
             int sum = r1.val + r2.val;
 
@@ -413,11 +396,10 @@ namespace Sharp80.Processor
 
             HF = ((r1.val & 0x0FFF) + (r2.val & 0x0FFF)) > 0x0FFF;
 
-            System.Diagnostics.Debug.Assert(HF == ((((r1.val ^ sum ^ r2.val) >> 8) & S_HF) == S_HF));
+            Debug.Assert(HF == ((((r1.val ^ sum ^ r2.val) >> 8) & S_HF) == S_HF));
 
             F5 = ((sum >> 8) & S_F5) == S_F5;
             F3 = ((sum >> 8) & S_F3) == S_F3;
-            //HF = (((r1.val ^ sum ^ r2.val) >> 8) & S_HF) == S_HF;
             CF = sum > 0xFFFF;
             
             r1.val = (ushort)sum;
@@ -444,9 +426,8 @@ namespace Sharp80.Processor
 
             F.val = SZ53(sum);
             
-            //HF = ((a ^ sum ^ val) & S_HF) == S_HF;
             HF = (a & 0x0F) + (val & 0x0F) + cfVal > 0x0F;
-            System.Diagnostics.Debug.Assert(HF == (((a ^ sum ^ val) & S_HF) == S_HF));
+            Debug.Assert(HF == (((a ^ sum ^ val) & S_HF) == S_HF));
             
             CF = sum > 0xFF;
             VF = ((a ^ val ^ 0x80) & (val ^ sum) & 0x80) == 0x80;
@@ -455,16 +436,16 @@ namespace Sharp80.Processor
         }
         private void adc(Register16 r1, Register16 r2)
         {
-            WZ.val = (ushort)(r1.val + 1);
+            WZ.val = r1.val;
+            WZ.inc();
 
             int cfVal = CF ? 1 : 0;
             int sum = r1.val + r2.val + cfVal;
 
             F.val = (byte)((sum >> 8) & (S_SF | S_F5 | S_F3));
 
-            //HF = (((r1.val ^ sum ^ r2.val) >> 8) & S_HF) != 0;
             HF = ((r1.val & 0x0FFF) + (r2.val & 0x0FFF) + cfVal) > 0x0FFF;
-            System.Diagnostics.Debug.Assert(HF == ((((r1.val ^ sum ^ r2.val) >> 8) & S_HF) != 0));
+            Debug.Assert(HF == ((((r1.val ^ sum ^ r2.val) >> 8) & S_HF) != 0));
 
             VF = ((r1.val ^ r2.val ^ 0x8000) & (r2.val ^ sum) & 0x8000) == 0x8000;
             ZF = (sum & 0xFFFF) == 0;
@@ -509,7 +490,7 @@ namespace Sharp80.Processor
 
             HF = (a & 0x0F) - (val & 0x0F) < 0;
 
-            System.Diagnostics.Debug.Assert(HF == (((a ^ diff ^ val) & S_HF) == S_HF));
+            Debug.Assert(HF == (((a ^ diff ^ val) & S_HF) == S_HF));
             
             CF = diff < 0;
             VF = ((val ^ a) & (a ^ diff) & 0x80) == 0x80;
@@ -525,7 +506,7 @@ namespace Sharp80.Processor
 
             HF = (a & 0x0F) - (val & 0x0F) - cfVal < 0;
             
-            System.Diagnostics.Debug.Assert(HF == (((a ^ diff ^ val) & S_HF) == S_HF));
+            Debug.Assert(HF == (((a ^ diff ^ val) & S_HF) == S_HF));
 
             CF = diff < 0;
             VF = ((a ^ val) & (a ^ diff) & 0x80) == 0x80;
@@ -534,42 +515,33 @@ namespace Sharp80.Processor
         {
             Debug.Assert(r1.Equals(HL));
 
-            WZ.val = (ushort)(r1.val + 1);
+            WZ.val = r1.val;
+            WZ.inc();
 
             int cfVal = CF ? 1 : 0;
-
             int diff = r1.val - r2.val - cfVal;
        
             F.val = (byte)(S_NF | (diff >> 8) & (S_SF | S_F5 | S_F3));
-
-            //HF = (((r1.val ^ diff ^ r2.val) >> 8) & S_HF) != 0x00;
-
             HF = ((r1.val & 0x0FFF) - (r2.val & 0x0FFF)) - cfVal < 0;
 
-            System.Diagnostics.Debug.Assert(HF == ((((r1.val ^ diff ^ r2.val) >> 8) & S_HF) != 0x00));
+            Debug.Assert(HF == ((((r1.val ^ diff ^ r2.val) >> 8) & S_HF) != 0x00));
 
             VF = ((r2.val ^ r1.val) & (r1.val ^ diff) & 0x8000) != 0x0000;
             ZF = diff == 0;
             CF = diff < 0;
 
-            r1.val = (ushort)(diff & 0xFFFF);
+            r1.val = (ushort)diff;
         }
         private void inc(Register8 r)
         {
-
             r.inc();
-#if true
+
             F.val = (byte)(F53(r.val) | (F.val & S_CF));
-            System.Diagnostics.Debug.Assert(!NF);
+            Debug.Assert(!NF);
             VF = r.val == 0x80;
             HF = (r.val & 0x0F) == 0;
             ZF = r.val == 0;
             SF = (r.val & 0x80) == 0x80;
-#else
-            F.val = (byte)((F.val & S_CF) | SZ53(r.val));
-            HF = (r.val & 0x0F) == 0x00;
-            VF = r.val == 0x80;
-#endif
         }
         private void dec(Register8 r)
         {
@@ -668,7 +640,7 @@ namespace Sharp80.Processor
 
             HF = (A.val & 0x0F) - (val & 0x0F) < 0;
 
-            System.Diagnostics.Debug.Assert(HF == (((a ^ diff ^ val) & S_HF) == S_HF));
+            Debug.Assert(HF == (((a ^ diff ^ val) & S_HF) == S_HF));
 
             VF = ((((a ^ val) & (a ^ diff)) >> 5) & S_VF) == S_VF;
             CF = diff < 0;
@@ -726,7 +698,7 @@ namespace Sharp80.Processor
 
         private void ret()
         {
-            NextPC = (ushort)PopWord();
+            NextPC = PopWord();
             WZ.val = NextPC;
         }
         private void ret(bool ConditionMet)
@@ -741,8 +713,7 @@ namespace Sharp80.Processor
         {
             // Same for RETI and RETN because apparently RETI also copies IFF2 to IFF1.
 
-            if (Log.DebugOn)
-                Log.LogToDebug(string.Format("Return from Interrupt, IFF1 {0} -> {1}", IFF1, IFF2));
+            Log.LogToDebug(string.Format("Return from Interrupt, IFF1 {0} -> {1}", IFF1, IFF2));
 
             IFF1 = IFF2;
             ret();
@@ -750,7 +721,7 @@ namespace Sharp80.Processor
         private void rst(byte addr)
         {
             PushWord(NextPC);
-            NextPC = (ushort)addr;
+            NextPC = addr;
             
             WZ.val = NextPC;
         }
@@ -780,8 +751,7 @@ namespace Sharp80.Processor
         }
         private void jr()
         {
-            NextPC = (ushort)((PC.val + 2 + Lib.TwosComp(ByteAtPCPlusInitialOpCodeLength)) & 0xFFFF);
-
+            NextPC = PC.val.Offset(2 + ByteAtPCPlusInitialOpCodeLength.TwosComp());
             WZ.val = NextPC;
         }
         private void jr(bool ConditionMet)
@@ -798,7 +768,7 @@ namespace Sharp80.Processor
             if (B.NZ)
             {
                 RecordExtraTicks = true;
-                NextPC = (ushort)((PC.val + 2 + Lib.TwosComp(ByteAtPCPlusInitialOpCodeLength)) & 0xFFFF);
+                NextPC = PC.val.Offset(2 + ByteAtPCPlusInitialOpCodeLength.TwosComp());
                 WZ.val = NextPC;
             }
         }
@@ -1142,6 +1112,5 @@ namespace Sharp80.Processor
         {
             load(r2, r1); set(r2, bit); load(r1, r2);
         }
-
     }
 }

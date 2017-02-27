@@ -44,7 +44,7 @@ namespace Sharp80
             return PadScreen(Encoding.ASCII.GetBytes(
                                 Header("Jump to Z80 memory location") +
                                 Format() +
-                                Indent("Jump to memory location (Hexadecimal): " + Lib.ToHexString(Computer.Processor.PC.val)) +
+                                Indent("Jump to memory location (Hexadecimal): " + Computer.Processor.PC.val.ToHexString()) +
                                 Format() +
                                 Separator() +
                                 Indent("Type [0]-[9] or [A]-[F] to enter a hexadecimal") +

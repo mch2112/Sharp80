@@ -97,7 +97,7 @@ namespace Sharp80
         {
             unchecked
             {
-                Lib.SplitBytes(Value, out byte lowByte, out byte highByte);
+                Value.Split(out byte lowByte, out byte highByte);
 
                 this[Location++] = lowByte;
                 this[Location] = highByte;

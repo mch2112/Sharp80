@@ -18,14 +18,14 @@ namespace Sharp80
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Z80 Register Status") +
                 Format() +
-                Indent(string.Format("PC  {0}  SP  {1}", Lib.ToHexString(Status.PC), Lib.ToHexString(Status.SP))) +
+                Indent(string.Format("PC  {0}  SP  {1}", Status.PC.ToHexString(), Status.SP.ToHexString())) +
                 Format() +
-                Indent(string.Format("AF  {0}  AF' {1}", Lib.ToHexString(Status.AF), Lib.ToHexString(Status.AFp))) +
-                Indent(string.Format("BC  {0}  BC' {1}", Lib.ToHexString(Status.BC), Lib.ToHexString(Status.BCp))) +
-                Indent(string.Format("DE  {0}  DE' {1}", Lib.ToHexString(Status.DE), Lib.ToHexString(Status.DEp))) +
-                Indent(string.Format("HL  {0}  HL' {1}", Lib.ToHexString(Status.HL), Lib.ToHexString(Status.HLp))) +
+                Indent(string.Format("AF  {0}  AF' {1}", Status.AF.ToHexString(), Status.AFp.ToHexString())) +
+                Indent(string.Format("BC  {0}  BC' {1}", Status.BC.ToHexString(), Status.BCp.ToHexString())) +
+                Indent(string.Format("DE  {0}  DE' {1}", Status.DE.ToHexString(), Status.DEp.ToHexString())) +
+                Indent(string.Format("HL  {0}  HL' {1}", Status.HL.ToHexString(), Status.HLp.ToHexString())) +
                 Format() +
-                Indent(string.Format("IX  {0}  IY  {1}", Lib.ToHexString(Status.IX), Lib.ToHexString(Status.IY)))));
+                Indent(string.Format("IX  {0}  IY  {1}", Status.IX.ToHexString(), Status.IY.ToHexString()))));
         }
     }
 }

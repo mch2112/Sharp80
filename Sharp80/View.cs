@@ -73,9 +73,11 @@ namespace Sharp80
                 new ViewHelp();
                 new ViewOptions();
                 new ViewDisk();
+                new ViewZap();
                 new ViewBreakpoint();
                 new ViewJump();
                 new ViewMemory();
+                new ViewFloppyController();
                 new CPUView();
                 initialized = true;
             }
@@ -155,7 +157,8 @@ namespace Sharp80
                             return true;
                     }
                 }
-                return Computer.NotifyKeyboardChange(Key);
+                if (!Key.Repeat)
+                    return Computer.NotifyKeyboardChange(Key);
             }
             else if (Key.Pressed && Key.Alt)
             {
@@ -164,6 +167,14 @@ namespace Sharp80
                     // SHIFT-ALT
                     switch (Key.Key)
                     {
+                        case KeyCode.N:
+                            string path = Dialogs.GetSnapshotFile(Settings.LastSnapshotFile, true);
+                            if (path.Length > 0)
+                            {
+                                Computer.SaveSnapshotFile(path);
+                                Settings.LastSnapshotFile = path;
+                            }
+                            return true;
                         case KeyCode.X:
                             OnUserCommand?.Invoke(UserCommand.Exit);
                             return true;
@@ -187,6 +198,36 @@ namespace Sharp80
                             Settings.AutoStartOnReset = !Settings.AutoStartOnReset;
                             MessageCallback("Auto Start on Reset " + (Settings.AutoStartOnReset ? "On" : "Off"));
                             return true;
+                        case KeyCode.B:
+                            MakeFloppyFromCmdFile();
+                            return true;
+                        case KeyCode.C:
+                            LoadCMDFile();
+                            Invalidate();
+                            return true;
+                        case KeyCode.D:
+                            CurrentMode = ViewMode.FloppyControllerView;
+                            return true;
+                        case KeyCode.E:
+                            if (Log.TraceOn)
+                            {
+                                Log.TraceOn = false;
+                                bool isRunning = Computer.IsRunning;
+                                Computer.Stop(true);
+                                Log.SaveTrace();
+                                if (isRunning)
+                                    Computer.Start();
+                                MessageCallback("Trace run saved to 'trace.txt'");
+                            }
+                            else
+                            {
+                                Log.TraceOn = true;
+                                MessageCallback("Collecting trace info...");
+                            }
+                            return true;
+                        case KeyCode.F:
+                            MakeAndSaveBlankFloppy(true);
+                            return true;
                         case KeyCode.G:
                             OnUserCommand?.Invoke(UserCommand.GreenScreen);
                             MessageCallback("Screen color changed.");
@@ -198,8 +239,24 @@ namespace Sharp80
                         case KeyCode.I:
                             OnUserCommand?.Invoke(UserCommand.ShowInstructionSet);
                             return true;
+                        case KeyCode.L:
+                            Log.SaveLog();
+                            MessageCallback("Log saved.");
+                            return true;
                         case KeyCode.M:
                             CurrentMode = ViewMode.MemoryView;
+                            return true;
+                        case KeyCode.N:
+                            string path = Dialogs.GetSnapshotFile(Settings.LastSnapshotFile, false);
+                            if (path.Length > 0)
+                            {
+                                Computer.LoadSnapshotFile(path);
+                                Settings.LastSnapshotFile = path;
+                            }
+                            return true;
+                        case KeyCode.P:
+                            Storage.SaveTextFile(System.IO.Path.Combine(ExecutablePath, "Disassembly_Dump.txt"), Computer.DumpDisassembly(true));
+                            Dialogs.InformUser("Disassembly saved to \"Disassembly_Dump.txt\"");
                             return true;
                         case KeyCode.R:
                             CurrentMode = ViewMode.CpuView;
@@ -211,6 +268,16 @@ namespace Sharp80
                         case KeyCode.T:
                             Settings.DriveNoise = Computer.Sound.UseDriveNoise = !Computer.Sound.UseDriveNoise;
                             MessageCallback(Settings.DriveNoise ? "Drive noise on" : "Drive noise off");
+                            return true;
+                        case KeyCode.U:
+                            MakeAndSaveBlankFloppy(false);
+                            return true;
+                        case KeyCode.Y:
+                            LoadCMDFile(Computer.Assemble(), true);
+                            return true;
+                        case KeyCode.Z:
+                            if (Computer.FloppyController.AnyDriveLoaded)
+                                CurrentMode = ViewMode.DiskZapView;
                             return true;
                     }
                 }
@@ -327,8 +394,59 @@ namespace Sharp80
         }
         protected static void WriteToByteArrayHex(byte[] Array, int Start, byte Input)
         {
-            Array[Start]     = Lib.ToHexCharByte((byte)(Input >> 4));
-            Array[Start + 1] = Lib.ToHexCharByte((byte)(Input & 0x0F));
+            Array[Start]     = (Input >> 4)  .ToHexCharByte();
+            Array[Start + 1] = (Input & 0x0F).ToHexCharByte();
+        }
+
+        private void LoadCMDFile(string Path = "", bool SuppressNormalInform = false)
+        {
+            if (String.IsNullOrWhiteSpace(Path))
+                Path = Dialogs.GetCommandFile(Settings.LastCmdFile);
+
+            if (Path.Length > 0)
+            {
+                if (Computer.LoadCMDFile(Path))
+                {
+                    if (!SuppressNormalInform)
+                        Dialogs.InformUser("CMD File loaded.");
+                    Settings.LastCmdFile = Path;
+                }
+                else
+                {
+                    Dialogs.AlertUser("CMD File load failed.");
+                }
+            }
+        }
+        private void MakeFloppyFromCmdFile()
+        {
+            string path = Dialogs.GetCmdFilePath(Settings.LastCmdFile);
+
+            if (path.Length > 0)
+            {
+                if (Storage.MakeFloppyFromFile(path))
+                    Settings.LastCmdFile = path;
+            }
+        }
+        private void MakeAndSaveBlankFloppy(bool Formatted)
+        {
+            string path = Settings.DefaultFloppyDirectory;
+
+            path = Storage.GetFloppyFilePath("Select floppy filename to create",
+                                     path,
+                                     Save: true,
+                                     SelectFileInDialog: false,
+                                     DskOnly: true);
+
+            if (path.Length > 0)
+            {
+                var f = Storage.MakeBlankFloppy(Formatted);
+                f.FilePath = path;
+                if (Storage.SaveBinaryFile(path, f.Serialize(ForceDMK: true)))
+                    Dialogs.InformUser("Created floppy OK.");
+                else
+                    Dialogs.AlertUser(string.Format("Failed to create floppy with filename {0}.", path),
+                                      "Create floppy failed");
+            }
         }
     }
 }

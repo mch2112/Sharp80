@@ -72,11 +72,11 @@ namespace Sharp80.Processor
         }
         public string GetLineInfo(string Prefix, ushort PC, Instruction inst)
         {
-            return string.Format("{0}{1}  {2,-11} {3}", Prefix, Lib.ToHexString(PC), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.Name(memory, PC));
+            return string.Format("{0}{1}  {2,-11} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.Name(memory, PC));
         }
         public string GetLineInfo(string Prefix, ref ushort PC, Instruction inst)
         {
-            var s = string.Format("{0}{1}  {2,-11} {3}", Prefix, Lib.ToHexString(PC), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.Name(memory, PC));
+            var s = string.Format("{0}{1}  {2,-11} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.Name(memory, PC));
             PC += inst.Size;
             return s;
         }
@@ -102,7 +102,7 @@ namespace Sharp80.Processor
             }
 
             return string.Join(Environment.NewLine, li.Select(i => string.Format("{0}  {1,-11} {2}",
-                                                                                 Lib.ToHexString(i.Key),
+                                                                                 i.Key.ToHexString(),
                                                                                  Lib.GetSpacedHex(Memory, i.Key, i.Value.Size),
                                                                                  AddressAsComment ? i.Value.NameWithRelativeAddressesAsComments(memory, i.Key)
                                                                                                   : i.Value.Name(memory, i.Key)
@@ -116,7 +116,7 @@ namespace Sharp80.Processor
                                .Select(i => new { idx = i, addr = History[i], inst = GetInstructionAt(History[i]) })
                                .Select(n => string.Format("{0}{1} {2,-11} {3}",
                                                            (n.idx == History.Length - 1) ? ">" : " ",
-                                                           Lib.ToHexString(n.addr),
+                                                           n.addr.ToHexString(),
                                                            Lib.GetSpacedHex(Memory, n.addr, n.inst.Size),
                                                            n.inst.Name(memory, n.addr))));
         }

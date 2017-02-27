@@ -56,12 +56,6 @@ namespace Sharp80
 
             FloppyController = new FloppyController(this);
 
-
-#if CASSETTE
-            cassette = new Cassette(this);
-            Clock.CassetteCallback = cassette.CassetteCallback;
-#endif
-
             PhysicalScreen.Initialize(MainForm);
             Screen.SetVideoMode();
 

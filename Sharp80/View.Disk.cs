@@ -11,6 +11,11 @@ namespace Sharp80
     {
         protected override ViewMode Mode => ViewMode.DiskView;
         protected override bool ForceRedraw => false;
+
+        protected override void Activate()
+        {
+            DriveNumber = null;
+        }
         protected override bool processKey(KeyState Key)
         {
             if (Key.Released)
@@ -62,6 +67,7 @@ namespace Sharp80
                 default:
                     return base.processKey(Key);
             }
+            Invalidate();
             return true;
         }
         protected override byte[] GetViewBytes()
@@ -142,7 +148,7 @@ namespace Sharp80
             byte[] cells = new byte[ScreenDX.NUM_SCREEN_CHARS];
 
             WriteToByteArray(cells, 0x000, "Dsk");
-            cells[0x040] = Lib.ToHexCharByte(DriveNum);
+            cells[0x040] = DriveNum.ToHexCharByte();
 
             WriteToByteArray(cells, 0x0C0, "Trk");
             WriteToByteArrayHex(cells, 0x100, TrackNum);

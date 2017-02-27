@@ -14,8 +14,8 @@ namespace Sharp80
         public bool Alt { get; }
         public bool Pressed { get; }
         public bool Released { get; }
-
-        public KeyState(KeyCode Key, bool Shift, bool Control, bool Alt, bool Pressed, bool Released)
+        public bool Repeat { get; }
+        public KeyState(KeyCode Key, bool Shift, bool Control, bool Alt, bool Pressed, bool Released, bool Repeat = false)
         {
             this.Key = Key;
             this.Shift = Shift;
@@ -23,6 +23,7 @@ namespace Sharp80
             this.Alt = Alt;
             this.Pressed = Pressed;
             this.Released = Released;
+            this.Repeat = Repeat;
 
             if (this.Pressed == this.Released)
                 throw new Exception("WTF");
