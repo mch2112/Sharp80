@@ -81,7 +81,7 @@ namespace Sharp80
         private const int ADDRESS_DATA_BYTES = 0x06;
 
         private ulong stepRateInUsec;
-        private ulong[] stepRates;
+        private readonly ulong[] stepRates;
         private bool verify;
         private bool delay;
         private bool updateRegisters;
@@ -1166,7 +1166,7 @@ namespace Sharp80
 
         // SNAPSHOTS
 
-        public void Serialize(System.IO.BinaryWriter Writer)
+        public void Serialize(BinaryWriter Writer)
         {
             Writer.Write(trackRegister);
             Writer.Write(sectorRegister);
@@ -1188,7 +1188,17 @@ namespace Sharp80
             Writer.Write(lastStepDirUp);
             Writer.Write(writeProtected);
             Writer.Write(motorOn);
+            Writer.Write(stepRateInUsec);
+            
+            Writer.Write(verify);
+            Writer.Write(updateRegisters);
+            Writer.Write(sideSelectVerify);
+            Writer.Write(sideOneExpected);
+            Writer.Write(markSectorDeleted);
+            Writer.Write(multipleRecords);
 
+            Writer.Write(trackDataIndex);
+            
             Writer.Write(readAddressData);
             Writer.Write(readAddressIndex);
             Writer.Write(idamBytesFound);
@@ -1214,7 +1224,7 @@ namespace Sharp80
             motorOnPulseReq.Serialize(Writer);
             motorOffPulseReq.Serialize(Writer);
         }
-        public void Deserialize(System.IO.BinaryReader Reader)
+        public void Deserialize(BinaryReader Reader)
         {
             trackRegister = Reader.ReadByte();
             sectorRegister = Reader.ReadByte();
@@ -1236,6 +1246,15 @@ namespace Sharp80
             lastStepDirUp = Reader.ReadBoolean();
             writeProtected = Reader.ReadBoolean();
             motorOn = Reader.ReadBoolean();
+            stepRateInUsec = Reader.ReadUInt64();
+            verify = Reader.ReadBoolean();
+            updateRegisters = Reader.ReadBoolean();
+            sideSelectVerify = Reader.ReadBoolean();
+            sideOneExpected = Reader.ReadBoolean();
+            markSectorDeleted = Reader.ReadBoolean();
+            multipleRecords = Reader.ReadBoolean();
+
+            trackDataIndex = Reader.ReadInt32();
 
             Array.Copy(Reader.ReadBytes(ADDRESS_DATA_BYTES), readAddressData, ADDRESS_DATA_BYTES);
             readAddressIndex = Reader.ReadByte();

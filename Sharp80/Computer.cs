@@ -6,7 +6,7 @@ using System.IO;
 
 namespace Sharp80
 {
-    internal class Computer : IDisposable, ISerializable
+    internal class Computer : IDisposable
     {
         public const ulong CLOCK_RATE = 2027520;
         private const int SERIALIZATION_VERSION = 2;
@@ -19,9 +19,6 @@ namespace Sharp80
         public Processor.Z80 Processor { get; private set; }
         public ISound Sound { get; private set; }
         public bool HasRunYet { get; private set; }
-#if CASSETTE
-        private Cassette cassette;
-#endif
         private bool ready;
         private bool isDisposed = false;
 
@@ -251,7 +248,7 @@ namespace Sharp80
 
         // MISC
 
-        public void Serialize(BinaryWriter Writer)
+        private void Serialize(BinaryWriter Writer)
         {
             Writer.Write(SERIALIZATION_VERSION);
 
@@ -261,7 +258,7 @@ namespace Sharp80
             IntMgr.Serialize(Writer);
             Screen.Serialize(Writer);
         }
-        public void Deserialize(BinaryReader Reader)
+        private void Deserialize(BinaryReader Reader)
         {
             int ver = Reader.ReadInt32(); // SERIALIZATION_VERSION
 

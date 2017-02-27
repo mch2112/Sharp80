@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3
 
 using System;
+using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace Sharp80
@@ -13,9 +14,8 @@ namespace Sharp80
         private Computer computer;
         private ScreenDX screen;
         private KeyboardDX keyboard;
-        private bool resize = false;
         private Timer uiTimer;
-        private Timer startTimer;
+        private int resizing = 0;
 
         private int previousClientHeight;
 
@@ -29,6 +29,9 @@ namespace Sharp80
 
         public MainForm()
         {
+            KeyPreview = true;
+            Text = "Sharp 80 - TRS-80 Model III Emulator";
+
             Dialogs.Initialize(this);
 
             screen = new ScreenDX(Settings.AdvancedView,
@@ -37,9 +40,14 @@ namespace Sharp80
                                   Settings.GreenScreen);
 
             InitializeComponent();
+            SetupClientArea();
 
-            KeyPreview = true;
-            Text = "Sharp80 - TRS-80 Model III Emulator";
+            uiTimer = new Timer() { Interval = SCREEN_REFRESH_SLEEP };
+            uiTimer.Tick += UiTimerTick;
+        }
+
+        private void SetupClientArea()
+        {
             int h = (int)ScreenDX.WINDOWED_HEIGHT;
             int w = (int)(screen.AdvancedView ? ScreenDX.WINDOWED_WIDTH_ADVANCED : ScreenDX.WINDOWED_WIDTH_NORMAL);
             var scn = System.Windows.Forms.Screen.FromHandle(Handle);
@@ -52,15 +60,15 @@ namespace Sharp80
             }
 
             ClientSize = new System.Drawing.Size((int)(w * defaultScale), (int)(h * defaultScale));
-
-            uiTimer = new Timer() { Interval = SCREEN_REFRESH_SLEEP };
-            uiTimer.Tick += UiTimerTick;
         }
 
         public bool IsMinimized { get { return WindowState == FormWindowState.Minimized; } }
 
         private void Form_Load(object sender, EventArgs e)
         {
+            ResizeBegin += (o, ee) => { resizing++; }; 
+            ResizeEnd   += (o, ee) => { resizing--; }; 
+
             keyboard = new KeyboardDX();
 
             HardReset();
@@ -71,22 +79,17 @@ namespace Sharp80
 
             if (Settings.AutoStartOnReset)
             {
-                startTimer = new Timer() { Interval = 500 };
-                startTimer.Tick += (s, ee) => { Start(); };
+                var startTimer = new Timer() { Interval = 500 };
+                startTimer.Tick += (s, ee) => { startTimer.Stop(); startTimer.Dispose(); computer.Start(); };
                 startTimer.Start();
             }
-
-            ClientSizeChanged += (s, ee) =>
-            {
-                resize = true;
-            };
-
+            
             uiTimer.Start();
 
             if (Settings.FullScreen)
                 ToggleFullScreen();
         }
-
+        
         private void OnUserCommand(UserCommand Command)
         {
             switch(Command)
@@ -96,6 +99,12 @@ namespace Sharp80
                     break;
                 case UserCommand.ToggleFullScreen:
                     ToggleFullScreen();
+                    break;
+                case UserCommand.ZoomIn:
+                    Zoom(true);
+                    break;
+                case UserCommand.ZoomOut:
+                    Zoom(false);
                     break;
                 case UserCommand.HardReset:
                     HardReset();
@@ -113,16 +122,7 @@ namespace Sharp80
 
             base.WndProc(ref m);
         }
-        private void Start()
-        {
-            if (startTimer != null)
-            {
-                startTimer.Stop();
-                startTimer.Dispose();
-                startTimer = null;
-            }
-            computer.Start();
-        }
+        
         private bool leftShiftPressed = false;
         private bool rightShiftPressed = false;
         private bool leftControlPressed = false;
@@ -152,22 +152,9 @@ namespace Sharp80
         {
             if (!Disposing)
             {
-                if (WindowState != FormWindowState.Minimized)
-                {
-                    if (resize)
-                    {
-                        try
-                        {
-                            resize = false;
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine(ex.ToString());
-                        }
-                    }
+                if (!IsMinimized && resizing == 0)
                     screen.Render();
-                }
-
+                
                 // Handle Keyboard Events
                 var poll = keyboard.Poll();
                 if (IsActive)
@@ -236,20 +223,34 @@ namespace Sharp80
             if (fs)
             {
                 previousClientHeight = ClientSize.Height;
-
-                FormBorderStyle = FormBorderStyle.None;
-                WindowState = FormWindowState.Maximized;
+                SetWindowStyle(true);
                 var parentScreen = System.Windows.Forms.Screen.FromHandle(Handle);
                 ClientSize = parentScreen.Bounds.Size;
             }
             else
             {
-                FormBorderStyle = FormBorderStyle.Sizable;
-                WindowState = FormWindowState.Normal;
+                SetWindowStyle(false);
                 ClientSize = new System.Drawing.Size((int)(previousClientHeight * (screen.AdvancedView ? ScreenDX.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenDX.WINDOWED_ASPECT_RATIO_NORMAL)),
                                                            previousClientHeight);
             }
             Settings.FullScreen = screen.IsFullScreen = fs;
+        }
+        private void SetWindowStyle(bool FullScreen)
+        {
+            resizing++;
+
+            if (FullScreen)
+            {
+                FormBorderStyle = FormBorderStyle.None;
+                WindowState = FormWindowState.Maximized;
+            }
+            else
+            {
+                FormBorderStyle = FormBorderStyle.Sizable;
+                WindowState = FormWindowState.Normal;
+            }
+
+            resizing--;
         }
         private void ShowInstructionSetReport()
         {
@@ -292,6 +293,72 @@ namespace Sharp80
         {
             IsActive = false;
             computer.ResetKeyboard();
+        }
+        private void 
+            Zoom(bool In)
+        {
+            if (IsMinimized)
+                return;
+
+            if (screen.IsFullScreen && In)
+                return;
+
+            float aspectRatio = (screen.AdvancedView ? ScreenDX.WINDOWED_WIDTH_ADVANCED : ScreenDX.WINDOWED_WIDTH_NORMAL) / ScreenDX.WINDOWED_HEIGHT;
+
+            var scn = System.Windows.Forms.Screen.FromHandle(Handle);
+
+            int w, h;
+
+            if (screen.IsFullScreen)
+            {
+                w = scn.WorkingArea.Width;
+                h = scn.WorkingArea.Height;
+            }
+            else
+            {
+                w = ClientSize.Width;
+                h = ClientSize.Height;
+            }
+            float zoom = In ? 1.2f : 1f/1.2f;
+
+            int newH = (int)(h * zoom);
+
+            if (newH > ScreenDX.WINDOWED_HEIGHT * 0.88f && newH < ScreenDX.WINDOWED_HEIGHT * 1.102f)
+                newH = (int)ScreenDX.WINDOWED_HEIGHT;
+
+            int newW = (int)(newH * aspectRatio);
+            
+            if (newW > scn.WorkingArea.Width || newH > scn.WorkingArea.Height)
+            {
+                if (screen.IsFullScreen)
+                    return;
+                else
+                    ToggleFullScreen();
+            }
+
+            int xOffset = (w - newW) / 2;
+            int yOffset = (h - newH) / 2;
+
+            if (screen.IsFullScreen)
+            {
+                screen.IsFullScreen = false;
+                SetWindowStyle(false);
+            }
+
+            int newX = Location.X + xOffset;
+            int newY = Location.Y + yOffset;
+
+            newX = Math.Max(0, (scn.WorkingArea.Width - newW) / 2);
+            newY = Math.Max(0, (scn.WorkingArea.Height - newH) / 2);
+
+            resizing++;
+
+            ClientSize = new System.Drawing.Size(newW, newH);
+            Location = new System.Drawing.Point(newX, newY);
+
+            resizing--;
+
+            previousClientHeight = newH;
         }
         private void HardReset()
         {

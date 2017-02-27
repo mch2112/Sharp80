@@ -10,7 +10,7 @@ using System.Text;
 namespace Sharp80
 {
     public enum ViewMode { NormalView, MemoryView, DiskView, HelpView, DiskZapView, SetBreakpointView, JumpToView, OptionsView, CpuView, FloppyControllerView }
-    public enum UserCommand { ToggleAdvancedView, ToggleFullScreen, GreenScreen, ShowInstructionSet, HardReset, Exit }
+    public enum UserCommand { ToggleAdvancedView, ToggleFullScreen, GreenScreen, ShowInstructionSet, ZoomIn, ZoomOut, HardReset, Exit }
 
     internal abstract class View
     {
@@ -168,12 +168,16 @@ namespace Sharp80
                     switch (Key.Key)
                     {
                         case KeyCode.N:
+                            bool wasRunning = Computer.IsRunning;
+                            Computer.Stop(true);
                             string path = Dialogs.GetSnapshotFile(Settings.LastSnapshotFile, true);
                             if (path.Length > 0)
                             {
                                 Computer.SaveSnapshotFile(path);
                                 Settings.LastSnapshotFile = path;
                             }
+                            if (wasRunning)
+                                Computer.Start();
                             return true;
                         case KeyCode.X:
                             OnUserCommand?.Invoke(UserCommand.Exit);
@@ -252,6 +256,7 @@ namespace Sharp80
                             {
                                 Computer.LoadSnapshotFile(path);
                                 Settings.LastSnapshotFile = path;
+                                MessageCallback("Snapshot Loaded");
                             }
                             return true;
                         case KeyCode.P:
@@ -280,6 +285,18 @@ namespace Sharp80
                                 CurrentMode = ViewMode.DiskZapView;
                             return true;
                     }
+                }
+            }
+            else if (Key.Pressed && Key.Control && !Key.Alt && !Key.Shift)
+            {
+                switch (Key.Key)
+                {
+                    case KeyCode.Equals:
+                        OnUserCommand?.Invoke(UserCommand.ZoomIn);
+                        return true;
+                    case KeyCode.Minus:
+                        OnUserCommand?.Invoke(UserCommand.ZoomOut);
+                        return true;
                 }
             }
             return false;
