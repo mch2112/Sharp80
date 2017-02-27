@@ -56,16 +56,16 @@ namespace Sharp80
 
         public void Serialize(System.IO.BinaryWriter Writer)
         {
-            Writer.Write(this.delayInMicroSeconds);
-            Writer.Write(this.trigger);
-            Writer.Write(this.expired);
+            Writer.Write(delayInMicroSeconds);
+            Writer.Write(trigger);
+            Writer.Write(expired);
         }
         public void Deserialize(System.IO.BinaryReader Reader, Clock.ClockCallback Callback)
         {
-            this.callback = Callback;
-            this.delayInMicroSeconds = Reader.ReadUInt64();
-            this.trigger = Reader.ReadUInt64();
-            this.expired = Reader.ReadBoolean();
+            callback = Callback;
+            delayInMicroSeconds = Reader.ReadUInt64();
+            trigger = Reader.ReadUInt64();
+            expired = Reader.ReadBoolean();
         }
     }
 }

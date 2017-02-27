@@ -9,7 +9,7 @@ namespace Sharp80
     internal class Computer : IDisposable, ISerializable
     {
         public const ulong CLOCK_RATE = 2027520;
-        private const int SERIALIZATION_VERSION = 1;
+        private const int SERIALIZATION_VERSION = 2;
 
         public Clock Clock { get; private set; }
         public FloppyController FloppyController { get; private set; }
@@ -263,7 +263,10 @@ namespace Sharp80
         }
         public void Deserialize(BinaryReader Reader)
         {
-            Reader.ReadInt32(); // SERIALIZATION_VERSION
+            int ver = Reader.ReadInt32(); // SERIALIZATION_VERSION
+
+            if (ver != SERIALIZATION_VERSION)
+                Dialogs.AlertUser("Snapshot load failed: incompatible snapshot version.");
 
             Processor.Deserialize(Reader);
             Clock.Deserialize(Reader);

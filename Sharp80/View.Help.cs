@@ -96,6 +96,11 @@ namespace Sharp80
                     ScreenNum += NUM_SCREENS - 1;
                     ScreenNum %= NUM_SCREENS;
                     break;
+                case KeyCode.F8:
+                    // Note: doesn't consume key event
+                    if (!Computer.IsRunning)
+                        CurrentMode = ViewMode.NormalView;
+                    return base.processKey(Key);
                 default:
                     return base.processKey(Key);
             }

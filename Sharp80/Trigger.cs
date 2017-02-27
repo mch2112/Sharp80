@@ -7,6 +7,7 @@ namespace Sharp80
 {
     internal class Trigger : ISerializable
     {
+        public bool Triggered { get; private set; }
         private bool enabled;
         private bool latched;
         private bool triggerLock;
@@ -26,7 +27,6 @@ namespace Sharp80
             canLatchBeforeEnabled = CanLatchBeforeEnabled;
         }
 
-        public bool Triggered { get; private set; }
         public void ResetTrigger() { Triggered = false; }
 
         public bool Enabled
@@ -50,7 +50,6 @@ namespace Sharp80
         {
             Update(Enabled: null, Latched: false);
         }
-
         public void Serialize(System.IO.BinaryWriter Writer)
         {
             Writer.Write(enabled);

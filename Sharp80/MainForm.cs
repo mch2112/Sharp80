@@ -97,6 +97,9 @@ namespace Sharp80
                 case UserCommand.ToggleFullScreen:
                     ToggleFullScreen();
                     break;
+                case UserCommand.HardReset:
+                    HardReset();
+                    break;
                 case UserCommand.Exit:
                     Close();
                     break;

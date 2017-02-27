@@ -56,8 +56,7 @@ namespace Sharp80.Processor
         public IMemory Memory { get { return memory; } }
 
         public Instruction CurrentInstruction { get; private set; }
-        public bool RecordExtraTicks { get; set; }
-
+        
         public string Assemble()
         {
             return new Assembler.Assembler(this.InstructionSet).Assemble();
@@ -68,25 +67,25 @@ namespace Sharp80.Processor
         public bool IFF1 { get; set; }
         public bool IFF2 { get; set; }
         public bool RestoreInterrupts { get; set; }
+        private bool RecordExtraTicks { get; set; }
+        public ushort NextPC { get; private set; }
 
         private byte interruptMode;
         private bool restoreInterruptsNow;
         private byte im2Vector = 0xFF;         // For IM2 only
         private bool halted;
-        private ushort breakpoint = 0;
-
-        public ushort NextPC { get; private set; }
-
+        private ushort breakPoint = 0;
+        
         // User vectors
 
         public ushort BreakPoint
         {
-            get { return breakpoint; }
+            get { return breakPoint; }
             set
             {
-                if (breakpoint != value)
+                if (breakPoint != value)
                 {
-                    breakpoint = value;
+                    breakPoint = value;
                     skipOneBreakpoint = PC.val == value && !computer.IsRunning;
                 }
             }
@@ -476,7 +475,6 @@ namespace Sharp80.Processor
             Writer.Write(R.val);
 
             Writer.Write(WZ.val);
-
             Writer.Write(NextPC);
 
             Writer.Write(interruptMode);
@@ -487,11 +485,16 @@ namespace Sharp80.Processor
             Writer.Write(restoreInterruptsNow);
             Writer.Write(im2Vector);
             Writer.Write(halted);
-            Writer.Write(BreakPoint);
+            Writer.Write(breakPoint);
             Writer.Write(BreakPointOn);
             Writer.Write(skipOneBreakpoint);
             Writer.Write(systemBreakPoint.HasValue);
             Writer.Write(systemBreakPoint ?? 0);
+
+            Writer.Write(historyBufferCursor);
+            Writer.Write(historyInstructionCount);
+            for (int i = 0; i < NUM_DISASSEMBLY_LINES; i++)
+                Writer.Write(historyBuffer[i]);
 
             ports.Serialize(Writer);
             memory.Serialize(Writer);
@@ -518,7 +521,6 @@ namespace Sharp80.Processor
             R.val = Reader.ReadByte();
 
             WZ.val = Reader.ReadUInt16();
-
             NextPC = Reader.ReadUInt16();
 
             interruptMode = Reader.ReadByte();
@@ -529,7 +531,7 @@ namespace Sharp80.Processor
             restoreInterruptsNow = Reader.ReadBoolean();
             im2Vector = Reader.ReadByte();
             halted = Reader.ReadBoolean();
-            BreakPoint = Reader.ReadUInt16();
+            breakPoint = Reader.ReadUInt16();
             BreakPointOn = Reader.ReadBoolean();
             skipOneBreakpoint = Reader.ReadBoolean();
             if (Reader.ReadBoolean())
@@ -541,6 +543,12 @@ namespace Sharp80.Processor
                 systemBreakPoint = null;
                 Reader.ReadUInt16();
             }
+
+            historyBufferCursor = Reader.ReadInt32();
+            historyInstructionCount = Reader.ReadUInt64();
+            for (int i = 0; i < NUM_DISASSEMBLY_LINES; i++)
+                historyBuffer[i] = Reader.ReadUInt16();
+
             ports.Deserialize(Reader);
             memory.Deserialize(Reader);
         }

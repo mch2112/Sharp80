@@ -14,6 +14,7 @@ namespace Sharp80
         private sealed class DriveState
         {
             public Floppy Floppy { get; set; }
+            public bool IsLoaded { get { return Floppy != null; } }
             public bool IsUnloaded { get { return Floppy == null; } }
             public bool OnTrackZero { get { return PhysicalTrackNumber == 0; } }
             public byte PhysicalTrackNumber
@@ -28,12 +29,17 @@ namespace Sharp80
             }
             public void Serialize(BinaryWriter Writer)
             {
-                Floppy.Serialize(Writer);
+                Writer.Write(Floppy != null);
+                if (Floppy != null)
+                    Floppy.Serialize(Writer);
                 Writer.Write(PhysicalTrackNumber);
             }
             public void Deserialize(BinaryReader Reader)
             {
-                Floppy = new DMK(Reader);
+                if (Reader.ReadBoolean())
+                    Floppy = new DMK(Reader);
+                else
+                    Floppy = null;
                 PhysicalTrackNumber = Reader.ReadByte();
             }
         }
@@ -112,7 +118,7 @@ namespace Sharp80
 
         // The physical state
         private DriveState[] drives;
-        private DriveState currentDrive;
+        private DriveState currentDrive { get { return (CurrentDriveNumber >= NUM_DRIVES) ? null : drives[CurrentDriveNumber]; } }
         private byte currentDriveNumber = 0xFF;
         private byte CurrentDriveNumber
         {
@@ -122,7 +128,7 @@ namespace Sharp80
                 if (currentDriveNumber != value)
                 {
                     currentDriveNumber = value;
-                    currentDrive = drives[value];
+                    //currentDrive = drives[value];
                     UpdateTrack();
                 }
             }
@@ -145,8 +151,7 @@ namespace Sharp80
         private ushort crc;
         private ushort crcCalc;
         private byte crcHigh, crcLow;
-
-        private readonly ulong ticksPerDiskRev;
+        private ulong TicksPerDiskRev { get; }
 
         // CONSTRUCTOR
 
@@ -156,7 +161,7 @@ namespace Sharp80
             ports = computer.Ports;
             clock = computer.Clock;
 
-            ticksPerDiskRev = clock.TicksPerSec / 5;
+            TicksPerDiskRev = clock.TicksPerSec / 5;
 
             stepRates = new ulong[4] {  6 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ,
                                        12 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ,
@@ -191,7 +196,7 @@ namespace Sharp80
                 SectorRegister = sectorRegister,
                 CommandRegister = commandRegister,
                 DataRegister = dataRegister,
-                DiskNum = currentDriveNumber,
+                DiskNum = CurrentDriveNumber,
                 PhysicalTrackNum = currentDrive.PhysicalTrackNumber,
                 DiskAngle = ((double)DiskAngle / DISK_ANGLE_DIVISIONS * 360).ToString("000.000") + " degrees",
                 TrackDataIndex = tdi,
@@ -1202,7 +1207,7 @@ namespace Sharp80
             for (byte b = 0; b < NUM_DRIVES; b++)
                 drives[b].Serialize(Writer);
 
-            Writer.Write(CurrentDriveNumber);
+            Writer.Write(currentDriveNumber);
             Writer.Write(SideOne);
 
             commandPulseReq.Serialize(Writer);
@@ -1248,16 +1253,15 @@ namespace Sharp80
             crcHigh = Reader.ReadByte();
             crcLow = Reader.ReadByte();
 
-            var trackDataLength = Reader.ReadInt32();
-            
             for (byte b = 0; b < NUM_DRIVES; b++)
             {
                 drives[b].Deserialize(Reader);
-                if (File.Exists(drives[b].Floppy.FilePath))
-                    Storage.SaveDefaultDriveFileName(b, drives[b].Floppy.FilePath);
+                if (drives[b].IsLoaded)
+                    if (File.Exists(drives[b].Floppy.FilePath))
+                        Storage.SaveDefaultDriveFileName(b, drives[b].Floppy.FilePath);
             }
 
-            CurrentDriveNumber = Reader.ReadByte();
+            currentDriveNumber = Reader.ReadByte();
             SideOne = Reader.ReadBoolean();
 
             Clock.ClockCallback callback;
@@ -1742,7 +1746,7 @@ namespace Sharp80
 
         private ulong DiskAngle
         {
-            get { return DISK_ANGLE_DIVISIONS * (clock.TickCount % ticksPerDiskRev) / ticksPerDiskRev; }
+            get { return DISK_ANGLE_DIVISIONS * (clock.TickCount % TicksPerDiskRev) / TicksPerDiskRev; }
         }
         private bool IndexDetect
         {
