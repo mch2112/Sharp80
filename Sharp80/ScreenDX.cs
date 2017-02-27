@@ -1,4 +1,7 @@
-﻿using SharpDX;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using SharpDX;
 using SharpDX.Direct2D1;
 using SharpDX.DirectWrite;
 using SharpDX.DXGI;

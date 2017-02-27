@@ -2,8 +2,6 @@
 /// Licensed Under GPL v3
 
 using System;
-using System.ComponentModel;
-using System.IO;
 using System.Windows.Forms;
 
 namespace Sharp80

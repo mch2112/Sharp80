@@ -1,8 +1,9 @@
-﻿using System;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 
 namespace Sharp80
 {
@@ -47,7 +48,7 @@ namespace Sharp80
             string m = DateTime.Now.ToString("hh:mm:ss.ffffff") + ": " + Message;
             log.Add(m);
 #if DEBUG
-            System.Diagnostics.Debug.WriteLine(m);
+            Debug.WriteLine(m);
 
             if (DebugOn)
                 LogToDebug(m);

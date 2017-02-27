@@ -1,3 +1,6 @@
+/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
 using System;
 using System.Collections.Generic;
 
@@ -5,9 +8,8 @@ namespace Sharp80
 {
     internal sealed partial class Memory : IMemory
     {
-
-        const int KEYEVENTF_EXTENDEDKEY = 0x1;
-        const int KEYEVENTF_KEYUP = 0x2;
+        const int KEYEVENTF_EXTENDEDKEY = 0x01;
+        const int KEYEVENTF_KEYUP = 0x02;
         
         private enum VirtualKey
         {

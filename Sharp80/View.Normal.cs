@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SharpDX.DirectInput;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using System;
 
 namespace Sharp80
 {

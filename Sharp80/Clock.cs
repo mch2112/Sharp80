@@ -1,7 +1,8 @@
+/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Linq;
 using System.Text;
 
 namespace Sharp80
@@ -26,9 +27,6 @@ namespace Sharp80
         private ulong z80TicksOnLastMeasure;
         private ulong nextEmuSpeedMeasureTicks;
         private ulong nextRtcIrqTick;
-#if CASSETTE
-        private ulong nextCasIrqTick;
-#endif
         private long realTimeTicksOnLastMeasure;
         private ulong waitTimeout;
 
@@ -42,9 +40,6 @@ namespace Sharp80
         private ulong nextPulseReqTick = UInt64.MaxValue;
 
         private SoundEventCallback soundCallback;
-#if CASSETTE
-        private Cassette.CassetteReadCallback cassetteCallback;
-#endif
         private ulong nextSoundSampleTick;
         private readonly ulong ticksPerSoundSample;
 
@@ -73,9 +68,6 @@ namespace Sharp80
             PulseReq.SetTicksPerSec(ticksPerSec);
 
             nextRtcIrqTick = ticksPerIRQ;
-#if CASSETTE
-            nextCasIrqTick = ulong.MaxValue;
-#endif
             ResetTriggers();
 
             waitTrigger = new Trigger(() => { if (Log.DebugOn) Log.LogToDebug(string.Format("CPU Wait ON")); },
@@ -116,9 +108,6 @@ namespace Sharp80
                 }
             }
         }
-#if CASSETTE
-        public Cassette.CassetteReadCallback CassetteCallback { set { cassetteCallback = value; } }
-#endif
         public void Start()
         {
             if (!IsRunning)
@@ -158,15 +147,10 @@ namespace Sharp80
 
             SetNextPulseReqTick();
         }
-#if CASSETTE
-        public void DoCasIrqNow()
-        {
-            nextCasIrqTick = tickCount;
-        }
-#endif
+
         public string GetInternalsReport(bool IncludeTickCount)
         {
-            StringBuilder s = new StringBuilder();
+            var s = new StringBuilder();
 
             if (!IsRunning)
             {
@@ -259,26 +243,6 @@ namespace Sharp80
             {
                 tickCount += TICKS_PER_TSTATE;
             }
-#if CASSETTE
-            else if (tickCount > nextCasIrqTick && !Instruction.CurrentInst.IsPrefix)
-            {
-                var nextCasIrqDelay = cassetteCallback();
-
-                if (computer.IntMgr.CasIntPending)
-                {
-                    ulong ticks = z80.Interrupt();
-                    if (ticks > 0)
-                        tickCount += ticks;
-                }
-                if (nextCasIrqDelay > 0)
-                    if (nextCasIrqTick < ulong.MaxValue)
-                        nextCasIrqTick += nextCasIrqDelay * ticksPerSec / 1000000;
-                    else
-                        nextCasIrqTick = tickCount + nextCasIrqDelay * ticksPerSec / 1000000;
-                else
-                    nextCasIrqTick = ulong.MaxValue;
-            }
-#endif
             else if (computer.IntMgr.RtcIntLatch.Triggered && z80.CanInterrupt)
             {
                 computer.IntMgr.RtcIntLatch.ResetTrigger();

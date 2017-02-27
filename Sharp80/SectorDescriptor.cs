@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using System;
 
 namespace Sharp80
 {
@@ -29,7 +29,8 @@ namespace Sharp80
         }
         public override string ToString()
         {
-            return string.Format("Track: {0} Side: {1} Sector: {2} Double Density: {3} Length: {4}{5}", TrackNumber, SideOne ? "1" : "0", SectorNumber, DoubleDensity, SectorSize.ToHexString(), InUse ? string.Empty : " Unused");
+            return string.Format("Track: {0} Side: {1} Sector: {2} Double Density: {3} Length: {4}{5}", TrackNumber, SideOne ? "1" : "0", SectorNumber, DoubleDensity, SectorSize.ToHexString(), InUse ? string.Empty : " Un" +
+                "used");
         }
     }
 }

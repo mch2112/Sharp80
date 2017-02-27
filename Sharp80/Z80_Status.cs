@@ -1,5 +1,6 @@
 ﻿/// Sharp 80 (c) Matthew Hamilton
 /// Licensed Under GPL v3
+
 namespace Sharp80
 {
     internal class Z80_Status

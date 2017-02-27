@@ -1,7 +1,8 @@
+/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 namespace Sharp80.Processor
 {
@@ -184,7 +185,7 @@ namespace Sharp80.Processor
                 WZ.inc();
                 RecordExtraTicks = true;
                 NextPC -= 2;
-                Debug.Assert(this.PC.val == NextPC);
+                Debug.Assert(PC.val == NextPC);
             }
         }
         private void cpi()

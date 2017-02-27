@@ -1,4 +1,7 @@
-﻿using System;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -59,14 +62,14 @@ namespace Sharp80.Processor
 
         public string GetDisassembly(ushort StartLocation, ushort HighLight)
         {
-            const int MAX_HIGHLIGHT_LINE = Z80.NUM_DISASSEMBLY_LINES - 8;
+            const int MAX_HIGHLIGHT_LINE = NUM_DISASSEMBLY_LINES - 8;
 
             int idx;
             if ((idx = Array.IndexOf(disassemblyAddresses, StartLocation)) > 0)
                 StartLocation = disassemblyAddresses[(idx > MAX_HIGHLIGHT_LINE) ? MAX_HIGHLIGHT_LINE : 0];
 
             return string.Join(Environment.NewLine,
-                               Enumerable.Range(0, Z80.NUM_DISASSEMBLY_LINES)
+                               Enumerable.Range(0, NUM_DISASSEMBLY_LINES)
                                          .Select(i => new { addr = disassemblyAddresses[i] = StartLocation })
                                          .Select(n => GetLineInfo((n.addr == HighLight) ? ">" : " ", ref StartLocation, GetInstructionAt(n.addr))));
         }

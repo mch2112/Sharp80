@@ -1,8 +1,9 @@
+/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-using System.Windows.Forms;
 
 namespace Sharp80.Processor
 {

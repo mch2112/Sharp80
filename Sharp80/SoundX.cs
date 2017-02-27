@@ -1,4 +1,7 @@
-﻿using SharpDX;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using SharpDX;
 using SharpDX.Multimedia;
 using SharpDX.XAudio2;
 using System;
@@ -158,7 +161,6 @@ namespace Sharp80
 
                 if (UseDriveNoise && DriveMotorRunning)
                     outputLevel += noise.GetNoiseSample();
-                //outputLevel = (short)r.Next(-0x4000, 0x4000);
 
                 frameBuffer.Sample(outputLevel);
             }
@@ -358,7 +360,6 @@ namespace Sharp80
                 if ((writeWrap && writeCursor > readCursor) || (!writeWrap && writeCursor < readCursor + frameSize))
                 {
                     overreads++;
-                    //Log.LogMessage(string.Format("Sound Buffer Error: Read: {0} Write: {1} Frame Size: {2} Wrap: {3}", readCursor, writeCursor, frameSize, writeWrap ? "Yes" : "No"));
                     Reset();
                 }
             }

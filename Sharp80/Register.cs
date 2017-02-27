@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using System;
 
 namespace Sharp80.Processor
 {
@@ -169,8 +169,7 @@ namespace Sharp80.Processor
         }
 
         public override bool Z { get { return L.Z && H.Z; } }
-        public override bool NZ { get { return L.NZ || H.NZ; } }
-        
+        public override bool NZ { get { return L.NZ || H.NZ; } }        
     }
 
     // Used only for the stack pointer indirection

@@ -1,5 +1,7 @@
-﻿using System;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
 
+using System;
 using SharpDX;
 using SharpDX.Direct3D10;
 using SharpDX.Direct2D1;
@@ -7,7 +9,6 @@ using SharpDX.DXGI;
 
 using Device3D = SharpDX.Direct3D10.Device1;
 using Device2D = SharpDX.Direct2D1.Device;
-
 using DriverType = SharpDX.Direct3D10.DriverType;
 
 namespace Sharp80

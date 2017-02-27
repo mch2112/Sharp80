@@ -111,7 +111,6 @@
     <Compile Include="Assembler_LineInfo.cs" />
     <Compile Include="Assembler_Macro.cs" />
     <Compile Include="Assembler_Operand.cs" />
-    <Compile Include="Cassette.cs" />
     <Compile Include="Clock.cs" />
     <Compile Include="Computer.cs" />
     <Compile Include="Extensions.cs" />
@@ -133,7 +132,6 @@
     <Compile Include="Screen.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="SoundNull.cs" />
-    <Compile Include="UI.cs" />
     <Compile Include="IMemory.cs" />
     <Compile Include="InstructionSet.cs" />
     <Compile Include="ISerializable.cs" />

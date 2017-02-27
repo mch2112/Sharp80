@@ -1,6 +1,5 @@
-﻿using SharpDX.DirectInput;
-/// Sharp 80 (c) Matthew Hamilton
-/// Licensed Under GPL v3
+﻿// Sharp 80 (c) Matthew Hamilton
+// Licensed Under GPL v3
 
 using System;
 using System.Text;

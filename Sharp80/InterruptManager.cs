@@ -1,6 +1,7 @@
+/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Sharp80
 {
@@ -26,7 +27,7 @@ namespace Sharp80
 
         public InterruptManager(Computer Comp)
         {
-            this.computer = Comp;
+            computer = Comp;
 
             rtcIntLatch = new Trigger(null,
                                       null,
@@ -107,13 +108,12 @@ namespace Sharp80
         }
         public void ECin()
         {
-            if (Log.DebugOn )
-                if (rtcIntLatch.Latched)
-                    Log.LogToDebug("RTC Interrupt clear (in from port 0xEC)");
+            if (rtcIntLatch.Latched)
+                Log.LogToDebug("RTC Interrupt clear (in from port 0xEC)");
 
             rtcIntLatch.Unlatch();
 
-            computer.Ports.SetPortArray((byte)0xFF, (byte)0xEC);
+            computer.Ports.SetPortArray(0xFF, 0xEC);
         }
         public void FFin()
         {
@@ -138,8 +138,7 @@ namespace Sharp80
                 if (!casFallingEdgeIntLatch.Latched) retVal |= 0x02;
                 if (!casRisingEdgeIntLatch.Latched)  retVal |= 0x01;
 
-                if (Log.DebugOn)
-                    Log.LogToDebug(string.Format("Read port 0xE0: RTC Interrupt {0}in progress", rtcIntLatch.Latched ? string.Empty : "not "));
+                Log.LogToDebug(string.Format("Read port 0xE0: RTC Interrupt {0}in progress", rtcIntLatch.Latched ? string.Empty : "not "));
 
                 return retVal;
             }
