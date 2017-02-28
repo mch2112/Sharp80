@@ -350,6 +350,9 @@ namespace Sharp80
             if (newH > ScreenDX.WINDOWED_HEIGHT * 0.88f && newH < ScreenDX.WINDOWED_HEIGHT * 1.102f)
                 newH = (int)ScreenDX.WINDOWED_HEIGHT;
 
+            if (newH > 2 * ScreenDX.WINDOWED_HEIGHT * 0.88f && newH < 2 * ScreenDX.WINDOWED_HEIGHT * 1.102f)
+                newH = 2 * (int)ScreenDX.WINDOWED_HEIGHT;
+
             int newW = (int)(newH * aspectRatio);
 
             if (newW > scrW || newH > scrH)

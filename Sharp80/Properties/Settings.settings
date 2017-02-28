@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="disk0" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)">{{TRSDOS}}</Value>
     </Setting>
     <Setting Name="disk1" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
