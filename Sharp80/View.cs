@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Sharp80
 {
-    public enum ViewMode { NormalView, MemoryView, DiskView, HelpView, DiskZapView, SetBreakpointView, JumpToView, OptionsView, CpuView, FloppyControllerView }
+    public enum ViewMode { Normal, Memory, Disk, Help, Zap, Breakpoint, Jump, Options, Cpu, FloppyController, Splash }
     public enum UserCommand { ToggleAdvancedView, ToggleFullScreen, GreenScreen, ShowInstructionSet, ZoomIn, ZoomOut, HardReset, Exit }
 
     internal abstract class View
@@ -57,7 +57,7 @@ namespace Sharp80
         protected static byte? DriveNumber { get; set; } = null;
         protected static MessageDelegate MessageCallback { get; private set; }
 
-        private static ViewMode currentMode = ViewMode.NormalView;
+        private static ViewMode currentMode = ViewMode.Normal;
         private static bool initialized = false;
         private const int STANDARD_INDENT = 3;
 
@@ -70,6 +70,7 @@ namespace Sharp80
             if (!initialized)
             {
                 new ViewNormal();
+                new ViewSplash();
                 new ViewHelp();
                 new ViewOptions();
                 new ViewDisk();
@@ -78,8 +79,8 @@ namespace Sharp80
                 new ViewJump();
                 new ViewMemory();
                 new ViewFloppyController();
-                new CPUView();
-                CurrentMode = ViewMode.HelpView;
+                new ViewCpu();
+                CurrentMode = ViewMode.Splash;
                 initialized = true;
             }
         }
@@ -104,37 +105,37 @@ namespace Sharp80
                     switch (Key.Key)
                     {
                         case KeyCode.Escape:
-                            if (CurrentMode != ViewMode.NormalView)
+                            if (CurrentMode != ViewMode.Normal)
                             {
-                                CurrentMode = ViewMode.NormalView;
+                                CurrentMode = ViewMode.Normal;
                                 return true;
                             }
                             break;
                         case KeyCode.F1:
-                            CurrentMode = ViewMode.HelpView;
+                            CurrentMode = ViewMode.Help;
                             return true;
                         case KeyCode.F2:
-                            CurrentMode = ViewMode.OptionsView;
+                            CurrentMode = ViewMode.Options;
                             return true;
                         case KeyCode.F3:
-                            CurrentMode = ViewMode.DiskView;
+                            CurrentMode = ViewMode.Disk;
                             return true;
                         case KeyCode.F4:
                             OnUserCommand?.Invoke(UserCommand.ToggleAdvancedView);
                             MessageCallback(Settings.AdvancedView ? "Advanced View" : "Normal View");
                             return true;
                         case KeyCode.F6:
-                            CurrentMode = ViewMode.JumpToView;
+                            CurrentMode = ViewMode.Jump;
                             return true;
-                        case KeyCode.F7:
-                            CurrentMode = ViewMode.SetBreakpointView;
-                            return true;
-                        case KeyCode.F8:
+                        case KeyCode.F5:
                             if (Computer.IsRunning)
                                 Computer.Stop(true);
                             else
                                 Computer.Start();
                             Invalidate();
+                            return true;
+                        case KeyCode.F7:
+                            CurrentMode = ViewMode.Breakpoint;
                             return true;
                         case KeyCode.F9:
                             Computer.SingleStep();
@@ -219,7 +220,7 @@ namespace Sharp80
                             Invalidate();
                             return true;
                         case KeyCode.D:
-                            CurrentMode = ViewMode.FloppyControllerView;
+                            CurrentMode = ViewMode.FloppyController;
                             return true;
                         case KeyCode.E:
                             if (Log.TraceOn)
@@ -257,7 +258,7 @@ namespace Sharp80
                             MessageCallback("Log saved.");
                             return true;
                         case KeyCode.M:
-                            CurrentMode = ViewMode.MemoryView;
+                            CurrentMode = ViewMode.Memory;
                             return true;
                         case KeyCode.N:
                             string path = Dialogs.GetSnapshotFile(Settings.LastSnapshotFile, false);
@@ -273,7 +274,7 @@ namespace Sharp80
                             Dialogs.InformUser("Disassembly saved to \"Disassembly.txt\"");
                             return true;
                         case KeyCode.R:
-                            CurrentMode = ViewMode.CpuView;
+                            CurrentMode = ViewMode.Cpu;
                             return true;
                         case KeyCode.S:
                             Settings.SoundOn = Computer.SoundOn = !Computer.SoundOn;
@@ -291,7 +292,7 @@ namespace Sharp80
                             return true;
                         case KeyCode.Z:
                             if (Computer.AnyDriveLoaded)
-                                CurrentMode = ViewMode.DiskZapView;
+                                CurrentMode = ViewMode.Zap;
                             return true;
                     }
                 }

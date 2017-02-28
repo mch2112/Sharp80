@@ -7,7 +7,7 @@ namespace Sharp80
 {
     internal class ViewMemory : View
     {
-        protected override ViewMode Mode => ViewMode.MemoryView;
+        protected override ViewMode Mode => ViewMode.Memory;
         protected override bool ForceRedraw => true;
 
         private ushort baseAddress = 0;

@@ -8,7 +8,7 @@ namespace Sharp80
 {
     internal class ViewOptions : View
     {
-        protected override ViewMode Mode => ViewMode.OptionsView;
+        protected override ViewMode Mode => ViewMode.Options;
         protected override bool ForceRedraw => false;
         protected override bool processKey(KeyState Key)
         {

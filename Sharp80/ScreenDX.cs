@@ -340,7 +340,7 @@ namespace Sharp80
                 else
                     RenderTarget.FillEllipse(driveLightEllipse, backgroundBrush);
 
-                if (View.CurrentMode == ViewMode.NormalView || invalid)
+                if (View.CurrentMode == ViewMode.Normal || invalid)
                     DrawView(View.GetViewData());
                 
                 //renderTarget.DrawRectangle(new RawRectangleF(cells[0].Left, cells[0].Top, cells[0x3ff].Right, cells[0x3ff].Bottom), foregroundBrush);

@@ -6,9 +6,9 @@ using System.Text;
 
 namespace Sharp80
 {
-    internal class CPUView : View
+    internal class ViewCpu : View
     {
-        protected override ViewMode Mode => ViewMode.CpuView;
+        protected override ViewMode Mode => ViewMode.Cpu;
         protected override bool ForceRedraw => Computer.IsRunning;
         protected override byte[] GetViewBytes()
         {

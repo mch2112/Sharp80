@@ -7,7 +7,7 @@ namespace Sharp80
 {
     internal class ViewZap : View
     {
-        protected override ViewMode Mode => ViewMode.DiskZapView;
+        protected override ViewMode Mode => ViewMode.Zap;
         protected override bool ForceRedraw => false;
 
         private bool sideOne = false;

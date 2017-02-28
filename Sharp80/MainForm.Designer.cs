@@ -1,4 +1,7 @@
-﻿namespace Sharp80
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+namespace Sharp80
 {
     partial class MainForm
     {

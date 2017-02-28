@@ -8,7 +8,7 @@ namespace Sharp80
 {
     internal class ViewBreakpoint : View
     {
-        protected override ViewMode Mode => ViewMode.SetBreakpointView;
+        protected override ViewMode Mode => ViewMode.Breakpoint;
         protected override bool ForceRedraw => false;
         protected override bool processKey(KeyState Key)
         {
@@ -26,7 +26,7 @@ namespace Sharp80
                         Invalidate();
                         return true;
                     case KeyCode.Return:
-                        CurrentMode = ViewMode.NormalView;
+                        CurrentMode = ViewMode.Normal;
                         return true;
                     default:
                         c = Key.ToChar();

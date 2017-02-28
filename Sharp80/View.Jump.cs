@@ -9,7 +9,7 @@ namespace Sharp80
     internal class ViewJump : View
     {
         protected override bool ForceRedraw => false;
-        protected override ViewMode Mode => ViewMode.JumpToView;
+        protected override ViewMode Mode => ViewMode.Jump;
 
         protected override void Activate()
         {
@@ -30,10 +30,10 @@ namespace Sharp80
                 switch (Key.Key)
                 {
                     case KeyCode.Return:
-                        CurrentMode = ViewMode.NormalView;
+                        CurrentMode = ViewMode.Normal;
                         return true;
-                    case KeyCode.F8:
-                        CurrentMode = ViewMode.NormalView;
+                    case KeyCode.F5:
+                        CurrentMode = ViewMode.Normal;
                         return false;
                     default:
                         c = Key.ToChar();

@@ -9,7 +9,7 @@ namespace Sharp80
 {
     internal class ViewDisk : View
     {
-        protected override ViewMode Mode => ViewMode.DiskView;
+        protected override ViewMode Mode => ViewMode.Disk;
         protected override bool ForceRedraw => false;
 
         protected override void Activate()
@@ -65,13 +65,13 @@ namespace Sharp80
                         break;
                     case KeyCode.Z:
                         if (DriveNumber.HasValue)
-                            CurrentMode = ViewMode.DiskZapView;
+                            CurrentMode = ViewMode.Zap;
                         break;
                     case KeyCode.Escape:
                         if (DriveNumber.HasValue)
                             DriveNumber = null;
                         else
-                            CurrentMode = ViewMode.NormalView;
+                            CurrentMode = ViewMode.Normal;
                         break;
                     default:
                         return base.processKey(Key);
@@ -82,7 +82,7 @@ namespace Sharp80
         }
         protected override byte[] GetViewBytes()
         {
-            string s = Header("Sharp 80 Floppy Disk Status");
+            string s = Header("Sharp 80 Floppy Disk Manager");
             if (DriveNumber.HasValue)
             {
                 bool diskLoaded = !Computer.DriveIsUnloaded(DriveNumber.Value);

@@ -182,6 +182,7 @@
     <Compile Include="View.CPU.cs" />
     <Compile Include="View.Memory.cs" />
     <Compile Include="View.Options.cs" />
+    <Compile Include="View.Splash.cs" />
     <Compile Include="View.Zap.cs" />
     <Compile Include="WinDialogs.cs" />
     <Compile Include="Z80_Status.cs" />

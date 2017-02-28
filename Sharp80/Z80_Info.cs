@@ -95,10 +95,18 @@ namespace Sharp80.Processor
         {
             int PC = FromPC ? this.PC.val : 0;
             Instruction inst;
+
+            // Eliminate trailing NOPs
+            ushort lastAddress = 0xFFFF;
+            while (memory[lastAddress] == 0 && lastAddress > 0) // NOP
+                lastAddress--;
+            int end = Math.Min(0x10000, lastAddress + 3);
+
             var sb = new StringBuilder(500000);
 
             var li = new Dictionary<ushort, Instruction>();
-            while (PC < 0x10000)
+
+            while (PC < end)
             {
                 li.Add((ushort)PC, inst = GetInstructionAt((ushort)PC));
                 PC += inst.Size;

@@ -8,7 +8,7 @@ namespace Sharp80
     internal class ViewNormal : View
     {
         protected override bool ForceRedraw => false;
-        protected override ViewMode Mode => ViewMode.NormalView;
+        protected override ViewMode Mode => ViewMode.Normal;
         
         protected override byte[] GetViewBytes()
         {

@@ -13,7 +13,7 @@ namespace Sharp80
         private string helpHeaderText = "Sharp 80 Help";
         private string footerText = "[Left/Right Arrow] Show More Commands";
 
-        protected override ViewMode Mode => ViewMode.HelpView;
+        protected override ViewMode Mode => ViewMode.Help;
 
         protected override bool ForceRedraw => false;
         protected sealed override byte[] GetViewBytes()
@@ -28,7 +28,7 @@ namespace Sharp80
                                         Indent("[F3] Floppy Disk Manager") +
                                         Indent("[F4] Show / Hide Z80 CPU Internal Info") +
                                         Format() +
-                                        Format(new string[] { "[F8] Run / Pause", "[F9] Single Step" }, true) +
+                                        Format(new string[] { "[F5] Run / Pause", "[F9] Single Step" }, true) +
                                         Format() + 
                                         Indent("[Control]+[+] / [Control]+[-]   Zoom In / Out") +
                                         Indent("[Shift]+[Alt]+[End]             Hard Reset (Power Cycle)") +
@@ -96,10 +96,10 @@ namespace Sharp80
                     ScreenNum += NUM_SCREENS - 1;
                     ScreenNum %= NUM_SCREENS;
                     break;
-                case KeyCode.F8:
+                case KeyCode.F5:
                     // Note: doesn't consume key event
                     if (!Computer.IsRunning)
-                        CurrentMode = ViewMode.NormalView;
+                        CurrentMode = ViewMode.Normal;
                     return base.processKey(Key);
                 default:
                     return base.processKey(Key);

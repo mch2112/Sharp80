@@ -2,7 +2,6 @@
 /// Licensed Under GPL v3
 
 using System;
-using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace Sharp80
@@ -35,7 +34,7 @@ namespace Sharp80
             Dialogs.Initialize(this);
 
             screen = new ScreenDX(Settings.AdvancedView,
-                                  ViewMode.HelpView,
+                                  ViewMode.Help,
                                   DISPLAY_MESSAGE_CYCLE_DURATION,
                                   Settings.GreenScreen);
 
@@ -50,7 +49,7 @@ namespace Sharp80
         {
             int h = (int)ScreenDX.WINDOWED_HEIGHT;
             int w = (int)(screen.AdvancedView ? ScreenDX.WINDOWED_WIDTH_ADVANCED : ScreenDX.WINDOWED_WIDTH_NORMAL);
-            var scn = System.Windows.Forms.Screen.FromHandle(Handle);
+            var scn = Screen.FromHandle(Handle);
 
             float defaultScale = 1f;
 
@@ -70,11 +69,8 @@ namespace Sharp80
             ResizeEnd   += (o, ee) => { resizing--; }; 
 
             keyboard = new KeyboardDX();
-
             HardReset();
-            
             View.OnUserCommand += OnUserCommand;
-
             screen.Initialize(this, computer);
 
             if (Settings.AutoStartOnReset)
@@ -226,10 +222,9 @@ namespace Sharp80
                                         out leftControlPressed,
                                         out rightControlPressed);
 
-
             computer.ResetKeyboard();
 
-            if (View.CurrentMode == ViewMode.NormalView)
+            if (View.CurrentMode == ViewMode.Normal)
             {
                 ProcessKey(new KeyState(KeyCode.LeftShift,    false, false, false, leftShiftPressed,    !leftShiftPressed));
                 ProcessKey(new KeyState(KeyCode.RightShift,   false, false, false, rightShiftPressed,   !rightShiftPressed));
@@ -244,10 +239,7 @@ namespace Sharp80
             {
                 previousClientHeight = ClientSize.Height;
                 if (AdjustClientSize)
-                {
                     SetWindowStyle();
-                    //ClientSize = System.Windows.Forms.Screen.FromHandle(Handle).Bounds.Size;
-                }
             }
             else
             {
@@ -323,7 +315,7 @@ namespace Sharp80
 
             float aspectRatio = (screen.AdvancedView ? ScreenDX.WINDOWED_WIDTH_ADVANCED : ScreenDX.WINDOWED_WIDTH_NORMAL) / ScreenDX.WINDOWED_HEIGHT;
 
-            var scn = System.Windows.Forms.Screen.FromHandle(Handle);
+            var scn = Screen.FromHandle(Handle);
 
             int curW, curH, curX, curY, scrW, scrH;
 
@@ -394,13 +386,14 @@ namespace Sharp80
                     return;
                 computer.Dispose();
             }
-            computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.Throttle);
+            computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.Throttle)
+            {
+                SoundOn =      Settings.SoundOn,
+                DriveNoise =   Settings.DriveNoise,
+                BreakPoint =   Settings.Breakpoint,
+                BreakPointOn = Settings.BreakpointOn
+            };
             computer.StartupLoadFloppies();
-            computer.SoundOn = Settings.SoundOn;
-            computer.DriveNoise = Settings.DriveNoise;
-            computer.BreakPoint = Settings.Breakpoint;
-            computer.BreakPointOn = Settings.BreakpointOn;
-
             screen.Initialize(this, computer);
 
             View.Initialize(computer, System.IO.Path.GetDirectoryName(Application.ExecutablePath), (msg) => screen.StatusMessage = msg);

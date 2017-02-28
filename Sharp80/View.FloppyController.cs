@@ -8,7 +8,7 @@ namespace Sharp80
 {
     class ViewFloppyController : View
     {
-        protected override ViewMode Mode => ViewMode.FloppyControllerView;
+        protected override ViewMode Mode => ViewMode.FloppyController;
         protected override bool ForceRedraw => Computer.IsRunning;
         protected override byte[] GetViewBytes()
         {
