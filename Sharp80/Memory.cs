@@ -86,7 +86,7 @@ namespace Sharp80
                     }
                     else
                     {
-                        Log.LogMessage(string.Format("Write attempt {0:X2} to ROM Locdtion {1:X4}", Location, value));
+                        Log.LogDebug(string.Format("Write attempt {0:X2} to ROM Locdtion {1:X4}", Location, value));
                     }
                 }
             }

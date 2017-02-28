@@ -1,4 +1,6 @@
-﻿/// Sharp 80 (c) Matthew Hamilton
+﻿//#define DEBUGLOG
+
+/// Sharp 80 (c) Matthew Hamilton
 /// Licensed Under GPL v3
 
 using System;
@@ -9,48 +11,34 @@ namespace Sharp80
 {
     internal static class Log
     {
-        private static List<string> traceLog = new List<string>();
+        private static List<string> log = new List<string>();
 
-        public static bool TraceOn { get; set; }
-        public static bool Available
-        {
-            get
-            {
-                return
-#if DEBUG
-                    true;
-#else
-                false;
-#endif
-            }
-        }
-
-        [Conditional("DEBUG")] 
+        public static bool TraceOn { get; set; } = false;
+        
         public static void LogTrace(string Message)
         {
             if (TraceOn)
             {
-                LogMessage(Message);
+                var msg = DateTime.Now.ToString("hh:mm:ss.ffffff") + ": " + Message;
+                log.Add(msg);
             }
         }
-        [Conditional("DEBUG")]
-        public static void LogMessage(string Message)
+        [Conditional("DEBUGLOG")]
+        public static void LogDebug(string Message)
         {
             var msg = DateTime.Now.ToString("hh:mm:ss.ffffff") + ": " + Message;
-            traceLog.Add(msg);
+            log.Add(msg);
         }
 
-        [Conditional("DEBUG")]
         public static void LogException(Exception ex)
         {
-            LogMessage(ex.ToString());
+            LogDebug(ex.ToString());
         }
 
-        [Conditional("DEBUG")] 
         public static void Save()
         {
-            Storage.SaveTextFile(System.IO.Path.Combine(Lib.GetAppPath(), "trace.txt"), traceLog);
-            traceLog.Clear();
+            Storage.SaveTextFile(System.IO.Path.Combine(Lib.GetAppPath(), "trace.txt"), log);
+            log.Clear();
         }
     }
 }

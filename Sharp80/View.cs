@@ -222,23 +222,20 @@ namespace Sharp80
                             CurrentMode = ViewMode.FloppyControllerView;
                             return true;
                         case KeyCode.E:
-                            if (Log.Available)
+                            if (Log.TraceOn)
                             {
-                                if (Log.TraceOn)
-                                {
-                                    Log.TraceOn = false;
-                                    bool isRunning = Computer.IsRunning;
-                                    Computer.Stop(true);
-                                    Log.Save();
-                                    if (isRunning)
-                                        Computer.Start();
-                                    MessageCallback("Trace run saved to 'trace.txt'");
-                                }
-                                else
-                                {
-                                    Log.TraceOn = true;
-                                    MessageCallback("Collecting trace info...");
-                                }
+                                Log.TraceOn = false;
+                                bool isRunning = Computer.IsRunning;
+                                Computer.Stop(true);
+                                Log.Save();
+                                if (isRunning)
+                                    Computer.Start();
+                                MessageCallback("Trace run saved to 'trace.txt'");
+                            }
+                            else
+                            {
+                                Log.TraceOn = true;
+                                MessageCallback("Collecting trace info...");
                             }
                             return true;
                         case KeyCode.F:
