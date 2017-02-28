@@ -79,10 +79,9 @@ namespace Sharp80
                 new ViewMemory();
                 new ViewFloppyController();
                 new CPUView();
+                CurrentMode = ViewMode.HelpView;
                 initialized = true;
             }
-
-            CurrentMode = ViewMode.HelpView;
         }
 
         public View()
@@ -287,8 +286,9 @@ namespace Sharp80
                     }
                 }
             }
-            else if (Key.Pressed && Key.Control && !Key.Alt && !Key.Shift)
+            else if (Key.Pressed && Key.Control && !Key.Alt)
             {
+                // Control pressed, ignores shift status
                 switch (Key.Key)
                 {
                     case KeyCode.Equals:

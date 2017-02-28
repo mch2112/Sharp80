@@ -30,7 +30,7 @@ namespace Sharp80
         public bool IsUnmodified { get { return !Alt && !Control; } }
         public char ToChar()
         {
-            switch (this.Key)
+            switch (Key)
             {
                 case KeyCode.D0:
                     return '0';

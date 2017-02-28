@@ -211,35 +211,42 @@ namespace Sharp80
             {
                 repeatKey = KeyCode.None;
                 repeatKeyCount = 0;
-                return;
             }
             if (View.ProcessKey(k))
                 return;
         }
 
-        private void ToggleFullScreen()
+        private void ToggleFullScreen(bool AdjustClientSize = true)
         {
             var fs = !screen.IsFullScreen;
+            resizing++;
+            Settings.FullScreen = screen.IsFullScreen = fs;
             if (fs)
             {
                 previousClientHeight = ClientSize.Height;
-                SetWindowStyle(true);
-                var parentScreen = System.Windows.Forms.Screen.FromHandle(Handle);
-                ClientSize = parentScreen.Bounds.Size;
+                if (AdjustClientSize)
+                {
+                    SetWindowStyle();
+                    //ClientSize = System.Windows.Forms.Screen.FromHandle(Handle).Bounds.Size;
+                }
             }
             else
             {
-                SetWindowStyle(false);
-                ClientSize = new System.Drawing.Size((int)(previousClientHeight * (screen.AdvancedView ? ScreenDX.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenDX.WINDOWED_ASPECT_RATIO_NORMAL)),
-                                                           previousClientHeight);
+                if (AdjustClientSize)
+                {
+                    SetWindowStyle();
+                    ClientSize = new System.Drawing.Size((int)(previousClientHeight * (screen.AdvancedView ? ScreenDX.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenDX.WINDOWED_ASPECT_RATIO_NORMAL)),
+                                                               previousClientHeight);
+                }
             }
-            Settings.FullScreen = screen.IsFullScreen = fs;
+
+            resizing--;
         }
-        private void SetWindowStyle(bool FullScreen)
+        private void SetWindowStyle()
         {
             resizing++;
 
-            if (FullScreen)
+            if (screen.IsFullScreen)
             {
                 FormBorderStyle = FormBorderStyle.None;
                 WindowState = FormWindowState.Maximized;
@@ -294,8 +301,7 @@ namespace Sharp80
             IsActive = false;
             computer.ResetKeyboard();
         }
-        private void 
-            Zoom(bool In)
+        private void Zoom(bool In)
         {
             if (IsMinimized)
                 return;
@@ -307,54 +313,59 @@ namespace Sharp80
 
             var scn = System.Windows.Forms.Screen.FromHandle(Handle);
 
-            int w, h;
+            int curW, curH, curX, curY, scrW, scrH;
+
+            scrW = scn.WorkingArea.Width;
+            scrH = scn.WorkingArea.Height;
 
             if (screen.IsFullScreen)
             {
-                w = scn.WorkingArea.Width;
-                h = scn.WorkingArea.Height;
+                curW = scrW;
+                curH = scrH;
+                curX = curY = 0;
             }
             else
             {
-                w = ClientSize.Width;
-                h = ClientSize.Height;
+                curW = ClientSize.Width;
+                curH = ClientSize.Height;
+                curX = Location.X;
+                curY = Location.Y;
             }
             float zoom = In ? 1.2f : 1f/1.2f;
 
-            int newH = (int)(h * zoom);
+            int newH = (int)(curH * zoom);
 
             if (newH > ScreenDX.WINDOWED_HEIGHT * 0.88f && newH < ScreenDX.WINDOWED_HEIGHT * 1.102f)
                 newH = (int)ScreenDX.WINDOWED_HEIGHT;
 
             int newW = (int)(newH * aspectRatio);
-            
-            if (newW > scn.WorkingArea.Width || newH > scn.WorkingArea.Height)
+
+            if (newW > scrW || newH > scrH)
             {
                 if (screen.IsFullScreen)
                     return;
                 else
-                    ToggleFullScreen();
+                    ToggleFullScreen(false);
             }
-
-            int xOffset = (w - newW) / 2;
-            int yOffset = (h - newH) / 2;
-
-            if (screen.IsFullScreen)
+            else
             {
-                screen.IsFullScreen = false;
-                SetWindowStyle(false);
+                if (screen.IsFullScreen)
+                    ToggleFullScreen(false);
             }
+            int xOffset = (newW - curW) / 2;
+            int yOffset = (newH - curH) / 2;
 
-            int newX = Location.X + xOffset;
-            int newY = Location.Y + yOffset;
+            int newX = curX - xOffset;
+            int newY = curY - yOffset;
 
-            newX = Math.Max(0, (scn.WorkingArea.Width - newW) / 2);
-            newY = Math.Max(0, (scn.WorkingArea.Height - newH) / 2);
+            newX = Math.Min(Math.Max(0, newX), scrW - newW);
+            newY = Math.Min(Math.Max(0, newY), scrH - newH);
 
             resizing++;
 
             ClientSize = new System.Drawing.Size(newW, newH);
             Location = new System.Drawing.Point(newX, newY);
+            SetWindowStyle();
 
             resizing--;
 

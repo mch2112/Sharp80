@@ -55,6 +55,7 @@ namespace Sharp80
         private bool initialized = false;
         private bool invalid = true;
         private bool invalidateNextDraw = false;
+        private bool erase = false;
 
         private DXBitmap[] charGen, charGenNormal, charGenWide, charGenKanji, charGenKanjiWide;
         private RawRectangleF infoRect, z80Rect, disassemRect, statusMsgRect;
@@ -176,8 +177,10 @@ namespace Sharp80
         }
         protected override void Resize(Size2F Size)
         {
+            
             WaitForDrawDone();
             base.Resize(Size);
+
             DoLayout();
         }
         protected override void ConstrainAspectRatio(System.Windows.Forms.Message Msg)
@@ -309,10 +312,12 @@ namespace Sharp80
                     invalid = true;
                 }
 
-                //if (invalid)
-                //{
-                //    RenderTarget.Clear(Color.Black);
-                //}
+                if (erase)
+                {
+                    invalid = true;
+                    RenderTarget.Clear(Color.Black);
+                }
+
                 var dbs = Computer.FloppyController.DriveBusyStatus;
                 if (dbs.HasValue)
                     RenderTarget.FillEllipse(driveLightEllipse, dbs.Value ? driveActiveBrush : driveOnBrush);
@@ -596,7 +601,7 @@ namespace Sharp80
                                               Size.Width - SPACING,
                                               Size.Height);
 
-            Invalidate();
+            erase = true;
         }
         
         private Size2F DesiredLogicalSize

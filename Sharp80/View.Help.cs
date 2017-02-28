@@ -26,17 +26,17 @@ namespace Sharp80
                                         Indent("[F1] Show This Help") +
                                         Indent("[F2] Show Options") +
                                         Indent("[F3] Floppy Disk Manager") +
-                                        Indent("[F4] Show / Hide Z80 Internals Info") +
+                                        Indent("[F4] Show / Hide Z80 CPU Internal Info") +
                                         Format() +
-                                        Indent("[F8] Run / Pause") +
-                                        Indent("[F9] Single Step") +
-                                        Format() +
-                                        Indent("[Shift]+[Alt]+[End] Hard Reset (Power Cycle)") +
-                                        Indent("[Shift]+[Alt]+[X] Exit") +
+                                        Format(new string[] { "[F8] Run / Pause", "[F9] Single Step" }, true) +
+                                        Format() + 
+                                        Indent("[Control]+[+] / [Control]+[-]   Zoom In / Out") +
+                                        Indent("[Shift]+[Alt]+[End]             Hard Reset (Power Cycle)") +
+                                        Indent("[Shift]+[Alt]+[X]               Exit") +
                                         Footer(footerText)));
                 case 1:
                     return PadScreen(Encoding.ASCII.GetBytes(
-                                        Header(helpHeaderText, "KEYBOARD HELP (2/4)") +
+                                        Header(helpHeaderText, "TRS-80 KEYBOARD HELP (2/4)") +
                                         Format(new string[] { "Keyboard Key", "Virtual TRS-80 Key" }, true) +
                                         Format(new string[] { "-------------------", "------------------" }, true) +
                                         Format(new string[] { "[Esc]", "[Break]           " }, true) +
