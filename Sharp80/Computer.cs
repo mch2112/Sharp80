@@ -39,9 +39,10 @@ namespace Sharp80
             Processor = new Processor.Z80(this);
 
             //Sound = new SoundNull();
-            Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut));
-            Sound.On = Settings.SoundOn;
-
+            Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut))
+            {
+                On = Settings.SoundOn
+            };
             Clock = new Clock(this,
                               CLOCK_RATE,
                               milliTStatesPerIRQ,

@@ -254,6 +254,9 @@ namespace Sharp80
         
         public void SetVideoMode(bool IsWide, bool IsKanji)
         {
+            // In basic, "PRINT CHR$(23)" (or Shift-RightArrow) will set wide character mode
+            // The CLEAR key will revert to normal width
+            // And "PRINT CHR$(22)" will toggle the normal and Kanji sets
             if (IsWide && IsKanji)
             {
                 charGen = charGenKanjiWide;
