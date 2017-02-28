@@ -86,7 +86,7 @@ namespace Sharp80.Assembler
         {
             try
             {
-                Log.Log("Assembling " + originalFilePath + "...");
+                Log.LogMessage("Assembling " + originalFilePath + "...");
 
                 LoadAssemblyFile(originalFilePath);
 
@@ -387,7 +387,7 @@ namespace Sharp80.Assembler
 
                 string err = string.Format("Instruction not found: Line {0} {1}", lp.SourceFileLine, lp.FullNameWithOriginalLineAsCommentWithErrorIfAny);
                 lp.Error = err;
-                Log.Log(err);
+                Log.LogMessage(err);
             }
             return false;
         }
@@ -692,7 +692,7 @@ namespace Sharp80.Assembler
             if (!ret.HasValue && currentLP != null)
             {
                 string err = string.Format("Symbol {0} not found [Line {1}].", s, currentLP.SourceFileLine);
-                Log.Log(err);
+                Log.LogMessage(err);
                 currentLP.Error = err;
             }
             return ret;
@@ -898,7 +898,7 @@ namespace Sharp80.Assembler
                 if (lp.Byte2.HasValue) Buffer[lp.Address + 2] = lp.Byte2.Value;
                 if (lp.Byte3.HasValue) Buffer[lp.Address + 3] = lp.Byte3.Value;
             }
-            Log.Log("Program assembled.");
+            Log.LogMessage("Program assembled.");
         }
         private string SaveAsCMD(List<LineInfo> Unit)
         {

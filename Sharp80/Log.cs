@@ -30,11 +30,11 @@ namespace Sharp80
         {
             if (TraceOn)
             {
-                Log(Message);
+                LogMessage(Message);
             }
         }
         [Conditional("DEBUG")]
-        public static void Log(string Message)
+        public static void LogMessage(string Message)
         {
             var msg = DateTime.Now.ToString("hh:mm:ss.ffffff") + ": " + Message;
             traceLog.Add(msg);
@@ -43,7 +43,7 @@ namespace Sharp80
         [Conditional("DEBUG")]
         public static void LogException(Exception ex)
         {
-            Log(ex.ToString());
+            LogMessage(ex.ToString());
         }
 
         [Conditional("DEBUG")] 

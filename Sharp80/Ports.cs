@@ -122,7 +122,7 @@ namespace Sharp80
                         ports[0xFF] &= 0xFC;
                         break;
                 }
-                Log.Log("Reading Port " + PortNumber.ToHexString() + " [" + ports[PortNumber].ToHexString() + "]");
+                Log.LogMessage("Reading Port " + PortNumber.ToHexString() + " [" + ports[PortNumber].ToHexString() + "]");
                 return ports[PortNumber];
             }
             set
@@ -158,7 +158,7 @@ namespace Sharp80
                     default:
                         break;
                 }
-                Log.Log("Writing Port " + PortNumber.ToHexString() + " [" + value.ToHexString() + "]");
+                Log.LogMessage("Writing Port " + PortNumber.ToHexString() + " [" + value.ToHexString() + "]");
                 return;
             }
         }

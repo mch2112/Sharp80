@@ -100,14 +100,14 @@ namespace Sharp80
                 fdcNmiLatch.Enabled = value.IsBitSet(7);
                 fdcMotorOffNmiLatch.Enabled = value.IsBitSet(6);
 
-                Log.Log(string.Format("FDC NMI Enable: {0} -> {1}", oldNmiEnabled, fdcNmiLatch.Enabled));
-                Log.Log(string.Format("Motor / DRQ NMI Enable: {0} -> {1}", oldMotorOrDrqNmiEnabled, fdcMotorOffNmiLatch.Enabled));
+                Log.LogMessage(string.Format("FDC NMI Enable: {0} -> {1}", oldNmiEnabled, fdcNmiLatch.Enabled));
+                Log.LogMessage(string.Format("Motor / DRQ NMI Enable: {0} -> {1}", oldMotorOrDrqNmiEnabled, fdcMotorOffNmiLatch.Enabled));
             }
         }
         public void ECin()
         {
             if (rtcIntLatch.Latched)
-                Log.Log("RTC Interrupt clear (in from port 0xEC)");
+                Log.LogMessage("RTC Interrupt clear (in from port 0xEC)");
 
             rtcIntLatch.Unlatch();
 
@@ -136,7 +136,7 @@ namespace Sharp80
                 if (!casFallingEdgeIntLatch.Latched) retVal |= 0x02;
                 if (!casRisingEdgeIntLatch.Latched)  retVal |= 0x01;
 
-                Log.Log(string.Format("Read port 0xE0: RTC Interrupt {0}in progress", rtcIntLatch.Latched ? string.Empty : "not "));
+                Log.LogMessage(string.Format("Read port 0xE0: RTC Interrupt {0}in progress", rtcIntLatch.Latched ? string.Empty : "not "));
 
                 return retVal;
             }
@@ -150,7 +150,7 @@ namespace Sharp80
                 casFallingEdgeIntLatch.Enabled = value.IsBitSet(1);
                 casRisingEdgeIntLatch.Enabled  = value.IsBitSet(0);
 
-                Log.Log(rtcIntLatch.Enabled ? "Enabled RTC Interrupts" : "Disabled RTC Interrupts");
+                Log.LogMessage(rtcIntLatch.Enabled ? "Enabled RTC Interrupts" : "Disabled RTC Interrupts");
             }
         }
 

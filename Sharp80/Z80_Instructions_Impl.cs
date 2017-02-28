@@ -714,7 +714,7 @@ namespace Sharp80.Processor
         {
             // Same for RETI and RETN because apparently RETI also copies IFF2 to IFF1.
 
-            Log.Log(string.Format("Return from Interrupt, IFF1 {0} -> {1}", IFF1, IFF2));
+            Log.LogMessage(string.Format("Return from Interrupt, IFF1 {0} -> {1}", IFF1, IFF2));
 
             IFF1 = IFF2;
             ret();

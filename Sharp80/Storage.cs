@@ -27,7 +27,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.Log(string.Format("Exception saving file {0}: {1}", FilePath, ex));
+                Log.LogMessage(string.Format("Exception saving file {0}: {1}", FilePath, ex));
                 return false;
             }
         }

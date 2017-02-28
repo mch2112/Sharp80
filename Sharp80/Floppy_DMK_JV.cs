@@ -109,7 +109,7 @@ namespace Sharp80
                             else
                                 sd.SectorData = new byte[sd.SectorSize];
                             diskCursor = DiskData.Length;
-                            Log.Log(string.Format("JV3 File has invalid length, can't fill track {0} sector {1}", sd.TrackNumber, sd.SectorNumber));
+                            Log.LogMessage(string.Format("JV3 File has invalid length, can't fill track {0} sector {1}", sd.TrackNumber, sd.SectorNumber));
                         }
                         else
                         {
@@ -171,7 +171,7 @@ namespace Sharp80
                                 case DAM_NORMAL: // 0x00
                                     break;
                                 default:
-                                    Log.Log(string.Format("Bad DAM ({0}) in {1}", ss.DAM, ss));
+                                    Log.LogMessage(string.Format("Bad DAM ({0}) in {1}", ss.DAM, ss));
                                     break;
                             }
                             cursor++;
