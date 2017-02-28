@@ -156,7 +156,7 @@ namespace Sharp80
                                 Computer.Throttle = true;
                                 MessageCallback("Throttle On");
                             }
-                            Settings.Throttle = Computer.Clock.Throttle;
+                            Settings.Throttle = Computer.Throttle;
                             return true;
                     }
                 }

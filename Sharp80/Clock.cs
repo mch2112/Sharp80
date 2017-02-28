@@ -35,6 +35,7 @@ namespace Sharp80
 
         private Computer computer;
         private Processor.Z80 z80;
+        private InterruptManager IntMgr;
 
         private List<PulseReq> pulseReqs = new List<PulseReq>();
         private ulong nextPulseReqTick = UInt64.MaxValue;
@@ -47,7 +48,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Clock(Computer Computer, Processor.Z80 Processor, ulong FrequencyInHz, ulong MilliTStatesPerIRQ, ulong MilliTStatesPerSoundSample, SoundEventCallback SoundCallback, bool Throttle)
+        public Clock(Computer Computer, Processor.Z80 Processor, InterruptManager InterruptManager, ulong FrequencyInHz, ulong MilliTStatesPerIRQ, ulong MilliTStatesPerSoundSample, SoundEventCallback SoundCallback, bool Throttle)
         {
             tstatesPerSec = FrequencyInHz;
             ticksPerSec = FrequencyInHz * TICKS_PER_TSTATE;
@@ -57,6 +58,7 @@ namespace Sharp80
 
             computer = Computer;
             z80 = Processor;
+            IntMgr = InterruptManager;
             
             ticksPerSoundSample = MilliTStatesPerSoundSample;
 
@@ -215,15 +217,15 @@ namespace Sharp80
             if (tickCount > nextRtcIrqTick)
             {
                 nextRtcIrqTick += ticksPerIRQ;
-                computer.IntMgr.RtcIntLatch.Latch();
+                IntMgr.RtcIntLatch.Latch();
             }
 
             if (waitTrigger.Latched)
             {
                 if (tickCount >= waitTimeout ||
                     computer.FloppyController.DRQ ||
-                    computer.IntMgr.FdcNmiLatch.Latched || 
-                    computer.IntMgr.ResetButtonLatch.Latched)
+                    IntMgr.FdcNmiLatch.Latched || 
+                    IntMgr.ResetButtonLatch.Latched)
                 {
                     waitTrigger.Unlatch();
                     waitTrigger.ResetTrigger();
@@ -232,9 +234,9 @@ namespace Sharp80
 
             // Execute something
 
-            if (computer.IntMgr.NmiTriggered && z80.CanNmi)
+            if (IntMgr.NmiTriggered && z80.CanNmi)
             {
-                computer.IntMgr.ResetNmiTriggers();
+                IntMgr.ResetNmiTriggers();
 
                 z80.NonMaskableInterrupt();
                 tickCount += (11 * TICKS_PER_TSTATE);
@@ -243,9 +245,9 @@ namespace Sharp80
             {
                 tickCount += TICKS_PER_TSTATE;
             }
-            else if (computer.IntMgr.RtcIntLatch.Triggered && z80.CanInterrupt)
+            else if (IntMgr.RtcIntLatch.Triggered && z80.CanInterrupt)
             {
-                computer.IntMgr.RtcIntLatch.ResetTrigger();
+                IntMgr.RtcIntLatch.ResetTrigger();
                 tickCount += z80.Interrupt();
             }
             else

@@ -10,14 +10,16 @@ namespace Sharp80
         private const int NUM_PORTS = 0x100;
 
         Computer computer;
+        InterruptManager IntMgr;
 
         private byte[] ports = new byte[NUM_PORTS];
         private byte[] lastOUT = new byte[NUM_PORTS];
         private bool noDrives = true;
 
-        public PortSet(Computer Computer)
+        public PortSet(Computer Computer, InterruptManager InterruptManager)
         {
             computer = Computer;
+            IntMgr = InterruptManager;
             Reset();
         }
 
@@ -93,16 +95,16 @@ namespace Sharp80
                     case 0xE1:
                     case 0xE2:
                     case 0xE3:
-                        ports[PortNumber] = computer.IntMgr.WrIntMaskReg;
+                        ports[PortNumber] = IntMgr.WrIntMaskReg;
                         break;
                     case 0xEC:
                     case 0xED:
                     case 0xEE:
                     case 0xEF:
-                        computer.IntMgr.ECin();
+                        IntMgr.ECin();
                         break;
                     case 0xE4:
-                        computer.IntMgr.E4in();
+                        IntMgr.E4in();
                         break;
                     case 0xF0:
                         if (NoDrives)
@@ -117,13 +119,9 @@ namespace Sharp80
                         break;
                     case 0xFF:
                         ports[0xFF] &= 0xFC;
-#if CASSETTE
-                        ports[0xFF] |= computer.ReadCassette();
-                        computer.IntMgr.FFin();
-#endif
                         break;
                 }
-            //    Log.LogToConsole("Reading Port " + Lib.ToHexString(PortNumber) + " [" + Lib.ToHexString(ports[PortNumber]) + "]");
+                Log.LogToDebug("Reading Port " + PortNumber.ToHexString() + " [" + ports[PortNumber].ToHexString() + "]");
                 return ports[PortNumber];
             }
             set
@@ -136,14 +134,14 @@ namespace Sharp80
                     case 0xE1:
                     case 0xE2:
                     case 0xE3:
-                        computer.IntMgr.WrIntMaskReg = value;
+                        IntMgr.WrIntMaskReg = value;
                         break;
                     case 0xEC:
                     case 0xED:
                     case 0xEE:
                     case 0xEF:
                         // Update double width and Kanji character settings
-                        computer.Screen.SetVideoMode(value.IsBitSet(2), !value.IsBitSet(3));
+                        computer.SetVideoMode(value.IsBitSet(2), !value.IsBitSet(3));
                         break;
                     case 0xE4:
                     case 0xE5:
@@ -159,24 +157,23 @@ namespace Sharp80
                     default:
                         break;
                 }
-            //    Log.LogToConsole("Writing Port " + Lib.ToHexString(PortNumber) + " [" + Lib.ToHexString(value) + "]");
+                Log.LogToDebug("Writing Port " + PortNumber.ToHexString() + " [" + value.ToHexString() + "]");
                 return;
             }
         }
-
-        public void SetPortArray(byte B, byte PortNum)
+        /// <summary>
+        /// Used to avoid side effects
+        /// </summary>
+        public void SetPortDirect(byte B, byte PortNum)
         {
-            // Used to avoid side effects
             ports[PortNum] = B;
         }
-        public byte GetPortArray(byte PortNum)
+        /// <summary>
+        /// Used to avoid side effects
+        /// </summary>
+        public byte GetPortDirect(byte PortNum)
         {
-            // Used to avoid side effects
             return ports[PortNum];
-        }
-        public byte GetLastOutArray(byte B)
-        {
-            return lastOUT[B];
         }
         public byte CassetteOut()
         {

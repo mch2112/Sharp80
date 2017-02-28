@@ -15,7 +15,7 @@ using DXBitmap = SharpDX.Direct2D1.Bitmap;
 namespace Sharp80
 {
     
-    internal sealed class ScreenDX : Direct3D
+    internal sealed class ScreenDX : Direct3D, ISerializable
     {
         private const Format PixelFormat = Format.R8G8B8A8_UNorm;
 
@@ -79,6 +79,8 @@ namespace Sharp80
 
         private bool isFullScreen = false;
         private bool isGreenScreen = false;
+        private bool isWideCharMode = false;
+        private bool isKanjiCharMode = false;
 
         private string statusMessage = String.Empty;
 
@@ -257,6 +259,10 @@ namespace Sharp80
             // In basic, "PRINT CHR$(23)" (or Shift-RightArrow) will set wide character mode
             // The CLEAR key will revert to normal width
             // And "PRINT CHR$(22)" will toggle the normal and Kanji sets
+
+            isWideCharMode = IsWide;
+            isKanjiCharMode = IsKanji;
+
             if (IsWide && IsKanji)
             {
                 charGen = charGenKanjiWide;
@@ -365,7 +371,7 @@ namespace Sharp80
                 for (int i = 0; i < NUM_SCREEN_CHARS; ++i, ++k, ++memPtr)
                 {
                     PaintCell(k, mem[memPtr], cells, charGen);
-                    if (Computer.Screen.WideCharMode)
+                    if (cellsWide)
                         { i++; k++; memPtr++; }
                 }
             }
@@ -638,6 +644,15 @@ namespace Sharp80
                 System.Diagnostics.Debug.WriteLine(string.Format("Target Size for Physical {0}x{1}, Advanced={2} FullScreen={3}: {4}x{5}",physX, physY, advancedView ? "true" : "false", IsFullScreen ? "true" : "false", ts.Width, ts.Height));
                 return ts;
             }
+        }
+        public void Serialize(System.IO.BinaryWriter Writer)
+        {
+            Writer.Write(isWideCharMode);
+            Writer.Write(isKanjiCharMode);
+        }
+        void Deserialize(System.IO.BinaryReader Reader)
+        {
+            SetVideoMode(Reader.ReadBoolean(), Reader.ReadBoolean());
         }
     }
 }

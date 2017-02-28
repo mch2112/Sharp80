@@ -49,6 +49,7 @@ namespace Sharp80
         { Prepare, Delay, Step, CheckVerify, VerifyTrack, CheckingWriteProtectStatus, SetDrq, DrqCheck, SeekingIndexHole, SeekingIDAM, ReadingAddressData, CheckingAddressData, SeekingDAM, ReadingData, WritingData, WriteFiller, WriteFilter2, WriteDAM, WriteCRCHigh, WriteCRCLow, ReadCRCHigh, ReadCRCLow, Finalize, NMI, OpDone }
 
         private PortSet ports;
+        private InterruptManager IntMgr;
         private Clock clock;
         private Computer computer;
 
@@ -155,11 +156,12 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public FloppyController(Computer Computer)
+        public FloppyController(Computer Computer, PortSet Ports, Clock Clock, InterruptManager InterruptManager)
         {
             computer = Computer;
-            ports = computer.Ports;
-            clock = computer.Clock;
+            ports = Ports;
+            IntMgr = InterruptManager;
+            clock = Clock;
 
             TicksPerDiskRev = clock.TicksPerSec / 5;
 
@@ -992,7 +994,7 @@ namespace Sharp80
 
             motorOn = false;
             computer.Sound.DriveMotorRunning = false;
-            computer.IntMgr.FdcMotorOffNmiLatch.Latch();
+            IntMgr.FdcMotorOffNmiLatch.Latch();
         }
 
         private void SeekAddressData(byte ByteRead, OpStatus NextStatus, bool Check)
@@ -1155,7 +1157,7 @@ namespace Sharp80
                 if (Log.DebugOn)
                     Log.LogToDebug(string.Format("Callback Request. Command: {0} Opstatus: {1}", command, opStatus));
                 commandPulseReq = new PulseReq(delayTime, Callback, false);
-                computer.Clock.RegisterPulseReq(commandPulseReq);
+                computer.RegisterPulseReq(commandPulseReq);
                 trackDataIndex += bytesToAdvance;
             }
             else
@@ -1314,15 +1316,15 @@ namespace Sharp80
 
             commandPulseReq.Deserialize(Reader, callback);
             if (!commandPulseReq.Expired)
-                computer.Clock.RegisterPulseReq(commandPulseReq);
+                computer.RegisterPulseReq(commandPulseReq);
 
             motorOnPulseReq.Deserialize(Reader, MotorOnCallback);
             if (!motorOnPulseReq.Expired)
-                computer.Clock.RegisterPulseReq(motorOnPulseReq);
+                computer.RegisterPulseReq(motorOnPulseReq);
 
             motorOffPulseReq.Deserialize(Reader, MotorOffCallback);
             if (!motorOffPulseReq.Expired)
-                computer.Clock.RegisterPulseReq(motorOffPulseReq);
+                computer.RegisterPulseReq(motorOffPulseReq);
 
             UpdateTrack();
         }
@@ -1364,7 +1366,7 @@ namespace Sharp80
                     case 0xE5:
                     case 0xE6:
                     case 0xE7:
-                        computer.IntMgr.InterruptEnableStatus = value;
+                        IntMgr.InterruptEnableStatus = value;
                         break;
                     case 0xF0:
                         SetCommandRegister(value);
@@ -1413,27 +1415,27 @@ namespace Sharp80
 
             Log.LogToDebug(string.Format("Get status register: {0}", statusRegister.ToHexString()));
 
-            ports.SetPortArray(statusRegister, 0xF0);
+            ports.SetPortDirect(statusRegister, 0xF0);
 
-            computer.IntMgr.FdcNmiLatch.Unlatch();
-            computer.IntMgr.FdcMotorOffNmiLatch.Unlatch();
+            IntMgr.FdcNmiLatch.Unlatch();
+            IntMgr.FdcMotorOffNmiLatch.Unlatch();
         }
         private void GetTrackRegister()
         {
-            ports.SetPortArray(trackRegister, 0xF1);
+            ports.SetPortDirect(trackRegister, 0xF1);
 
             if (Log.DebugOn)
                 Log.LogToDebug(string.Format("Get track register: {0}", trackRegister.ToHexString()));
         }
         private void GetSectorRegister()
         {
-            ports.SetPortArray(sectorRegister, 0xF2);
+            ports.SetPortDirect(sectorRegister, 0xF2);
             Log.LogToDebug(string.Format("Get sector register: {0}", sectorRegister.ToHexString()));
         }
         private void GetDataRegister()
         {
             Log.LogToDebug(string.Format("Read data register: {0}", dataRegister.ToHexString()));
-            ports.SetPortArray(dataRegister, 0xF3);
+            ports.SetPortDirect(dataRegister, 0xF3);
             drq = drqStatus = false;
         }
         private void SetCommandRegister(byte value)
@@ -1447,8 +1449,8 @@ namespace Sharp80
             {
                 commandRegister = value;
 
-                computer.IntMgr.FdcNmiLatch.Unlatch();
-                computer.IntMgr.FdcMotorOffNmiLatch.Unlatch();
+                IntMgr.FdcNmiLatch.Unlatch();
+                IntMgr.FdcMotorOffNmiLatch.Unlatch();
 
                 if (!busy || (command != Command.Reset))
                 {
@@ -1588,7 +1590,7 @@ namespace Sharp80
             if (motorOn)
                 MotorOnCallback();
             else
-                computer.Clock.RegisterPulseReq(motorOnPulseReq);
+                computer.RegisterPulseReq(motorOnPulseReq);
         }
         private static Command GetCommand(byte CommandRegister)
         {
@@ -1754,7 +1756,7 @@ namespace Sharp80
             Log.LogToDebug(string.Format("NMI requested. Command: {0} Opstatus: {1}", command, opStatus));
             drq = drqStatus = false;
             busy = false;
-            computer.IntMgr.FdcNmiLatch.Latch();
+            IntMgr.FdcNmiLatch.Latch();
         }
         private void SetDRQ()
         {

@@ -7,7 +7,8 @@ namespace Sharp80
 {
     internal sealed class InterruptManager : ISerializable
     {
-        Computer computer;
+        private Computer computer;
+        public PortSet Ports { private get; set; }
 
         // Used
 
@@ -38,7 +39,7 @@ namespace Sharp80
             fdcMotorOffNmiLatch = new Trigger(null, null, TriggerLock: false, CanLatchBeforeEnabled: true);
 
             resetButtonLatch = new Trigger(
-                                () => { computer.Clock.RegisterPulseReq(new PulseReq(200000, () => { resetButtonLatch.Unlatch(); }, false)); },
+                                () => { computer.RegisterPulseReq(new PulseReq(200000, () => { resetButtonLatch.Unlatch(); }, false)); },
                                 null,
                                 TriggerLock: true,
                                 CanLatchBeforeEnabled: false)
@@ -87,7 +88,7 @@ namespace Sharp80
             if (!resetButtonLatch.Latched)
                 result |= 0x20;
             
-            computer.Ports.SetPortArray(result, 0xE4);
+            Ports.SetPortDirect(result, 0xE4);
         }
         public byte InterruptEnableStatus
         {
@@ -113,7 +114,7 @@ namespace Sharp80
 
             rtcIntLatch.Unlatch();
 
-            computer.Ports.SetPortArray(0xFF, 0xEC);
+            Ports.SetPortDirect(0xFF, 0xEC);
         }
         public void FFin()
         {

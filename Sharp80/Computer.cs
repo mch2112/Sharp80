@@ -11,14 +11,16 @@ namespace Sharp80
         public const ulong CLOCK_RATE = 2027520;
         private const int SERIALIZATION_VERSION = 2;
 
-        public Clock Clock { get; private set; }
         public FloppyController FloppyController { get; private set; }
-        public InterruptManager IntMgr { get; private set; }
-        public PortSet Ports { get; private set; }
-        public Screen Screen { get; private set; }
-        private Processor.Z80 Processor { get; set; }
         public ISound Sound { get; private set; }
         public bool HasRunYet { get; private set; }
+
+        private Processor.Z80 Processor { get; set; }
+        private Clock Clock { get; set; }
+        private PortSet Ports { get; set; }
+        private InterruptManager IntMgr { get; set; }
+        private Screen Screen { get; set; }
+
         private bool ready;
         private bool isDisposed = false;
 
@@ -35,8 +37,9 @@ namespace Sharp80
             Screen = new Screen(PhysicalScreen);
             
             IntMgr = new InterruptManager(this);
-            Ports = new PortSet(this);
-            Processor = new Processor.Z80(this);
+            Ports = new PortSet(this, IntMgr);
+            IntMgr.Ports = Ports;
+            Processor = new Processor.Z80(this, Ports);
 
             //Sound = new SoundNull();
             Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut))
@@ -45,6 +48,7 @@ namespace Sharp80
             };
             Clock = new Clock(this,
                               Processor,
+                              IntMgr,
                               CLOCK_RATE,
                               milliTStatesPerIRQ,
                               milliTStatesPerSoundSample,
@@ -53,7 +57,7 @@ namespace Sharp80
 
             Clock.ThrottleChanged += OnThrottleChanged;
 
-            FloppyController = new FloppyController(this);
+            FloppyController = new FloppyController(this, Ports, Clock, IntMgr);
 
             PhysicalScreen.Initialize(MainForm);
             Screen.SetVideoMode();
@@ -167,7 +171,14 @@ namespace Sharp80
                 Screen.Reset();
             }
         }
-
+        public void SetVideoMode(bool Wide, bool Kanji)
+        {
+            Screen.SetVideoMode(Wide, Kanji);
+        }
+        public void RegisterPulseReq(PulseReq Req)
+        {
+            Clock.RegisterPulseReq(Req);
+        }
         // FLOPPY SUPPORT
 
         public bool HasDrivesAvailable

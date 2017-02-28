@@ -101,13 +101,13 @@ namespace Sharp80.Processor
 
         // CONSTRUCTOR
 
-        public Z80(Computer Computer)
+        public Z80(Computer Computer, PortSet Ports)
         {
             computer = Computer;
 
             memory = new Memory();
 
-            ports = computer.Ports;
+            ports = Ports;
 
             PC = new Register16Normal(this, "PC");
             SP = new Register16Normal(this, "SP");
