@@ -16,7 +16,7 @@ namespace Sharp80
         public InterruptManager IntMgr { get; private set; }
         public PortSet Ports { get; private set; }
         public Screen Screen { get; private set; }
-        public Processor.Z80 Processor { get; private set; }
+        private Processor.Z80 Processor { get; set; }
         public ISound Sound { get; private set; }
         public bool HasRunYet { get; private set; }
         private bool ready;
@@ -44,6 +44,7 @@ namespace Sharp80
                 On = Settings.SoundOn
             };
             Clock = new Clock(this,
+                              Processor,
                               CLOCK_RATE,
                               milliTStatesPerIRQ,
                               milliTStatesPerSoundSample,
@@ -69,6 +70,28 @@ namespace Sharp80
         public bool IsRunning
         {
             get { return Clock.IsRunning; }
+        }
+        public ushort ProgramCounter
+        {
+            get { return Processor.PC.val; }
+        }
+        public IMemory Memory
+        {
+            get { return Processor.Memory; }
+        }
+        public ushort BreakPoint
+        {
+            get { return Processor.BreakPoint; }
+            set { Processor.BreakPoint = value; }
+        }
+        public bool BreakPointOn
+        {
+            get { return Processor.BreakPointOn; }
+            set { Processor.BreakPointOn = value; }
+        }
+        public Z80_Status CpuStatus
+        {
+            get { return Processor.GetStatus(); }
         }
         
         // RUN COMMANDS
@@ -125,6 +148,11 @@ namespace Sharp80
         public void CancelStepOverOrOut()
         {
             Processor.CancelStepOverOrOut();
+        }
+        public void Jump(ushort Address)
+        {
+            Stop(true);
+            Processor.Jump(Address);
         }
         public bool Throttle
         {
@@ -211,6 +239,9 @@ namespace Sharp80
 
             FloppyController.UnloadDrive(DriveNum);
             Storage.SaveDefaultDriveFileName(DriveNum, String.Empty);
+
+            if (DriveNum == 0 && !HasRunYet)
+                Ports.NoDrives = FloppyController.DriveIsUnloaded(0);
 
             if (running)
                 Start();
@@ -326,24 +357,6 @@ namespace Sharp80
         {
             Processor.Memory.ResetKeyboard();
         }
-#if CASSETTE
-        public void LoadCassette(string FilePath)
-        {
-            cassette.LoadCassete(FilePath);
-        }
-        public bool RewindCassette()
-        {
-            return cassette.Rewind();
-        }
-        public byte ReadCassette()
-        {
-            return cassette.Read();
-        }
-        public void CassettePower(bool MotorOn)
-        {
-            cassette.MotorOn = MotorOn;
-        }
-#endif
         public void Dispose()
         {
             if (!isDisposed)

@@ -63,7 +63,7 @@ namespace Sharp80
                     cell += 2;
                 }
 
-                byte b = Computer.Processor.Memory[baseAddress.Offset(k)];
+                byte b = Computer.Memory[baseAddress.Offset(k)];
 
                 WriteToByteArrayHex(cells, cell, b);
                 cell += 2;

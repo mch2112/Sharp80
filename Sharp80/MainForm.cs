@@ -394,8 +394,8 @@ namespace Sharp80
             computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.Throttle);
             computer.StartupLoadFloppies();
             computer.Sound.UseDriveNoise = Settings.DriveNoise;
-            computer.Processor.BreakPoint = Settings.Breakpoint;
-            computer.Processor.BreakPointOn = Settings.BreakpointOn;
+            computer.BreakPoint = Settings.Breakpoint;
+            computer.BreakPointOn = Settings.BreakpointOn;
 
             View.Initialize(computer, System.IO.Path.GetDirectoryName(Application.ExecutablePath), (msg) => screen.StatusMessage = msg);
         }

@@ -35,9 +35,9 @@ namespace Sharp80
                     c = Key.ToChar();
                     break;
             }
-            if (Computer.Processor.PC.val.RotateAddress(c, out ushort newPc))
+            if (Computer.ProgramCounter.RotateAddress(c, out ushort newPc))
             {
-                Computer.Processor.Jump(newPc);
+                Computer.Jump(newPc);
                 processed = true;
             }
             return processed || base.processKey(Key);
@@ -47,7 +47,7 @@ namespace Sharp80
             return PadScreen(Encoding.ASCII.GetBytes(
                                 Header("Jump to Z80 memory location") +
                                 Format() +
-                                Indent("Jump to memory location (Hexadecimal): " + Computer.Processor.PC.val.ToHexString()) +
+                                Indent("Jump to memory location (Hexadecimal): " + Computer.ProgramCounter.ToHexString()) +
                                 Format() +
                                 Separator() +
                                 Indent("Type [0]-[9] or [A]-[F] to enter a hexadecimal") +

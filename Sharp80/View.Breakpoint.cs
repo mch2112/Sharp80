@@ -19,7 +19,7 @@ namespace Sharp80
             switch (Key.Key)
             {
                 case KeyCode.Space:
-                    Computer.Processor.BreakPointOn = !Computer.Processor.BreakPointOn;
+                    Computer.BreakPointOn = !Computer.BreakPointOn;
                     Invalidate();
                     return true;
                 case KeyCode.Return:
@@ -31,9 +31,9 @@ namespace Sharp80
             }
 
             bool processed = false;
-            if (Computer.Processor.BreakPoint.RotateAddress(c, out ushort newBp))
+            if (Computer.BreakPoint.RotateAddress(c, out ushort newBp))
             {
-                Computer.Processor.BreakPoint = newBp;
+                Computer.BreakPoint = newBp;
                 Invalidate();
                 processed = true;
             }
@@ -44,8 +44,8 @@ namespace Sharp80
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Set breakpoint location") +
                 Format() +
-                Indent("Breakpoint is currently " + (Computer.Processor.BreakPointOn ? "ON" : "OFF")) +
-                Indent("Breakpoint Value (Hexadecimal): " + Computer.Processor.BreakPoint.ToHexString()) +
+                Indent("Breakpoint is currently " + (Computer.BreakPointOn ? "ON" : "OFF")) +
+                Indent("Breakpoint Value (Hexadecimal): " + Computer.BreakPoint.ToHexString()) +
                 Format() +
                 Separator() +
                 Indent("Type [0]-[9] or [A]-[F] to enter a hexadecimal") +

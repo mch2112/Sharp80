@@ -47,7 +47,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Clock(Computer Computer, ulong FrequencyInHz, ulong MilliTStatesPerIRQ, ulong MilliTStatesPerSoundSample, SoundEventCallback SoundCallback, bool Throttle)
+        public Clock(Computer Computer, Processor.Z80 Processor, ulong FrequencyInHz, ulong MilliTStatesPerIRQ, ulong MilliTStatesPerSoundSample, SoundEventCallback SoundCallback, bool Throttle)
         {
             tstatesPerSec = FrequencyInHz;
             ticksPerSec = FrequencyInHz * TICKS_PER_TSTATE;
@@ -56,7 +56,7 @@ namespace Sharp80
             CalRealTimeClock();
 
             computer = Computer;
-            z80 = computer.Processor;
+            z80 = Processor;
             
             ticksPerSoundSample = MilliTStatesPerSoundSample;
 

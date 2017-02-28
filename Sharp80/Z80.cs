@@ -314,11 +314,8 @@ namespace Sharp80.Processor
         }
         public void Jump(ushort Address)
         {
-            computer.Stop(true);
             if (PC.val != Address)
-            {
                 PC.val = Address;
-            }
         }
         // Returns ticks used
         private ushort ExecuteInstruction(Instruction Instruction)

@@ -355,7 +355,7 @@ namespace Sharp80
 
         private void DrawNormal()
         {
-            var mem = Computer.Processor.Memory;
+            var mem = Computer.Memory;
 
             if (mem.ScreenWritten || invalid)
             {

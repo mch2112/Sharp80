@@ -12,7 +12,7 @@ namespace Sharp80
         protected override bool ForceRedraw => Computer.IsRunning;
         protected override byte[] GetViewBytes()
         {
-            var Status = Computer.Processor.GetStatus();
+            var Status = Computer.CpuStatus;
 
             Invalidate();
             return PadScreen(Encoding.ASCII.GetBytes(
