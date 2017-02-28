@@ -104,8 +104,12 @@ namespace Sharp80
                     switch (Key.Key)
                     {
                         case KeyCode.Escape:
-                            CurrentMode = ViewMode.NormalView;
-                            return true;
+                            if (CurrentMode != ViewMode.NormalView)
+                            {
+                                CurrentMode = ViewMode.NormalView;
+                                return true;
+                            }
+                            break;
                         case KeyCode.F1:
                             CurrentMode = ViewMode.HelpView;
                             return true;

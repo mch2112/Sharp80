@@ -19,53 +19,63 @@ namespace Sharp80
         protected override bool processKey(KeyState Key)
         {
             if (Key.Released)
-                return base.processKey(Key);
-
-            switch (Key.Key)
             {
-                case KeyCode.D0:
-                    DriveNumber = DriveNumber ?? 0;
-                    break;
-                case KeyCode.D1:
-                    DriveNumber = DriveNumber ?? 1;
-                    break;
-                case KeyCode.D2:
-                    DriveNumber = DriveNumber ?? 2;
-                    break;
-                case KeyCode.D3:
-                    DriveNumber = DriveNumber ?? 3;
-                    break;
-                case KeyCode.L:
-                    LoadFloppy();
-                    break;
-                case KeyCode.W:
-                    ToggleWriteProtection();
-                    break;
-                case KeyCode.T:
-                    if (DriveNumber.HasValue)
-                        Computer.LoadTrsDosFloppy(DriveNumber.Value);
-                    break;
-                case KeyCode.E:
-                    EjectFloppy();
-                    break;
-                case KeyCode.B:
-                    MakeAndLoadBlankFloppy(Formatted: true);
-                    break;
-                case KeyCode.U:
-                    MakeAndLoadBlankFloppy(Formatted: false);
-                    break;
-                case KeyCode.Z:
-                    if (DriveNumber.HasValue)
-                        CurrentMode = ViewMode.DiskZapView;
-                    break;
-                case KeyCode.Escape:
-                    if (DriveNumber.HasValue)
-                        DriveNumber = null;
-                    else
-                        CurrentMode = ViewMode.NormalView;
-                    break;
-                default:
-                    return base.processKey(Key);
+                // Some selections fire on key released to avoid keys leaking into 
+                // Windows' dialogs.
+                switch (Key.Key)
+                {
+                    case KeyCode.L:
+                        LoadFloppy();
+                        break;
+                    default:
+                        return base.processKey(Key);
+                }
+            }
+            else
+            {
+                switch (Key.Key)
+                {
+                    case KeyCode.D0:
+                        DriveNumber = DriveNumber ?? 0;
+                        break;
+                    case KeyCode.D1:
+                        DriveNumber = DriveNumber ?? 1;
+                        break;
+                    case KeyCode.D2:
+                        DriveNumber = DriveNumber ?? 2;
+                        break;
+                    case KeyCode.D3:
+                        DriveNumber = DriveNumber ?? 3;
+                        break;
+                    case KeyCode.B:
+                        MakeAndLoadBlankFloppy(Formatted: true);
+                        break;
+                    case KeyCode.E:
+                        EjectFloppy();
+                        break;
+                    case KeyCode.T:
+                        if (DriveNumber.HasValue)
+                            Computer.LoadTrsDosFloppy(DriveNumber.Value);
+                        break;
+                    case KeyCode.U:
+                        MakeAndLoadBlankFloppy(Formatted: false);
+                        break;
+                    case KeyCode.W:
+                        ToggleWriteProtection();
+                        break;
+                    case KeyCode.Z:
+                        if (DriveNumber.HasValue)
+                            CurrentMode = ViewMode.DiskZapView;
+                        break;
+                    case KeyCode.Escape:
+                        if (DriveNumber.HasValue)
+                            DriveNumber = null;
+                        else
+                            CurrentMode = ViewMode.NormalView;
+                        break;
+                    default:
+                        return base.processKey(Key);
+                }
             }
             Invalidate();
             return true;
@@ -251,7 +261,7 @@ namespace Sharp80
                     selectFile = false;
                     if (String.IsNullOrWhiteSpace(path))
                     {
-                        path = Directory.GetParent(ExecutablePath).FullName;
+                        path = ExecutablePath;
                         var p = Path.Combine(path, "Disks");
                         if (Directory.Exists(p))
                             path = p;

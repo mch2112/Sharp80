@@ -14,6 +14,11 @@ namespace Sharp80
         private byte trackNum = 0;
         private byte sectorIndex = 0;
 
+        protected override void Activate()
+        {
+            base.Activate();
+        }
+
         protected override bool processKey(KeyState Key)
         {
             if (!Key.IsUnmodified || !Key.Pressed)
@@ -182,8 +187,17 @@ namespace Sharp80
         {
             DriveNumber = DriveNumber ?? 0;
 
-            var f = Computer.FloppyController.GetFloppy(DriveNumber.Value);
+            Floppy f = null;
 
+            for (byte i = DriveNumber.Value; i < DriveNumber.Value + FloppyController.NUM_DRIVES; i++)
+            {
+                f = Computer.FloppyController.GetFloppy(i % FloppyController.NUM_DRIVES);
+                if (f != null)
+                {
+                    DriveNumber = i;
+                    break;
+                }
+            }
             if (f == null)
             {
                 sideOne = false;

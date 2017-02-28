@@ -215,7 +215,26 @@ namespace Sharp80
             if (View.ProcessKey(k))
                 return;
         }
+        private void SyncKeyboard()
+        {
+            repeatKey = KeyCode.None;
 
+            keyboard.UpdateModifierKeys(out leftShiftPressed,
+                                        out rightShiftPressed,
+                                        out leftAltPressed,
+                                        out rightAltPressed,
+                                        out leftControlPressed,
+                                        out rightControlPressed);
+
+
+            computer.ResetKeyboard();
+
+            if (View.CurrentMode == ViewMode.NormalView)
+            {
+                ProcessKey(new KeyState(KeyCode.LeftShift,    false, false, false, leftShiftPressed,    !leftShiftPressed));
+                ProcessKey(new KeyState(KeyCode.RightShift,   false, false, false, rightShiftPressed,   !rightShiftPressed));
+            }
+        }
         private void ToggleFullScreen(bool AdjustClientSize = true)
         {
             var fs = !screen.IsFullScreen;
@@ -284,14 +303,7 @@ namespace Sharp80
         
         private void Form_Activated(object sender, EventArgs e)
         {
-            repeatKey = KeyCode.None;
-
-            keyboard.UpdateModifierKeys(out leftShiftPressed,
-                                        out rightShiftPressed,
-                                        out leftAltPressed,
-                                        out rightAltPressed,
-                                        out leftControlPressed,
-                                        out rightControlPressed);
+            SyncKeyboard();
 
             IsActive = true;
         }
