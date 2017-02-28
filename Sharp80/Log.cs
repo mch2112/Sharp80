@@ -1,4 +1,5 @@
 ﻿//#define DEBUGLOG
+#undef DEBUGLOG
 
 /// Sharp 80 (c) Matthew Hamilton
 /// Licensed Under GPL v3
@@ -14,7 +15,7 @@ namespace Sharp80
         private static List<string> log = new List<string>();
 
         public static bool TraceOn { get; set; } = false;
-        
+
         public static void LogTrace(string Message)
         {
             if (TraceOn)

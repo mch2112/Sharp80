@@ -59,7 +59,7 @@ namespace Sharp80.Processor
         
         public string Assemble()
         {
-            return new Assembler.Assembler(this.InstructionSet).Assemble();
+            return new Assembler.Assembler(InstructionSet).Assemble();
         }
 
         // INTERRUPTS
@@ -354,7 +354,7 @@ namespace Sharp80.Processor
 
         private Instruction GetInstructionAt(ushort Address)
         {
-            return this.instructionSet.GetInstruction(memory, Address);
+            return instructionSet.GetInstruction(memory, Address);
         }
 
         // INTERRUPTS

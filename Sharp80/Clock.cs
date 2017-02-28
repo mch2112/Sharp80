@@ -273,10 +273,10 @@ namespace Sharp80
                     soundCallback();
                     nextSoundSampleTick += ticksPerSoundSample;
                 }
-                if (++skip > 250000)  // couple times a second
+                if (++skipSync > 250000)  // couple times a second
                 {
                     SyncRealTimeOffset();
-                    skip = 0;
+                    skipSync = 0;
                 }
                 else if (++skip > 10)
                 {
@@ -289,6 +289,8 @@ namespace Sharp80
                 }
             }
         }
+
+        private long skipSync = 0;
         private long skip = 0;
         private void SyncRealTimeOffset()
         {
