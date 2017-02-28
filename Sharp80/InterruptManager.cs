@@ -97,20 +97,17 @@ namespace Sharp80
                 bool oldNmiEnabled = fdcNmiLatch.Enabled;
                 bool oldMotorOrDrqNmiEnabled = fdcMotorOffNmiLatch.Enabled;
 
-                fdcNmiLatch.Enabled =         value.IsBitSet(7);
+                fdcNmiLatch.Enabled = value.IsBitSet(7);
                 fdcMotorOffNmiLatch.Enabled = value.IsBitSet(6);
 
-                if (Log.DebugOn)
-                {
-                    Log.LogToDebug(string.Format("FDC NMI Enable: {0} -> {1}", oldNmiEnabled, fdcNmiLatch.Enabled));
-                    Log.LogToDebug(string.Format("Motor / DRQ NMI Enable: {0} -> {1}", oldMotorOrDrqNmiEnabled, fdcMotorOffNmiLatch.Enabled));
-                }
+                Log.Log(string.Format("FDC NMI Enable: {0} -> {1}", oldNmiEnabled, fdcNmiLatch.Enabled));
+                Log.Log(string.Format("Motor / DRQ NMI Enable: {0} -> {1}", oldMotorOrDrqNmiEnabled, fdcMotorOffNmiLatch.Enabled));
             }
         }
         public void ECin()
         {
             if (rtcIntLatch.Latched)
-                Log.LogToDebug("RTC Interrupt clear (in from port 0xEC)");
+                Log.Log("RTC Interrupt clear (in from port 0xEC)");
 
             rtcIntLatch.Unlatch();
 
@@ -139,7 +136,7 @@ namespace Sharp80
                 if (!casFallingEdgeIntLatch.Latched) retVal |= 0x02;
                 if (!casRisingEdgeIntLatch.Latched)  retVal |= 0x01;
 
-                Log.LogToDebug(string.Format("Read port 0xE0: RTC Interrupt {0}in progress", rtcIntLatch.Latched ? string.Empty : "not "));
+                Log.Log(string.Format("Read port 0xE0: RTC Interrupt {0}in progress", rtcIntLatch.Latched ? string.Empty : "not "));
 
                 return retVal;
             }
@@ -153,8 +150,7 @@ namespace Sharp80
                 casFallingEdgeIntLatch.Enabled = value.IsBitSet(1);
                 casRisingEdgeIntLatch.Enabled  = value.IsBitSet(0);
 
-                if (Log.DebugOn)
-                    Log.LogToDebug(rtcIntLatch.Enabled ? "Enabled RTC Interrupts" : "Disabled RTC Interrupts");
+                Log.Log(rtcIntLatch.Enabled ? "Enabled RTC Interrupts" : "Disabled RTC Interrupts");
             }
         }
 

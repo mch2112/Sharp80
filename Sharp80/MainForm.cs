@@ -291,7 +291,7 @@ namespace Sharp80
             if (Storage.SaveFloppies(computer))
             {
                 Settings.Save();
-                Log.SaveLog();
+                Log.Save();
                 Dispose();
             }
             else

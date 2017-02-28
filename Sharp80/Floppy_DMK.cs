@@ -374,7 +374,7 @@ namespace Sharp80
 
                 if (DiskData.Length < 0x200)
                 {
-                    Log.LogMessage(string.Format("Invalid DMK format: Too short ({0} bytes)", DiskData.Length));
+                    Log.Log(string.Format("Invalid DMK format: Too short ({0} bytes)", DiskData.Length));
                     return;
                 }
 
@@ -398,7 +398,7 @@ namespace Sharp80
                     {
                         if (DiskData.Length < diskCursor + trackLength)
                         {
-                            Log.LogMessage(string.Format("Unexpected End to DMK File on Track {0} at byte {1}", trackNum, diskCursor));
+                            Log.Log(string.Format("Unexpected End to DMK File on Track {0} at byte {1}", trackNum, diskCursor));
                         }
                         else
                         {
@@ -411,7 +411,8 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogMessage(string.Format("Error deserializing DMK Disk: {0} ", ex));
+                Log.LogException(ex);
+                Log.Log(string.Format("Error deserializing DMK Disk: {0} ", ex));
                 Reset();
             }
         }

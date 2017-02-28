@@ -94,7 +94,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogMessage(string.Format("Error loading floppy: {0}", ex));
+                Log.Log(string.Format("Error loading floppy: {0}", ex));
                 f = null;
             }
 

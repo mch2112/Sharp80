@@ -222,20 +222,23 @@ namespace Sharp80
                             CurrentMode = ViewMode.FloppyControllerView;
                             return true;
                         case KeyCode.E:
-                            if (Log.TraceOn)
+                            if (Log.Available)
                             {
-                                Log.TraceOn = false;
-                                bool isRunning = Computer.IsRunning;
-                                Computer.Stop(true);
-                                Log.SaveTrace();
-                                if (isRunning)
-                                    Computer.Start();
-                                MessageCallback("Trace run saved to 'trace.txt'");
-                            }
-                            else
-                            {
-                                Log.TraceOn = true;
-                                MessageCallback("Collecting trace info...");
+                                if (Log.TraceOn)
+                                {
+                                    Log.TraceOn = false;
+                                    bool isRunning = Computer.IsRunning;
+                                    Computer.Stop(true);
+                                    Log.Save();
+                                    if (isRunning)
+                                        Computer.Start();
+                                    MessageCallback("Trace run saved to 'trace.txt'");
+                                }
+                                else
+                                {
+                                    Log.TraceOn = true;
+                                    MessageCallback("Collecting trace info...");
+                                }
                             }
                             return true;
                         case KeyCode.F:
@@ -253,7 +256,7 @@ namespace Sharp80
                             OnUserCommand?.Invoke(UserCommand.ShowInstructionSet);
                             return true;
                         case KeyCode.L:
-                            Log.SaveLog();
+                            Log.Save();
                             MessageCallback("Log saved.");
                             return true;
                         case KeyCode.M:

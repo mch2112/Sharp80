@@ -293,7 +293,7 @@ namespace Sharp80
                 int byteMultiple = density ? 1 : 2;
                 if (Data[offset] != Floppy.IDAM)
                 {
-                    Log.LogToDebug(string.Format("Missing IDAM Track {0} Side {1} SectorIndex {2}.", this.PhysicalTrackNum, this.SideOne ? 1 : 0, SectorIndex));
+                    Log.Log(string.Format("Missing IDAM Track {0} Side {1} SectorIndex {2}.", this.PhysicalTrackNum, this.SideOne ? 1 : 0, SectorIndex));
                     continue;
                 }
 

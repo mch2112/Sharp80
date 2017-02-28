@@ -9,67 +9,45 @@ namespace Sharp80
 {
     internal static class Log
     {
-        static Log() { DebugOn = true; UnifyTraceAndDebug = true; }
-
-        private static List<string> log = new List<string>(100);
-        private static List<string> debugLog = new List<string>(10000);
         private static List<string> traceLog = new List<string>();
 
-        public static bool DebugOn { get; set; }
         public static bool TraceOn { get; set; }
-        public static bool UnifyTraceAndDebug { get; set; }
+        public static bool Available
+        {
+            get
+            {
+                return
+#if DEBUG
+                    true;
+#else
+                false;
+#endif
+            }
+        }
 
         [Conditional("DEBUG")] 
-        public static void LogToTrace(string Message)
+        public static void LogTrace(string Message)
         {
             if (TraceOn)
             {
-                traceLog.Add(Message);
+                Log(Message);
             }
         }
-
-        [Conditional("DEBUG")] 
-        public static void LogToDebug(string Message)
+        [Conditional("DEBUG")]
+        public static void Log(string Message)
         {
-            if (DebugOn && TraceOn)
-            {
-                string m = DateTime.Now.ToString("hh:mm:ss.ffffff") + ": " + Message;
-                Debug.WriteLine(m);
-                
-                debugLog.Add(m);
-
-                if (UnifyTraceAndDebug)
-                    LogToTrace(m);
-            }
+            var msg = DateTime.Now.ToString("hh:mm:ss.ffffff") + ": " + Message;
+            traceLog.Add(msg);
         }
 
-        public static void LogMessage(string Message)
-        {
-            string m = DateTime.Now.ToString("hh:mm:ss.ffffff") + ": " + Message;
-            log.Add(m);
-#if DEBUG
-            Debug.WriteLine(m);
-
-            if (DebugOn)
-                LogToDebug(m);
-#endif
-        }
+        [Conditional("DEBUG")]
         public static void LogException(Exception ex)
         {
-            LogMessage(ex.ToString());
-        }
-        public static void Purge()
-        {
-            debugLog.Clear();
-            log.Clear();
-        }
-        public static void SaveLog()
-        {
-            Storage.SaveTextFile(System.IO.Path.Combine(Lib.GetAppPath(), "log.txt"), log);
+            Log(ex.ToString());
         }
 
         [Conditional("DEBUG")] 
-        public static void SaveTrace()
+        public static void Save()
         {
             Storage.SaveTextFile(System.IO.Path.Combine(Lib.GetAppPath(), "trace.txt"), traceLog);
             traceLog.Clear();

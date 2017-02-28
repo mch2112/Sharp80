@@ -72,8 +72,8 @@ namespace Sharp80
             nextRtcIrqTick = ticksPerIRQ;
             ResetTriggers();
 
-            waitTrigger = new Trigger(() => { if (Log.DebugOn) Log.LogToDebug(string.Format("CPU Wait ON")); },
-                                      () => { if (Log.DebugOn) Log.LogToDebug(string.Format("CPU Wait OFF")); },
+            waitTrigger = new Trigger(() => { Log.Log(string.Format("CPU Wait ON")); },
+                                      () => { Log.Log(string.Format("CPU Wait OFF")); },
                                       TriggerLock: false,
                                       CanLatchBeforeEnabled: false)
                          { Enabled = true };

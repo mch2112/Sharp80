@@ -275,8 +275,7 @@ namespace Sharp80.Processor
                 return 0;
             }
 
-            if (Log.TraceOn)
-                Log.LogToTrace(GetLineInfo(PC.val));
+            Log.LogTrace(GetLineInfo(PC.val));
 
             CurrentInstruction = GetInstructionAt(PC.val);
             retVal = ExecuteInstruction(CurrentInstruction);
@@ -339,7 +338,7 @@ namespace Sharp80.Processor
             }
             catch (Exception ex)
             {
-                Log.LogMessage(ex.ToString());
+                Log.LogException(ex);
             }
             if (this.RecordExtraTicks)
             {
@@ -365,8 +364,7 @@ namespace Sharp80.Processor
 
             if (CanInterrupt)
             {
-                if (Log.DebugOn)
-                    Log.LogToDebug(string.Format("CPU Interrupt. IFF1: {0} IFF2: {1}", IFF1, IFF2));
+                Log.Log(string.Format("CPU Interrupt. IFF1: {0} IFF2: {1}", IFF1, IFF2));
 
                 IFF1 = false;
                 IFF2 = false;
@@ -392,7 +390,7 @@ namespace Sharp80.Processor
                         WZ.val = PC.val = (ushort)(I.val * 0x100 + im2Vector);
                         return 19000;
                     default:
-                        Log.LogMessage(string.Format("Interrupt Mode {0} Not Supported", interruptMode));
+                        Log.Log(string.Format("Interrupt Mode {0} Not Supported", interruptMode));
                         return 0;
                 }
             }
@@ -411,8 +409,7 @@ namespace Sharp80.Processor
         }
         public void NonMaskableInterrupt()
         {
-            if (Log.DebugOn)
-                Log.LogToDebug("Non Maskable Interrupt exec, IFF1 False");
+            Log.Log("Non Maskable Interrupt exec, IFF1 False");
 
             IFF1 = false;   // Leave IFF2 alone to restore IFF1 after the NMI
             if (halted)
