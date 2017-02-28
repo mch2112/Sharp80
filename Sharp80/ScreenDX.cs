@@ -121,6 +121,8 @@ namespace Sharp80
             InitCharGen();
             LoadCharGen();
 
+            SetVideoMode(false, false);
+
             initialized = true;
 
             Invalidate();
@@ -256,7 +258,8 @@ namespace Sharp80
     
         public void Reset()
         {
-            SetVideoMode(false, false);
+            if (isWideCharMode || isKanjiCharMode)
+                SetVideoMode(false, false);
         }
         public void SetVideoMode(bool IsWide, bool IsKanji)
         {

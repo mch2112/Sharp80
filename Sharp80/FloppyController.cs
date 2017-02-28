@@ -21,7 +21,7 @@ namespace Sharp80
             {
                 get; set;
             }
-            public bool WriteProtected { get { return Floppy?.WriteProtected ?? false; } set { Floppy.WriteProtected = value; } }
+            public bool WriteProtected { get { return Floppy?.WriteProtected ?? true; } set { Floppy.WriteProtected = value; } }
             public DriveState()
             {
                 PhysicalTrackNumber = 0;
@@ -297,7 +297,15 @@ namespace Sharp80
             }
             else
             {
-                Floppy f = Floppy.LoadDisk(FilePath);
+                Floppy f = null;
+                try
+                {
+                    f = Floppy.LoadDisk(FilePath);
+                }
+                catch (Exception ex)
+                {
+                    Log.LogException(ex);
+                }
                 if (f == null)
                     UnloadDrive(DriveNum);
                 else
@@ -1025,6 +1033,7 @@ namespace Sharp80
                                 break;
                             case Floppy.IDAM:
                                 //if ((doubleDensitySelected && idamBytesFound >= 3) || (!doubleDensitySelected && idamBytesFound >= 1))
+                                if (idamBytesFound >= 1)
                                 {
                                     Log.LogToDebug(string.Format("IDAM Found. Command: {0} OpStatus: {1} Track Register: {2} Sector Register: {3} Side Sel Verify: {4} Indexes Found: {5}", command, opStatus, trackRegister, sectorRegister, sideSelectVerify, IndexesFound));
                                     readAddressIndex = 0;
@@ -1661,89 +1670,92 @@ namespace Sharp80
             //    00H - FB (1791, 1771)
 
             statusRegister = 0x00;
-
+            bool indexHole = false;
+            bool headLoaded = false;
             if (!motorOn)
             {
-                statusRegister |= 0x80;
+                statusRegister |= 0x84; // not ready + track zero
             }
-            else if (currentDrive.IsUnloaded)
+            else if (DriveIsUnloaded(CurrentDriveNumber))
             {
-                statusRegister |= 0x80;
-                //statusRegister |= 0x06;
-                //statusRegister = 0; // not ready + track zero + index hole
+                // status remains zero
+            }
+            else
+            {
+                indexHole = IndexDetect;
+                headLoaded = true;
             }
             
+            switch (command)
             {
-                switch (command)
-                {
-                    case Command.Restore:
-                    case Command.Seek:
-                    case Command.Step:
-                    case Command.Reset:
-                        if (writeProtected)
-                            statusRegister |= 0x40;   // Bit 6: Write Protect detect
+                case Command.Restore:
+                case Command.Seek:
+                case Command.Step:
+                case Command.Reset:
+                    if (writeProtected)
+                        statusRegister |= 0x40;   // Bit 6: Write Protect detect
+                    if (headLoaded)
                         statusRegister |= 0x20;       // Bit 5: head loaded and engaged
-                        if (seekErrorOrRecordNotFound)
-                            statusRegister |= 0x10;   // Bit 4: Seek error
-                        if (crcError)
-                            statusRegister |= 0x08;   // Bit 3: CRC Error
-                        if (currentDrive.OnTrackZero) // Bit 2: Track Zero detect
-                            statusRegister |= 0x04;
-                        if (IndexDetect)
-                            statusRegister |= 0x02;   // Bit 1: Index Detect
-                        break;
-                    case Command.ReadAddress:
-                        if (seekErrorOrRecordNotFound)
-                            statusRegister |= 0x10; // Bit 4: Record Not found
-                        if (crcError)
-                            statusRegister |= 0x08; // Bit 3: CRC Error
-                        if (lostData)
-                            statusRegister |= 0x04; // Bit 2: Lost Data
-                        if (drqStatus)
-                            statusRegister |= 0x02; // Bit 1: DRQ
-                        break;
-                    case Command.ReadSector:
-                        if (sectorDeleted)
-                            statusRegister |= 0x20; // Bit 5: Detect "deleted" address mark
-                        if (seekErrorOrRecordNotFound)
-                            statusRegister |= 0x10; // Bit 4: Record Not found
-                        if (crcError)
-                            statusRegister |= 0x08; // Bit 3: CRC Error
-                        if (lostData)
-                            statusRegister |= 0x04; // Bit 2: Lost Data
-                        if (drqStatus)
-                            statusRegister |= 0x02; // Bit 1: DRQ
-                        break;
-                    case Command.ReadTrack:
-                        if (lostData)
-                            statusRegister |= 0x04; // Bit 2: Lost Data
-                        if (drqStatus)
-                            statusRegister |= 0x02; // Bit 1: DRQ
-                        break;
-                    case Command.WriteSector:
-                        if (writeProtected)
-                            statusRegister |= 0x40; // Bit 6: Write Protect detect
-                        if (seekErrorOrRecordNotFound)
-                            statusRegister |= 0x10; // Bit 4: Record Not found
-                        if (crcError)
-                            statusRegister |= 0x08; // Bit 3: CRC Error
-                        if (lostData)
-                            statusRegister |= 0x04; // Bit 2: Lost Data
-                        if (drqStatus)
-                            statusRegister |= 0x02; // Bit 1: DRQ
-                        break;
-                    case Command.WriteTrack:
-                        if (writeProtected)
-                            statusRegister |= 0x40; // Bit 6: Write Protect detect
-                        if (lostData)
-                            statusRegister |= 0x04; // Bit 2: Lost Data
-                        if (drqStatus)
-                            statusRegister |= 0x02; // Bit 1: DRQ
-                        break;
-                }
-                if (busy)
-                    statusRegister |= 0x01; // Bit 0: Busy
+                    if (seekErrorOrRecordNotFound)
+                        statusRegister |= 0x10;   // Bit 4: Seek error
+                    if (crcError)
+                        statusRegister |= 0x08;   // Bit 3: CRC Error
+                    if (currentDrive.OnTrackZero) // Bit 2: Track Zero detect
+                        statusRegister |= 0x04;
+                    if (indexHole)
+                        statusRegister |= 0x02;   // Bit 1: Index Detect
+                    break;
+                case Command.ReadAddress:
+                    if (seekErrorOrRecordNotFound)
+                        statusRegister |= 0x10; // Bit 4: Record Not found
+                    if (crcError)
+                        statusRegister |= 0x08; // Bit 3: CRC Error
+                    if (lostData)
+                        statusRegister |= 0x04; // Bit 2: Lost Data
+                    if (drqStatus)
+                        statusRegister |= 0x02; // Bit 1: DRQ
+                    break;
+                case Command.ReadSector:
+                    if (sectorDeleted)
+                        statusRegister |= 0x20; // Bit 5: Detect "deleted" address mark
+                    if (seekErrorOrRecordNotFound)
+                        statusRegister |= 0x10; // Bit 4: Record Not found
+                    if (crcError)
+                        statusRegister |= 0x08; // Bit 3: CRC Error
+                    if (lostData)
+                        statusRegister |= 0x04; // Bit 2: Lost Data
+                    if (drqStatus)
+                        statusRegister |= 0x02; // Bit 1: DRQ
+                    break;
+                case Command.ReadTrack:
+                    if (lostData)
+                        statusRegister |= 0x04; // Bit 2: Lost Data
+                    if (drqStatus)
+                        statusRegister |= 0x02; // Bit 1: DRQ
+                    break;
+                case Command.WriteSector:
+                    if (writeProtected)
+                        statusRegister |= 0x40; // Bit 6: Write Protect detect
+                    if (seekErrorOrRecordNotFound)
+                        statusRegister |= 0x10; // Bit 4: Record Not found
+                    if (crcError)
+                        statusRegister |= 0x08; // Bit 3: CRC Error
+                    if (lostData)
+                        statusRegister |= 0x04; // Bit 2: Lost Data
+                    if (drqStatus)
+                        statusRegister |= 0x02; // Bit 1: DRQ
+                    break;
+                case Command.WriteTrack:
+                    if (writeProtected)
+                        statusRegister |= 0x40; // Bit 6: Write Protect detect
+                    if (lostData)
+                        statusRegister |= 0x04; // Bit 2: Lost Data
+                    if (drqStatus)
+                        statusRegister |= 0x02; // Bit 1: DRQ
+                    break;
             }
+            if (busy)
+                statusRegister |= 0x01; // Bit 0: Busy
 
             // TODO: should these be here?
             // drqStatus = false;

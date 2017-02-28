@@ -237,5 +237,34 @@ namespace Sharp80
         {
             return (ushort)(Input + Offset);
         }
+        public static byte[] FromAsciiHex(this byte[] Input)
+        {
+            var Output = new System.Collections.Generic.List<byte>();
+            for (int i = 0; i < Input.Length; i++)
+            {
+                var high = Input[i].AsciiToNibble();
+                if (high < 0x10)
+                {
+                    var low = Input[i + 1].AsciiToNibble();
+                    if (low < 0x10)
+                    {
+                        Output.Add((byte)((high << 4) | low));
+                    }
+                    i++;
+                }
+            }
+            return Output.ToArray();
+        }
+        public static byte AsciiToNibble(this byte Input)
+        {
+            if (Input >= '0' && Input <= '9')
+                return (byte)(Input - '0');
+            else if (Input >= 'A' && Input <= 'F')
+                return (byte)(0x0A + Input - 'A');
+            else if (Input >= 'a' && Input <= 'f')
+                return (byte)(0x0A + Input - 'a');
+            else
+                return 0xFF;
+        }
     }
 }

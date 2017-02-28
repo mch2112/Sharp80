@@ -9,7 +9,8 @@ namespace Sharp80
     internal class Computer : IDisposable
     {
         public const ulong CLOCK_RATE = 2027520;
-        private const int SERIALIZATION_VERSION = 2;
+
+        private const int SERIALIZATION_VERSION = 3;
 
         public bool HasRunYet { get; private set; }
 

@@ -1,4 +1,4 @@
-﻿/// Sharp 80 (c) Matthew Hamilton
+﻿/// Sharp 80 (c) Matthew Hamilton~
 /// Licensed Under GPL v3
 
 using System;
@@ -33,7 +33,8 @@ namespace Sharp80
                         CurrentMode = ViewMode.NormalView;
                         return true;
                     case KeyCode.F8:
-                        return true;
+                        CurrentMode = ViewMode.NormalView;
+                        return false;
                     default:
                         c = Key.ToChar();
                         break;

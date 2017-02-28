@@ -30,6 +30,8 @@ namespace Sharp80
 
         private List<SectorDescriptor> sectorDescriptorCache = null;
 
+        private static Random r = new Random();
+
         public Track(byte PhysicalTrackNum, bool SideOne, byte[] Data, bool SingleDensitySingleByte)
         {
             this.PhysicalTrackNum = PhysicalTrackNum;
@@ -225,7 +227,7 @@ namespace Sharp80
         public byte ReadByte(int TrackIndex, bool? DoubleDensity)
         {
             if (DoubleDensity.HasValue && DoubleDensity != GetDensity(TrackIndex))
-                return 0;
+                return (byte)r.Next(0, 0x100);
 
             if (DoubleDensity == false)
                 TrackIndex &= 0x7FFFFFFE;

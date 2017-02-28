@@ -157,7 +157,16 @@ namespace Sharp80
             {
                 try
                 {
-                    byte[] b = Storage.LoadBinaryFile(FilePath);
+                    byte[] b = LoadBinaryFile(FilePath);
+
+                    if (b.Length > 3)
+                    {
+                        if (b[0] == 'H' && b[1] == 'E' && b[2] == 'X')
+                        {
+                            b = b.FromAsciiHex();
+                            SaveBinaryFile(FilePath, b);
+                        }
+                    }
 
                     int i = 0;
                     while (i < b.Length)
@@ -168,7 +177,7 @@ namespace Sharp80
                         if (length == 0)
                             length = 0x100;
 
-                        Array.Copy(b, i, data, 0, length);
+                        Array.Copy(b, i, data, 0, Math.Min(length, b.Length - i));
                         i += length;
 
                         switch (code)
@@ -223,6 +232,8 @@ namespace Sharp80
                                 break;
                             case 0x08:          // ISAM directory entry
                                 // Do nothing
+                                break;
+                            case 0x09:          // unused code
                                 break;
                             case 0x0A:          // end of ISAM directory
                                 // Do nothing

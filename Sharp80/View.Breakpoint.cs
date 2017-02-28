@@ -22,7 +22,7 @@ namespace Sharp80
                 switch (Key.Key)
                 {
                     case KeyCode.Space:
-                        Computer.BreakPointOn = !Computer.BreakPointOn;
+                        Settings.BreakpointOn = Computer.BreakPointOn = !Computer.BreakPointOn;
                         Invalidate();
                         return true;
                     case KeyCode.Return:
@@ -34,7 +34,7 @@ namespace Sharp80
                 }
                 if (Computer.BreakPoint.RotateAddress(c, out ushort newBp))
                 {
-                    Computer.BreakPoint = newBp;
+                    Settings.Breakpoint = Computer.BreakPoint = newBp;
                     Invalidate();
                     processed = true;
                 }

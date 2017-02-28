@@ -398,6 +398,8 @@ namespace Sharp80
             computer.BreakPoint = Settings.Breakpoint;
             computer.BreakPointOn = Settings.BreakpointOn;
 
+            screen.Initialize(this, computer);
+
             View.Initialize(computer, System.IO.Path.GetDirectoryName(Application.ExecutablePath), (msg) => screen.StatusMessage = msg);
         }
     }

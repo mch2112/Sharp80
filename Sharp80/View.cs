@@ -134,6 +134,7 @@ namespace Sharp80
                                 Computer.Stop(true);
                             else
                                 Computer.Start();
+                            Invalidate();
                             return true;
                         case KeyCode.F9:
                             Computer.SingleStep();
