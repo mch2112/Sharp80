@@ -56,11 +56,11 @@ namespace Sharp80.Processor
             }
             else
             {
-                return GetDisassembly(PC.val, PC.val);
+                return GetDisassemblyDump(PC.val, PC.val);
             }
         }
 
-        public string GetDisassembly(ushort StartLocation, ushort HighLight)
+        public string GetDisassemblyDump(ushort StartLocation, ushort HighLight)
         {
             const int MAX_HIGHLIGHT_LINE = NUM_DISASSEMBLY_LINES - 8;
 
@@ -91,9 +91,9 @@ namespace Sharp80.Processor
         {
             return instructionSet.GetInstructionSetReport();
         }
-        public string GetDisassemblyDump(bool AddressAsComment)
+        public string GetDisassemblyDump(bool AddressAsComment, bool FromPC)
         {
-            int PC = this.PC.val;
+            int PC = FromPC ? this.PC.val : 0;
             Instruction inst;
             var sb = new StringBuilder(500000);
 

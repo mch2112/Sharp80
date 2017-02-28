@@ -289,9 +289,9 @@ namespace Sharp80
                 return false;
             }
         }
-        public string DumpDisassembly(bool RelativeAddressesAsComments)
+        public string DumpDisassembly(bool RelativeAddressesAsComments, bool FromPC)
         {
-            return Processor.GetDisassemblyDump(RelativeAddressesAsComments);
+            return Processor.GetDisassemblyDump(RelativeAddressesAsComments, FromPC);
         }
         public string GetInstructionSetReport()
         {

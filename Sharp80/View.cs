@@ -178,6 +178,11 @@ namespace Sharp80
                             if (wasRunning)
                                 Computer.Start();
                             return true;
+                        case KeyCode.P:
+                            // start the disassembly at the current PC location
+                            Storage.SaveTextFile(System.IO.Path.Combine(ExecutablePath, "Disassembly.txt"), Computer.DumpDisassembly(true, true));
+                            Dialogs.InformUser("Disassembly saved to \"Disassembly.txt\"");
+                            return true;
                         case KeyCode.X:
                             OnUserCommand?.Invoke(UserCommand.Exit);
                             return true;
@@ -259,8 +264,8 @@ namespace Sharp80
                             }
                             return true;
                         case KeyCode.P:
-                            Storage.SaveTextFile(System.IO.Path.Combine(ExecutablePath, "Disassembly_Dump.txt"), Computer.DumpDisassembly(true));
-                            Dialogs.InformUser("Disassembly saved to \"Disassembly_Dump.txt\"");
+                            Storage.SaveTextFile(System.IO.Path.Combine(ExecutablePath, "Disassembly.txt"), Computer.DumpDisassembly(true, false));
+                            Dialogs.InformUser("Disassembly saved to \"Disassembly.txt\"");
                             return true;
                         case KeyCode.R:
                             CurrentMode = ViewMode.CpuView;
