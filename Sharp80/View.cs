@@ -275,11 +275,11 @@ namespace Sharp80
                             CurrentMode = ViewMode.CpuView;
                             return true;
                         case KeyCode.S:
-                            Settings.SoundOn = Computer.Sound.On = !Computer.Sound.On;
+                            Settings.SoundOn = Computer.SoundOn = !Computer.SoundOn;
                             MessageCallback(Settings.SoundOn ? "Sound On" : "Sound Off");
                             return true;
                         case KeyCode.T:
-                            Settings.DriveNoise = Computer.Sound.UseDriveNoise = !Computer.Sound.UseDriveNoise;
+                            Settings.DriveNoise = Computer.DriveNoise = !Computer.DriveNoise;
                             MessageCallback(Settings.DriveNoise ? "Drive noise on" : "Drive noise off");
                             return true;
                         case KeyCode.U:
@@ -289,7 +289,7 @@ namespace Sharp80
                             LoadCMDFile(Computer.Assemble(), true);
                             return true;
                         case KeyCode.Z:
-                            if (Computer.FloppyController.AnyDriveLoaded)
+                            if (Computer.AnyDriveLoaded)
                                 CurrentMode = ViewMode.DiskZapView;
                             return true;
                     }

@@ -7,11 +7,12 @@ namespace Sharp80
 {
     internal sealed class PortSet
     {
+        public FloppyController FloppyController { get; set; }
+
         private const int NUM_PORTS = 0x100;
-
-        Computer computer;
-        InterruptManager IntMgr;
-
+        private Computer computer;
+        private InterruptManager IntMgr;
+        
         private byte[] ports = new byte[NUM_PORTS];
         private byte[] lastOUT = new byte[NUM_PORTS];
         private bool noDrives = true;
@@ -110,12 +111,12 @@ namespace Sharp80
                         if (NoDrives)
                             ports[0xF0] = 0xFF; // cassette system
                         else
-                            computer.FloppyController.FdcIoEvent(PortNumber, 0, false);
+                            FloppyController.FdcIoEvent(PortNumber, 0, false);
                         break;
                     case 0xF1:
                     case 0xF2:
                     case 0xF3:
-                        computer.FloppyController.FdcIoEvent(PortNumber, 0, false);
+                        FloppyController.FdcIoEvent(PortNumber, 0, false);
                         break;
                     case 0xFF:
                         ports[0xFF] &= 0xFC;
@@ -152,7 +153,7 @@ namespace Sharp80
                     case 0xF2:
                     case 0xF3:
                     case 0xF4:
-                        computer.FloppyController.FdcIoEvent(PortNumber, value, true);
+                        FloppyController.FdcIoEvent(PortNumber, value, true);
                         break;
                     default:
                         break;

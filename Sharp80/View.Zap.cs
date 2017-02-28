@@ -33,7 +33,7 @@ namespace Sharp80
                     for (int i = DriveNumber.Value + 1; i < DriveNumber.Value + 5; i++)
                     {
                         DriveNumber = (byte)(i % FloppyController.NUM_DRIVES);
-                        if (!Computer.FloppyController.DriveIsUnloaded(DriveNumber.Value))
+                        if (!Computer.DriveIsUnloaded(DriveNumber.Value))
                             break;
                     }
                     VerifyZapParamsOK();
@@ -92,8 +92,8 @@ namespace Sharp80
         {
             DriveNumber = DriveNumber ?? 0;
 
-            var f = Computer.FloppyController.GetFloppy(DriveNumber.Value);
-            var sd = f?.GetSectorDescriptor(trackNum, sideOne, sectorIndex);
+            var f = Computer.GetFloppy(DriveNumber.Value);
+            var sd = f.GetSectorDescriptor(trackNum, sideOne, sectorIndex);
 
             int numBytes = Math.Min(0x100, sd?.SectorData?.Length ?? 0);
 
@@ -105,7 +105,7 @@ namespace Sharp80
             WriteToByteArray(cells, 0x0C0, "Trk");
             WriteToByteArrayHex(cells, 0x100, trackNum);
 
-            if (f?.DoubleSided ?? false)
+            if (f.DoubleSided)
             {
                 WriteToByteArray(cells, 0x280, "Side");
                 cells[0x300] = (byte)(sideOne ? '1' : '0');
@@ -187,11 +187,11 @@ namespace Sharp80
         {
             DriveNumber = DriveNumber ?? 0;
 
-            Floppy f = null;
+            IFloppy f = null;
 
             for (byte i = DriveNumber.Value; i < DriveNumber.Value + FloppyController.NUM_DRIVES; i++)
             {
-                f = Computer.FloppyController.GetFloppy(i % FloppyController.NUM_DRIVES);
+                f = Computer.GetFloppy((byte)(i % FloppyController.NUM_DRIVES));
                 if (f != null)
                 {
                     DriveNumber = i;

@@ -82,13 +82,11 @@ namespace Sharp80
         }
         protected override byte[] GetViewBytes()
         {
-            var FC = Computer.FloppyController;
-
             string s = Header("Sharp 80 Floppy Disk Status");
             if (DriveNumber.HasValue)
             {
-                bool diskLoaded = !FC.DriveIsUnloaded(DriveNumber.Value);
-                s += DrawDisk(FC, DriveNumber.Value) +
+                bool diskLoaded = !Computer.DriveIsUnloaded(DriveNumber.Value);
+                s += DrawDisk(DriveNumber.Value) +
                         Format() +
                         Separator('-') +
                         Format() +
@@ -100,7 +98,7 @@ namespace Sharp80
                 if (diskLoaded)
                 {
                     s += Format("[E] Eject floppy") +
-                         Format(string.Format("[W] Toggle write protection {0}", FC.IsWriteProtected(DriveNumber.Value).Value ? "[ON] /  OFF " : " ON  / [OFF]")) +
+                         Format(string.Format("[W] Toggle write protection {0}", (Computer.GetFloppy(DriveNumber.Value)?.WriteProtected ?? false) ? "[ON] /  OFF " : " ON  / [OFF]")) +
                          Format("[Z] Disk Zap View");
                 }
                 else
@@ -114,7 +112,7 @@ namespace Sharp80
             else
             {
                 for (byte i = 0; i < 4; i++)
-                    s += DrawDisk(FC, i) + Format();
+                    s += DrawDisk(i) + Format();
 
                 s += Format("Choose a floppy drive [0] to [3].") +
                      Format("[Escape] to cancel.");
@@ -122,9 +120,9 @@ namespace Sharp80
 
             return PadScreen(Encoding.ASCII.GetBytes(s));
         }
-        private static string DrawDisk(FloppyController fc, int DiskNum)
+        private static string DrawDisk(byte DiskNum)
         {
-            var d = fc.GetFloppy(DiskNum);
+            var d = Computer.GetFloppy(DiskNum);
 
             string line1;
             if (d == null)
@@ -276,7 +274,7 @@ namespace Sharp80
 
                 if (path.Length > 0)
                 {
-                    if (Storage.SaveFloppyIfRequired(Computer.FloppyController, DriveNumber.Value))
+                    if (Storage.SaveFloppyIfRequired(Computer, DriveNumber.Value))
                     {
                         Computer.LoadFloppy(DriveNumber.Value, path);
                         Settings.DefaultFloppyDirectory = Path.GetDirectoryName(path);
@@ -289,7 +287,7 @@ namespace Sharp80
         {
             if (DriveNumber.HasValue)
             {
-                if (Storage.SaveFloppyIfRequired(Computer.FloppyController, DriveNumber.Value))
+                if (Storage.SaveFloppyIfRequired(Computer, DriveNumber.Value))
                 {
                     Computer.EjectFloppy(DriveNumber.Value);
                     Invalidate();
@@ -300,7 +298,7 @@ namespace Sharp80
         {
             if (DriveNumber.HasValue)
             {
-                if (Storage.SaveFloppyIfRequired(Computer.FloppyController, DriveNumber.Value))
+                if (Storage.SaveFloppyIfRequired(Computer, DriveNumber.Value))
                 {
                     Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted));
                     Storage.SaveDefaultDriveFileName(DriveNumber.Value, Formatted ? Floppy.FILE_NAME_BLANK : Floppy.FILE_NAME_UNFORMATTED);
@@ -311,9 +309,9 @@ namespace Sharp80
         {
             if (DriveNumber.HasValue)
             {
-                bool? wp = Computer.FloppyController.IsWriteProtected(DriveNumber.Value);
-                if (wp.HasValue)
-                    Computer.FloppyController.SetIsWriteProtected(DriveNumber.Value, !wp.Value);
+                var f = Computer.GetFloppy(DriveNumber.Value);
+                if (f != null)
+                    f.WriteProtected = !f.WriteProtected;
             }
         }
         private static string FitFilePath(string FilePath)

@@ -11,30 +11,29 @@ namespace Sharp80
         public const ulong CLOCK_RATE = 2027520;
         private const int SERIALIZATION_VERSION = 2;
 
-        public FloppyController FloppyController { get; private set; }
-        public ISound Sound { get; private set; }
         public bool HasRunYet { get; private set; }
 
         private Processor.Z80 Processor { get; set; }
         private Clock Clock { get; set; }
+        private FloppyController FloppyController { get; set; }
         private PortSet Ports { get; set; }
         private InterruptManager IntMgr { get; set; }
-        private Screen Screen { get; set; }
+        private IScreen Screen { get; set; }
+        private ISound Sound { get; set; }
 
         private bool ready;
         private bool isDisposed = false;
 
         // CONSTRUCTOR
 
-        public Computer(IDXClient MainForm, ScreenDX PhysicalScreen, ulong DisplayRefreshRateInHz, bool Throttle)
+        public Computer(IDXClient MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool Throttle)
         {
             ulong milliTStatesPerIRQ = CLOCK_RATE * Clock.TICKS_PER_TSTATE / 30;
             ulong milliTStatesPerSoundSample = CLOCK_RATE * Clock.TICKS_PER_TSTATE / SoundX.SAMPLE_RATE;
 
             HasRunYet = false;
 
-            PhysicalScreen.Computer = this;
-            Screen = new Screen(PhysicalScreen);
+            this.Screen = Screen;
             
             IntMgr = new InterruptManager(this);
             Ports = new PortSet(this, IntMgr);
@@ -57,10 +56,11 @@ namespace Sharp80
 
             Clock.ThrottleChanged += OnThrottleChanged;
 
-            FloppyController = new FloppyController(this, Ports, Clock, IntMgr);
+            FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound);
 
-            PhysicalScreen.Initialize(MainForm);
-            Screen.SetVideoMode();
+            Ports.FloppyController = FloppyController;
+
+            Screen.Reset();
 
             ready = true;
         }
@@ -93,10 +93,37 @@ namespace Sharp80
             get { return Processor.BreakPointOn; }
             set { Processor.BreakPointOn = value; }
         }
+        public bool SoundOn
+        {
+            get { return Sound.On; }
+            set { Sound.On = value; }
+        }
+        public bool DriveNoise
+        {
+            get { return Sound.UseDriveNoise; }
+            set { Sound.UseDriveNoise = value; }
+        }
         public Z80_Status CpuStatus
         {
             get { return Processor.GetStatus(); }
         }
+        public IFloppy GetFloppy(byte DriveNum) { return FloppyController.GetFloppy(DriveNum); }
+
+        public bool DriveIsUnloaded(byte DriveNum) { return FloppyController.DriveIsUnloaded(DriveNum); }
+        public string GetDriveStatusReport() { return FloppyController.GetDriveStatusReport(); }
+        public bool? DriveBusyStatus { get { return FloppyController.DriveBusyStatus; } }
+        public bool AnyDriveLoaded { get { return FloppyController.AnyDriveLoaded; } }
+        public bool FloppyControllerDrq { get { return FloppyController.DRQ; } }
+        public string GetFloppyFilePath(byte DriveNum) { return FloppyController.FloppyFilePath(DriveNum); }
+        public void SetFloppyFilePath(byte DriveNum, string Path)
+        {
+            var f = FloppyController.GetFloppy(DriveNum);
+            if (f != null)
+                f.FilePath = Path;
+        }
+        public FloppyControllerStatus FloppyControllerStatus { get { return FloppyController.GetStatus(); } }
+        public bool DiskHasChanged(byte DriveNum) { return FloppyController.DiskHasChanged(DriveNum) ?? false; }
+        public void SaveFloppy(byte DriveNum) { FloppyController.SaveFloppy(DriveNum); }
         
         // RUN COMMANDS
 

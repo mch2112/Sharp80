@@ -19,10 +19,10 @@ namespace Sharp80
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Sharp 80 Options") +
                 Indent(string.Format("[Alt]+[S] Sound                    {0}",
-                    Computer.Sound.On ? "[ON] /  OFF" : " ON  / [OFF]")) +
-                (Computer.Sound.On
+                    Computer.SoundOn ? "[ON] /  OFF" : " ON  / [OFF]")) +
+                (Computer.SoundOn
                     ? Indent(string.Format("[Alt]+[T] Drive Noise              {0}",
-                        Computer.Sound.UseDriveNoise ? "[ON] /  OFF" : " ON  / [OFF]"))
+                        Computer.DriveNoise ? "[ON] /  OFF" : " ON  / [OFF]"))
                     : Format()) +
                 Format() +
                 Indent(string.Format("[Alt]+[G] Screen Color             {0}",

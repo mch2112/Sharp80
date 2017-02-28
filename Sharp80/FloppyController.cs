@@ -52,6 +52,7 @@ namespace Sharp80
         private InterruptManager IntMgr;
         private Clock clock;
         private Computer computer;
+        private ISound sound;
 
         private const int MAX_TRACKS = 80;                                  // Really should be 76 for 1793
         private const ulong DISK_ANGLE_DIVISIONS = 1000000ul;            // measure billionths of a rotation
@@ -156,12 +157,13 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public FloppyController(Computer Computer, PortSet Ports, Clock Clock, InterruptManager InterruptManager)
+        public FloppyController(Computer Computer, PortSet Ports, Clock Clock, InterruptManager InterruptManager, ISound Sound)
         {
             computer = Computer;
             ports = Ports;
             IntMgr = InterruptManager;
             clock = Clock;
+            sound = Sound;
 
             TicksPerDiskRev = clock.TicksPerSec / 5;
 
@@ -379,7 +381,7 @@ namespace Sharp80
             else
                 return drives[DriveNumber].WriteProtected;
         }
-        public void SetIsWriteProtected(byte DriveNumber, bool WriteProtected)
+        public void SetWriteProtection(byte DriveNumber, bool WriteProtected)
         {
             if (!DriveIsUnloaded(DriveNumber))
                 drives[DriveNumber].WriteProtected = WriteProtected;
@@ -984,7 +986,7 @@ namespace Sharp80
         private void MotorOnCallback()
         {
             motorOn = true;
-            computer.Sound.DriveMotorRunning = true;
+            sound.DriveMotorRunning = true;
             clock.RegisterPulseReq(motorOffPulseReq);
         }
         private void MotorOffCallback()
@@ -993,7 +995,7 @@ namespace Sharp80
                 Log.LogToDebug("FDC Motor Off");
 
             motorOn = false;
-            computer.Sound.DriveMotorRunning = false;
+            sound.DriveMotorRunning = false;
             IntMgr.FdcMotorOffNmiLatch.Latch();
         }
 
@@ -1113,7 +1115,7 @@ namespace Sharp80
             {
                 currentDrive.PhysicalTrackNumber = trackNum;
                 UpdateTrack();
-                computer.Sound.TrackStep();
+                sound.TrackStep();
                 if (currentDrive.OnTrackZero)
                     trackRegister = 0;
 

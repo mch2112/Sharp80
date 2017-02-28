@@ -124,6 +124,7 @@
     <Compile Include="Computer.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="FloppyControllerStatus.cs" />
+    <Compile Include="IFloppy.cs" />
     <Compile Include="ISound.cs" />
     <Compile Include="KeyCode.cs" />
     <Compile Include="KeyState.cs" />
@@ -138,7 +139,7 @@
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Resources.cs" />
-    <Compile Include="Screen.cs" />
+    <Compile Include="IScreen.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="SoundNull.cs" />
     <Compile Include="IMemory.cs" />

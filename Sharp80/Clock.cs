@@ -223,7 +223,7 @@ namespace Sharp80
             if (waitTrigger.Latched)
             {
                 if (tickCount >= waitTimeout ||
-                    computer.FloppyController.DRQ ||
+                    computer.FloppyControllerDrq ||
                     IntMgr.FdcNmiLatch.Latched || 
                     IntMgr.ResetButtonLatch.Latched)
                 {

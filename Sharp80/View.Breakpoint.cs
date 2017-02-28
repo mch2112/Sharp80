@@ -15,27 +15,29 @@ namespace Sharp80
             if (Key.Released)
                 return base.processKey(Key);
 
-            char c = '\0';
-            switch (Key.Key)
-            {
-                case KeyCode.Space:
-                    Computer.BreakPointOn = !Computer.BreakPointOn;
-                    Invalidate();
-                    return true;
-                case KeyCode.Return:
-                    CurrentMode = ViewMode.NormalView;
-                    return true;
-                default:
-                    c = Key.ToChar();
-                    break;
-            }
-
             bool processed = false;
-            if (Computer.BreakPoint.RotateAddress(c, out ushort newBp))
+            if (Key.IsUnmodified && Key.Pressed)
             {
-                Computer.BreakPoint = newBp;
-                Invalidate();
-                processed = true;
+                char c = '\0';
+                switch (Key.Key)
+                {
+                    case KeyCode.Space:
+                        Computer.BreakPointOn = !Computer.BreakPointOn;
+                        Invalidate();
+                        return true;
+                    case KeyCode.Return:
+                        CurrentMode = ViewMode.NormalView;
+                        return true;
+                    default:
+                        c = Key.ToChar();
+                        break;
+                }
+                if (Computer.BreakPoint.RotateAddress(c, out ushort newBp))
+                {
+                    Computer.BreakPoint = newBp;
+                    Invalidate();
+                    processed = true;
+                }
             }
             return processed || base.processKey(Key);
         }

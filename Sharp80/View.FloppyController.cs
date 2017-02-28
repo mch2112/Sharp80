@@ -12,7 +12,7 @@ namespace Sharp80
         protected override bool ForceRedraw => Computer.IsRunning;
         protected override byte[] GetViewBytes()
         {
-            var status = Computer.FloppyController.GetStatus();
+            var status = Computer.FloppyControllerStatus;
 
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Floppy Controller Status") +

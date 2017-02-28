@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Sharp80
 {
-    internal abstract class Floppy : ISerializable
+    internal abstract class Floppy : ISerializable, IFloppy
     {
         public enum FileType { DMK, JV1, JV3 }
 

@@ -75,7 +75,7 @@ namespace Sharp80
             
             View.OnUserCommand += OnUserCommand;
 
-            screen.Initialize(this);
+            screen.Initialize(this, computer);
 
             if (Settings.AutoStartOnReset)
             {
@@ -288,7 +288,7 @@ namespace Sharp80
         }
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (Storage.SaveFloppies(computer.FloppyController))
+            if (Storage.SaveFloppies(computer))
             {
                 Settings.Save();
                 Log.SaveLog();
@@ -387,13 +387,14 @@ namespace Sharp80
         {
             if (computer != null)
             {
-                if (!Storage.SaveFloppies(computer.FloppyController))
+                if (!Storage.SaveFloppies(computer))
                     return;
                 computer.Dispose();
             }
             computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.Throttle);
             computer.StartupLoadFloppies();
-            computer.Sound.UseDriveNoise = Settings.DriveNoise;
+            computer.SoundOn = Settings.SoundOn;
+            computer.DriveNoise = Settings.DriveNoise;
             computer.BreakPoint = Settings.Breakpoint;
             computer.BreakPointOn = Settings.BreakpointOn;
 

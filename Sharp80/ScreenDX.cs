@@ -15,7 +15,7 @@ using DXBitmap = SharpDX.Direct2D1.Bitmap;
 namespace Sharp80
 {
     
-    internal sealed class ScreenDX : Direct3D, ISerializable
+    internal sealed class ScreenDX : Direct3D, IScreen
     {
         private const Format PixelFormat = Format.R8G8B8A8_UNorm;
 
@@ -48,7 +48,7 @@ namespace Sharp80
 
         private ViewMode viewMode;
 
-        public Computer Computer { get; set; }
+        public Computer Computer { get; private set; }
 
         private bool advancedView;
 
@@ -112,9 +112,10 @@ namespace Sharp80
             }
         }
 
-        public void Initialize(IDXClient Form)
+        public void Initialize(IDXClient Form, Computer Computer)
         {
             SetParentForm(Form); // need to do this before computing targetsize
+            this.Computer = Computer;
             Initialize(DesiredLogicalSize);
 
             InitCharGen();
@@ -179,7 +180,6 @@ namespace Sharp80
         }
         protected override void Resize(Size2F Size)
         {
-            
             WaitForDrawDone();
             base.Resize(Size);
 
@@ -253,7 +253,11 @@ namespace Sharp80
 
             DoLayout();
         }
-        
+    
+        public void Reset()
+        {
+            SetVideoMode(false, false);
+        }
         public void SetVideoMode(bool IsWide, bool IsKanji)
         {
             // In basic, "PRINT CHR$(23)" (or Shift-RightArrow) will set wide character mode
@@ -327,7 +331,7 @@ namespace Sharp80
                     RenderTarget.Clear(Color.Black);
                 }
 
-                var dbs = Computer.FloppyController.DriveBusyStatus;
+                var dbs = Computer.DriveBusyStatus;
                 if (dbs.HasValue)
                     RenderTarget.FillEllipse(driveLightEllipse, dbs.Value ? driveActiveBrush : driveOnBrush);
                 else
@@ -348,7 +352,7 @@ namespace Sharp80
                     RenderTarget.DrawText(Computer.GetInternalsReport(), textFormat, z80Rect, foregroundBrush);
                     RenderTarget.DrawText(Computer.GetDisassembly(), textFormat, disassemRect, foregroundBrush);
                     RenderTarget.DrawText(
-                        Computer.GetClockReport(true) + Environment.NewLine + Computer.FloppyController.GetDriveStatusReport(),
+                        Computer.GetClockReport(true) + Environment.NewLine + Computer.GetDriveStatusReport(),
                         textFormat, infoRect, foregroundBrush);
                 }
 
@@ -371,7 +375,7 @@ namespace Sharp80
                 for (int i = 0; i < NUM_SCREEN_CHARS; ++i, ++k, ++memPtr)
                 {
                     PaintCell(k, mem[memPtr], cells, charGen);
-                    if (cellsWide)
+                    if (isWideCharMode)
                         { i++; k++; memPtr++; }
                 }
             }
@@ -650,7 +654,7 @@ namespace Sharp80
             Writer.Write(isWideCharMode);
             Writer.Write(isKanjiCharMode);
         }
-        void Deserialize(System.IO.BinaryReader Reader)
+        public void Deserialize(System.IO.BinaryReader Reader)
         {
             SetVideoMode(Reader.ReadBoolean(), Reader.ReadBoolean());
         }

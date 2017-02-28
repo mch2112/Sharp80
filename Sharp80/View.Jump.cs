@@ -22,23 +22,27 @@ namespace Sharp80
             if (Key.Released)
                 return base.processKey(Key);
 
-            char c = '\0';
             bool processed = false;
-            switch (Key.Key)
+
+            if (Key.IsUnmodified)
             {
-                case KeyCode.Return:
-                    CurrentMode = ViewMode.NormalView;
-                    return true;
-                case KeyCode.F8:
-                    return true;
-                default:
-                    c = Key.ToChar();
-                    break;
-            }
-            if (Computer.ProgramCounter.RotateAddress(c, out ushort newPc))
-            {
-                Computer.Jump(newPc);
-                processed = true;
+                char c = '\0';
+                switch (Key.Key)
+                {
+                    case KeyCode.Return:
+                        CurrentMode = ViewMode.NormalView;
+                        return true;
+                    case KeyCode.F8:
+                        return true;
+                    default:
+                        c = Key.ToChar();
+                        break;
+                }
+                if (Computer.ProgramCounter.RotateAddress(c, out ushort newPc))
+                {
+                    Computer.Jump(newPc);
+                    processed = true;
+                }
             }
             return processed || base.processKey(Key);
         }

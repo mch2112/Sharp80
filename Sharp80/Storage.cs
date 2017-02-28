@@ -274,21 +274,21 @@ namespace Sharp80
         }
 
         // returns false if the user cancelled a needed save
-        public static bool SaveFloppies(FloppyController FloppyController)
+        public static bool SaveFloppies(Computer Computer)
         {
             // returns true on user cancel
             for (byte b = 0; b < 4; b++)
             {
-                if (!SaveFloppyIfRequired(FloppyController, b))
+                if (!SaveFloppyIfRequired(Computer, b))
                     return false;
             }
             return true;
         }
-        public static bool SaveFloppyIfRequired(FloppyController FloppyController, byte DriveNum)
+        public static bool SaveFloppyIfRequired(Computer Computer, byte DriveNum)
         {
             bool? save = false;
 
-            if (FloppyController.DiskHasChanged(DriveNum) ?? false)
+            if (Computer.DiskHasChanged(DriveNum))
                 save = Dialogs.AskYesNoCancel(string.Format("Drive {0} has changed. Save it?", DriveNum));
 
             if (!save.HasValue)
@@ -296,18 +296,18 @@ namespace Sharp80
 
             if (save.Value)
             {
-                if (string.IsNullOrWhiteSpace(FloppyController.FloppyFilePath(DriveNum)))
+                if (string.IsNullOrWhiteSpace(Computer.GetFloppyFilePath(DriveNum)))
                 {
                     var path = GetFloppyFilePath("Choose path to save floppy", Settings.DefaultFloppyDirectory, true, false, true);
                     if (string.IsNullOrWhiteSpace(path))
                         return false;
                     else
                     {
-                        FloppyController.GetFloppy(DriveNum).FilePath = path;
+                        Computer.SetFloppyFilePath(DriveNum, path);
                         SaveDefaultDriveFileName(DriveNum, path);
                     }
                 }
-                FloppyController.SaveFloppy(DriveNum);
+                Computer.SaveFloppy(DriveNum);
             }
             return true;
         }
