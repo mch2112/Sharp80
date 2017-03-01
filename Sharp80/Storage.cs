@@ -331,6 +331,32 @@ namespace Sharp80
             else
                 return false;
         }
+        private static string userPath = null;
+        public static string DocsPath
+        {
+            get
+            {
+                if (userPath == null)
+                {
+                    userPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Sharp80");
+                    Directory.CreateDirectory(userPath);
+                }
+                return userPath;
+            }
+        }
+        private static string appDataPath = null;
+        public static string AppDataPath
+        {
+            get
+            {
+                if (appDataPath == null)
+                {
+                    appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Sharp80");
+                    Directory.CreateDirectory(appDataPath);
+                }
+                return appDataPath;
+            }
+        }   
     }
 }
 

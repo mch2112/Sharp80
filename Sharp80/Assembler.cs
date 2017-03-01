@@ -116,7 +116,7 @@ namespace Sharp80.Assembler
 
             if (string.IsNullOrWhiteSpace(path))
             {
-                path = Directory.GetParent(Application.ExecutablePath).FullName;
+                path = Storage.AppDataPath;
                 var p = Path.Combine(path, "ASM Files");
                 if (Directory.Exists(p))
                     path = p;

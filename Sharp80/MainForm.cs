@@ -398,7 +398,7 @@ namespace Sharp80
             computer.StartupLoadFloppies();
             screen.Initialize(this, computer);
 
-            View.Initialize(computer, System.IO.Path.GetDirectoryName(Application.ExecutablePath), (msg) => screen.StatusMessage = msg);
+            View.Initialize(computer, (msg) => screen.StatusMessage = msg);
         }
     }
 }

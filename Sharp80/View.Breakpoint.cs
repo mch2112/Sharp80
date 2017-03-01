@@ -26,7 +26,7 @@ namespace Sharp80
                         Invalidate();
                         return true;
                     case KeyCode.Return:
-                        CurrentMode = ViewMode.Normal;
+                        RevertMode();
                         return true;
                     default:
                         c = Key.ToChar();

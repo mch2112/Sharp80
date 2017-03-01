@@ -11,10 +11,6 @@ namespace Sharp80
 {
 	internal static partial class Lib
 	{
-        public static string GetAppPath()
-        { 
-            return Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath);
-        }
         public static byte[] Compress(byte[] data)
         {
             var output = new MemoryStream();

@@ -38,7 +38,7 @@ namespace Sharp80
 
         public static void Save()
         {
-            Storage.SaveTextFile(System.IO.Path.Combine(Lib.GetAppPath(), "trace.txt"), log);
+            Storage.SaveTextFile(System.IO.Path.Combine(Storage.AppDataPath, "trace.txt"), log);
             log.Clear();
         }
     }

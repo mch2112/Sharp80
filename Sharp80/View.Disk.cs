@@ -24,8 +24,11 @@ namespace Sharp80
                 // Windows' dialogs.
                 switch (Key.Key)
                 {
+                    case KeyCode.F:
+                        LoadFloppy(false);
+                        break;
                     case KeyCode.L:
-                        LoadFloppy();
+                        LoadFloppy(true);
                         break;
                     default:
                         return base.processKey(Key);
@@ -67,11 +70,15 @@ namespace Sharp80
                         if (DriveNumber.HasValue)
                             CurrentMode = ViewMode.Zap;
                         break;
+                    case KeyCode.Return:
+                        if (DriveNumber.HasValue)
+                            DriveNumber = null;
+                        break;
                     case KeyCode.Escape:
                         if (DriveNumber.HasValue)
                             DriveNumber = null;
                         else
-                            CurrentMode = ViewMode.Normal;
+                            RevertMode();
                         break;
                     default:
                         return base.processKey(Key);
@@ -90,9 +97,9 @@ namespace Sharp80
                         Format() +
                         Separator('-') +
                         Format() +
-                        Format(string.Format("Drive {0} Commands", DriveNumber.Value)) +
                         Format() +
-                        Format("[L] Load Floppy from file") +
+                        Format("[F] Load Floppy from file") +
+                        Format("[L] Load Floppy from included disk library") +
                         Format("[T] Load TRSDOS floppy");
 
                 if (diskLoaded)
@@ -104,7 +111,8 @@ namespace Sharp80
                 else
                 {
                     s += Format("[B] Insert blank formatted floppy") +
-                         Format("[U] Insert unformatted floppy");
+                         Format("[U] Insert unformatted floppy") +
+                         Format();
                 }
                 s += Format() +
                      Format("[Escape] Back to all drives");
@@ -242,11 +250,12 @@ namespace Sharp80
             }
             return cells;
         }
-        private void LoadFloppy()
+        private void LoadFloppy(bool FromLibrary)
         {
             if (DriveNumber.HasValue)
             {
-                string path = Storage.GetDefaultDriveFileName(DriveNumber.Value);
+                string path = FromLibrary ? Path.Combine(Storage.AppDataPath, "Disks") + "\\"
+                                          : Storage.GetDefaultDriveFileName(DriveNumber.Value);
 
                 if (Floppy.IsFileNameToken(path))
                     path = String.Empty;
@@ -259,7 +268,7 @@ namespace Sharp80
                     selectFile = false;
                     if (String.IsNullOrWhiteSpace(path))
                     {
-                        path = ExecutablePath;
+                        path = Storage.AppDataPath;
                         var p = Path.Combine(path, "Disks");
                         if (Directory.Exists(p))
                             path = p;

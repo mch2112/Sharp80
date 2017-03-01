@@ -47,24 +47,29 @@ namespace Sharp80
                 }
             }
         }
+        protected static void RevertMode()
+        {
+            if (Computer.HasRunYet)
+                CurrentMode = ViewMode.Normal;
+            else
+                CurrentMode = ViewMode.Splash;
+        }
         public static View GetView(ViewMode Mode) { return views[Mode]; }
 
         protected static Dictionary<ViewMode, View> views = new Dictionary<ViewMode, View>();
-        protected static string ExecutablePath { get; private set; }
         protected abstract ViewMode Mode { get; }
         protected abstract bool ForceRedraw { get; }
         protected static Computer Computer { get; private set; }
         protected static byte? DriveNumber { get; set; } = null;
         protected static MessageDelegate MessageCallback { get; private set; }
 
-        private static ViewMode currentMode = ViewMode.Normal;
+        private static ViewMode currentMode = ViewMode.Splash;
         private static bool initialized = false;
         private const int STANDARD_INDENT = 3;
 
-        public static void Initialize(Computer Computer, string ExecutablePath, MessageDelegate MessageCallback)
+        public static void Initialize(Computer Computer, MessageDelegate MessageCallback)
         {
             View.Computer = Computer;
-            View.ExecutablePath = ExecutablePath;
             View.MessageCallback = MessageCallback;
 
             if (!initialized)
@@ -91,7 +96,7 @@ namespace Sharp80
         }
 
         protected virtual void Activate() { }
-
+        
         public static bool ProcessKey(KeyState Key)
         {
             return views[CurrentMode].processKey(Key);
@@ -105,12 +110,8 @@ namespace Sharp80
                     switch (Key.Key)
                     {
                         case KeyCode.Escape:
-                            if (CurrentMode != ViewMode.Normal)
-                            {
-                                CurrentMode = ViewMode.Normal;
-                                return true;
-                            }
-                            break;
+                            RevertMode();
+                            return true;
                         case KeyCode.F1:
                             CurrentMode = ViewMode.Help;
                             return true;
@@ -129,9 +130,15 @@ namespace Sharp80
                             return true;
                         case KeyCode.F5:
                             if (Computer.IsRunning)
+                            {
                                 Computer.Stop(true);
+                                MessageCallback("Paused");
+                            }
                             else
+                            {
                                 Computer.Start();
+                                MessageCallback("Started");
+                            }
                             Invalidate();
                             return true;
                         case KeyCode.F7:
@@ -186,8 +193,7 @@ namespace Sharp80
                             return true;
                         case KeyCode.P:
                             // start the disassembly at the current PC location
-                            Storage.SaveTextFile(System.IO.Path.Combine(ExecutablePath, "Disassembly.txt"), Computer.DumpDisassembly(true, true));
-                            Dialogs.InformUser("Disassembly saved to \"Disassembly.txt\"");
+                            Disassemble(true);
                             return true;
                         case KeyCode.X:
                             OnUserCommand?.Invoke(UserCommand.Exit);
@@ -274,8 +280,7 @@ namespace Sharp80
                             }
                             return true;
                         case KeyCode.P:
-                            Storage.SaveTextFile(System.IO.Path.Combine(ExecutablePath, "Disassembly.txt"), Computer.DumpDisassembly(true, false));
-                            Dialogs.InformUser("Disassembly saved to \"Disassembly.txt\"");
+                            Disassemble(false);
                             return true;
                         case KeyCode.R:
                             CurrentMode = ViewMode.Cpu;
@@ -315,6 +320,11 @@ namespace Sharp80
                 }
             }
             return false;
+        }
+        private static void Disassemble(bool FromPc)
+        {
+            Storage.SaveTextFile(System.IO.Path.Combine(Storage.DocsPath, "Disassembly.txt"), Computer.DumpDisassembly(true, FromPc));
+            Dialogs.InformUser("Disassembly saved to MyDocuments\\Sharp80\\Disassembly.txt");
         }
         public static byte[] GetViewData()
         {

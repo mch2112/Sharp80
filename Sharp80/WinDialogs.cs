@@ -17,33 +17,51 @@ namespace Sharp80
 
         public static bool AskYesNo(string Question, string Caption = "Sharp 80")
         {
+            bool res;
+            ForceShowCursor();
+
             switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
             {
                 case DialogResult.Yes:
-                    return true;
+                    res = true;
+                    break;
                 default:
-                    return false;
+                    res = false;
+                    break;
             }
+            NoForceShowCursor();
+            return res;
         }
         public static bool? AskYesNoCancel(string Question, string Caption = "Sharp 80")
         {
+            bool? res;
+            ForceShowCursor();
             switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
             {
                 case DialogResult.Yes:
-                    return true;
+                    res = true;
+                    break;
                 case DialogResult.No:
-                    return false;
+                    res = false;
+                    break;
                 default:
-                    return null;
+                    res = null;
+                    break;
             }
+            NoForceShowCursor();
+            return res;
         }
         public static void InformUser(string Information, string Caption = "Sharp 80")
         {
+            ForceShowCursor();
             MessageBox.Show(Parent, Information, Caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            NoForceShowCursor();
         }
         public static void AlertUser(string Alert, string Caption = "Sharp 80")
         {
+            ForceShowCursor();
             MessageBox.Show(Parent, Alert, Caption, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            NoForceShowCursor();
         }
         public static string UserSelectFile(bool Save, string DefaultPath, string Title, string Filter, string DefaultExtension, bool SelectFileInDialog)
         {
@@ -75,7 +93,9 @@ namespace Sharp80
             dialog.AddExtension = true;
             dialog.DefaultExt = DefaultExtension;
 
-            DialogResult dr = dialog.ShowDialog(Parent);
+            ForceShowCursor();
+            var dr = dialog.ShowDialog(Parent);
+            NoForceShowCursor();
 
             string path = dialog.FileName;
 
@@ -111,6 +131,40 @@ namespace Sharp80
                                   Filter: "TRS-80 Snapshot Files (*.snp)|*.snp|All Files (*.*)|*.*",
                                   DefaultExtension: "snp",
                                   SelectFileInDialog: true);
+        }
+        private static bool suppressCursor = false;
+        private static int cursorLevel = 0;
+        public static bool SuppressCursor
+        {
+            get { return suppressCursor; }
+            set
+            {
+                if (value != suppressCursor)
+                {
+                    suppressCursor = value;
+                    if (suppressCursor || cursorLevel == 0)
+                        Cursor.Hide();
+                    else
+                        Cursor.Show();
+                }
+            }
+        }
+        public static void ForceShowCursor()
+        {
+            cursorLevel++;
+            Cursor.Show();
+        }
+        public static void NoForceShowCursor()
+        {
+            cursorLevel--;
+            if (cursorLevel <= 0)
+            {
+                cursorLevel = 0;
+                if (suppressCursor)
+                    Cursor.Hide();
+                else
+                    Cursor.Show();
+            }
         }
     }
 }

@@ -33,10 +33,6 @@ namespace Sharp80
             {
                 switch (Key.Key)
                 {
-                    case KeyCode.Space:
-                    case KeyCode.Return:
-                        CurrentMode = ViewMode.Normal;
-                        return true;
                     case KeyCode.F5:
                         // Note: doesn't consume key event
                         if (!Computer.IsRunning)

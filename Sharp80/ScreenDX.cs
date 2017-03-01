@@ -156,10 +156,7 @@ namespace Sharp80
                 {
                     isFullScreen = value;
                     Resize(DesiredLogicalSize);
-                    if (IsFullScreen)
-                        System.Windows.Forms.Cursor.Hide();
-                    else
-                        System.Windows.Forms.Cursor.Show();
+                    Dialogs.SuppressCursor = isFullScreen;
                 }
             }
         }
@@ -557,7 +554,7 @@ namespace Sharp80
                 }
                 else // extra horizontal space
                 {
-                    xBorder = this.Size.Height * (logicalAspect - targetAspect) / 2;
+                    xBorder = Size.Height * (logicalAspect - targetAspect) / 2;
                     yBorder = 0;
                 }
             }

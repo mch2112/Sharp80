@@ -30,7 +30,7 @@ namespace Sharp80
                 switch (Key.Key)
                 {
                     case KeyCode.Return:
-                        CurrentMode = ViewMode.Normal;
+                        RevertMode();
                         return true;
                     case KeyCode.F5:
                         CurrentMode = ViewMode.Normal;

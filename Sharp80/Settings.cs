@@ -155,6 +155,8 @@ namespace Sharp80
             get
             {
                 lastAsmFile = lastAsmFile ?? Properties.Settings.Default.last_asm_file;
+                if (String.IsNullOrWhiteSpace(lastAsmFile))
+                    lastCmdFile = System.IO.Path.Combine(Storage.AppDataPath, "ASM Files\\");
                 return lastAsmFile;
             }
             set { lastAsmFile = value; }
@@ -164,6 +166,8 @@ namespace Sharp80
             get
             {
                 lastCmdFile = lastCmdFile ?? Properties.Settings.Default.last_cmd_file;
+                if (String.IsNullOrWhiteSpace(lastCmdFile))
+                    lastCmdFile = System.IO.Path.Combine(Storage.AppDataPath, "CMD Files\\");
                 return lastCmdFile;
             }
             set { lastCmdFile = value; }
@@ -173,6 +177,8 @@ namespace Sharp80
             get
             {
                 lastSnapshotFile = lastSnapshotFile ?? Properties.Settings.Default.last_snapshot_file;
+                if (String.IsNullOrWhiteSpace(lastSnapshotFile))
+                    lastSnapshotFile = Storage.DocsPath;
                 return lastSnapshotFile;
             }
             set { lastSnapshotFile = value; }

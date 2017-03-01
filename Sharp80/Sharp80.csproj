@@ -94,10 +94,6 @@
       <HintPath>bin\Debug\SharpDX\SharpDX.DirectInput.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="SharpDX.DirectSound">
-      <HintPath>bin\Debug\SharpDX\SharpDX.DirectSound.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="SharpDX.DXGI">
       <HintPath>bin\Debug\SharpDX\SharpDX.DXGI.dll</HintPath>
       <Private>False</Private>
