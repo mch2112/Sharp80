@@ -12,6 +12,7 @@ namespace Sharp80
         ushort GetWordAt(ushort Address);
         void SetWordAt(ushort Address, ushort Value);
 
+        bool AltKeyboardLayout { get; set; }
         bool ScreenWritten { get; set; }
         bool NotifyKeyboardChange(KeyState Key);
         void ResetKeyboard();

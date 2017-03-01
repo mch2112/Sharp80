@@ -8,6 +8,7 @@ namespace Sharp80
     internal static class Settings
     {
         private static bool? advancedView;
+        private static bool? altKeyboardLayout;
         private static bool? autoStartOnReset;
         private static ushort? breakpoint;
         private static bool? breakpointOn;
@@ -40,6 +41,15 @@ namespace Sharp80
                 return advancedView.Value;
             }
             set { advancedView = value; }
+        }
+        public static bool AltKeyboardLayout
+        {
+            get
+            {
+                altKeyboardLayout = altKeyboardLayout ?? Properties.Settings.Default.alt_keyboard_layout;
+                return altKeyboardLayout.Value;
+            }
+            set { altKeyboardLayout = value; }
         }
         public static bool AutoStartOnReset
         {

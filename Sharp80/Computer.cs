@@ -94,6 +94,11 @@ namespace Sharp80
             get { return Processor.BreakPointOn; }
             set { Processor.BreakPointOn = value; }
         }
+        public bool AltKeyboardLayout
+        {
+            get { return Memory.AltKeyboardLayout; }
+            set { Memory.AltKeyboardLayout = value; }
+        }
         public bool SoundOn
         {
             get { return Sound.On; }

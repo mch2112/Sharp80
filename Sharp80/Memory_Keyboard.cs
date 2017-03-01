@@ -11,6 +11,8 @@ namespace Sharp80
         const int KEYEVENTF_EXTENDEDKEY = 0x01;
         const int KEYEVENTF_KEYUP = 0x02;
         
+        public bool AltKeyboardLayout { get; set; }
+
         private enum VirtualKey
         {
             NONE, D1, D2, D3, D4, D5, D6, D7, D8, D9, D0, COLON, MINUS, BREAK, UPARROW, Q, W, E, R, T, Y, U, I, O, P, AT, LEFTARROW, RIGHTARROW, 
@@ -129,6 +131,14 @@ namespace Sharp80
             if (Key.Key == KeyCode.RightShift)
             {
                 isRightShifted = Key.Pressed;
+            }
+
+            if (AltKeyboardLayout)
+            {
+                if (Key.Key == KeyCode.Tab)
+                    Key = new KeyState(KeyCode.Up, false, false, false, Key.Pressed, Key.Released);
+                else if (Key.Key == KeyCode.Capital)
+                    Key = new KeyState(KeyCode.Down, false, false, false, Key.Pressed, Key.Released);
             }
 
             DoKeyChange(isLeftShifted, VirtualKey.LEFTSHIFT);

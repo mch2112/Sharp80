@@ -253,6 +253,10 @@ namespace Sharp80
                         case KeyCode.I:
                             OnUserCommand?.Invoke(UserCommand.ShowInstructionSet);
                             return true;
+                        case KeyCode.K:
+                            Settings.AltKeyboardLayout = Computer.AltKeyboardLayout = !Computer.AltKeyboardLayout;
+                            MessageCallback(Settings.AltKeyboardLayout ? "Alternate Keyboard Layout" : "Normal Keyboard Layout");
+                            return true;
                         case KeyCode.L:
                             Log.Save();
                             MessageCallback("Log saved.");

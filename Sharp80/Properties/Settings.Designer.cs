@@ -226,5 +226,17 @@ namespace Sharp80.Properties {
                 this["full_screen"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool alt_keyboard_layout {
+            get {
+                return ((bool)(this["alt_keyboard_layout"]));
+            }
+            set {
+                this["alt_keyboard_layout"] = value;
+            }
+        }
     }
 }
