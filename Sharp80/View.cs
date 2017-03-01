@@ -205,7 +205,7 @@ namespace Sharp80
                         case KeyCode.Return:
                             OnUserCommand?.Invoke(UserCommand.ToggleFullScreen);
                             return true;
-                        case KeyCode.End:
+                           case KeyCode.End:
                             Computer.Reset();
                             return true;
                         case KeyCode.A:

@@ -124,6 +124,14 @@ namespace Sharp80
 
         public bool NotifyKeyboardChange(KeyState Key)
         {
+            if (AltKeyboardLayout)
+            {
+                if (Key.Key == KeyCode.Tab)
+                    Key = new KeyState(KeyCode.Up, false, false, false, Key.Pressed, Key.Released);
+                else if (Key.Key == KeyCode.Capital)
+                    Key = new KeyState(KeyCode.Down, false, false, false, Key.Pressed, Key.Released);
+            }
+
             if (Key.Key == KeyCode.LeftShift)
             {
                 isLeftShifted = Key.Pressed;
@@ -131,14 +139,6 @@ namespace Sharp80
             if (Key.Key == KeyCode.RightShift)
             {
                 isRightShifted = Key.Pressed;
-            }
-
-            if (AltKeyboardLayout)
-            {
-                if (Key.Key == KeyCode.Tab)
-                    Key = new KeyState(KeyCode.Up, false, false, false, Key.Pressed, Key.Released);
-                else if (Key.Key == KeyCode.Capital)
-                    Key = new KeyState(KeyCode.Down, false, false, false, Key.Pressed, Key.Released);
             }
 
             DoKeyChange(isLeftShifted, VirtualKey.LEFTSHIFT);

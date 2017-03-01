@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Sharp80
 {
@@ -35,6 +35,11 @@ namespace Sharp80
                 case KeyCode.Return:
                     CurrentMode = ViewMode.Normal;
                     return true;
+                case KeyCode.F5:
+                    // Note: doesn't consume key event
+                    if (!Computer.IsRunning)
+                        CurrentMode = ViewMode.Normal;
+                    break;
             }
             return base.processKey(Key);
         }
