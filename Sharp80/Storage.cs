@@ -90,7 +90,7 @@ namespace Sharp80
         public static Floppy MakeBlankFloppy(bool Formatted)
         {
             var f = DMK.MakeBlankFloppy(NumTracks: 40,
-                                           DoubleSided: false,
+                                           DoubleSided: true,
                                            Formatted: Formatted);
             f.FilePath = Formatted ? Floppy.FILE_NAME_BLANK : Floppy.FILE_NAME_UNFORMATTED;
 

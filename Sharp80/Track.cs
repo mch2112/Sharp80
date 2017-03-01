@@ -114,7 +114,7 @@ namespace Sharp80
                 }
                 else
                 {
-                    crc = Floppy.CRC_RESET;
+                    crc = Floppy.CRC_RESET_FE;
 
                     ret.SetValues(ref i, 6 * 2, (byte)0x00);
 
