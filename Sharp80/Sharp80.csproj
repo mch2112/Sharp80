@@ -56,6 +56,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestCertificateThumbprint>BFD5F62D0CCF1264769A9BC076FA30C8688F813B</ManifestCertificateThumbprint>
@@ -255,8 +256,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy $(TargetDir)\Sharp80.exe c:\Users\Matthew\Desktop\Sharp80\
-copy $(TargetDir)\Sharp80.exe.config c:\Users\Matthew\Desktop\Sharp80\</PostBuildEvent>
+    <PostBuildEvent>copy $(TargetDir)Sharp80.exe c:\Users\Matthew\Desktop\Sharp80\
+copy $(TargetDir)Sharp80.exe.config c:\Users\Matthew\Desktop\Sharp80\</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

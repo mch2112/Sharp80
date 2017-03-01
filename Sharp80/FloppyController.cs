@@ -120,7 +120,7 @@ namespace Sharp80
 
         // The physical state
         private DriveState[] drives;
-        private DriveState currentDrive { get { return (CurrentDriveNumber >= NUM_DRIVES) ? null : drives[CurrentDriveNumber]; } }
+        private DriveState CurrentDrive { get { return (CurrentDriveNumber >= NUM_DRIVES) ? null : drives[CurrentDriveNumber]; } }
         private byte currentDriveNumber = 0xFF;
         private byte CurrentDriveNumber
         {
@@ -201,7 +201,7 @@ namespace Sharp80
                 CommandRegister = commandRegister,
                 DataRegister = dataRegister,
                 DiskNum = CurrentDriveNumber,
-                PhysicalTrackNum = currentDrive.PhysicalTrackNumber,
+                PhysicalTrackNum = CurrentDrive.PhysicalTrackNumber,
                 DiskAngle = ((double)DiskAngle / DISK_ANGLE_DIVISIONS * 360).ToString("000.000") + " degrees",
                 TrackDataIndex = tdi,
                 ByteAtTrackDataIndex = track?.ReadByte(tdi, null) ?? 0,
@@ -347,7 +347,7 @@ namespace Sharp80
         {
             return "D" + CurrentDriveNumber.ToString() +
                    ":S" + (SideOne ? "1" : "0") +
-                   ":T" + currentDrive.PhysicalTrackNumber.ToString("00") +
+                   ":T" + CurrentDrive.PhysicalTrackNumber.ToString("00") +
                    ":S" + sectorRegister.ToString("00");
         }
 
@@ -431,7 +431,7 @@ namespace Sharp80
                         else
                             StepDown();
 
-                        if (currentDrive.OnTrackZero && !lastStepDirUp)
+                        if (CurrentDrive.OnTrackZero && !lastStepDirUp)
                         {
                             trackRegister = 0;
                             opStatus = OpStatus.CheckVerify;
@@ -445,8 +445,8 @@ namespace Sharp80
                     break;
                 case OpStatus.CheckVerify:
 
-                    if (currentDrive.PhysicalTrackNumber != trackRegister)
-                        Log.LogDebug(string.Format("Track Register {0} != Physical Track Number {1}", trackRegister, currentDrive.PhysicalTrackNumber));
+                    if (CurrentDrive.PhysicalTrackNumber != trackRegister)
+                        Log.LogDebug(string.Format("Track Register {0} != Physical Track Number {1}", trackRegister, CurrentDrive.PhysicalTrackNumber));
 
                     if (verify)
                     {
@@ -625,7 +625,7 @@ namespace Sharp80
                     delayTime = STANDARD_DELAY_TIME_IN_USEC;
                     break;
                 case OpStatus.CheckingWriteProtectStatus:
-                    if (currentDrive.WriteProtected)
+                    if (CurrentDrive.WriteProtected)
                     {
                         Log.LogDebug(string.Format("Cancelling due to Write Protect: Command: {0} OpStatus: {1}", command, opStatus));
 
@@ -814,7 +814,7 @@ namespace Sharp80
                     delayBytes = 0;
                     break;
                 case OpStatus.CheckingWriteProtectStatus:
-                    if (currentDrive.WriteProtected)
+                    if (CurrentDrive.WriteProtected)
                     {
                         Log.LogDebug(string.Format("Cancelling due to Write Protect: Command: {0} OpStatus: {1}", command, opStatus));
 
@@ -1098,30 +1098,30 @@ namespace Sharp80
         }
         private void StepUp()
         {
-            SetTrackNumber(currentDrive.PhysicalTrackNumber + 1);
+            SetTrackNumber(CurrentDrive.PhysicalTrackNumber + 1);
         }
         private void StepDown()
         {
-            SetTrackNumber(currentDrive.PhysicalTrackNumber - 1);
+            SetTrackNumber(CurrentDrive.PhysicalTrackNumber - 1);
         }
         private void UpdateTrack()
         {
-            track = currentDrive.Floppy?.GetTrack(currentDrive.PhysicalTrackNumber, SideOne);
+            track = CurrentDrive.Floppy?.GetTrack(CurrentDrive.PhysicalTrackNumber, SideOne);
         }
         private void SetTrackNumber(int TrackNum)
         {
             byte trackNum = (byte)(Math.Max(0, Math.Min(MAX_TRACKS, TrackNum)));
 
-            if (currentDrive.PhysicalTrackNumber != trackNum)
+            if (CurrentDrive.PhysicalTrackNumber != trackNum)
             {
-                currentDrive.PhysicalTrackNumber = trackNum;
+                CurrentDrive.PhysicalTrackNumber = trackNum;
                 UpdateTrack();
                 sound.TrackStep();
-                if (currentDrive.OnTrackZero)
+                if (CurrentDrive.OnTrackZero)
                     trackRegister = 0;
 
                 Log.LogDebug(string.Format("Drive {0} Physical Track Step to {1}",
-                                                CurrentDriveNumber, currentDrive.PhysicalTrackNumber));
+                                                CurrentDriveNumber, CurrentDrive.PhysicalTrackNumber));
             }
         }
         internal static bool IsDAM(byte b, out bool SectorDeleted)
@@ -1457,12 +1457,12 @@ namespace Sharp80
                     lostData = false;
                     seekErrorOrRecordNotFound = false;
                     crcError = false;
-                    writeProtected = currentDrive.WriteProtected;
+                    writeProtected = CurrentDrive.WriteProtected;
                     sectorDeleted = false;
                     busy = true;
                 }
 
-                if (currentDrive.IsUnloaded && command != Command.Reset)
+                if (CurrentDrive.IsUnloaded && command != Command.Reset)
                 {
                     switch (command)
                     {
@@ -1689,7 +1689,7 @@ namespace Sharp80
                         statusRegister |= 0x10;   // Bit 4: Seek error
                     if (crcError)
                         statusRegister |= 0x08;   // Bit 3: CRC Error
-                    if (currentDrive.OnTrackZero) // Bit 2: Track Zero detect
+                    if (CurrentDrive.OnTrackZero) // Bit 2: Track Zero detect
                         statusRegister |= 0x04;
                     if (indexHole)
                         statusRegister |= 0x02;   // Bit 1: Index Detect

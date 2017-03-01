@@ -29,17 +29,20 @@ namespace Sharp80
         }
         protected override bool processKey(KeyState Key)
         {
-            switch (Key.Key)
+            if (Key.Pressed && Key.IsUnmodified)
             {
-                case KeyCode.Space:
-                case KeyCode.Return:
-                    CurrentMode = ViewMode.Normal;
-                    return true;
-                case KeyCode.F5:
-                    // Note: doesn't consume key event
-                    if (!Computer.IsRunning)
+                switch (Key.Key)
+                {
+                    case KeyCode.Space:
+                    case KeyCode.Return:
                         CurrentMode = ViewMode.Normal;
-                    break;
+                        return true;
+                    case KeyCode.F5:
+                        // Note: doesn't consume key event
+                        if (!Computer.IsRunning)
+                            CurrentMode = ViewMode.Normal;
+                        break;
+                }
             }
             return base.processKey(Key);
         }

@@ -626,11 +626,15 @@ namespace Sharp80
             {
                 Size2F ts;
 
-                float physX = ParentForm.ClientSize.Width;
-                float physY = ParentForm.ClientSize.Height;
+                float physX;
+                float physY;
 
                 if (IsFullScreen)
                 {
+                    var scn = System.Windows.Forms.Screen.FromHandle(ParentForm.Handle);
+                    physX = scn.WorkingArea.Width;
+                    physY = scn.WorkingArea.Height;
+
                     // choose a logical size so that the aspect ratio matches the physical aspect ratio
                     float physicalAspect = physX / physY;
                     float w = VIRTUAL_SCREEN_WIDTH + (advancedView ? ADV_INFO_WIDTH + DISPLAY_SPACING : 0);
@@ -645,7 +649,10 @@ namespace Sharp80
                 }
                 else
                 {
-                    ts = this.advancedView ? new Size2F(WINDOWED_WIDTH_ADVANCED, WINDOWED_HEIGHT)
+                    physX = ParentForm.ClientSize.Width;
+                    physY = ParentForm.ClientSize.Height;
+
+                    ts = AdvancedView ? new Size2F(WINDOWED_WIDTH_ADVANCED, WINDOWED_HEIGHT)
                                            : new Size2F(WINDOWED_WIDTH_NORMAL, WINDOWED_HEIGHT);
                 }
                 System.Diagnostics.Debug.WriteLine(string.Format("Target Size for Physical {0}x{1}, Advanced={2} FullScreen={3}: {4}x{5}",physX, physY, advancedView ? "true" : "false", IsFullScreen ? "true" : "false", ts.Width, ts.Height));

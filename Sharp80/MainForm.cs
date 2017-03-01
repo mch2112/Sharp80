@@ -234,7 +234,9 @@ namespace Sharp80
         {
             var fs = !screen.IsFullScreen;
             resizing++;
+
             Settings.FullScreen = screen.IsFullScreen = fs;
+
             if (fs)
             {
                 previousClientHeight = ClientSize.Height;
