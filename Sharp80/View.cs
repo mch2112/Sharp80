@@ -148,17 +148,17 @@ namespace Sharp80
                             Computer.StepOut();
                             return true;
                         case KeyCode.F12:
-                            if (Settings.Throttle)
+                            if (Settings.NormalSpeed)
                             {
-                                Computer.Throttle = false;
-                                MessageCallback("Throttle Off");
+                                Computer.NormalSpeed = false;
+                                MessageCallback("Fast Speed");
                             }
                             else
                             {
-                                Computer.Throttle = true;
-                                MessageCallback("Throttle On");
+                                Computer.NormalSpeed = true;
+                                MessageCallback("Normal Speed");
                             }
-                            Settings.Throttle = Computer.Throttle;
+                            Settings.NormalSpeed = Computer.NormalSpeed;
                             return true;
                     }
                 }

@@ -98,12 +98,12 @@ namespace Sharp80.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool throttle {
+        public bool normal_speed {
             get {
-                return ((bool)(this["throttle"]));
+                return ((bool)(this["normal_speed"]));
             }
             set {
-                this["throttle"] = value;
+                this["normal_speed"] = value;
             }
         }
         

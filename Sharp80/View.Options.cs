@@ -31,8 +31,8 @@ namespace Sharp80
                 Indent(string.Format("[Alt]+[A] Auto Start on Reset      {0}",
                     Settings.AutoStartOnReset ? "[ON] /  OFF" : " ON  / [OFF]")) +
                 Format() +
-                Indent(string.Format("[F12] Throttle                     {0}",
-                    Computer.Throttle ? "[NORMAL] / FAST" : " NORMAL / [FAST]")) +
+                Indent(string.Format("[F12] Speed                        {0}",
+                    Computer.NormalSpeed ? "[NORMAL] / FAST" : " NORMAL / [FAST]")) +
                 Format() +
                 Indent(string.Format("[F4] Z80 Internals Display         {0}",
                     Settings.AdvancedView ? "[ON] /  OFF" : " ON  / [OFF]")) +

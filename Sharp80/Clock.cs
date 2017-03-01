@@ -9,7 +9,7 @@ namespace Sharp80
 {
     internal sealed class Clock : ISerializable
     {
-        public event EventHandler ThrottleChanged;
+        public event EventHandler SpeedChanged;
         public delegate void ClockCallback();
         private delegate void VoidDelegate();
 
@@ -30,7 +30,7 @@ namespace Sharp80
         private long realTimeTicksOnLastMeasure;
         private ulong waitTimeout;
 
-        private bool throttle;
+        private bool normalSpeed;
         private bool exitExec = false;
 
         private Computer computer;
@@ -48,7 +48,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Clock(Computer Computer, Processor.Z80 Processor, InterruptManager InterruptManager, ulong FrequencyInHz, ulong MilliTStatesPerIRQ, ulong MilliTStatesPerSoundSample, SoundEventCallback SoundCallback, bool Throttle)
+        public Clock(Computer Computer, Processor.Z80 Processor, InterruptManager InterruptManager, ulong FrequencyInHz, ulong MilliTStatesPerIRQ, ulong MilliTStatesPerSoundSample, SoundEventCallback SoundCallback, bool NormalSpeed)
         {
             tstatesPerSec = FrequencyInHz;
             ticksPerSec = FrequencyInHz * TICKS_PER_TSTATE;
@@ -65,7 +65,7 @@ namespace Sharp80
             tickCount = 0;
 
             soundCallback = SoundCallback;
-            throttle = Throttle;
+            normalSpeed = NormalSpeed;
 
             PulseReq.SetTicksPerSec(ticksPerSec);
 
@@ -96,17 +96,17 @@ namespace Sharp80
             private set { tickCount = value; }
         }
 
-        public bool Throttle
+        public bool NormalSpeed
         {
-            get { return throttle; }
+            get { return normalSpeed; }
             set
             {
-                if (throttle != value)
+                if (normalSpeed != value)
                 {
                     ResetTriggers();
                     SyncRealTimeOffset();
-                    throttle = value;
-                    ThrottleChanged?.Invoke(this, EventArgs.Empty);
+                    normalSpeed = value;
+                    SpeedChanged?.Invoke(this, EventArgs.Empty);
                 }
             }
         }
@@ -266,7 +266,7 @@ namespace Sharp80
                 pulseReqs.RemoveAll(r => r.Expired);
                 SetNextPulseReqTick();
             }
-            if (throttle)
+            if (normalSpeed)
             {
                 if (tickCount > nextSoundSampleTick)
                 {

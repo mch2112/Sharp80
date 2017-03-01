@@ -24,7 +24,7 @@ namespace Sharp80
         private static string lastCmdFile;
         private static string lastSnapshotFile;
         private static bool? soundOn;
-        private static bool? throttle;
+        private static bool? normalSpeed;
 
         static Settings()
         {
@@ -186,14 +186,14 @@ namespace Sharp80
             }
             set { soundOn = value; }
         }
-        public static bool Throttle
+        public static bool NormalSpeed
         {
             get
             {
-                throttle = throttle ?? Properties.Settings.Default.throttle;
-                return throttle.Value;
+                normalSpeed = normalSpeed ?? Properties.Settings.Default.normal_speed;
+                return normalSpeed.Value;
             }
-            set { throttle = value; }
+            set { normalSpeed = value; }
         }
         
         public static void Save()
@@ -232,8 +232,8 @@ namespace Sharp80
                 psd.last_snapshot_file = lastSnapshotFile;
             if (soundOn.HasValue)
                 psd.sound = soundOn.Value;
-            if (throttle.HasValue)
-                psd.throttle = throttle.Value;
+            if (normalSpeed.HasValue)
+                psd.normal_speed = normalSpeed.Value;
 
             Properties.Settings.Default.Save();
         }

@@ -386,7 +386,7 @@ namespace Sharp80
                     return;
                 computer.Dispose();
             }
-            computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.Throttle)
+            computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.NormalSpeed)
             {
                 SoundOn =      Settings.SoundOn,
                 DriveNoise =   Settings.DriveNoise,

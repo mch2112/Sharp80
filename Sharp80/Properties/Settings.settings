@@ -20,7 +20,7 @@
     <Setting Name="last_asm_file" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="throttle" Type="System.Boolean" Scope="User">
+    <Setting Name="normal_speed" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="sound" Type="System.Boolean" Scope="User">

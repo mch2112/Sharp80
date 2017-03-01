@@ -27,7 +27,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Computer(IDXClient MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool Throttle)
+        public Computer(IDXClient MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool NormalSpeed)
         {
             ulong milliTStatesPerIRQ = CLOCK_RATE * Clock.TICKS_PER_TSTATE / 30;
             ulong milliTStatesPerSoundSample = CLOCK_RATE * Clock.TICKS_PER_TSTATE / SoundX.SAMPLE_RATE;
@@ -53,9 +53,9 @@ namespace Sharp80
                               milliTStatesPerIRQ,
                               milliTStatesPerSoundSample,
                               new SoundEventCallback(Sound.Sample),
-                              Throttle);
+                              NormalSpeed);
 
-            Clock.ThrottleChanged += OnThrottleChanged;
+            Clock.SpeedChanged += OnSpeedChanged;
 
             FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound);
 
@@ -140,7 +140,7 @@ namespace Sharp80
             HasRunYet = true;
              
             Clock.Start();
-            Sound.Mute = !Clock.Throttle;
+            Sound.Mute = !Clock.NormalSpeed;
         }
         public void Stop(bool WaitForStop)
         {
@@ -191,10 +191,10 @@ namespace Sharp80
             Stop(true);
             Processor.Jump(Address);
         }
-        public bool Throttle
+        public bool NormalSpeed
         {
-            get { return Clock.Throttle; }
-            set { Clock.Throttle = value; }
+            get { return Clock.NormalSpeed; }
+            set { Clock.NormalSpeed = value; }
         }
         public void Reset()
         {
@@ -417,9 +417,9 @@ namespace Sharp80
 
         // PRIVATE METHODS
 
-        private void OnThrottleChanged(object sender, EventArgs e)
+        private void OnSpeedChanged(object sender, EventArgs e)
         {
-            Sound.Mute = !Clock.Throttle;
+            Sound.Mute = !Clock.NormalSpeed;
         }
     }
 }
