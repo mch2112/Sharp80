@@ -10,7 +10,7 @@ using System.Text;
 namespace Sharp80
 {
     public enum ViewMode { Normal, Memory, Disk, Help, Zap, Breakpoint, Jump, Options, Cpu, FloppyController, Splash }
-    public enum UserCommand { ToggleAdvancedView, ToggleFullScreen, Window, GreenScreen, ShowInstructionSet, ZoomIn, ZoomOut, HardReset, Exit }
+    public enum UserCommand { ToggleAdvancedView, ToggleFullScreen, Window, GreenScreen, ZoomIn, ZoomOut, HardReset, Exit }
 
     internal abstract class View
     {
@@ -257,7 +257,10 @@ namespace Sharp80
                             MessageCallback(Computer.HistoricDisassemblyMode ? "Historic Disassembly Mode" : "Normal Disassembly Mode");
                             return true;
                         case KeyCode.I:
-                            OnUserCommand?.Invoke(UserCommand.ShowInstructionSet);
+                            string iPath = System.IO.Path.Combine(Storage.AppDataPath, "Z80 Instruction Set.txt");
+                            Storage.SaveTextFile(iPath, Computer.GetInstructionSetReport());
+                            OnUserCommand?.Invoke(UserCommand.Window);
+                            Dialogs.ShowTextFile(iPath);
                             return true;
                         case KeyCode.K:
                             Settings.AltKeyboardLayout = Computer.AltKeyboardLayout = !Computer.AltKeyboardLayout;
@@ -325,7 +328,6 @@ namespace Sharp80
         {
             string path = System.IO.Path.Combine(Storage.DocsPath, "Disassembly.txt");
             Storage.SaveTextFile(path, Computer.Disassemble(true, FromPc));
-            //Dialogs.InformUser("Disassembly saved to MyDocuments\\Sharp80\\Disassembly.txt.");
             OnUserCommand?.Invoke(UserCommand.Window);
             Dialogs.ShowTextFile(path);
         }

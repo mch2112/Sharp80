@@ -307,9 +307,9 @@ namespace Sharp80.Processor
         }
 
         /// <summary>
-        /// Null: not waiting to step out
+        /// Null: not waiting to step out; inactive
         /// False: waiting to step out on next RET
-        /// True: stepped out, pending stop
+        /// True: stepped out (executed RET), pending stop
         /// </summary>
         public bool? SteppedOut { get; set; } = null;
         public bool StepOver()
@@ -586,12 +586,12 @@ namespace Sharp80.Processor
         {
             byte aVal = A.val;
             byte portNum = ByteAtPCPlusInitialOpCodeLength;
-            
+
             OutPort(portNum, aVal);
 
             // Note for *BM1: WZ_low = (port + 1) & #FF,  WZ_hi = 0
             portNum++;
-            WZ.setVal(aVal, portNum);
+            WZ.val = (ushort)((aVal << 8) | portNum);
         }
         private void OutPortA()
         {
@@ -627,7 +627,7 @@ namespace Sharp80.Processor
             A.val = InPort(portNum);
 
             portNum++;
-            WZ.setVal(aVal, portNum);
+            WZ.val = (ushort)((aVal << 8) | portNum);
         }
         private void InPortA()
         {

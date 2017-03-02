@@ -90,9 +90,6 @@ namespace Sharp80
         {
             switch(Command)
             {
-                case UserCommand.ShowInstructionSet:
-                    ShowInstructionSetReport();
-                    break;
                 case UserCommand.ToggleFullScreen:
                     ToggleFullScreen();
                     break;
@@ -275,14 +272,6 @@ namespace Sharp80
             }
 
             resizing--;
-        }
-        private void ShowInstructionSetReport()
-        {
-            TextForm st = new TextForm();
-
-            st.ShowText(computer.GetInstructionSetReport(), "Z80 Instruction Set");
-            st.Show();
-            st.TextBox.SelectionLength = 0;
         }
         protected override void OnFormClosing(FormClosingEventArgs e)
         {

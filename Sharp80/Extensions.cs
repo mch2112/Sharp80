@@ -152,6 +152,10 @@ namespace Sharp80
         {
             return (Input & BIT[BitNum]) != 0;
         }
+        public static bool IsBitSet(this ushort Input, byte BitNum)
+        {
+            return ((Input >> BitNum) & 0x01) == 0x01;
+        }
         public static bool RotateAddress(this ushort Input, char c, out ushort Output)
         {
             if (c != '\0')

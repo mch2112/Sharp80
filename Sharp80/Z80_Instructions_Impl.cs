@@ -50,7 +50,7 @@ namespace Sharp80.Processor
             ushort addr = WordAtPCPlusInitialOpcodeLength;
             Memory[addr] = A.val;
             
-            WZ.setVal(A.val, (byte)((addr + 1) & 0xFF));
+            WZ.val = (ushort)((A.val << 8) | ((addr + 1) & 0xFF));
 
             //Note for *BM1: MEMPTR_low = (addr + 1) & #FF,  MEMPTR_hi = 0
         }
@@ -312,8 +312,8 @@ namespace Sharp80.Processor
         private void bitHLM(int shift)
         {
             bit(HLM.val, shift);
-            F3 = WZ.hVal.IsBitSet(3);
-            F5 = WZ.hVal.IsBitSet(5);
+            F3 = WZ.val.IsBitSet(11);
+            F5 = WZ.val.IsBitSet(13);
         }
         private void bit(Register8 r, int shift)
         {

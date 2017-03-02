@@ -63,8 +63,8 @@ namespace Sharp80.Processor
 
         public ushort ProxyVal { get { return Proxy.val; } }
 
-        public override void inc() { this.val++; }
-        public override void dec() { this.val--; }
+        public override void inc() { val++; }
+        public override void dec() { val--; }
     }
     internal sealed class Register8Indexed : Register8Indirect
     {
@@ -79,7 +79,7 @@ namespace Sharp80.Processor
         {
             get
             {
-                return (ushort)(Proxy.val + z80.ByteAtPCPlusInitialOpCodeLength.TwosComp());
+                return Proxy.val.Offset(z80.ByteAtPCPlusInitialOpCodeLength.TwosComp());
             }
         }
     }
@@ -114,32 +114,16 @@ namespace Sharp80.Processor
         }
         public override bool Z { get { return val == 0; } }
         public override bool NZ { get { return val != 0; } }
-
-        public byte hVal
-        {
-            get { return (byte)((val & 0xFF00) >> 8); }
-            set { val = (ushort)((val & 0x00FF) | (value << 8)); }
-        }
-        public byte lVal
-        {
-            get { return (byte)(val & 0xFF); }
-            set { val = (ushort)((val & 0xFF00) | value); }
-        }
-
-        public void setVal(byte high, byte low)
-        {
-            val = (ushort) ((high << 8) | low);
-        }
     }
     internal class Register16Compound : Register16
     {
         public Register8 L;
         public Register8 H;
 
-        public Register16Compound(Register8 low, Register8 high, Z80 Processor, string Name) : base(Processor, Name)
+        public Register16Compound(Register8 Low, Register8 High, Z80 Processor, string Name) : base(Processor, Name)
         {
-            L = low;
-            H = high;           
+            L = Low;
+            H = High;
         }
         public Register16Compound(Z80 Processor, string Name) : base(Processor, Name)
         {
@@ -152,7 +136,7 @@ namespace Sharp80.Processor
             set
             {
                 L.val = (byte)(value & 0xFF);
-                H.val = (byte)((value & 0xFF00) >> 8);
+                H.val = (byte)(value >> 8);
             }
         }
         public override void inc()
