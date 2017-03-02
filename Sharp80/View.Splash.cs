@@ -13,7 +13,7 @@ namespace Sharp80
         protected override byte[] GetViewBytes()
         {
             return PadScreen(Encoding.ASCII.GetBytes(
-                                Header("Sharp 80 - TRS-80 Model III Emulator", "(c) Matthew Hamilton 2017") +
+                                Header("Sharp 80 - TRS-80 Model III Emulator", "(c) Matthew Hamilton 2016 - 2017") +
                                 Format() +
                                 Indent("[F5] Start Emulator") +
                                 Format() +
@@ -24,7 +24,7 @@ namespace Sharp80
                                 Format() +
                                 Format() +
                                 Format() +
-                                Footer("http://www.sharp80.com for more information")
+                                Footer("Visit http://www.sharp80.com for more information.")
                                 ));
         }
         protected override bool processKey(KeyState Key)

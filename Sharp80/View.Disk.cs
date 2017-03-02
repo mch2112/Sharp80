@@ -97,32 +97,39 @@ namespace Sharp80
                         Format() +
                         Separator('-') +
                         Format() +
-                        Format() +
-                        Format("[F] Load Floppy from file") +
-                        Format("[L] Load Floppy from included disk library") +
-                        Format("[T] Load TRSDOS floppy");
+                        Format();
+                        
 
                 if (diskLoaded)
                 {
                     s += Format("[E] Eject floppy") +
                          Format(string.Format("[W] Toggle write protection {0}", (Computer.GetFloppy(DriveNumber.Value)?.WriteProtected ?? false) ? "[ON] /  OFF " : " ON  / [OFF]")) +
-                         Format("[Z] Disk Zap View");
+                         Format("[Z] Disk zap (view sectors)") +
+                         Format() +
+                         Format();
                 }
                 else
                 {
-                    s += Format("[B] Insert blank formatted floppy") +
-                         Format("[U] Insert unformatted floppy") +
-                         Format();
+                    s += Format("[F] Load floppy from file") +
+                         Format("[L] Load floppy from included library") +
+                         Format("[T] Load TRSDOS floppy") +
+                         Format("[B] Insert blank formatted floppy") +
+                         Format("[U] Insert unformatted floppy");
                 }
                 s += Format() +
+                     Format() +
                      Format("[Escape] Back to all drives");
             }
             else
             {
-                for (byte i = 0; i < 4; i++)
-                    s += DrawDisk(i) + Format();
-
-                s += Format("Choose a floppy drive [0] to [3].") +
+                for (byte i = 0; i < FloppyController.NUM_DRIVES; i++)
+                {
+                    s += DrawDisk(i);
+                    if (i < FloppyController.NUM_DRIVES - 1)
+                        s += Format();
+                }
+                s += Separator() +
+                     Format("Choose a floppy drive [0] to [3].") +
                      Format("[Escape] to cancel.");
             }
 
@@ -136,12 +143,12 @@ namespace Sharp80
             if (d == null)
                 line1 = string.Format("Drive #{0}: Unloaded", DiskNum);
             else
-                line1 = string.Format("Drive #{0}: {1} | {2} Tks | {3}{4}",
+                line1 = string.Format("Drive #{0}: {1}  {2} Tks  {3} {4}",
                                       DiskNum,
-                                      ((d.DoubleSided) ? "Dbl Side" : "Sgl Side"),
+                                      ((d.DoubleSided) ? "Dbl Sided" : "Sgl Sided"),
                                       d.NumTracks,
-                                      d.WriteProtected ? " | WP" : string.Empty,
-                                      d.Formatted ? string.Empty : " | UNFORMATTED");
+                                      d.WriteProtected ? "[WP]" : string.Empty,
+                                      d.Formatted ? string.Empty : "UNFORMATTED");
 
             string line2;
             if (d == null)

@@ -328,7 +328,10 @@ namespace Sharp80.Processor
         public void Jump(ushort Address)
         {
             if (PC.val != Address)
+            {
                 PC.val = Address;
+                historyBuffer[historyBufferCursor] = PC.val;
+            }
         }
         // Returns ticks used
         private ushort ExecuteInstruction(Instruction Instruction)
@@ -354,9 +357,9 @@ namespace Sharp80.Processor
             {
                 Log.LogException(ex);
             }
-            if (this.RecordExtraTicks)
+            if (RecordExtraTicks)
             {
-                this.RecordExtraTicks = false;
+                RecordExtraTicks = false;
                 return Instruction.TicksWithExtra;
             }
             else
