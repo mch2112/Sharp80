@@ -10,7 +10,7 @@ using System.Text;
 namespace Sharp80
 {
     public enum ViewMode { Normal, Memory, Disk, Help, Zap, Breakpoint, Jump, Options, Cpu, FloppyController, Splash }
-    public enum UserCommand { ToggleAdvancedView, ToggleFullScreen, GreenScreen, ShowInstructionSet, ZoomIn, ZoomOut, HardReset, Exit }
+    public enum UserCommand { ToggleAdvancedView, ToggleFullScreen, Window, GreenScreen, ShowInstructionSet, ZoomIn, ZoomOut, HardReset, Exit }
 
     internal abstract class View
     {
@@ -323,8 +323,11 @@ namespace Sharp80
         }
         private static void Disassemble(bool FromPc)
         {
-            Storage.SaveTextFile(System.IO.Path.Combine(Storage.DocsPath, "Disassembly.txt"), Computer.DumpDisassembly(true, FromPc));
-            Dialogs.InformUser("Disassembly saved to MyDocuments\\Sharp80\\Disassembly.txt");
+            string path = System.IO.Path.Combine(Storage.DocsPath, "Disassembly.txt");
+            Storage.SaveTextFile(path, Computer.Disassemble(true, FromPc));
+            //Dialogs.InformUser("Disassembly saved to MyDocuments\\Sharp80\\Disassembly.txt.");
+            OnUserCommand?.Invoke(UserCommand.Window);
+            Dialogs.ShowTextFile(path);
         }
         public static byte[] GetViewData()
         {

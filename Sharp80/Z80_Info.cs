@@ -91,7 +91,7 @@ namespace Sharp80.Processor
         {
             return instructionSet.GetInstructionSetReport();
         }
-        public string GetDisassemblyDump(bool AddressAsComment, bool FromPC)
+        public string Disassemble(bool AddressAsComment, bool FromPC)
         {
             int PC = FromPC ? this.PC.val : 0;
             Instruction inst;
@@ -100,7 +100,10 @@ namespace Sharp80.Processor
             ushort lastAddress = 0xFFFF;
             while (memory[lastAddress] == 0 && lastAddress > 0) // NOP
                 lastAddress--;
-            int end = Math.Min(0x10000, lastAddress + 3);
+            int end = lastAddress + 1;
+
+            if (end > 0xFFF0)
+                end = 0x10000;
 
             var sb = new StringBuilder(500000);
 

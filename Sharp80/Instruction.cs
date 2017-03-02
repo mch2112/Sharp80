@@ -173,9 +173,9 @@ namespace Sharp80.Processor
         public string Name(IMemory Memory, ushort PC)
         {
             if (hasReplaceableTokens)
-                return this.mnemonic + LiteralSub(Memory, PC, this.name.Substring(this.mnemonic.Length));
+                return mnemonic + LiteralSub(Memory, PC, name.Substring(mnemonic.Length));
             else
-                return this.name;
+                return name;
         }
         public string NameWithRelativeAddressesAsComments(IMemory Memory, ushort PC)
         {
@@ -275,7 +275,7 @@ namespace Sharp80.Processor
             }
             else if (s.Contains("(N)"))
             {
-                s = s.Replace("(N)", " (" + (Memory[PC.Offset(size - 1)]).ToHexString() + ")");
+                s = s.Replace("(N)", "(" + (Memory[PC.Offset(size - 1)]).ToHexString() + ")");
             }
             else if (s.Contains(" N") && (!s.Contains(" NZ")) & (!s.Contains(" NC")))
             {

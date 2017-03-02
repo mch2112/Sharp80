@@ -96,6 +96,10 @@ namespace Sharp80
                 case UserCommand.ToggleFullScreen:
                     ToggleFullScreen();
                     break;
+                case UserCommand.Window:
+                    if (screen.IsFullScreen)
+                        ToggleFullScreen();
+                    break;
                 case UserCommand.ZoomIn:
                     Zoom(true);
                     break;

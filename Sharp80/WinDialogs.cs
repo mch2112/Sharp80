@@ -166,5 +166,10 @@ namespace Sharp80
                     Cursor.Show();
             }
         }
+        public static void ShowTextFile(string Path)
+        {
+            if (Path.ToUpper().EndsWith(".TXT"))
+                System.Diagnostics.Process.Start(Path);
+        }
     }
 }
