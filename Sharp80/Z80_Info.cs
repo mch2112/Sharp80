@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Sharp80.Processor
 {
-    internal partial class Z80
+    internal partial class Z80 : IZ80_Status
     {
         private ushort[] disassemblyAddresses = new ushort[NUM_DISASSEMBLY_LINES];
         private static string[] flagsToString = new string[0x100];
@@ -56,13 +56,13 @@ namespace Sharp80.Processor
             }
             else
             {
-                return GetDisassemblyDump(PC.val, PC.val);
+                return GetDisassembly(PC.val, PC.val);
             }
         }
 
-        public string GetDisassemblyDump(ushort StartLocation, ushort HighLight)
+        public string GetDisassembly(ushort StartLocation, ushort HighLight)
         {
-            const int MAX_HIGHLIGHT_LINE = NUM_DISASSEMBLY_LINES - 8;
+            const int MAX_HIGHLIGHT_LINE = NUM_DISASSEMBLY_LINES - 4;
 
             int idx;
             if ((idx = Array.IndexOf(disassemblyAddresses, StartLocation)) > 0)
@@ -134,25 +134,19 @@ namespace Sharp80.Processor
                                                            Lib.GetSpacedHex(Memory, n.addr, n.inst.Size),
                                                            n.inst.Name(memory, n.addr))));
         }
-
-        public Z80_Status GetStatus()
-        {
-            return new Z80_Status()
-            {
-                PC = PC.val,
-                SP = SP.val,
-                AF = AF.val,
-                BC = BC.val,
-                DE = DE.val,
-                HL = HL.val,
-                IX = IX.val,
-                IY = IY.val,
-                AFp = AFp.val,
-                BCp = BCp.val,
-                DEp = DEp.val,
-                HLp = HLp.val,
-                IR = (ushort)((I.val << 8) | R.val)
-            };
-        }
+        public ushort PcVal { get { return PC.val; } }
+        public ushort SpVal { get { return SP.val; } }
+        public ushort AfVal {  get { return AF.val; } }
+        public ushort BcVal {  get { return BC.val; } }
+        public ushort DeVal {  get { return DE.val; } }
+        public ushort HlVal {  get { return HL.val; } }
+        public ushort IxVal {  get { return IX.val; } }
+        public ushort IyVal {  get { return IY.val; } }
+        public ushort AfpVal { get { return AFp.val; } }
+        public ushort BcpVal { get { return BCp.val; } }
+        public ushort DepVal { get { return DEp.val; } }
+        public ushort HlpVal { get { return HLp.val; } }
+        public ushort WzVal { get { return WZ.val; } }
+        public ushort IrVal { get { return (ushort)((I.val << 8) | R.val); } }
     }
 }

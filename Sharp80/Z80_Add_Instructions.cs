@@ -5,7 +5,7 @@ using System;
 
 namespace Sharp80.Processor
 {
-    internal sealed partial class Z80
+    internal sealed partial class Z80 : IZ80_Status
     {
         private readonly InstructionSet instructionSet = new InstructionSet();
 

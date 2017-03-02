@@ -7,15 +7,15 @@ using System.Diagnostics;
 
 namespace Sharp80.Processor
 {
-    internal sealed partial class Z80
+    internal sealed partial class Z80 : IZ80_Status
     {
         public const int NUM_DISASSEMBLY_LINES = 22;
 
         // REGISTERS
 
-        public Register16Normal PC, SP, WZ;
-        public Register8 A, F, B, C, D, E, H, L, I, R, Ap, Fp, Bp, Cp, Dp, Ep, Hp, Lp;
-        public Register16Compound IX, IY, BC, DE, HL, AF, BCp, DEp, HLp, AFp;
+        private Register16Normal PC, SP, WZ;
+        private Register8 A, F, B, C, D, E, H, L, I, R, Ap, Fp, Bp, Cp, Dp, Ep, Hp, Lp;
+        private Register16Compound IX, IY, BC, DE, HL, AF, BCp, DEp, HLp, AFp;
 
         private Register8Indirect BCM, DEM, HLM;
         private Register8Indexed IXM, IYM;
@@ -23,19 +23,19 @@ namespace Sharp80.Processor
 
         // FLAGS
 
-        public bool CF { get { return (F.val & S_CF) != 0; } set { if (value) F.val |= S_CF; else F.val &= R_CF; } }	// carry flag 
-        public bool NF { get { return (F.val & S_NF) != 0; } set { if (value) F.val |= S_NF; else F.val &= R_NF; } }	// add / subtract flag
-        public bool VF { get { return (F.val & S_VF) != 0; } set { if (value) F.val |= S_VF; else F.val &= R_VF; } }	// parity / overflow flag
-        public bool F3 { get { return (F.val & S_F3) != 0; } set { if (value) F.val |= S_F3; else F.val &= R_F3; } }	// not used
-        public bool HF { get { return (F.val & S_HF) != 0; } set { if (value) F.val |= S_HF; else F.val &= R_HF; } }	// half-carry flag
-        public bool F5 { get { return (F.val & S_F5) != 0; } set { if (value) F.val |= S_F5; else F.val &= R_F5; } }	// not used
-        public bool ZF { get { return (F.val & S_ZF) != 0; } set { if (value) F.val |= S_ZF; else F.val &= R_ZF; } }	// zero flag
-        public bool SF { get { return (F.val & S_SF) != 0; } set { if (value) F.val |= S_SF; else F.val &= R_SF; } }	// sign flag
+        private bool CF { get { return (F.val & S_CF) != 0; } set { if (value) F.val |= S_CF; else F.val &= R_CF; } }	// carry flag 
+        private bool NF { get { return (F.val & S_NF) != 0; } set { if (value) F.val |= S_NF; else F.val &= R_NF; } }	// add / subtract flag
+        private bool VF { get { return (F.val & S_VF) != 0; } set { if (value) F.val |= S_VF; else F.val &= R_VF; } }	// parity / overflow flag
+        private bool F3 { get { return (F.val & S_F3) != 0; } set { if (value) F.val |= S_F3; else F.val &= R_F3; } }	// not used
+        private bool HF { get { return (F.val & S_HF) != 0; } set { if (value) F.val |= S_HF; else F.val &= R_HF; } }	// half-carry flag
+        private bool F5 { get { return (F.val & S_F5) != 0; } set { if (value) F.val |= S_F5; else F.val &= R_F5; } }	// not used
+        private bool ZF { get { return (F.val & S_ZF) != 0; } set { if (value) F.val |= S_ZF; else F.val &= R_ZF; } }	// zero flag
+        private bool SF { get { return (F.val & S_SF) != 0; } set { if (value) F.val |= S_SF; else F.val &= R_SF; } }	// sign flag
 
-        public bool NZ { get { return (F.val & S_ZF) == 0; } }
-        public bool NC { get { return (F.val & S_CF) == 0; } }
-        public bool PE { get { return (F.val & S_VF) != 0; } set { if (value) F.val |= S_VF; else F.val &= R_VF; } }  // parity even, same as overflow
-        public bool PO { get { return (F.val & S_VF) == 0; } set { if (value) F.val &= R_VF; else F.val |= S_VF; } }  // parity odd, opposite of PE / V
+        private bool NZ { get { return (F.val & S_ZF) == 0; } }
+        private bool NC { get { return (F.val & S_CF) == 0; } }
+        private bool PE { get { return (F.val & S_VF) != 0; } set { if (value) F.val |= S_VF; else F.val &= R_VF; } }  // parity even, same as overflow
+        private bool PO { get { return (F.val & S_VF) == 0; } set { if (value) F.val &= R_VF; else F.val |= S_VF; } }  // parity odd, opposite of PE / V
 
         private const byte BIT_0_MASK = 0x01, BIT_1_MASK = 0x02, BIT_2_MASK = 0x04, BIT_3_MASK = 0x08,
                            BIT_4_MASK = 0x10, BIT_5_MASK = 0x20, BIT_6_MASK = 0x40, BIT_7_MASK = 0x80;
@@ -248,7 +248,7 @@ namespace Sharp80.Processor
             historyInstructionCount = 0;
             UpdatePCHistory();
         }
-
+        
         // returns ticks used
         public ulong Exec()
         {
@@ -271,6 +271,12 @@ namespace Sharp80.Processor
             if (systemBreakPoint.HasValue && (PC.val == systemBreakPoint.Value))
             {
                 systemBreakPoint = null;
+                computer.Stop(WaitForStop: false);
+                return 0;
+            }
+            if (SteppedOut == true)
+            {
+                SteppedOut = null;
                 computer.Stop(WaitForStop: false);
                 return 0;
             }
@@ -299,18 +305,25 @@ namespace Sharp80.Processor
             historyInstructionCount++;
             return retVal;
         }
-        
-        public void StepOver()
+
+        /// <summary>
+        /// Null: not waiting to step out
+        /// False: waiting to step out on next RET
+        /// True: stepped out, pending stop
+        /// </summary>
+        public bool? SteppedOut { get; set; } = null;
+        public bool StepOver()
         {
-            systemBreakPoint = PC.val.Offset(GetInstructionAt(PC.val).Size);
-        }
-        public void StepOut()
-        {
-            systemBreakPoint = PeekWord();
-        }
-        public void CancelStepOverOrOut()
-        {
-            systemBreakPoint = null;
+            var i = GetInstructionAt(PC.val);
+            if (IsSteppable(i))
+            {
+                systemBreakPoint = PC.val.Offset(i.Size);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
         public void Jump(ushort Address)
         {
@@ -635,7 +648,20 @@ namespace Sharp80.Processor
         {
             return SPM.val;
         }
-
+        private bool IsSteppable(Instruction i)
+        {
+            return i.Mnemonic == "CALL" ||
+                   i.Mnemonic == "RST"  ||
+                   i.Mnemonic == "LDIR" ||
+                   i.Mnemonic == "LDDR" ||
+                   i.Mnemonic == "CPIR" ||
+                   i.Mnemonic == "CPDR" ||
+                   i.Mnemonic == "OTIR" ||
+                   i.Mnemonic == "OTDR" ||
+                   i.Mnemonic == "INNR" ||
+                   i.Mnemonic == "INDR" ||
+                   i.Mnemonic == "DJNZ";
+        }
         private byte SZ(byte input)    { return Lib.SZ[input]; }
         private byte SZ53P(byte input) { return Lib.SZ53P[input]; }
         private byte SZ53(byte input)  { return Lib.SZ53[input]; }

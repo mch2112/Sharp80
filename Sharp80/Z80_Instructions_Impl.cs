@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Sharp80.Processor
 {
-    internal sealed partial class Z80
+    internal sealed partial class Z80 : IZ80_Status
     {
         private static readonly byte[] BIT = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
         private static readonly byte[] NOT = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F };
@@ -701,6 +701,8 @@ namespace Sharp80.Processor
         {
             NextPC = PopWord();
             WZ.val = NextPC;
+            if (SteppedOut == false)
+                SteppedOut = true;
         }
         private void ret(bool ConditionMet)
         {

@@ -55,8 +55,8 @@ namespace Sharp80
                               new SoundEventCallback(Sound.Sample),
                               NormalSpeed);
 
-            Clock.SpeedChanged += OnSpeedChanged;
-
+            Clock.SpeedChanged += (s, e) => { Sound.Mute = !Clock.NormalSpeed; };
+            
             FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound);
 
             Ports.FloppyController = FloppyController;
@@ -78,7 +78,7 @@ namespace Sharp80
         }
         public ushort ProgramCounter
         {
-            get { return Processor.PC.val; }
+            get { return Processor.PcVal; }
         }
         public IMemory Memory
         {
@@ -109,9 +109,10 @@ namespace Sharp80
             get { return Sound.UseDriveNoise; }
             set { Sound.UseDriveNoise = value; }
         }
-        public Z80_Status CpuStatus
+        public IZ80_Status CpuStatus
         {
-            get { return Processor.GetStatus(); }
+            // Safe to send this out in interface form
+            get { return Processor; }
         }
         public IFloppy GetFloppy(byte DriveNum) { return FloppyController.GetFloppy(DriveNum); }
 
@@ -135,8 +136,6 @@ namespace Sharp80
 
         public void Start()
         {
-            CancelStepOverOrOut();
-
             HasRunYet = true;
              
             Clock.Start();
@@ -171,20 +170,24 @@ namespace Sharp80
         public void StepOver()
         {
             if (!IsRunning)
-                Processor.StepOver();
+            {
+                if (Processor.StepOver())
+                    Start();
+                else
+                    SingleStep();
+            }
         }
         public void StepOut()
         {
             if (!IsRunning)
-                Processor.StepOut();
+            {
+                Processor.SteppedOut = false;
+                Start();
+            }
         }
         public void SingleStep()
         {
             Clock.SingleStep();
-        }
-        public void CancelStepOverOrOut()
-        {
-            Processor.CancelStepOverOrOut();
         }
         public void Jump(ushort Address)
         {
@@ -212,6 +215,7 @@ namespace Sharp80
         {
             Clock.RegisterPulseReq(Req);
         }
+        
         // FLOPPY SUPPORT
 
         public bool HasDrivesAvailable
@@ -414,12 +418,5 @@ namespace Sharp80
             }
         }
         public bool IsDisposed { get { return isDisposed; } }
-
-        // PRIVATE METHODS
-
-        private void OnSpeedChanged(object sender, EventArgs e)
-        {
-            Sound.Mute = !Clock.NormalSpeed;
-        }
     }
 }

@@ -174,7 +174,7 @@ namespace Sharp80
                     realTimeTicksOnLastMeasure = currentRealTimeTicks;
                 }
             }
-            s.Append(((float)emuSpeedInHz / 1000000F).ToString("#0.00") + " MHz ");
+            s.Append(((float)emuSpeedInHz / 1000000f).ToString("#0.00") + " MHz ");
             if (IncludeTickCount)
                 s.Append("T: " + (tickCount / TICKS_PER_TSTATE).ToString("000,000,000,000,000"));
 
@@ -258,7 +258,8 @@ namespace Sharp80
             // Do callbacks
             if (tickCount > nextPulseReqTick)
             {
-                for (int i = pulseReqs.Count - 1; i >= 0; i--) // do this to avoid problems with new reqs being added
+                // descending to avoid problems with new reqs being added
+                for (int i = pulseReqs.Count - 1; i >= 0; i--)
                 {
                     if (tickCount > pulseReqs[i].Trigger)
                         pulseReqs[i].Execute();
@@ -314,9 +315,9 @@ namespace Sharp80
             Writer.Write(nextRtcIrqTick);
             Writer.Write(exitExec);
             Writer.Write(nextPulseReqTick);
-            Writer.Write(nextSoundSampleTick);
-            
+            Writer.Write(nextSoundSampleTick);           
             Writer.Write(waitTimeout);
+
             waitTrigger.Serialize(Writer);
         }
         public void Deserialize(System.IO.BinaryReader Reader)
@@ -326,8 +327,8 @@ namespace Sharp80
             exitExec = Reader.ReadBoolean();
             nextPulseReqTick = Reader.ReadUInt64();
             nextSoundSampleTick = Reader.ReadUInt64();
-
             waitTimeout = Reader.ReadUInt64();
+
             waitTrigger.Deserialize(Reader);
         }
         
@@ -359,15 +360,7 @@ namespace Sharp80
                 return ((double)(realTimeElapsedTicks)) / realTimeTicksPerSec;
             }
         }
-
-        private double SafeRatio(ulong Numerator, ulong Denominator)
-        {
-            return (double)Numerator / (double)Denominator;
-        }
-        private double SafeRatio(double Numerator, ulong Denominator)
-        {
-            return Numerator / (double)Denominator;
-        }
+        
         private void LaunchOnSeparateThread(VoidDelegate Delegate)
         {
             new System.Threading.Thread(new System.Threading.ThreadStart(() => Delegate())).Start();

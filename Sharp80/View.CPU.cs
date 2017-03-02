@@ -18,14 +18,14 @@ namespace Sharp80
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Z80 Register Status") +
                 Format() +
-                Indent(string.Format("PC  {0}  SP  {1}", Status.PC.ToHexString(), Status.SP.ToHexString())) +
+                Indent(string.Format("PC  {0}  SP  {1}", Status.PcVal.ToHexString(), Status.SpVal.ToHexString())) +
                 Format() +
-                Indent(string.Format("AF  {0}  AF' {1}", Status.AF.ToHexString(), Status.AFp.ToHexString())) +
-                Indent(string.Format("BC  {0}  BC' {1}", Status.BC.ToHexString(), Status.BCp.ToHexString())) +
-                Indent(string.Format("DE  {0}  DE' {1}", Status.DE.ToHexString(), Status.DEp.ToHexString())) +
-                Indent(string.Format("HL  {0}  HL' {1}", Status.HL.ToHexString(), Status.HLp.ToHexString())) +
+                Indent(string.Format("AF  {0}  AF' {1}", Status.AfVal.ToHexString(), Status.AfpVal.ToHexString())) +
+                Indent(string.Format("BC  {0}  BC' {1}", Status.BcVal.ToHexString(), Status.BcpVal.ToHexString())) +
+                Indent(string.Format("DE  {0}  DE' {1}", Status.DeVal.ToHexString(), Status.DepVal.ToHexString())) +
+                Indent(string.Format("HL  {0}  HL' {1}", Status.HlVal.ToHexString(), Status.HlpVal.ToHexString())) +
                 Format() +
-                Indent(string.Format("IX  {0}  IY  {1}", Status.IX.ToHexString(), Status.IY.ToHexString()))));
+                Indent(string.Format("IX  {0}  IY  {1}", Status.IxVal.ToHexString(), Status.IyVal.ToHexString()))));
         }
     }
 }

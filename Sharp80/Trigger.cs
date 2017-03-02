@@ -5,9 +5,16 @@ using System;
 
 namespace Sharp80
 {
+    /// <summary>
+    /// Triggers are used to fire events. The main ones are used for the floppy
+    /// drive events (motor on and non maskable interrupt request, and the
+    /// reset button. Triggers exist for other devices that aren't currently
+    /// used.
+    /// </summary>
     internal class Trigger : ISerializable
     {
         public bool Triggered { get; private set; }
+
         private bool enabled;
         private bool latched;
         private bool triggerLock;
@@ -87,19 +94,6 @@ namespace Sharp80
                     Triggered = true;
                     Fired?.Invoke();
                 }
-                //if (wasLatchedAndEnabled)
-                //{
-                //    if (!Triggered)
-                //    {
-                //        Triggered = true;
-                //        Fired?.Invoke();
-                //    }
-                //}
-                //else if (Latched.HasValue || canLatchBeforeEnabled)
-                //{
-                //    Triggered = true;
-                //    Fired?.Invoke();
-                //}
             }
             else
             {
