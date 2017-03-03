@@ -69,9 +69,9 @@ namespace Sharp80
             ResizeEnd   += (o, ee) => { resizing--; }; 
 
             keyboard = new KeyboardDX();
-            HardReset();
             View.OnUserCommand += OnUserCommand;
-            screen.Initialize(this, computer);
+            screen.Initialize(this);
+            HardReset();
 
             if (Settings.AutoStartOnReset)
             {
@@ -389,7 +389,7 @@ namespace Sharp80
                 BreakPointOn = Settings.BreakpointOn
             };
             computer.StartupLoadFloppies();
-            screen.Initialize(this, computer);
+            screen.Computer = computer;
 
             View.Initialize(computer, (msg) => screen.StatusMessage = msg);
         }

@@ -109,15 +109,11 @@ namespace Sharp80
         }
         private void CreateBackBuffer()
         {
-            System.Diagnostics.Debug.WriteLine("Start create backbuffer.");
-
             // Get the backbuffer from the swapchain
             backBuffer = Texture2D.FromSwapChain<Texture2D>(swapChain, 0);
 
             // Renderview on the backbuffer
             backBufferView = new RenderTargetView(device3D, backBuffer);
-
-            System.Diagnostics.Debug.WriteLine("End create backbuffer.");
         }
         public void Dispose()
         {

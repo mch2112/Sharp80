@@ -48,7 +48,7 @@ namespace Sharp80
 
         private ViewMode viewMode;
 
-        public Computer Computer { get; private set; }
+        public Computer Computer { get; set; }
 
         private bool advancedView;
 
@@ -110,13 +110,15 @@ namespace Sharp80
             }
         }
 
-        public void Initialize(IDXClient Form, Computer Computer)
+        public void Initialize(IDXClient Form)
         {
+            if (initialized)
+                throw new Exception();
+
             SetParentForm(Form); // need to do this before computing targetsize
-            this.Computer = Computer;
+
             Initialize(DesiredLogicalSize);
 
-            //_InitCharGen();
             LoadCharGen();
 
             SetVideoMode(false, false);
