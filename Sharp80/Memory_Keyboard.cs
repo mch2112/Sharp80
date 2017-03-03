@@ -127,9 +127,9 @@ namespace Sharp80
             if (AltKeyboardLayout)
             {
                 if (Key.Key == KeyCode.Tab)
-                    Key = new KeyState(KeyCode.Up, false, false, false, Key.Pressed, Key.Released);
+                    Key = new KeyState(KeyCode.Up, false, false, false, Key.Pressed);
                 else if (Key.Key == KeyCode.Capital)
-                    Key = new KeyState(KeyCode.Down, false, false, false, Key.Pressed, Key.Released);
+                    Key = new KeyState(KeyCode.Down, false, false, false, Key.Pressed);
             }
 
             if (Key.Key == KeyCode.LeftShift)

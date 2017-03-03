@@ -97,7 +97,7 @@ namespace Sharp80
 
             int numBytes = Math.Min(0x100, sd?.SectorData?.Length ?? 0);
 
-            byte[] cells = new byte[ScreenDX.NUM_SCREEN_CHARS];
+            byte[] cells = new byte[ScreenMetrics.NUM_SCREEN_CHARS];
 
             WriteToByteArray(cells, 0x000, "Dsk");
             cells[0x040] = DriveNumber.Value.ToHexCharByte();
@@ -177,7 +177,7 @@ namespace Sharp80
                     }
                     else if ((k & 0x0F) == 0x00)
                     {
-                        cell = k / 0x10 * ScreenDX.NUM_SCREEN_CHARS_X;
+                        cell = k / 0x10 * ScreenMetrics.NUM_SCREEN_CHARS_X;
                     }
                 }
             }

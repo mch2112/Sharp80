@@ -1,68 +1,58 @@
 ﻿/// Sharp 80 (c) Matthew Hamilton
 /// Licensed Under GPL v3
 
-using SharpDX;
-using SharpDX.Direct2D1;
-using SharpDX.DirectWrite;
-using SharpDX.DXGI;
-using SharpDX.Mathematics.Interop;
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
+
+using SharpDX;
+using SharpDX.Direct2D1;
+using SharpDX.Direct3D10;
+using SharpDX.DirectWrite;
+using SharpDX.DXGI;
+using SharpDX.Mathematics.Interop;
 using Color = SharpDX.Color;
 using DXBitmap = SharpDX.Direct2D1.Bitmap;
 
+using Device3D = SharpDX.Direct3D10.Device1;
+using Device2D = SharpDX.Direct2D1.Device;
+using DriverType = SharpDX.Direct3D10.DriverType;
+
 namespace Sharp80
 {
-    internal sealed class ScreenDX : Direct3D, IScreen
+    internal sealed class ScreenDX : IScreen
     {
         private const Format PixelFormat = Format.R8G8B8A8_UNorm;
 
-        public const byte NUM_SCREEN_CHARS_X = 0x40;
-        public const byte NUM_SCREEN_CHARS_Y = 0x10;
-        public const ushort NUM_SCREEN_CHARS = NUM_SCREEN_CHARS_X * NUM_SCREEN_CHARS_Y;
-
-        private const byte CHAR_PIXELS_X = 0x08;
-        private const byte CHAR_PIXELS_Y = 0x18;
-
-        private const float VIRTUAL_SCREEN_WIDTH = NUM_SCREEN_CHARS_X * CHAR_PIXELS_X;
-        private const float VIRTUAL_SCREEN_HEIGHT = NUM_SCREEN_CHARS_Y * CHAR_PIXELS_Y;
-        private const float VIRTUAL_SCREEN_ASPECT_RATIO = VIRTUAL_SCREEN_WIDTH / VIRTUAL_SCREEN_HEIGHT;
-
-        private const float DISPLAY_SPACING = 10f;
-        private const float ADV_INFO_WIDTH = 310f;
-        private const float SCREEN_AND_ADV_INFO_ASPECT_RATIO = (VIRTUAL_SCREEN_WIDTH + DISPLAY_SPACING + ADV_INFO_WIDTH) / VIRTUAL_SCREEN_HEIGHT;
-
-        // Windowed values
-        public const float WINDOWED_HEIGHT = VIRTUAL_SCREEN_HEIGHT + 24;
-        public const float WINDOWED_WIDTH_NORMAL = VIRTUAL_SCREEN_WIDTH + 48;
-        public const float WINDOWED_WIDTH_ADVANCED = WINDOWED_WIDTH_NORMAL + DISPLAY_SPACING + ADV_INFO_WIDTH + 24 - 48;
-
-        public const float WINDOWED_ASPECT_RATIO_NORMAL = WINDOWED_WIDTH_NORMAL / WINDOWED_HEIGHT;
-        public const float WINDOWED_ASPECT_RATIO_ADVANCED = WINDOWED_WIDTH_ADVANCED / WINDOWED_HEIGHT;
-
-        private readonly uint messageDisplayDuration = 30;
-
+        private Computer computer;
         private TextFormat textFormat, statusTextFormat;
+        private Size2F Size { get; set; }
+        private RenderTarget renderTarget;
+        private IAppWindow parent;
+        private SwapChain swapChain;
+        private SwapChainDescription swapChainDescription;
+        private RenderTargetView backBufferView;
+        private Texture2D backBuffer;
+        private Device3D device3D;
+        private SharpDX.Direct2D1.Factory d2DFactory = null;
 
-        private ViewMode viewMode;
-
-        private Computer Computer { get; set; }
-
-        private bool advancedView;
-
-        private bool initialized = false;
-        private bool invalid = true;
+        private bool advancedView =       false;
+        private bool initialized =        false;
+        private bool invalid =            true;
         private bool invalidateNextDraw = false;
-        private bool erase = false;
+        private bool erase =              false;
+        private bool isDrawing =          false;
+        private bool isDisposed =         false;
+        private int  isResizing =         0;
+
+        private string statusMessage = String.Empty;
+        private uint cyclesForMessageRemaining = 0;
+        private readonly uint messageDisplayDuration;
 
         private DXBitmap[] charGen, charGenNormal, charGenWide, charGenKanji, charGenKanjiWide;
         private RawRectangleF infoRect, z80Rect, disassemRect, statusMsgRect;
-        private RawRectangleF[] cells, cellsNormal, cellsWide;
-        
+        private RawRectangleF[] cells, cellsNormal, cellsWide;        
         private byte[] shadowScreen;
-
-        private uint cyclesForMessageRemaining = 0;
 
         private SolidColorBrush foregroundBrush,
                                 foregroundBrushWhite,
@@ -73,194 +63,28 @@ namespace Sharp80
                                 driveActiveBrush;
 
         private Ellipse driveLightEllipse;
-
         private bool isFullScreen = false;
         private bool isGreenScreen = false;
         private bool isWideCharMode = false;
         private bool isKanjiCharMode = false;
+        
+        // CONSTRUCTOR
 
-        private string statusMessage = String.Empty;
-
-        public ScreenDX(bool AdvancedView, ViewMode ViewMode, uint MessageDisplayDuration, bool GreenScreen)
+        public ScreenDX(bool AdvancedView, uint MessageDisplayDuration, bool GreenScreen)
         {
             advancedView = AdvancedView;
-            viewMode = ViewMode;
             messageDisplayDuration = MessageDisplayDuration;
             isGreenScreen = GreenScreen;
 
-            cellsNormal = new RawRectangleF[NUM_SCREEN_CHARS];
-            cellsWide = new RawRectangleF[NUM_SCREEN_CHARS];
-            shadowScreen = new byte[NUM_SCREEN_CHARS];
+            cellsNormal =  new RawRectangleF[ScreenMetrics.NUM_SCREEN_CHARS];
+            cellsWide =    new RawRectangleF[ScreenMetrics.NUM_SCREEN_CHARS];
+            shadowScreen = new byte[ScreenMetrics.NUM_SCREEN_CHARS];
 
-            View.OnUserCommand += View_OnUserCommand;
+            View.OnUserCommand += UserCommandHandler;
         }
 
-        private void View_OnUserCommand(UserCommand Command)
-        {
-            switch (Command)
-            {
-                case UserCommand.ToggleAdvancedView:
-                    AdvancedView = !AdvancedView;
-                    Settings.AdvancedView = AdvancedView;
-                    break;
-                case UserCommand.GreenScreen:
-                    Settings.GreenScreen = GreenScreen = !GreenScreen;
-                    break;
-            }
-        }
+        // EVENT HANDLING
 
-        public void Initialize(IAppWindow Parent)
-        {
-            if (initialized)
-                throw new Exception();
-
-            SetParentForm(Parent); // need to do this before computing targetsize
-
-            Initialize(DesiredLogicalSize);
-
-            LoadCharGen();
-
-            SetVideoMode(false, false);
-
-            initialized = true;
-
-            Invalidate();
-        }
-
-        public bool GreenScreen
-        {
-            get { return isGreenScreen; }
-            set
-            {
-                if (value != isGreenScreen)
-                {
-                    isGreenScreen = value;
-                    StatusMessage = "Changing screen color...";
-                    Invalidate();
-
-                    LoadCharGen();
-                    foregroundBrush = isGreenScreen ? foregroundBrushGreen : foregroundBrushWhite;
-
-                    StatusMessage = "Screen color changed.";
-                    Invalidate();
-                }
-            }
-        }
-        public bool IsFullScreen
-        {
-            get { return isFullScreen; }
-            set
-            {
-                if (isFullScreen != value)
-                {
-                    isFullScreen = value;
-                    Resize(DesiredLogicalSize);
-                    Dialogs.SuppressCursor = isFullScreen;
-                }
-            }
-        }
-        public bool AdvancedView
-        {
-            get { return advancedView; }
-            set
-            {
-                if (advancedView != value)
-                {
-                    advancedView = value;
-
-                    if (!IsFullScreen)
-                        Parent.ClientSize =
-                            new Size((int)(Parent.ClientSize.Height * (advancedView ? WINDOWED_ASPECT_RATIO_ADVANCED : WINDOWED_ASPECT_RATIO_NORMAL)),
-                                     Parent.ClientSize.Height);
-                    Resize(DesiredLogicalSize);
-                }
-            }
-        }
-        protected override void Resize(Size2F Size)
-        {
-            WaitForDrawDone();
-            base.Resize(Size);
-
-            DoLayout();
-        }
-        protected override void ConstrainAspectRatio(System.Windows.Forms.Message Msg)
-        {
-            float ratio;
-            if (AdvancedView)
-                ratio = WINDOWED_ASPECT_RATIO_ADVANCED;
-            else
-                ratio = WINDOWED_ASPECT_RATIO_NORMAL;
-
-            float width = Parent.ClientSize.Width;
-            float height = Parent.ClientSize.Height;
-
-            if (Msg.Msg == MessageEventArgs.WM_SIZING)
-            {
-                var rc = (MessageEventArgs.RECT)Marshal.PtrToStructure(Msg.LParam, typeof(MessageEventArgs.RECT));
-                int res = Msg.WParam.ToInt32();
-                if (res == MessageEventArgs.WMSZ_LEFT || res == MessageEventArgs.WMSZ_RIGHT)
-                {
-                    // Left or right resize - adjust height (bottom)
-                    rc.Bottom = rc.Top + (int)(width / ratio);
-                }
-                else if (res == MessageEventArgs.WMSZ_TOP || res == MessageEventArgs.WMSZ_BOTTOM)
-                {
-                    // Up or down resize - adjust width (right)
-                    rc.Right = rc.Left + (int)(height * ratio);
-                }
-                else if (res == MessageEventArgs.WMSZ_RIGHT + MessageEventArgs.WMSZ_BOTTOM)
-                {
-                    // Lower-right corner resize -> adjust height (could have been width)
-                    rc.Bottom = rc.Top + (int)(width / ratio);
-                }
-                else if (res == MessageEventArgs.WMSZ_LEFT + MessageEventArgs.WMSZ_TOP)
-                {
-                    // Upper-left corner -> adjust width (could have been height)
-                    rc.Left = rc.Right - (int)(height * ratio);
-                }
-                Marshal.StructureToPtr(rc, Msg.LParam, true);
-            }
-        }
-        protected override void InitializeDX()
-        {
-            base.InitializeDX();
-
-            var directWriteFactory = new SharpDX.DirectWrite.Factory();
-
-            foregroundBrushWhite = new SolidColorBrush(RenderTarget, Color.White);
-            foregroundBrushGreen = new SolidColorBrush(RenderTarget, new RawColor4(0.3f, 1.0f, 0.3f, 1f));
-            backgroundBrush = new SolidColorBrush(RenderTarget, Color4.Black);
-            statusBrush = new SolidColorBrush(RenderTarget, Color4.White) { Opacity = 1f };
-            driveOnBrush = new SolidColorBrush(RenderTarget, new RawColor4(0.4f, 0.4f, 0.4f, 0.3f));
-            driveActiveBrush = new SolidColorBrush(RenderTarget, new RawColor4(1f, 0, 0, 0.3f));
-
-            foregroundBrush = GreenScreen ? foregroundBrushGreen : foregroundBrushWhite;
-
-            textFormat = new TextFormat(directWriteFactory, "Consolas", 12)
-            {
-                WordWrapping = WordWrapping.NoWrap,
-                TextAlignment = TextAlignment.Leading
-            };
-            statusTextFormat = new TextFormat(directWriteFactory, "Calibri", 18)
-            {
-                WordWrapping = WordWrapping.NoWrap,
-                TextAlignment = TextAlignment.Trailing
-            };
-
-            RenderTarget.TextAntialiasMode = SharpDX.Direct2D1.TextAntialiasMode.Cleartype;
-
-            DoLayout();
-        }
-        public void Reinitialize(Computer Computer)
-        {
-            this.Computer = Computer;
-            Reset();
-        }
-        public void Reset()
-        {
-            if (isWideCharMode || isKanjiCharMode)
-                SetVideoMode(false, false);
-        }
         public void SetVideoMode(bool IsWide, bool IsKanji)
         {
             // In basic, "PRINT CHR$(23)" (or Shift-RightArrow) will set wide character mode
@@ -311,127 +135,116 @@ namespace Sharp80
                 Invalidate();
             }
         }
-        public void Invalidate()
+        private void UserCommandHandler(UserCommand Command)
         {
-            invalid = true;
+            switch (Command)
+            {
+                case UserCommand.ToggleAdvancedView:
+                    AdvancedView = !AdvancedView;
+                    Settings.AdvancedView = AdvancedView;
+                    break;
+                case UserCommand.GreenScreen:
+                    Settings.GreenScreen = GreenScreen = !GreenScreen;
+                    break;
+            }
         }
+        
+        // INITIALIZATION / RESET
 
-        protected override void Draw()
+        public void Initialize(IAppWindow Parent)
         {
             if (initialized)
+                throw new Exception();
+
+            // need to do this before computing targetsize
+            parent = Parent;
+            parent.BackColor = System.Drawing.Color.Black;
+            parent.ResizeBegin += (o, args) => { isResizing++; };
+            parent.ResizeEnd += (o, args) =>
             {
-                invalid |= View.Invalid;
+                isResizing = Math.Max(0, isResizing - 1);
+                DoLayout();
+            };
+            parent.Sizing += (o, args) => { ConstrainAspectRatio(args.Message); };
 
-                if (invalidateNextDraw)
-                {
-                    invalidateNextDraw = false;
-                    invalid = true;
-                }
+            Size = DesiredLogicalSize;
 
-                if (erase)
-                {
-                    invalid = true;
-                    RenderTarget.Clear(Color.Black);
-                }
+            InitializeDX();
+            LoadCharGen();
 
-                var dbs = Computer.DriveBusyStatus;
-                if (dbs.HasValue)
-                    RenderTarget.FillEllipse(driveLightEllipse, dbs.Value ? driveActiveBrush : driveOnBrush);
-                else
-                    RenderTarget.FillEllipse(driveLightEllipse, backgroundBrush);
+            SetVideoMode(false, false);
 
-                if (View.CurrentMode == ViewMode.Normal || invalid)
-                    DrawView(View.GetViewData());
-                
-                //renderTarget.DrawRectangle(new RawRectangleF(cells[0].Left, cells[0].Top, cells[0x3ff].Right, cells[0x3ff].Bottom), foregroundBrush);
-                //renderTarget.FillRectangle(cells[0], foregroundBrush);
-                //renderTarget.FillRectangle(cells[0x3ff], foregroundBrush);
-
-                if (advancedView)
-                {
-                    //if (!invalid)
-                        ClearAdvancedInfoRegions();
-
-                    RenderTarget.DrawText(Computer.GetInternalsReport(), textFormat, z80Rect, foregroundBrush);
-                    RenderTarget.DrawText(Computer.GetDisassembly(), textFormat, disassemRect, foregroundBrush);
-                    RenderTarget.DrawText(
-                        Computer.GetClockReport(true) + Environment.NewLine + Computer.GetDriveStatusReport(),
-                        textFormat, infoRect, foregroundBrush);
-                }
-
-                DrawStatusMessage();
-
-                invalid = false;
-                View.Validate();
-            }
+            initialized = true;
+            Invalidate();
+        }
+        public void Reinitialize(Computer Computer)
+        {
+            computer = Computer;
+            Reset();
+        }
+        public void Reset()
+        {
+            if (isWideCharMode || isKanjiCharMode)
+                SetVideoMode(false, false);
         }
 
-        private void DrawNormal()
-        {
-            var mem = Computer.Memory;
+        // PUBLIC PROPERTIES
 
-            if (mem.ScreenWritten || invalid)
+        public bool GreenScreen
+        {
+            get { return isGreenScreen; }
+            set
             {
-                mem.ScreenWritten = false;
-                int k = 0;
-                ushort memPtr = Memory.VIDEO_MEMORY_BLOCK;
-                for (int i = 0; i < NUM_SCREEN_CHARS; ++i, ++k, ++memPtr)
+                if (value != isGreenScreen)
                 {
-                    PaintCell(k, mem[memPtr], cells, charGen);
-                    if (isWideCharMode)
-                        { i++; k++; memPtr++; }
+                    isGreenScreen = value;
+                    StatusMessage = "Changing screen color...";
+                    Invalidate();
+
+                    LoadCharGen();
+                    foregroundBrush = isGreenScreen ? foregroundBrushGreen : foregroundBrushWhite;
+
+                    StatusMessage = "Screen color changed.";
+                    Invalidate();
                 }
             }
         }
-        private void DrawView(byte[] View)
+        public bool IsFullScreen
         {
-            if (View == null)
+            get { return isFullScreen; }
+            set
             {
-                DrawNormal();
-            }
-            else
-            {
-                for (int i = 0; i < NUM_SCREEN_CHARS; i++)
-                    PaintCell(i, View[i], cellsNormal, charGenNormal);
-            }
-        }
-        private void DrawStatusMessage()
-        {
-            if (cyclesForMessageRemaining > 0)
-            {
-                cyclesForMessageRemaining--;
-
-                RenderTarget.FillRectangle(statusMsgRect, backgroundBrush);
-                RenderTarget.DrawText(StatusMessage, statusTextFormat, statusMsgRect, statusBrush);
-
-                statusBrush.Opacity *= 0.95f;
-
-                if (cyclesForMessageRemaining == 0)
-                    invalidateNextDraw = true;
+                if (isFullScreen != value)
+                {
+                    isFullScreen = value;
+                    Resize(DesiredLogicalSize);
+                    Dialogs.SuppressCursor = isFullScreen;
+                }
             }
         }
-
-        private void ClearAdvancedInfoRegions()
+        public bool AdvancedView
         {
-            RenderTarget.FillRectangle(infoRect, backgroundBrush);
-            RenderTarget.FillRectangle(z80Rect, backgroundBrush);
-            RenderTarget.FillRectangle(disassemRect, backgroundBrush);
-        }
-        private void PaintCell(int cell, byte c, RawRectangleF[] Cells, DXBitmap[] Chars)
-        {
-            if (shadowScreen[cell] != c || invalid)
+            get { return advancedView; }
+            set
             {
-                RenderTarget.DrawBitmap(Chars[c],
-                    Cells[cell],
-                    1.0f,
-                    BitmapInterpolationMode.Linear);
+                if (advancedView != value)
+                {
+                    advancedView = value;
 
-                shadowScreen[cell] = c;
+                    if (!IsFullScreen)
+                        parent.ClientSize =
+                            new Size((int)(parent.ClientSize.Height * (advancedView ? ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL)),
+                                     parent.ClientSize.Height);
+                    Resize(DesiredLogicalSize);
+                }
             }
         }
+        
+        // SPRITE SETUP
+
         private void LoadCharGen()
         {
-            
+
             charGenNormal = charGenNormal ?? new DXBitmap[0x100];
             charGenWide = charGenWide ?? new DXBitmap[0x100];
             charGenKanji = charGenKanji ?? new DXBitmap[0x100];
@@ -439,58 +252,60 @@ namespace Sharp80
 
             uint filterABGR = GreenScreen ? 0xFF40FF40 : 0xFFFFFFFF;
 
-            var properties = new BitmapProperties(new PixelFormat(ScreenDX.PixelFormat,
-                                                                        SharpDX.Direct2D1.AlphaMode.Premultiplied));
+            var properties = new BitmapProperties(new PixelFormat(PixelFormat,
+                                                                  SharpDX.Direct2D1.AlphaMode.Premultiplied));
 
             byte[] b = Resources.CharGenBase;
             var ms = new System.IO.MemoryStream(b);
             for (int i = 0; i < 0xC0; i++)
-                charGenKanji[i] = charGenNormal[i] = CreateBitmap(RenderTarget, ms, filterABGR, false, properties);
+                charGenKanji[i] = charGenNormal[i] = CreateBitmap(renderTarget, ms, filterABGR, false, properties);
 
             byte[] h = Resources.CharGenHigh;
             ms = new System.IO.MemoryStream(h);
             for (int i = 0xC0; i < 0x100; i++)
-                charGenNormal[i] = CreateBitmap(RenderTarget, ms, filterABGR, false, properties);
+                charGenNormal[i] = CreateBitmap(renderTarget, ms, filterABGR, false, properties);
 
             byte[] k = Resources.CharGenKanji;
             ms = new System.IO.MemoryStream(k);
             for (int i = 0xC0; i < 0x100; i++)
-                charGenKanji[i] = CreateBitmap(RenderTarget, ms, filterABGR, false, properties);
+                charGenKanji[i] = CreateBitmap(renderTarget, ms, filterABGR, false, properties);
 
             ms = new System.IO.MemoryStream(b.Double());
             for (int i = 0; i < 0xC0; i++)
-                charGenKanjiWide[i] = charGenWide[i] = CreateBitmap(RenderTarget, ms, filterABGR, true, properties);
+                charGenKanjiWide[i] = charGenWide[i] = CreateBitmap(renderTarget, ms, filterABGR, true, properties);
 
             ms = new System.IO.MemoryStream(h.Double());
             for (int i = 0xC0; i < 0x100; i++)
-                charGenWide[i] = CreateBitmap(RenderTarget, ms, filterABGR, true, properties);
+                charGenWide[i] = CreateBitmap(renderTarget, ms, filterABGR, true, properties);
 
             ms = new System.IO.MemoryStream(k.Double());
             for (int i = 0xC0; i < 0x100; i++)
-                charGenKanjiWide[i] = CreateBitmap(RenderTarget, ms, filterABGR, true, properties);
+                charGenKanjiWide[i] = CreateBitmap(renderTarget, ms, filterABGR, true, properties);
         }
         private static DXBitmap CreateBitmap(RenderTarget renderTarget, System.IO.MemoryStream MS, uint FilterABGR, bool Wide, BitmapProperties Properties)
         {
-            var width = Wide ? CHAR_PIXELS_X * 2 : CHAR_PIXELS_X;
-            var size = new Size2(width, CHAR_PIXELS_Y);
+            var width = Wide ? ScreenMetrics.CHAR_PIXELS_X * 2 : ScreenMetrics.CHAR_PIXELS_X;
+            var size = new Size2(width, ScreenMetrics.CHAR_PIXELS_Y);
             int stride = width * sizeof(int);
-            using (var tempStream = new DataStream(CHAR_PIXELS_Y * stride, true, true))
+            using (var tempStream = new DataStream(ScreenMetrics.CHAR_PIXELS_Y * stride, true, true))
             {
-                for (int i = 0; i < width * CHAR_PIXELS_Y; i++)
+                for (int i = 0; i < width * ScreenMetrics.CHAR_PIXELS_Y; i++)
                     tempStream.Write((MS.ReadByte() == 0) ? 0xFF000000 : FilterABGR);
                 tempStream.Position = 0;
                 return new DXBitmap(renderTarget, size, tempStream, stride, Properties);
             }
         }
-        
-        protected override void DoLayout()
+
+        // LAYOUT
+
+        private void DoLayout()
         {
             float xBorder;
             float yBorder;
 
             if (IsFullScreen)
             {
-                float targetAspect = AdvancedView ? SCREEN_AND_ADV_INFO_ASPECT_RATIO : VIRTUAL_SCREEN_ASPECT_RATIO;
+                float targetAspect = AdvancedView ? ScreenMetrics.SCREEN_AND_ADV_INFO_ASPECT_RATIO : ScreenMetrics.VIRTUAL_SCREEN_ASPECT_RATIO;
                 float logicalAspect = Size.Width / Size.Height;
 
                 if (logicalAspect < targetAspect) // extra vertical space
@@ -515,16 +330,16 @@ namespace Sharp80
             float xOrigin = xBorder;
             float yOrigin = yBorder;
 
-            for (int j = 0; j < NUM_SCREEN_CHARS_Y; j++)
+            for (int j = 0; j < ScreenMetrics.NUM_SCREEN_CHARS_Y; j++)
             {
-                for (int i = 0; i < NUM_SCREEN_CHARS_X; i++)
+                for (int i = 0; i < ScreenMetrics.NUM_SCREEN_CHARS_X; i++)
                 {
-                    float x = i * CHAR_PIXELS_X + xOrigin;
-                    float y = j * CHAR_PIXELS_Y + yOrigin;
+                    float x = i * ScreenMetrics.CHAR_PIXELS_X + xOrigin;
+                    float y = j * ScreenMetrics.CHAR_PIXELS_Y + yOrigin;
 
                     // Cast floats to ints to prevent bleeding at edges of cells when scaling
-                    cellsNormal[i + j * NUM_SCREEN_CHARS_X] = new RawRectangleF((int)x, (int)y, (int)(x + CHAR_PIXELS_X), (int)(y + CHAR_PIXELS_Y));
-                    cellsWide[i + j * NUM_SCREEN_CHARS_X] = new RawRectangleF((int)x, (int)y, (int)(x + CHAR_PIXELS_X + CHAR_PIXELS_X), (int)(y + CHAR_PIXELS_Y));
+                    cellsNormal[i + j * ScreenMetrics.NUM_SCREEN_CHARS_X] = new RawRectangleF((int)x, (int)y, (int)(x + ScreenMetrics.CHAR_PIXELS_X), (int)(y + ScreenMetrics.CHAR_PIXELS_Y));
+                    cellsWide[i + j * ScreenMetrics.NUM_SCREEN_CHARS_X] = new RawRectangleF((int)x, (int)y, (int)(x + ScreenMetrics.CHAR_PIXELS_X + ScreenMetrics.CHAR_PIXELS_X), (int)(y + ScreenMetrics.CHAR_PIXELS_Y));
                 }
             }
 
@@ -532,37 +347,113 @@ namespace Sharp80
 
             driveLightEllipse = new Ellipse(new RawVector2(10, 10), 5, 5);
 
-            const float SPACING = 10f;
-            xOrigin += NUM_SCREEN_CHARS_X * CHAR_PIXELS_X + SPACING;
-
-            const float Z80WIDTH = 70f;
-
-            const float INFO_RECT_HEIGHT = 40;
+            xOrigin += ScreenMetrics.NUM_SCREEN_CHARS_X * ScreenMetrics.CHAR_PIXELS_X + ScreenMetrics.SPACING;
 
             z80Rect = new RawRectangleF(xOrigin,
-                                        yOrigin + SPACING,
-                                        xOrigin + Z80WIDTH,
-                                        yOrigin + VIRTUAL_SCREEN_HEIGHT - INFO_RECT_HEIGHT - SPACING);
+                                        yOrigin + ScreenMetrics.SPACING,
+                                        xOrigin + ScreenMetrics.Z80WIDTH,
+                                        yOrigin + ScreenMetrics.VIRTUAL_SCREEN_HEIGHT - ScreenMetrics.INFO_RECT_HEIGHT - ScreenMetrics.SPACING);
 
             disassemRect = new RawRectangleF(z80Rect.Right,
                                               z80Rect.Top,
-                                              WINDOWED_WIDTH_ADVANCED,
+                                              ScreenMetrics.WINDOWED_WIDTH_ADVANCED,
                                               z80Rect.Bottom);
 
             infoRect = new RawRectangleF(z80Rect.Left,
-                                         yOrigin + VIRTUAL_SCREEN_HEIGHT - INFO_RECT_HEIGHT,
-                                         z80Rect.Left + ADV_INFO_WIDTH,
-                                         yOrigin + VIRTUAL_SCREEN_HEIGHT);
+                                         yOrigin + ScreenMetrics.VIRTUAL_SCREEN_HEIGHT - ScreenMetrics.INFO_RECT_HEIGHT,
+                                         z80Rect.Left + ScreenMetrics.ADV_INFO_WIDTH,
+                                         yOrigin + ScreenMetrics.VIRTUAL_SCREEN_HEIGHT);
 
             // Bottom right corner
             statusMsgRect = new RawRectangleF(Size.Width - 175,
                                               Size.Height - 30,
-                                              Size.Width - SPACING,
+                                              Size.Width - ScreenMetrics.SPACING,
                                               Size.Height);
 
             erase = true;
         }
-        
+        private void Resize(Size2F Size)
+        {
+            // Wait for draw done
+            while (isDrawing)
+                System.Threading.Thread.Sleep(0);
+
+            if (!renderTarget.IsDisposed)
+                renderTarget.Dispose();
+
+            renderTarget = null;
+
+            // Dispose all previous allocated resources
+
+            backBuffer.Dispose();
+            backBufferView.Dispose();
+
+            backBuffer = null;
+            backBufferView = null;
+
+            SwapChainFlags flags;
+
+            flags = SwapChainFlags.AllowModeSwitch;
+
+            this.Size = Size;
+
+            // Resize the backbuffer
+            System.Diagnostics.Debug.WriteLine(string.Format("Resizing swap chain buffers. W:{0} H:{1}.", Size.Width, Size.Height));
+            try
+            {
+                swapChain.ResizeBuffers(swapChainDescription.BufferCount,
+                                        (int)Size.Width,
+                                        (int)Size.Height,
+                                        Format.Unknown,
+                                        flags);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.ToString());
+            }
+            CreateBackBuffer();
+            CreateRenderTarget(Format.Unknown);
+
+            DoLayout();
+        }
+        private void ConstrainAspectRatio(System.Windows.Forms.Message Msg)
+        {
+            float ratio;
+            if (AdvancedView)
+                ratio = ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED;
+            else
+                ratio = ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL;
+
+            float width = parent.ClientSize.Width;
+            float height = parent.ClientSize.Height;
+
+            if (Msg.Msg == MessageEventArgs.WM_SIZING)
+            {
+                var rc = (MessageEventArgs.RECT)Marshal.PtrToStructure(Msg.LParam, typeof(MessageEventArgs.RECT));
+                int res = Msg.WParam.ToInt32();
+                if (res == MessageEventArgs.WMSZ_LEFT || res == MessageEventArgs.WMSZ_RIGHT)
+                {
+                    // Left or right resize - adjust height (bottom)
+                    rc.Bottom = rc.Top + (int)(width / ratio);
+                }
+                else if (res == MessageEventArgs.WMSZ_TOP || res == MessageEventArgs.WMSZ_BOTTOM)
+                {
+                    // Up or down resize - adjust width (right)
+                    rc.Right = rc.Left + (int)(height * ratio);
+                }
+                else if (res == MessageEventArgs.WMSZ_RIGHT + MessageEventArgs.WMSZ_BOTTOM)
+                {
+                    // Lower-right corner resize -> adjust height (could have been width)
+                    rc.Bottom = rc.Top + (int)(width / ratio);
+                }
+                else if (res == MessageEventArgs.WMSZ_LEFT + MessageEventArgs.WMSZ_TOP)
+                {
+                    // Upper-left corner -> adjust width (could have been height)
+                    rc.Left = rc.Right - (int)(height * ratio);
+                }
+                Marshal.StructureToPtr(rc, Msg.LParam, true);
+            }
+        }
         private Size2F DesiredLogicalSize
         {
             get
@@ -571,15 +462,15 @@ namespace Sharp80
 
                 if (IsFullScreen)
                 {
-                    var scn = System.Windows.Forms.Screen.FromHandle(Parent.Handle);
+                    var scn = System.Windows.Forms.Screen.FromHandle(parent.Handle);
                     physX = scn.WorkingArea.Width;
                     physY = scn.WorkingArea.Height;
 
                     // choose a logical size so that the aspect ratio matches the physical aspect ratio
                     float physicalAspect = physX / physY;
-                    float w = VIRTUAL_SCREEN_WIDTH + (advancedView ? ADV_INFO_WIDTH + DISPLAY_SPACING : 0);
-                    float h = VIRTUAL_SCREEN_HEIGHT;
-                    float targetAspectRatio = w/h;
+                    float w = ScreenMetrics.VIRTUAL_SCREEN_WIDTH + (advancedView ? ScreenMetrics.ADV_INFO_WIDTH + ScreenMetrics.DISPLAY_SPACING : 0);
+                    float h = ScreenMetrics.VIRTUAL_SCREEN_HEIGHT;
+                    float targetAspectRatio = w / h;
 
                     if (physicalAspect > targetAspectRatio) // extra horizontal space
                         w += h * (physicalAspect - targetAspectRatio);
@@ -589,11 +480,248 @@ namespace Sharp80
                 }
                 else
                 {
-                    return AdvancedView ? new Size2F(WINDOWED_WIDTH_ADVANCED, WINDOWED_HEIGHT)
-                                        : new Size2F(WINDOWED_WIDTH_NORMAL, WINDOWED_HEIGHT);
+                    return new Size2F(AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED
+                                                   : ScreenMetrics.WINDOWED_WIDTH_NORMAL,
+                                      ScreenMetrics.WINDOWED_HEIGHT);
                 }
             }
         }
+
+        // RENDERING
+
+        public void Render()
+        {
+            if (DrawOK)
+            {
+                try
+                {
+                    isDrawing = true;
+
+                    BeginDraw();
+                    Draw();
+                    EndDraw();
+                }
+                catch (Exception ex)
+                {
+                    Log.LogDebug("Exception in D3D Render Loop: " + ex.ToString());
+                }
+                finally
+                {
+                    isDrawing = false;
+                }
+            }
+        }
+        public void Invalidate()
+        {
+            invalid = true;
+        }
+
+        private bool DrawOK { get { return isResizing == 0 && !isDrawing && !parent.IsMinimized; } }
+        private void Draw()
+        {
+            if (initialized)
+            {
+                invalid |= View.Invalid;
+
+                if (invalidateNextDraw)
+                {
+                    invalidateNextDraw = false;
+                    invalid = true;
+                }
+
+                if (erase)
+                {
+                    invalid = true;
+                    erase = false;
+                    renderTarget.Clear(Color.Black);
+                }
+
+                var dbs = computer.DriveBusyStatus;
+                if (dbs.HasValue)
+                    renderTarget.FillEllipse(driveLightEllipse, dbs.Value ? driveActiveBrush : driveOnBrush);
+                else
+                    renderTarget.FillEllipse(driveLightEllipse, backgroundBrush);
+
+                if (View.CurrentMode == ViewMode.Normal || invalid)
+                    DrawView(View.GetViewData());
+
+                //renderTarget.DrawRectangle(new RawRectangleF(cells[0].Left, cells[0].Top, cells[0x3ff].Right, cells[0x3ff].Bottom), foregroundBrush);
+                //renderTarget.FillRectangle(cells[0], foregroundBrush);
+                //renderTarget.FillRectangle(cells[0x3ff], foregroundBrush);
+
+                if (advancedView)
+                {
+                    //if (!invalid)
+                    ClearAdvancedInfoRegions();
+
+                    renderTarget.DrawText(computer.GetInternalsReport(), textFormat, z80Rect, foregroundBrush);
+                    renderTarget.DrawText(computer.GetDisassembly(), textFormat, disassemRect, foregroundBrush);
+                    renderTarget.DrawText(
+                        computer.GetClockReport(true) + Environment.NewLine + computer.GetDriveStatusReport(),
+                        textFormat, infoRect, foregroundBrush);
+                }
+
+                DrawStatusMessage();
+
+                invalid = false;
+                View.Validate();
+            }
+        }
+        private void DrawNormal()
+        {
+            var mem = computer.Memory;
+
+            if (mem.ScreenWritten || invalid)
+            {
+                mem.ScreenWritten = false;
+                int k = 0;
+                ushort memPtr = Memory.VIDEO_MEMORY_BLOCK;
+                for (int i = 0; i < ScreenMetrics.NUM_SCREEN_CHARS; ++i, ++k, ++memPtr)
+                {
+                    PaintCell(k, mem[memPtr], cells, charGen);
+                    if (isWideCharMode)
+                    { i++; k++; memPtr++; }
+                }
+            }
+        }
+        private void DrawView(byte[] View)
+        {
+            if (View == null)
+            {
+                DrawNormal();
+            }
+            else
+            {
+                for (int i = 0; i < ScreenMetrics.NUM_SCREEN_CHARS; i++)
+                    PaintCell(i, View[i], cellsNormal, charGenNormal);
+            }
+        }
+        private void DrawStatusMessage()
+        {
+            if (cyclesForMessageRemaining > 0)
+            {
+                cyclesForMessageRemaining--;
+
+                renderTarget.FillRectangle(statusMsgRect, backgroundBrush);
+                renderTarget.DrawText(StatusMessage, statusTextFormat, statusMsgRect, statusBrush);
+
+                statusBrush.Opacity *= 0.95f;
+
+                if (cyclesForMessageRemaining == 0)
+                    invalidateNextDraw = true;
+            }
+        }
+        private void BeginDraw()
+        {
+            device3D.Rasterizer.SetViewports(new Viewport(0, 0, (int)Size.Width, (int)Size.Height));
+            device3D.OutputMerger.SetTargets(backBufferView);
+            renderTarget.BeginDraw();
+        }
+        private void EndDraw()
+        {
+            renderTarget.EndDraw();
+            swapChain.Present(0, PresentFlags.None);
+        }
+        private void ClearAdvancedInfoRegions()
+        {
+            renderTarget.FillRectangle(infoRect, backgroundBrush);
+            renderTarget.FillRectangle(z80Rect, backgroundBrush);
+            renderTarget.FillRectangle(disassemRect, backgroundBrush);
+        }
+        private void PaintCell(int cell, byte c, RawRectangleF[] Cells, DXBitmap[] Chars)
+        {
+            if (shadowScreen[cell] != c || invalid)
+            {
+                renderTarget.DrawBitmap(Chars[c],
+                    Cells[cell],
+                    1.0f,
+                    BitmapInterpolationMode.Linear);
+
+                shadowScreen[cell] = c;
+            }
+        }
+
+        // DX INTEROP
+
+        private void InitializeDX()
+        {
+            swapChainDescription = new SwapChainDescription()
+            {
+                BufferCount = 1,
+                ModeDescription = new ModeDescription((int)Size.Width,
+                                                      (int)Size.Height,
+                                                      new Rational(60, 1),
+                                                      Format.B8G8R8A8_UNorm),
+                IsWindowed = true,
+                OutputHandle = parent.Handle,
+                SampleDescription = new SampleDescription(1, 0),
+                SwapEffect = SwapEffect.Discard,
+                Usage = Usage.RenderTargetOutput,
+                Flags = SwapChainFlags.AllowModeSwitch
+            };
+
+            // Create Device and SwapChain
+            Device3D.CreateWithSwapChain(DriverType.Hardware,
+                                        DeviceCreationFlags.BgraSupport,
+                                        swapChainDescription,
+                                        SharpDX.Direct3D10.FeatureLevel.Level_10_1,
+                                        out device3D,
+                                        out swapChain);
+
+            // Ignore all windows events
+            swapChain.GetParent<SharpDX.DXGI.Factory>().MakeWindowAssociation(this.parent.Handle,
+                                          WindowAssociationFlags.IgnoreAll);
+
+            CreateBackBuffer();
+            CreateRenderTarget(Format.Unknown);
+
+            var directWriteFactory = new SharpDX.DirectWrite.Factory();
+
+            foregroundBrushWhite = new SolidColorBrush(renderTarget, Color.White);
+            foregroundBrushGreen = new SolidColorBrush(renderTarget, new RawColor4(0.3f, 1.0f, 0.3f, 1f));
+            backgroundBrush = new SolidColorBrush(renderTarget, Color4.Black);
+            statusBrush = new SolidColorBrush(renderTarget, Color4.White) { Opacity = 1f };
+            driveOnBrush = new SolidColorBrush(renderTarget, new RawColor4(0.4f, 0.4f, 0.4f, 0.3f));
+            driveActiveBrush = new SolidColorBrush(renderTarget, new RawColor4(1f, 0, 0, 0.3f));
+
+            foregroundBrush = GreenScreen ? foregroundBrushGreen : foregroundBrushWhite;
+
+            textFormat = new TextFormat(directWriteFactory, "Consolas", 12)
+            {
+                WordWrapping = WordWrapping.NoWrap,
+                TextAlignment = TextAlignment.Leading
+            };
+            statusTextFormat = new TextFormat(directWriteFactory, "Calibri", 18)
+            {
+                WordWrapping = WordWrapping.NoWrap,
+                TextAlignment = TextAlignment.Trailing
+            };
+
+            renderTarget.TextAntialiasMode = SharpDX.Direct2D1.TextAntialiasMode.Cleartype;
+
+            DoLayout();
+        }
+        private void CreateRenderTarget(Format Format)
+        {
+            d2DFactory = d2DFactory ?? new SharpDX.Direct2D1.Factory();
+
+            using (var surface = backBuffer.QueryInterface<Surface>())
+            {
+                var rtp = new RenderTargetProperties(new PixelFormat(Format, SharpDX.Direct2D1.AlphaMode.Premultiplied));
+                renderTarget = new RenderTarget(d2DFactory, surface, rtp);
+            }
+        }
+        private void CreateBackBuffer()
+        {
+            // Get the backbuffer from the swapchain
+            backBuffer = Texture2D.FromSwapChain<Texture2D>(swapChain, 0);
+
+            // Renderview on the backbuffer
+            backBufferView = new RenderTargetView(device3D, backBuffer);
+        }
+
+        // SNAPSHOTS
+
         public void Serialize(System.IO.BinaryWriter Writer)
         {
             Writer.Write(isWideCharMode);
@@ -602,6 +730,38 @@ namespace Sharp80
         public void Deserialize(System.IO.BinaryReader Reader)
         {
             SetVideoMode(Reader.ReadBoolean(), Reader.ReadBoolean());
+        }
+
+        // CLEANUP
+
+        public void Dispose()
+        {
+            if (!isDisposed)
+            {
+                Dispose(true);
+                isDisposed = true;
+            }
+            GC.SuppressFinalize(this);
+        }
+        private void Dispose(bool disposeManagedResources)
+        {
+            if (disposeManagedResources)
+            {
+                if (parent != null)
+                    parent.Dispose();
+            }
+
+            if (!backBufferView.IsDisposed)
+                backBufferView.Dispose();
+        }
+        public bool IsDisposed { get { return isDisposed; } }
+        ~ScreenDX()
+        {
+            if (!isDisposed)
+            {
+                Dispose(false);
+                isDisposed = true;
+            }
         }
     }
 }

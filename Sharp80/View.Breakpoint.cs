@@ -29,7 +29,7 @@ namespace Sharp80
                         RevertMode();
                         return true;
                     default:
-                        c = Key.ToChar();
+                        c = Key.ToHexChar();
                         break;
                 }
                 if (Computer.BreakPoint.RotateAddress(c, out ushort newBp))

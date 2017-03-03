@@ -36,7 +36,7 @@ namespace Sharp80
                         CurrentMode = ViewMode.Normal;
                         return false;
                     default:
-                        c = Key.ToChar();
+                        c = Key.ToHexChar();
                         break;
                 }
                 if (Computer.ProgramCounter.RotateAddress(c, out ushort newPc))

@@ -12,23 +12,21 @@ namespace Sharp80
         public bool Control { get; }
         public bool Alt { get; }
         public bool Pressed { get; }
-        public bool Released { get; }
+        public bool Released { get { return !Pressed; } }
         public bool Repeat { get; }
-        public KeyState(KeyCode Key, bool Shift, bool Control, bool Alt, bool Pressed, bool Released, bool Repeat = false)
+        public bool IsUnmodified { get { return !Alt && !Control; } }
+
+        public KeyState(KeyCode Key, bool Shift, bool Control, bool Alt, bool Pressed, bool Repeat = false)
         {
             this.Key = Key;
             this.Shift = Shift;
             this.Control = Control;
             this.Alt = Alt;
             this.Pressed = Pressed;
-            this.Released = Released;
             this.Repeat = Repeat;
-
-            if (this.Pressed == this.Released)
-                throw new Exception("WTF");
         }
-        public bool IsUnmodified { get { return !Alt && !Control; } }
-        public char ToChar()
+        
+        public char ToHexChar()
         {
             switch (Key)
             {

@@ -12,7 +12,7 @@ namespace Sharp80
 
         private Computer computer;
         private IScreen screen;
-        private KeyboardDX keyboard;
+        private IKeyboard keyboard;
         private Timer uiTimer;
         private int resizing = 0;
 
@@ -34,7 +34,6 @@ namespace Sharp80
             Dialogs.Initialize(this);
 
             screen = new ScreenDX(Settings.AdvancedView,
-                                  ViewMode.Help,
                                   DISPLAY_MESSAGE_CYCLE_DURATION,
                                   Settings.GreenScreen);
 
@@ -47,8 +46,8 @@ namespace Sharp80
 
         private void SetupClientArea()
         {
-            int h = (int)ScreenDX.WINDOWED_HEIGHT;
-            int w = (int)(screen.AdvancedView ? ScreenDX.WINDOWED_WIDTH_ADVANCED : ScreenDX.WINDOWED_WIDTH_NORMAL);
+            int h = (int)ScreenMetrics.WINDOWED_HEIGHT;
+            int w = (int)(screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL);
             var scn = Screen.FromHandle(Handle);
 
             float defaultScale = 1f;
@@ -120,20 +119,9 @@ namespace Sharp80
             base.WndProc(ref m);
         }
         
-        private bool leftShiftPressed = false;
-        private bool rightShiftPressed = false;
-        private bool leftControlPressed = false;
-        private bool rightControlPressed = false;
-        private bool leftAltPressed = false;
-        private bool rightAltPressed = false;
-
         private KeyCode repeatKey = KeyCode.None;
         private uint repeatKeyCount = 0;
-
-        private bool IsShifted        { get { return leftShiftPressed   || rightShiftPressed; } }
-        private bool IsControlPressed { get { return leftControlPressed || rightControlPressed; } }
-        private bool IsAltPressed     { get { return leftAltPressed     || rightAltPressed; } }
-
+        
         protected override void OnKeyDown(KeyEventArgs e)
         {
             // Prevent stupid ding noise
@@ -151,44 +139,29 @@ namespace Sharp80
             {
                 if (!IsMinimized && resizing == 0)
                     screen.Render();
-                
+
                 // Handle Keyboard Events
-                var poll = keyboard.Poll();
-                if (IsActive)
+                foreach (var ks in keyboard)
                 {
-                    if (poll.Length > 0)
+                    if (IsActive)
                     {
-                        foreach (var k in poll)
-                            ProcessKey(k);
-                    }
-                    else if (repeatKey != KeyCode.None)
-                    {
-                        if (++repeatKeyCount > REPEAT_THRESHOLD)
-                            ProcessRepeatKey(repeatKey);
+                        ProcessKey(ks);
+
+                        if (repeatKey != KeyCode.None)
+                        {
+                            if (++repeatKeyCount > REPEAT_THRESHOLD)
+                                ProcessRepeatKey(repeatKey);
+                        }
                     }
                 }
             }
         }
-
-        private void ProcessKey(SharpDX.DirectInput.KeyboardUpdate Key)
-        {
-            ProcessKey(new KeyState((KeyCode)Key.Key, IsShifted, IsControlPressed, IsAltPressed, Key.IsPressed, Key.IsReleased));
-        }
         private void ProcessRepeatKey(KeyCode Key)
         {
-            ProcessKey(new KeyState(Key, IsShifted, IsControlPressed, IsAltPressed, true, false, true));
+            ProcessKey(new KeyState(Key, keyboard.IsShifted, keyboard.IsControlPressed, keyboard.IsAltPressed, true, true));
         }
         private void ProcessKey(KeyState k)
         {
-            switch (k.Key)
-            {
-                case KeyCode.LeftShift:    leftShiftPressed =    k.Pressed; break;
-                case KeyCode.RightShift:   rightShiftPressed =   k.Pressed; break;
-                case KeyCode.LeftControl:  leftControlPressed =  k.Pressed; break;
-                case KeyCode.RightControl: rightControlPressed = k.Pressed; break;
-                case KeyCode.LeftAlt:      leftAltPressed =      k.Pressed; break;
-                case KeyCode.RightAlt:     rightAltPressed =     k.Pressed; break;
-            }
             if (k.Pressed)
             {
                 switch (k.Key)
@@ -216,19 +189,14 @@ namespace Sharp80
         {
             repeatKey = KeyCode.None;
 
-            keyboard.UpdateModifierKeys(out leftShiftPressed,
-                                        out rightShiftPressed,
-                                        out leftAltPressed,
-                                        out rightAltPressed,
-                                        out leftControlPressed,
-                                        out rightControlPressed);
+            keyboard.Refresh();
 
             computer.ResetKeyboard();
 
             if (View.CurrentMode == ViewMode.Normal)
             {
-                ProcessKey(new KeyState(KeyCode.LeftShift,    false, false, false, leftShiftPressed,    !leftShiftPressed));
-                ProcessKey(new KeyState(KeyCode.RightShift,   false, false, false, rightShiftPressed,   !rightShiftPressed));
+                ProcessKey(new KeyState(KeyCode.LeftShift,    false, false, false, keyboard.LeftShiftPressed));
+                ProcessKey(new KeyState(KeyCode.RightShift,   false, false, false, keyboard.RightShiftPressed));
             }
         }
         private void ToggleFullScreen(bool AdjustClientSize = true)
@@ -249,7 +217,7 @@ namespace Sharp80
                 if (AdjustClientSize)
                 {
                     SetWindowStyle();
-                    ClientSize = new System.Drawing.Size((int)(previousClientHeight * (screen.AdvancedView ? ScreenDX.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenDX.WINDOWED_ASPECT_RATIO_NORMAL)),
+                    ClientSize = new System.Drawing.Size((int)(previousClientHeight * (screen.AdvancedView ? ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL)),
                                                                previousClientHeight);
                 }
             }
@@ -308,7 +276,7 @@ namespace Sharp80
             if (screen.IsFullScreen && In)
                 return;
 
-            float aspectRatio = (screen.AdvancedView ? ScreenDX.WINDOWED_WIDTH_ADVANCED : ScreenDX.WINDOWED_WIDTH_NORMAL) / ScreenDX.WINDOWED_HEIGHT;
+            float aspectRatio = (screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL) / ScreenMetrics.WINDOWED_HEIGHT;
 
             var scn = Screen.FromHandle(Handle);
 
@@ -334,11 +302,11 @@ namespace Sharp80
 
             int newH = (int)(curH * zoom);
 
-            if (newH > ScreenDX.WINDOWED_HEIGHT * 0.88f && newH < ScreenDX.WINDOWED_HEIGHT * 1.102f)
-                newH = (int)ScreenDX.WINDOWED_HEIGHT;
+            if (newH > ScreenMetrics.WINDOWED_HEIGHT * 0.88f && newH < ScreenMetrics.WINDOWED_HEIGHT * 1.102f)
+                newH = (int)ScreenMetrics.WINDOWED_HEIGHT;
 
-            if (newH > 2 * ScreenDX.WINDOWED_HEIGHT * 0.88f && newH < 2 * ScreenDX.WINDOWED_HEIGHT * 1.102f)
-                newH = 2 * (int)ScreenDX.WINDOWED_HEIGHT;
+            if (newH > 2 * ScreenMetrics.WINDOWED_HEIGHT * 0.88f && newH < 2 * ScreenMetrics.WINDOWED_HEIGHT * 1.102f)
+                newH = 2 * (int)ScreenMetrics.WINDOWED_HEIGHT;
 
             int newW = (int)(newH * aspectRatio);
 
@@ -388,10 +356,14 @@ namespace Sharp80
                 BreakPoint =   Settings.Breakpoint,
                 BreakPointOn = Settings.BreakpointOn
             };
+
             computer.StartupLoadFloppies();
             screen.Reinitialize(computer);
 
             View.Initialize(computer, (msg) => screen.StatusMessage = msg);
+
+            if (Settings.AutoStartOnReset)
+                computer.Start();
         }
     }
 }

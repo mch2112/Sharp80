@@ -339,12 +339,12 @@ namespace Sharp80
         
         protected static byte[] PadScreen(byte[] Screen)
         {
-            if (Screen.Length == ScreenDX.NUM_SCREEN_CHARS)
+            if (Screen.Length == ScreenMetrics.NUM_SCREEN_CHARS)
                 return Screen;
             else
             {
-                byte[] s = new byte[ScreenDX.NUM_SCREEN_CHARS];
-                Array.Copy(Screen, s, Math.Min(ScreenDX.NUM_SCREEN_CHARS, Screen.Length));
+                byte[] s = new byte[ScreenMetrics.NUM_SCREEN_CHARS];
+                Array.Copy(Screen, s, Math.Min(ScreenMetrics.NUM_SCREEN_CHARS, Screen.Length));
                 return s;
             }
         }
@@ -361,9 +361,9 @@ namespace Sharp80
         }
         protected static string Center(string Input)
         {
-            Debug.Assert(Input.Length <= ScreenDX.NUM_SCREEN_CHARS_X);
+            Debug.Assert(Input.Length <= ScreenMetrics.NUM_SCREEN_CHARS_X);
 
-            return Input.PadLeft((ScreenDX.NUM_SCREEN_CHARS_X + Input.Length) / 2).PadRight(ScreenDX.NUM_SCREEN_CHARS_X);
+            return Input.PadLeft((ScreenMetrics.NUM_SCREEN_CHARS_X + Input.Length) / 2).PadRight(ScreenMetrics.NUM_SCREEN_CHARS_X);
         }
 
         protected static string Format(string Input)
@@ -372,9 +372,9 @@ namespace Sharp80
         }
         protected static string Format(string Input, int Indent)
         {
-            Debug.Assert((Input.Length + Indent) <= ScreenDX.NUM_SCREEN_CHARS_X);
+            Debug.Assert((Input.Length + Indent) <= ScreenMetrics.NUM_SCREEN_CHARS_X);
 
-            return (new String(' ', Indent) + Input).PadRight(ScreenDX.NUM_SCREEN_CHARS_X);
+            return (new String(' ', Indent) + Input).PadRight(ScreenMetrics.NUM_SCREEN_CHARS_X);
         }
         protected static string Format(string[] Input, bool Indent)
         {
@@ -391,7 +391,7 @@ namespace Sharp80
 
                     int inputLength = Input.Sum(s => s.Length);
 
-                    int extraSpace = ScreenDX.NUM_SCREEN_CHARS_X - inputLength - (Indent ? 2 * STANDARD_INDENT : 0);
+                    int extraSpace = ScreenMetrics.NUM_SCREEN_CHARS_X - inputLength - (Indent ? 2 * STANDARD_INDENT : 0);
 
                     Debug.Assert(extraSpace >= 0);
 
@@ -432,7 +432,7 @@ namespace Sharp80
         }
         protected static string Separator(char Char = '=')
         {
-            return new String(Char, ScreenDX.NUM_SCREEN_CHARS_X);
+            return new String(Char, ScreenMetrics.NUM_SCREEN_CHARS_X);
         }
         protected static void WriteToByteArray(byte[] Array, int Start, string Input)
         {

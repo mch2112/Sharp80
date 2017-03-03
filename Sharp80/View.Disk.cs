@@ -168,7 +168,7 @@ namespace Sharp80
         {
             int numBytes = Math.Min(0x100, sd?.SectorData?.Length ?? 0);
 
-            byte[] cells = new byte[ScreenDX.NUM_SCREEN_CHARS];
+            byte[] cells = new byte[ScreenMetrics.NUM_SCREEN_CHARS];
 
             WriteToByteArray(cells, 0x000, "Dsk");
             cells[0x040] = DriveNum.ToHexCharByte();
@@ -251,7 +251,7 @@ namespace Sharp80
                     }
                     else if ((k & 0x0F) == 0x00)
                     {
-                        cell = k / 0x10 * ScreenDX.NUM_SCREEN_CHARS_X;
+                        cell = k / 0x10 * ScreenMetrics.NUM_SCREEN_CHARS_X;
                     }
                 }
             }
@@ -334,11 +334,11 @@ namespace Sharp80
         {
             if (string.IsNullOrWhiteSpace(FilePath))
                 return "<Untitled>";
-            else if (FilePath.Length <= ScreenDX.NUM_SCREEN_CHARS_X)
+            else if (FilePath.Length <= ScreenMetrics.NUM_SCREEN_CHARS_X)
                 return FilePath;
             else
                 return FilePath.Substring(0, 20) + "..." +
-                       FilePath.Substring(FilePath.Length - ScreenDX.NUM_SCREEN_CHARS_X + 23);
+                       FilePath.Substring(FilePath.Length - ScreenMetrics.NUM_SCREEN_CHARS_X + 23);
         }
     }
 }

@@ -46,7 +46,7 @@ namespace Sharp80
         }
         protected override byte[] GetViewBytes()
         {
-            byte[] cells = new byte[ScreenDX.NUM_SCREEN_CHARS];
+            byte[] cells = new byte[ScreenMetrics.NUM_SCREEN_CHARS];
 
             int cell = 0;
             int rawCell = 0x30;
