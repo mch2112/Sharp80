@@ -14,7 +14,6 @@ using DXBitmap = SharpDX.Direct2D1.Bitmap;
 
 namespace Sharp80
 {
-    
     internal sealed class ScreenDX : Direct3D, IScreen
     {
         private const Format PixelFormat = Format.R8G8B8A8_UNorm;
@@ -48,7 +47,7 @@ namespace Sharp80
 
         private ViewMode viewMode;
 
-        public Computer Computer { get; set; }
+        private Computer Computer { get; set; }
 
         private bool advancedView;
 
@@ -110,12 +109,12 @@ namespace Sharp80
             }
         }
 
-        public void Initialize(IDXClient Form)
+        public void Initialize(IAppWindow Parent)
         {
             if (initialized)
                 throw new Exception();
 
-            SetParentForm(Form); // need to do this before computing targetsize
+            SetParentForm(Parent); // need to do this before computing targetsize
 
             Initialize(DesiredLogicalSize);
 
@@ -170,9 +169,9 @@ namespace Sharp80
                     advancedView = value;
 
                     if (!IsFullScreen)
-                        ParentForm.ClientSize =
-                            new Size((int)(ParentForm.ClientSize.Height * (advancedView ? WINDOWED_ASPECT_RATIO_ADVANCED : WINDOWED_ASPECT_RATIO_NORMAL)),
-                                     ParentForm.ClientSize.Height);
+                        Parent.ClientSize =
+                            new Size((int)(Parent.ClientSize.Height * (advancedView ? WINDOWED_ASPECT_RATIO_ADVANCED : WINDOWED_ASPECT_RATIO_NORMAL)),
+                                     Parent.ClientSize.Height);
                     Resize(DesiredLogicalSize);
                 }
             }
@@ -192,8 +191,8 @@ namespace Sharp80
             else
                 ratio = WINDOWED_ASPECT_RATIO_NORMAL;
 
-            float width = ParentForm.ClientSize.Width;
-            float height = ParentForm.ClientSize.Height;
+            float width = Parent.ClientSize.Width;
+            float height = Parent.ClientSize.Height;
 
             if (Msg.Msg == MessageEventArgs.WM_SIZING)
             {
@@ -252,7 +251,11 @@ namespace Sharp80
 
             DoLayout();
         }
-    
+        public void Reinitialize(Computer Computer)
+        {
+            this.Computer = Computer;
+            Reset();
+        }
         public void Reset()
         {
             if (isWideCharMode || isKanjiCharMode)
@@ -291,7 +294,7 @@ namespace Sharp80
         }
         public string StatusMessage
         {
-            get { return statusMessage; }
+            private get { return statusMessage; }
             set
             {
                 statusMessage = value;
@@ -428,10 +431,7 @@ namespace Sharp80
         }
         private void LoadCharGen()
         {
-            var rawBytes = Resources.CharGen;
-
-            var ms = new System.IO.MemoryStream(rawBytes);
-
+            
             charGenNormal = charGenNormal ?? new DXBitmap[0x100];
             charGenWide = charGenWide ?? new DXBitmap[0x100];
             charGenKanji = charGenKanji ?? new DXBitmap[0x100];
@@ -442,18 +442,31 @@ namespace Sharp80
             var properties = new BitmapProperties(new PixelFormat(ScreenDX.PixelFormat,
                                                                         SharpDX.Direct2D1.AlphaMode.Premultiplied));
 
-            for (int i = 0; i < 0x100; i++)
+            byte[] b = Resources.CharGenBase;
+            var ms = new System.IO.MemoryStream(b);
+            for (int i = 0; i < 0xC0; i++)
+                charGenKanji[i] = charGenNormal[i] = CreateBitmap(RenderTarget, ms, filterABGR, false, properties);
+
+            byte[] h = Resources.CharGenHigh;
+            ms = new System.IO.MemoryStream(h);
+            for (int i = 0xC0; i < 0x100; i++)
                 charGenNormal[i] = CreateBitmap(RenderTarget, ms, filterABGR, false, properties);
 
-            for (int i = 0; i < 0x100; i++)
+            byte[] k = Resources.CharGenKanji;
+            ms = new System.IO.MemoryStream(k);
+            for (int i = 0xC0; i < 0x100; i++)
                 charGenKanji[i] = CreateBitmap(RenderTarget, ms, filterABGR, false, properties);
 
-            ms = new System.IO.MemoryStream(rawBytes.Double());
+            ms = new System.IO.MemoryStream(b.Double());
+            for (int i = 0; i < 0xC0; i++)
+                charGenKanjiWide[i] = charGenWide[i] = CreateBitmap(RenderTarget, ms, filterABGR, true, properties);
 
-            for (int i = 0; i < 0x100; i++)
+            ms = new System.IO.MemoryStream(h.Double());
+            for (int i = 0xC0; i < 0x100; i++)
                 charGenWide[i] = CreateBitmap(RenderTarget, ms, filterABGR, true, properties);
 
-            for (int i = 0; i < 0x100; i++)
+            ms = new System.IO.MemoryStream(k.Double());
+            for (int i = 0xC0; i < 0x100; i++)
                 charGenKanjiWide[i] = CreateBitmap(RenderTarget, ms, filterABGR, true, properties);
         }
         private static DXBitmap CreateBitmap(RenderTarget renderTarget, System.IO.MemoryStream MS, uint FilterABGR, bool Wide, BitmapProperties Properties)
@@ -475,19 +488,15 @@ namespace Sharp80
             float xBorder;
             float yBorder;
 
-            System.Diagnostics.Debug.WriteLine(string.Format("Logical screen {0}x{1}", Size.Width, Size.Height));
-
             if (IsFullScreen)
             {
                 float targetAspect = AdvancedView ? SCREEN_AND_ADV_INFO_ASPECT_RATIO : VIRTUAL_SCREEN_ASPECT_RATIO;
-                float logicalAspect = this.Size.Width / this.Size.Height;
-
-                System.Diagnostics.Debug.WriteLine(string.Format("Target Aspect: {0}, Logical Aspect: {1}", targetAspect, logicalAspect));
+                float logicalAspect = Size.Width / Size.Height;
 
                 if (logicalAspect < targetAspect) // extra vertical space
                 {
                     xBorder = 0;
-                    var missingXPixels = this.Size.Height * (targetAspect - logicalAspect);
+                    var missingXPixels = Size.Height * (targetAspect - logicalAspect);
                     var extraYPixels = missingXPixels / targetAspect;
                     yBorder = extraYPixels / 2;
                 }
@@ -502,8 +511,6 @@ namespace Sharp80
                 xBorder = advancedView ? 12f : 24f;
                 yBorder = 12f;
             }
-
-            System.Diagnostics.Debug.WriteLine(string.Format("Layout Border: {0}x {1}y", xBorder, yBorder));
 
             float xOrigin = xBorder;
             float yOrigin = yBorder;
@@ -560,14 +567,11 @@ namespace Sharp80
         {
             get
             {
-                Size2F ts;
-
-                float physX;
-                float physY;
+                float physX, physY;
 
                 if (IsFullScreen)
                 {
-                    var scn = System.Windows.Forms.Screen.FromHandle(ParentForm.Handle);
+                    var scn = System.Windows.Forms.Screen.FromHandle(Parent.Handle);
                     physX = scn.WorkingArea.Width;
                     physY = scn.WorkingArea.Height;
 
@@ -581,18 +585,13 @@ namespace Sharp80
                         w += h * (physicalAspect - targetAspectRatio);
                     else // extra vertical space
                         h = h * targetAspectRatio / physicalAspect;
-                    ts = new Size2F(w, h);
+                    return new Size2F(w, h);
                 }
                 else
                 {
-                    physX = ParentForm.ClientSize.Width;
-                    physY = ParentForm.ClientSize.Height;
-
-                    ts = AdvancedView ? new Size2F(WINDOWED_WIDTH_ADVANCED, WINDOWED_HEIGHT)
-                                           : new Size2F(WINDOWED_WIDTH_NORMAL, WINDOWED_HEIGHT);
+                    return AdvancedView ? new Size2F(WINDOWED_WIDTH_ADVANCED, WINDOWED_HEIGHT)
+                                        : new Size2F(WINDOWED_WIDTH_NORMAL, WINDOWED_HEIGHT);
                 }
-                System.Diagnostics.Debug.WriteLine(string.Format("Target Size for Physical {0}x{1}, Advanced={2} FullScreen={3}: {4}x{5}",physX, physY, advancedView ? "true" : "false", IsFullScreen ? "true" : "false", ts.Width, ts.Height));
-                return ts;
             }
         }
         public void Serialize(System.IO.BinaryWriter Writer)

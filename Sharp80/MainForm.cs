@@ -6,12 +6,12 @@ using System.Windows.Forms;
 
 namespace Sharp80
 {
-    public partial class MainForm : Form, IDXClient
+    public partial class MainForm : Form, IAppWindow
     {
         public event MessageEventHandler Sizing;
 
         private Computer computer;
-        private ScreenDX screen;
+        private IScreen screen;
         private KeyboardDX keyboard;
         private Timer uiTimer;
         private int resizing = 0;
@@ -389,7 +389,7 @@ namespace Sharp80
                 BreakPointOn = Settings.BreakpointOn
             };
             computer.StartupLoadFloppies();
-            screen.Computer = computer;
+            screen.Reinitialize(computer);
 
             View.Initialize(computer, (msg) => screen.StatusMessage = msg);
         }

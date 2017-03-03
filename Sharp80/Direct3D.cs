@@ -32,7 +32,7 @@ namespace Sharp80
 
         protected RenderTarget RenderTarget { get; private set; }
         protected bool IsDrawing { get; private set; }        
-        protected IDXClient ParentForm { get; private set; }
+        protected IAppWindow Parent { get; private set; }
 
         private SharpDX.Direct2D1.Factory d2DFactory = null;
 
@@ -41,10 +41,10 @@ namespace Sharp80
             IsDrawing = false;
             isResizing = 0;
         }
-        protected void SetParentForm(IDXClient Form)
+        protected void SetParentForm(IAppWindow Form)
         {
-            ParentForm = Form;
-            ParentForm.BackColor = System.Drawing.Color.Black;
+            Parent = Form;
+            Parent.BackColor = System.Drawing.Color.Black;
         }
         protected void Initialize(Size2F Size)
         {
@@ -52,13 +52,13 @@ namespace Sharp80
             
             InitializeDX();
 
-            ParentForm.ResizeBegin += (o, args) => { isResizing++; };
-            ParentForm.ResizeEnd += (o, args) =>
+            Parent.ResizeBegin += (o, args) => { isResizing++; };
+            Parent.ResizeEnd += (o, args) =>
             {
                 isResizing = Math.Max(0, isResizing - 1);
                 DoLayout();
             };
-            ParentForm.Sizing += (o, args) => { ConstrainAspectRatio(args.Message); };
+            Parent.Sizing += (o, args) => { ConstrainAspectRatio(args.Message); };
         }
 
         public void Stop()
@@ -133,7 +133,7 @@ namespace Sharp80
         }
         protected abstract void Draw();
 
-        private bool DrawOK { get { return isResizing == 0 && !IsDrawing && !ParentForm.IsMinimized; } }
+        private bool DrawOK { get { return isResizing == 0 && !IsDrawing && !Parent.IsMinimized; } }
 
         public void Render()
         {
@@ -167,7 +167,7 @@ namespace Sharp80
                                                       new Rational(60,1),
                                                       Format.B8G8R8A8_UNorm),
                 IsWindowed = true,
-                OutputHandle = ParentForm.Handle,
+                OutputHandle = Parent.Handle,
                 SampleDescription = new SampleDescription(1, 0),
                 SwapEffect = SwapEffect.Discard,
                 Usage = Usage.RenderTargetOutput,
@@ -183,7 +183,7 @@ namespace Sharp80
                                         out swapChain);
 
             // Ignore all windows events
-            swapChain.GetParent<SharpDX.DXGI.Factory>().MakeWindowAssociation(this.ParentForm.Handle,
+            swapChain.GetParent<SharpDX.DXGI.Factory>().MakeWindowAssociation(this.Parent.Handle,
                                           WindowAssociationFlags.IgnoreAll);
 
             CreateBackBuffer();
@@ -204,8 +204,8 @@ namespace Sharp80
         {
             if (disposeManagedResources)
             {
-                if (ParentForm != null)
-                    ParentForm.Dispose();
+                if (Parent != null)
+                    Parent.Dispose();
             }
 
             if (!backBufferView.IsDisposed)

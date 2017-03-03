@@ -2,6 +2,8 @@
 /// Licensed Under GPL v3
 
 using System;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 
 namespace Sharp80
@@ -273,6 +275,28 @@ namespace Sharp80
         public static string ToArrayDeclaration(this byte[] Input)
         {
             return "byte[] b = {" + String.Join(",", Input.Select(b => "0x" + b.ToHexString())) + "}";
+        }
+        public static byte[] Compress(this byte[] data)
+        {
+            var output = new MemoryStream();
+            using (DeflateStream ds = new DeflateStream(output, CompressionLevel.Optimal))
+            {
+                ds.Write(data, 0, data.Length);
+            }
+            var o = output.ToArray();
+            System.Diagnostics.Debug.Assert(Decompress(o).ArrayEquals(data));
+            return o;
+        }
+        public static byte[] Decompress(this byte[] data)
+        {
+            var input = new MemoryStream(data);
+            var output = new MemoryStream();
+            using (DeflateStream ds = new DeflateStream(input, CompressionMode.Decompress))
+            {
+                ds.CopyTo(output);
+            }
+            var o = output.ToArray();
+            return o;
         }
     }
 }

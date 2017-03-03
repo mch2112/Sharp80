@@ -7,7 +7,7 @@ namespace Sharp80
 {
     public delegate void MessageEventHandler(object sender, MessageEventArgs e);
     
-    public interface IDXClient
+    public interface IAppWindow
     {
         event MessageEventHandler Sizing;
         event EventHandler ResizeBegin;
@@ -18,6 +18,7 @@ namespace Sharp80
         System.Drawing.Size ClientSize { get; set; }
         System.Drawing.Color BackColor { get; set; }
         System.Windows.Forms.Cursor Cursor { get; set; }
+
         void Dispose();
     }
 }

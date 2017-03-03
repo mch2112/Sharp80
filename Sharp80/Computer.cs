@@ -27,7 +27,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Computer(IDXClient MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool NormalSpeed)
+        public Computer(IAppWindow MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool NormalSpeed)
         {
             ulong milliTStatesPerIRQ = CLOCK_RATE * Clock.TICKS_PER_TSTATE / 30;
             ulong milliTStatesPerSoundSample = CLOCK_RATE * Clock.TICKS_PER_TSTATE / SoundX.SAMPLE_RATE;
@@ -60,8 +60,6 @@ namespace Sharp80
             FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound);
 
             Ports.FloppyController = FloppyController;
-
-            Screen.Reset();
 
             ready = true;
         }

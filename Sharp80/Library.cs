@@ -2,37 +2,12 @@
 /// Licensed Under GPL v3
 
 using System;
-using System.Diagnostics;
-using System.IO;
-using System.IO.Compression;
 using System.Text;
 
 namespace Sharp80
 {
 	internal static partial class Lib
 	{
-        public static byte[] Compress(byte[] data)
-        {
-            var output = new MemoryStream();
-            using (DeflateStream ds = new DeflateStream(output, CompressionLevel.Optimal))
-            {
-                ds.Write(data, 0, data.Length);
-            }
-            var o = output.ToArray();
-            Debug.Assert(Decompress(o).ArrayEquals(data));
-            return o;
-        }
-        public static byte[] Decompress(byte[] data)
-        {
-            var input = new MemoryStream(data);
-            var output = new MemoryStream();
-            using (DeflateStream ds = new DeflateStream(input, CompressionMode.Decompress))
-            {
-                ds.CopyTo(output);
-            }
-            var o = output.ToArray();
-            return o;
-        }
         public static string GetSpacedHex(IMemory memory, ushort index, int count)
         {
             string s = String.Empty;

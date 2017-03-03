@@ -135,7 +135,7 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Floppy_DMK_JV.cs" />
-    <Compile Include="IDXClient.cs" />
+    <Compile Include="IAppWindow.cs" />
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Resources.CharGen.cs" />
