@@ -60,9 +60,7 @@ namespace Sharp80
         private DXBitmap[] charGen, charGenNormal, charGenWide, charGenKanji, charGenKanjiWide;
         private RawRectangleF infoRect, z80Rect, disassemRect, statusMsgRect;
         private RawRectangleF[] cells, cellsNormal, cellsWide;
-        System.Drawing.Bitmap[] cgNormal, cgWide, cgKanji, cgKanjiWide;
-        private bool loadingCharGen = false;
-
+        
         private byte[] shadowScreen;
 
         private uint cyclesForMessageRemaining = 0;
@@ -118,7 +116,7 @@ namespace Sharp80
             this.Computer = Computer;
             Initialize(DesiredLogicalSize);
 
-            InitCharGen();
+            //_InitCharGen();
             LoadCharGen();
 
             SetVideoMode(false, false);
@@ -133,7 +131,7 @@ namespace Sharp80
             get { return isGreenScreen; }
             set
             {
-                if (value != isGreenScreen && !loadingCharGen)
+                if (value != isGreenScreen)
                 {
                     isGreenScreen = value;
                     StatusMessage = "Changing screen color...";
@@ -426,54 +424,11 @@ namespace Sharp80
                 shadowScreen[cell] = c;
             }
         }
-        private void InitCharGen()
-        {
-            System.Drawing.Bitmap characters = (System.Drawing.Bitmap)System.Drawing.Image.FromStream(new System.IO.MemoryStream(Resources.CharGen));
-
-            cgNormal = new System.Drawing.Bitmap[0x100];
-            cgWide = new System.Drawing.Bitmap[0x100];
-            cgKanji = new System.Drawing.Bitmap[0x100];
-            cgKanjiWide = new System.Drawing.Bitmap[0x100];
-
-            for (int y = 0; y < 0x08; y++)
-            {
-                for (int x = 0; x < 0x20; x++)
-                {
-                    int index = x + 0x20 * y;
-                    cgNormal[index] = characters.Clone(new System.Drawing.Rectangle(x * CHAR_PIXELS_X,
-                                                                              y * CHAR_PIXELS_Y,
-                                                                              CHAR_PIXELS_X,
-                                                                              CHAR_PIXELS_Y),
-                                                                              System.Drawing.Imaging.PixelFormat.Format1bppIndexed);
-                    cgWide[index] = characters.Clone(new System.Drawing.Rectangle(x * CHAR_PIXELS_X * 2,
-                                                                              y * CHAR_PIXELS_Y + 240,
-                                                                              CHAR_PIXELS_X * 2,
-                                                                              CHAR_PIXELS_Y),
-                                                                              System.Drawing.Imaging.PixelFormat.Format1bppIndexed);
-                    if (y < 6)
-                    {
-                        cgKanji[index] = cgNormal[index];
-                        cgKanjiWide[index] = cgWide[index];
-                    }
-                    else
-                    {
-                        cgKanji[index] = characters.Clone(new System.Drawing.Rectangle(x * CHAR_PIXELS_X,
-                                                                                 (y + 2) * CHAR_PIXELS_Y,
-                                                                                 CHAR_PIXELS_X,
-                                                                                 CHAR_PIXELS_Y),
-                                                                                 System.Drawing.Imaging.PixelFormat.Format1bppIndexed);
-                        cgKanjiWide[index] = characters.Clone(new System.Drawing.Rectangle(x * CHAR_PIXELS_X * 2,
-                                                                                 (y + 2) * CHAR_PIXELS_Y + 240,
-                                                                                 CHAR_PIXELS_X * 2,
-                                                                                 CHAR_PIXELS_Y),
-                                                                                 System.Drawing.Imaging.PixelFormat.Format1bppIndexed);
-                    }
-                }
-            }
-        }
         private void LoadCharGen()
         {
-            loadingCharGen = true;
+            var rawBytes = Resources.CharGen;
+
+            var ms = new System.IO.MemoryStream(rawBytes);
 
             charGenNormal = charGenNormal ?? new DXBitmap[0x100];
             charGenWide = charGenWide ?? new DXBitmap[0x100];
@@ -482,55 +437,37 @@ namespace Sharp80
 
             uint filterABGR = GreenScreen ? 0xFF40FF40 : 0xFFFFFFFF;
 
-            for (int i = 0; i < 0x100; i++)
-            {
-                charGenNormal[i] = ConvertBitmap(RenderTarget, cgNormal[i], filterABGR);
-                charGenWide[i] = ConvertBitmap(RenderTarget, cgWide[i], filterABGR);
-                charGenKanji[i] = ConvertBitmap(RenderTarget, cgKanji[i], filterABGR);
-                charGenKanjiWide[i] = ConvertBitmap(RenderTarget, cgKanjiWide[i], filterABGR);
-            }
-            loadingCharGen = false;
-        }
-        private static DXBitmap ConvertBitmap(RenderTarget renderTarget, System.Drawing.Bitmap bitmap, uint FilterABGR = 0xFFFFFFFF)
-        {
-            var sourceArea = new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height);
-            var bitmapProperties = new BitmapProperties(new PixelFormat(ScreenDX.PixelFormat,
+            var properties = new BitmapProperties(new PixelFormat(ScreenDX.PixelFormat,
                                                                         SharpDX.Direct2D1.AlphaMode.Premultiplied));
-            var size = new Size2(bitmap.Width, bitmap.Height);
 
-            // Transform pixels from BGRA to ABGR
-            int stride = bitmap.Width * sizeof(int);
-            using (var tempStream = new DataStream(bitmap.Height * stride, true, true))
+            for (int i = 0; i < 0x100; i++)
+                charGenNormal[i] = CreateBitmap(RenderTarget, ms, filterABGR, false, properties);
+
+            for (int i = 0; i < 0x100; i++)
+                charGenKanji[i] = CreateBitmap(RenderTarget, ms, filterABGR, false, properties);
+
+            ms = new System.IO.MemoryStream(rawBytes.Double());
+
+            for (int i = 0; i < 0x100; i++)
+                charGenWide[i] = CreateBitmap(RenderTarget, ms, filterABGR, true, properties);
+
+            for (int i = 0; i < 0x100; i++)
+                charGenKanjiWide[i] = CreateBitmap(RenderTarget, ms, filterABGR, true, properties);
+        }
+        private static DXBitmap CreateBitmap(RenderTarget renderTarget, System.IO.MemoryStream MS, uint FilterABGR, bool Wide, BitmapProperties Properties)
+        {
+            var width = Wide ? CHAR_PIXELS_X * 2 : CHAR_PIXELS_X;
+            var size = new Size2(width, CHAR_PIXELS_Y);
+            int stride = width * sizeof(int);
+            using (var tempStream = new DataStream(CHAR_PIXELS_Y * stride, true, true))
             {
-                // Lock source bitmap
-                var bitmapData = bitmap.LockBits(sourceArea,
-                                                 System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                                                 System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
-
-                // Convert all pixels 
-                for (int y = 0; y < bitmap.Height; y++)
-                {
-                    int offset = bitmapData.Stride * y;
-                    IntPtr scan0 = bitmapData.Scan0;
-                    for (int x = 0; x < bitmap.Width; x++)
-                    {
-                        // Not optimized 
-                        byte B = Marshal.ReadByte(scan0, offset++);
-                        byte G = Marshal.ReadByte(scan0, offset++);
-                        byte R = Marshal.ReadByte(scan0, offset++);
-                        byte A = Marshal.ReadByte(scan0, offset++);
-
-                        uint abgr = (uint)(R | (G << 8) | (B << 16) | (A << 24));
-                        abgr &= FilterABGR;
-                        tempStream.Write(abgr);
-                    }
-                }
-                bitmap.UnlockBits(bitmapData);
+                for (int i = 0; i < width * CHAR_PIXELS_Y; i++)
+                    tempStream.Write((MS.ReadByte() == 0) ? 0xFF000000 : FilterABGR);
                 tempStream.Position = 0;
-
-                return new DXBitmap(renderTarget, size, tempStream, stride, bitmapProperties);
+                return new DXBitmap(renderTarget, size, tempStream, stride, Properties);
             }
         }
+        
         protected override void DoLayout()
         {
             float xBorder;

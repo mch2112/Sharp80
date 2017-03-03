@@ -307,11 +307,14 @@ namespace Sharp80
 
             if (save.Value)
             {
-                if (string.IsNullOrWhiteSpace(Computer.GetFloppyFilePath(DriveNum)))
+                var path = Computer.GetFloppyFilePath(DriveNum);
+                if (string.IsNullOrWhiteSpace(path) || Floppy.IsFileNameToken(path))
                 {
-                    var path = GetFloppyFilePath("Choose path to save floppy", Settings.DefaultFloppyDirectory, true, false, true);
+                    path = GetFloppyFilePath("Choose path to save floppy", Settings.DefaultFloppyDirectory, true, false, true);
                     if (string.IsNullOrWhiteSpace(path))
+                    {
                         return false;
+                    }
                     else
                     {
                         Computer.SetFloppyFilePath(DriveNum, path);

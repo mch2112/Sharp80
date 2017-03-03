@@ -270,5 +270,9 @@ namespace Sharp80
             else
                 return 0xFF;
         }
+        public static string ToArrayDeclaration(this byte[] Input)
+        {
+            return "byte[] b = {" + String.Join(",", Input.Select(b => "0x" + b.ToHexString())) + "}";
+        }
     }
 }

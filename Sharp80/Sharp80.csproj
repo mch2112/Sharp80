@@ -138,8 +138,10 @@
     <Compile Include="IDXClient.cs" />
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="Resources.cs" />
+    <Compile Include="Resources.CharGen.cs" />
     <Compile Include="IScreen.cs" />
+    <Compile Include="Resources.Rom.cs" />
+    <Compile Include="Resources.Trsdos.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="SoundNull.cs" />
     <Compile Include="IMemory.cs" />
