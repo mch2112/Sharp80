@@ -246,7 +246,7 @@ namespace Sharp80
             if (Storage.SaveFloppies(computer))
             {
                 Settings.Save();
-                Log.Save();
+                Log.Save(true, out string _);
                 Dispose();
             }
             else
@@ -359,6 +359,7 @@ namespace Sharp80
 
             computer.StartupLoadFloppies();
             screen.Reinitialize(computer);
+            Log.Initalize(computer.GetElapsedTStates);
 
             View.Initialize(computer, (msg) => screen.StatusMessage = msg);
 

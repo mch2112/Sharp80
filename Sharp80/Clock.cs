@@ -81,6 +81,10 @@ namespace Sharp80
 
         // PROPERTIES
 
+        public ulong ElapsedTStates
+        {
+            get { return tickCount / TICKS_PER_TSTATE; }
+        }
         public ulong TicksPerSec
         {
             get { return ticksPerSec; }
@@ -150,7 +154,7 @@ namespace Sharp80
             SetNextPulseReqTick();
         }
 
-        public string GetInternalsReport(bool IncludeTickCount)
+        public string GetInternalsReport()
         {
             var s = new StringBuilder();
 
@@ -175,15 +179,15 @@ namespace Sharp80
                 }
             }
             s.Append(((float)emuSpeedInHz / 1000000f).ToString("#0.00") + " MHz ");
-            if (IncludeTickCount)
-                s.Append("T: " + (tickCount / TICKS_PER_TSTATE).ToString("000,000,000,000,000"));
+
+            s.Append("T: " + (tickCount / TICKS_PER_TSTATE).ToString("000,000,000,000,000"));
 
             if (waitTrigger.Latched)
                 s.Append(" WAIT");
 
             return s.ToString();
         }
-
+        
         private void ResetTriggers()
         {
             nextEmuSpeedMeasureTicks = tickCount;

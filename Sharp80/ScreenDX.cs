@@ -561,7 +561,7 @@ namespace Sharp80
                     renderTarget.DrawText(computer.GetInternalsReport(), textFormat, z80Rect, foregroundBrush);
                     renderTarget.DrawText(computer.GetDisassembly(), textFormat, disassemRect, foregroundBrush);
                     renderTarget.DrawText(
-                        computer.GetClockReport(true) + Environment.NewLine + computer.GetDriveStatusReport(),
+                        computer.GetClockReport() + Environment.NewLine + computer.GetDriveStatusReport(),
                         textFormat, infoRect, foregroundBrush);
                 }
 

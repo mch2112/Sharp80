@@ -78,6 +78,10 @@ namespace Sharp80
         {
             get { return Processor.PcVal; }
         }
+        public ulong GetElapsedTStates()
+        {
+            return Clock.ElapsedTStates;
+        }
         public IMemory Memory
         {
             get { return Processor.Memory; }
@@ -387,9 +391,9 @@ namespace Sharp80
         {
             return Processor.GetInternalsReport();
         }
-        public string GetClockReport(bool IncludeTickCount)
+        public string GetClockReport()
         {
-            return Clock.GetInternalsReport(IncludeTickCount);
+            return Clock.GetInternalsReport();
         }
         public string GetDisassembly()
         {

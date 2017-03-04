@@ -232,12 +232,8 @@ namespace Sharp80
                             if (Log.TraceOn)
                             {
                                 Log.TraceOn = false;
-                                bool isRunning = Computer.IsRunning;
-                                Computer.Stop(true);
-                                Log.Save();
-                                if (isRunning)
-                                    Computer.Start();
-                                MessageCallback("Trace run saved to 'trace.txt'");
+                                SaveLog(true);
+                                MessageCallback("Trace stopped.");
                             }
                             else
                             {
@@ -267,8 +263,10 @@ namespace Sharp80
                             MessageCallback(Settings.AltKeyboardLayout ? "Alternate Keyboard Layout" : "Normal Keyboard Layout");
                             return true;
                         case KeyCode.L:
-                            Log.Save();
-                            MessageCallback("Log saved.");
+                            if (SaveLog(false))
+                                MessageCallback("Log saved.");
+                            else
+                                MessageCallback("No log items.");
                             return true;
                         case KeyCode.M:
                             CurrentMode = ViewMode.Memory;
@@ -324,6 +322,24 @@ namespace Sharp80
             }
             return false;
         }
+
+        private static bool SaveLog(bool Flush)
+        {
+            bool isRunning = Computer.IsRunning;
+            bool ret;
+            Computer.Stop(true);
+
+            if (ret = Log.Save(Flush, out string path))
+                Dialogs.ShowTextFile(path);
+            else
+                Dialogs.InformUser("No log information collected yet.");
+
+            if (isRunning)
+                Computer.Start();
+
+            return ret;
+        }
+
         private static void Disassemble(bool FromPc)
         {
             string path = System.IO.Path.Combine(Storage.DocsPath, "Disassembly.txt");

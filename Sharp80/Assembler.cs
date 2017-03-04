@@ -96,9 +96,9 @@ namespace Sharp80.Assembler
                 DetermineData();
                 SaveIntermediateFile();
             }
-            catch
+            catch (Exception ex)
             {
-
+                Log.LogException(ex);
             }
 
             ErrCount = unit.Count(l => l.HasError);
@@ -332,7 +332,6 @@ namespace Sharp80.Assembler
                         symbolTable.Add(l.Label, l);
                     }
                 }
-
             }
         }
 
@@ -927,8 +926,9 @@ namespace Sharp80.Assembler
 
                 Storage.SaveCMDFile(title, cmdFilePath, org, segment, startAddress);
             }
-            catch
+            catch (Exception ex)
             {
+                Log.LogException(ex);
             }
             return cmdFilePath;
         }
