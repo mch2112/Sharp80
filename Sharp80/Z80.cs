@@ -59,7 +59,7 @@ namespace Sharp80.Processor
         
         public string Assemble()
         {
-            return new Assembler.Assembler(InstructionSet).Assemble();
+            return new Assembler.Assembler(instructionSet.Instructions.Values).Assemble();
         }
 
         // INTERRUPTS
@@ -158,7 +158,7 @@ namespace Sharp80.Processor
             InitInstructionSet();
             Reset();
 
-            this.CurrentInstruction = instructionSet.NOP; // NOP
+            CurrentInstruction = instructionSet.NOP; // NOP
         }
         static Z80()
         {
@@ -193,17 +193,6 @@ namespace Sharp80.Processor
             {
                 Debug.Assert(CurrentInstruction.OpcodeInitialLength == CurrentInstruction.OpcodeLength);
                 return Memory.GetWordAt(PC.val.Offset(CurrentInstruction.OpcodeInitialLength));
-            }
-        }
-
-        public IEnumerable<Instruction> InstructionSet
-        {
-            get
-            {
-                foreach (var kvp in instructionSet.Instructions)
-                {
-                    yield return kvp.Value;
-                }
             }
         }
 

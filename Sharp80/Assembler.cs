@@ -49,7 +49,7 @@ namespace Sharp80.Assembler
         
         public Assembler(IEnumerable<Processor.Instruction> InstructionSet)
         {
-            this.instructionSet = InstructionSet.ToList();
+            instructionSet = InstructionSet.ToList();
         }
 
         public string Assemble()

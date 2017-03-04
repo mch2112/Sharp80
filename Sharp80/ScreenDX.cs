@@ -545,15 +545,19 @@ namespace Sharp80
                 if (View.CurrentMode == ViewMode.Normal || invalid)
                     DrawView(View.GetViewData());
 
+                // Used to debug layout issues: frames the virtual screen
                 //renderTarget.DrawRectangle(new RawRectangleF(cells[0].Left, cells[0].Top, cells[0x3ff].Right, cells[0x3ff].Bottom), foregroundBrush);
                 //renderTarget.FillRectangle(cells[0], foregroundBrush);
                 //renderTarget.FillRectangle(cells[0x3ff], foregroundBrush);
 
                 if (advancedView)
                 {
-                    //if (!invalid)
-                    ClearAdvancedInfoRegions();
+                    // Erase adv info regions...
+                    renderTarget.FillRectangle(infoRect, backgroundBrush);
+                    renderTarget.FillRectangle(z80Rect, backgroundBrush);
+                    renderTarget.FillRectangle(disassemRect, backgroundBrush);
 
+                    // And draw new text
                     renderTarget.DrawText(computer.GetInternalsReport(), textFormat, z80Rect, foregroundBrush);
                     renderTarget.DrawText(computer.GetDisassembly(), textFormat, disassemRect, foregroundBrush);
                     renderTarget.DrawText(
@@ -621,12 +625,6 @@ namespace Sharp80
         {
             renderTarget.EndDraw();
             swapChain.Present(0, PresentFlags.None);
-        }
-        private void ClearAdvancedInfoRegions()
-        {
-            renderTarget.FillRectangle(infoRect, backgroundBrush);
-            renderTarget.FillRectangle(z80Rect, backgroundBrush);
-            renderTarget.FillRectangle(disassemRect, backgroundBrush);
         }
         private void PaintCell(int cell, byte c, RawRectangleF[] Cells, DXBitmap[] Chars)
         {

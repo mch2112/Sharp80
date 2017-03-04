@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Sharp 80")]
-[assembly: AssemblyCopyright("Copyright ©  2017 Matthew Hamilton")]
+[assembly: AssemblyCopyright("Copyright © 2016 - 2017 Matthew Hamilton")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -29,5 +29,5 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-[assembly: AssemblyVersion("1.0.1.23")]
-[assembly: AssemblyFileVersion("1.0.1.23")]
+[assembly: AssemblyVersion("1.0.1.24")]
+[assembly: AssemblyFileVersion("1.0.1.24")]

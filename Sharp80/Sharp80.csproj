@@ -117,9 +117,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assembler.cs" />
-    <Compile Include="Assembler_LineInfo.cs" />
-    <Compile Include="Assembler_Macro.cs" />
-    <Compile Include="Assembler_Operand.cs" />
+    <Compile Include="Assembler.LineInfo.cs" />
+    <Compile Include="Assembler.Macro.cs" />
+    <Compile Include="Assembler.Operand.cs" />
     <Compile Include="Clock.cs" />
     <Compile Include="Computer.cs" />
     <Compile Include="Extensions.cs" />
@@ -135,7 +135,7 @@
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Floppy_DMK_JV.cs" />
+    <Compile Include="Floppy.DMK.JV.cs" />
     <Compile Include="IAppWindow.cs" />
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="NativeMethods.cs" />
@@ -150,12 +150,12 @@
     <Compile Include="InstructionSet.cs" />
     <Compile Include="ISerializable.cs" />
     <Compile Include="Trigger.cs" />
-    <Compile Include="Memory_Keyboard.cs" />
+    <Compile Include="Memory.Keyboard.cs" />
     <Compile Include="KeyboardDX.cs" />
     <Compile Include="Library_Tables.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="ScreenDX.cs" />
-    <Compile Include="Floppy_DMK.cs" />
+    <Compile Include="Floppy.DMK.cs" />
     <Compile Include="Floppy.cs" />
     <Compile Include="FloppyController.cs" />
     <Compile Include="Instruction.cs" />
@@ -207,13 +207,13 @@
     <Compile Include="PulseReq.cs" />
     <Compile Include="Register.cs" />
     <Compile Include="SectorDescriptor.cs" />
-    <Compile Include="Properties_Settings.cs" />
+    <Compile Include="Propertie._Settings.cs" />
     <Compile Include="Storage.cs" />
     <Compile Include="Track.cs" />
     <Compile Include="Z80.cs" />
-    <Compile Include="Z80_Add_Instructions.cs" />
-    <Compile Include="Z80_Info.cs" />
-    <Compile Include="Z80_Instructions_Impl.cs" />
+    <Compile Include="Z80.Init.cs" />
+    <Compile Include="Z80.Info.cs" />
+    <Compile Include="Z80.Instructions.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0,Profile=Client">
