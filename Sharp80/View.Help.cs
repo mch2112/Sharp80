@@ -60,7 +60,7 @@ namespace Sharp80
                                         Indent("[Alt]+[N]         Load Snapshot File") +
                                         Format() +
                                         Indent("[Alt]+[C] Load CMD file") +
-                                        Indent("[Alt]+[Z] Create Floppy from File") +
+                                        Indent("[Alt]+[Q] Create Floppy from File") +
                                         Footer(footerText)));
                 case 3:
                     return PadScreen(Encoding.ASCII.GetBytes(

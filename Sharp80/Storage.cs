@@ -330,7 +330,7 @@ namespace Sharp80
             byte[] diskImage = DMK.MakeFloppyFromFile(LoadBinaryFile(FilePath), Path.GetFileName(FilePath)).Serialize(ForceDMK: true);
 
             if (diskImage.Length > 0)
-                return SaveBinaryFile(Path.ChangeExtension(FilePath, "DMK"), diskImage);
+                return SaveBinaryFile(Path.ChangeExtension(FilePath, "dsk"), diskImage);
             else
                 return false;
         }

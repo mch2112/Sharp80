@@ -105,7 +105,7 @@ namespace Sharp80
 
             return string.Empty;
         }
-        public static string GetCmdFilePath(string DefaultPath)
+        public static string GetFilePath(string DefaultPath)
         {
             return UserSelectFile(Save: false,
                                   DefaultPath: DefaultPath,

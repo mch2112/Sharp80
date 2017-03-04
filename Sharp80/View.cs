@@ -218,9 +218,6 @@ namespace Sharp80
                             Settings.AutoStartOnReset = !Settings.AutoStartOnReset;
                             MessageCallback("Auto Start on Reset " + (Settings.AutoStartOnReset ? "On" : "Off"));
                             return true;
-                        case KeyCode.B:
-                            MakeFloppyFromCmdFile();
-                            return true;
                         case KeyCode.C:
                             LoadCMDFile();
                             Invalidate();
@@ -282,6 +279,9 @@ namespace Sharp80
                             return true;
                         case KeyCode.P:
                             Disassemble(false);
+                            return true;
+                        case KeyCode.Q:
+                            MakeFloppyFromFile();
                             return true;
                         case KeyCode.R:
                             CurrentMode = ViewMode.Cpu;
@@ -480,14 +480,22 @@ namespace Sharp80
                 }
             }
         }
-        private void MakeFloppyFromCmdFile()
+        private void MakeFloppyFromFile()
         {
-            string path = Dialogs.GetCmdFilePath(Settings.LastCmdFile);
+            string path = Dialogs.GetFilePath(Storage.DocsPath);
 
             if (path.Length > 0)
             {
                 if (Storage.MakeFloppyFromFile(path))
-                    Settings.LastCmdFile = path;
+                {
+                    Dialogs.AlertUser("Floppy created.");
+                    if (path.ToUpper().EndsWith(".CMD"))
+                        Settings.LastCmdFile = path;
+                }
+                else
+                {
+                    Dialogs.AlertUser("Failed to create floppy.");
+                }
             }
         }
         private void MakeAndSaveBlankFloppy(bool Formatted)
