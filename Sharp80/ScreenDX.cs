@@ -85,26 +85,28 @@ namespace Sharp80
 
         // EVENT HANDLING
 
-        public void SetVideoMode(bool IsWide, bool IsKanji)
+        public void SetVideoMode(bool? IsWide, bool? IsKanji)
         {
             // In basic, "PRINT CHR$(23)" (or Shift-RightArrow) will set wide character mode
             // The CLEAR key will revert to normal width
             // And "PRINT CHR$(22)" will toggle the normal and Kanji sets
 
-            isWideCharMode = IsWide;
-            isKanjiCharMode = IsKanji;
+            if (IsWide.HasValue)
+                isWideCharMode = IsWide.Value;
+            if (IsKanji.HasValue)
+                isKanjiCharMode = IsKanji.Value;
 
-            if (IsWide && IsKanji)
+            if (isWideCharMode && isKanjiCharMode)
             {
                 charGen = charGenKanjiWide;
                 cells = cellsWide;
             }
-            else if (IsWide && !IsKanji)
+            else if (isWideCharMode && !isKanjiCharMode)
             {
                 charGen = charGenWide;
                 cells = cellsWide;
             }
-            else if (!IsWide && IsKanji)
+            else if (!isWideCharMode && isKanjiCharMode)
             {
                 charGen = charGenKanji;
                 cells = cellsNormal;
@@ -142,6 +144,9 @@ namespace Sharp80
                 case UserCommand.ToggleAdvancedView:
                     AdvancedView = !AdvancedView;
                     Settings.AdvancedView = AdvancedView;
+                    break;
+                case UserCommand.ShowAdvancedView:
+                    Settings.AdvancedView = true;
                     break;
                 case UserCommand.GreenScreen:
                     Settings.GreenScreen = GreenScreen = !GreenScreen;

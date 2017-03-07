@@ -11,7 +11,7 @@ namespace Sharp80
     public static class Extensions
     {
         private static readonly byte[] BIT = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
-        //private static readonly byte[] NOT = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F };
+        private static readonly byte[] NOT = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F };
 
         private static readonly sbyte[] TWOSCOMP =
         {
@@ -149,6 +149,14 @@ namespace Sharp80
             //    if (!EqualityComparer<T>.Default.Equals(Source[i], Other[i]))
             //        return false;
             //return true;
+        }
+        public static byte SetBit(this byte Input, byte BitNum)
+        {
+            return (byte)(Input | BIT[BitNum]);
+        }
+        public static byte ResetBit(this byte Input, byte BitNum)
+        {
+            return (byte)(Input & NOT[BitNum]);
         }
         public static bool IsBitSet(this byte Input, byte BitNum)
         {

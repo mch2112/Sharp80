@@ -15,7 +15,7 @@ namespace Sharp80
 
         void Render();
         void Reset();
-        void SetVideoMode(bool WideCharMode, bool KanjiCharMode);
+        void SetVideoMode(bool? WideCharMode, bool? KanjiCharMode);
         void Initialize(IAppWindow Parent);
         void Reinitialize(Computer Computer);
 

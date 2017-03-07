@@ -21,6 +21,7 @@ namespace Sharp80
         private static bool? fullScreen;
         private static bool? greenScreen;
         private static string lastAsmFile;
+        private static string lastCasFile;
         private static string lastCmdFile;
         private static string lastSnapshotFile;
         private static bool? soundOn;
@@ -172,6 +173,17 @@ namespace Sharp80
             }
             set { lastCmdFile = value; }
         }
+        public static string LastCasFile
+        {
+            get
+            {
+                lastCasFile = lastCasFile ?? Properties.Settings.Default.last_cas_file;
+                if (String.IsNullOrWhiteSpace(lastCasFile))
+                    lastCasFile = System.IO.Path.Combine(Storage.AppDataPath, "CAS Files\\");
+                return lastCasFile;
+            }
+            set { lastCasFile = value; }
+        }
         public static string LastSnapshotFile
         {
             get
@@ -232,6 +244,8 @@ namespace Sharp80
                 psd.green_screen = greenScreen.Value;
             if (!String.IsNullOrWhiteSpace(lastAsmFile))
                 psd.last_asm_file = lastAsmFile;
+            if (!String.IsNullOrWhiteSpace(lastCasFile))
+                psd.last_cas_file = lastCmdFile;
             if (!String.IsNullOrWhiteSpace(lastCmdFile))
                 psd.last_cmd_file = lastCmdFile;
             if (!String.IsNullOrWhiteSpace(lastSnapshotFile))

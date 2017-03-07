@@ -1,6 +1,7 @@
 ﻿/// Sharp 80 (c) Matthew Hamilton
 /// Licensed Under GPL v3
 
+using System;
 using System.IO;
 using System.Windows.Forms;
 
@@ -66,7 +67,7 @@ namespace Sharp80
         public static string UserSelectFile(bool Save, string DefaultPath, string Title, string Filter, string DefaultExtension, bool SelectFileInDialog)
         {
             string dir = DefaultPath.Length > 0 ? Path.GetDirectoryName(DefaultPath) :
-                                                  Path.GetDirectoryName(Application.ExecutablePath);
+                                                  Storage.DocsPath;
 
             FileDialog dialog;
 
@@ -132,40 +133,62 @@ namespace Sharp80
                                   DefaultExtension: "snp",
                                   SelectFileInDialog: true);
         }
+        public static string GetAssemblyFile(string DefaultPath, bool Save)
+        {
+            return UserSelectFile(Save: Save,
+                                  DefaultPath: DefaultPath,
+                                  Title: Save ? "Save Assembly File" : "Load Assembly File",
+                                  Filter: "Z80 Assembly Files (*.asm)|*.asm|Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
+                                  DefaultExtension: "asm",
+                                  SelectFileInDialog: true);
+        }
+
+        // CURSOR MANAGEMENT
+
         private static bool suppressCursor = false;
         private static int cursorLevel = 0;
+        private static bool cursorHidden = false;
+
         public static bool SuppressCursor
         {
             get { return suppressCursor; }
             set
             {
-                if (value != suppressCursor)
-                {
-                    suppressCursor = value;
-                    if (suppressCursor || cursorLevel == 0)
-                        Cursor.Hide();
-                    else
-                        Cursor.Show();
-                }
+                suppressCursor = value;
+                UpdateCursor();
             }
         }
         public static void ForceShowCursor()
         {
             cursorLevel++;
-            Cursor.Show();
+            UpdateCursor();
         }
         public static void NoForceShowCursor()
         {
             cursorLevel--;
-            if (cursorLevel <= 0)
+            UpdateCursor();
+        }
+        private static void UpdateCursor()
+        {
+            if (cursorLevel < 0)
+                throw new Exception();
+
+            if (suppressCursor && cursorLevel == 0)
             {
-                cursorLevel = 0;
-                if (suppressCursor)
+                if (!cursorHidden)
+                {
                     Cursor.Hide();
-                else
-                    Cursor.Show();
+                    cursorHidden = true;
+                }
+            }
+            else if (cursorHidden)
+            {
+                Cursor.Show();
+                cursorHidden = false;
             }
         }
+        // TEXT FILE LAUNCHING
+
         public static void ShowTextFile(string Path)
         {
             if (Path.ToUpper().EndsWith(".TXT"))

@@ -66,7 +66,7 @@ namespace Sharp80
                     return PadScreen(Encoding.ASCII.GetBytes(
                                         Header(helpHeaderText, "ADVANCED COMMANDS (4/4)") +
                                         Format(new string[] { "[F9] Single Step", "[F10] Step Over", "[F11] Step Out" }, true) +
-                                        Format(new string[] { "[F7] Set/Clear Breakpoint", "[Alt]+[E] Trace On / Off" }, true) +
+                                        Format(new string[] { "[F7] Set/Clear Breakpoint", "[Alt]+[V] Trace On / Off" }, true) +
                                         Format() +
                                         Indent("[F6] Jump to Address") +
                                         Format() +

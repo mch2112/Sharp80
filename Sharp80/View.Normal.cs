@@ -9,7 +9,17 @@ namespace Sharp80
     {
         protected override bool ForceRedraw => false;
         protected override ViewMode Mode => ViewMode.Normal;
-        
+
+        protected override bool processKey(KeyState Key)
+        {
+            switch (Key.Key)
+            {
+                case KeyCode.Escape:
+                    return Computer.NotifyKeyboardChange(Key);
+                default:
+                    return base.processKey(Key);
+            }
+        }
         protected override byte[] GetViewBytes()
         {
             return null;

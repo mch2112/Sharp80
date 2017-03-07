@@ -146,12 +146,14 @@ namespace Sharp80
                     if (IsActive)
                     {
                         ProcessKey(ks);
-
-                        if (repeatKey != KeyCode.None)
-                        {
-                            if (++repeatKeyCount > REPEAT_THRESHOLD)
-                                ProcessRepeatKey(repeatKey);
-                        }
+                    }
+                }
+                if (IsActive)
+                {
+                    if (repeatKey != KeyCode.None)
+                    {
+                        if (++repeatKeyCount > REPEAT_THRESHOLD)
+                            ProcessRepeatKey(repeatKey);
                     }
                 }
             }
@@ -172,7 +174,9 @@ namespace Sharp80
                     case KeyCode.Right:
                     case KeyCode.PageUp:
                     case KeyCode.PageDown:
+                    case KeyCode.F5:
                     case KeyCode.F9:
+                    case KeyCode.F10:
                         repeatKey = k.Key;
                         break;
                 }
@@ -364,7 +368,10 @@ namespace Sharp80
             View.Initialize(computer, (msg) => screen.StatusMessage = msg);
 
             if (Settings.AutoStartOnReset)
+            {
                 computer.Start();
+                View.CurrentMode = ViewMode.Normal;
+            }
         }
     }
 }

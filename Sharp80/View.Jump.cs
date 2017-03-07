@@ -42,6 +42,7 @@ namespace Sharp80
                 if (Computer.ProgramCounter.RotateAddress(c, out ushort newPc))
                 {
                     Computer.Jump(newPc);
+                    Invalidate();
                     processed = true;
                 }
             }

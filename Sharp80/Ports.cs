@@ -7,23 +7,28 @@ namespace Sharp80
 {
     internal sealed class PortSet
     {
-        public FloppyController FloppyController { get; set; }
+        private FloppyController floppyController;
 
         private const int NUM_PORTS = 0x100;
         private Computer computer;
-        private InterruptManager IntMgr;
+        private Tape tape;
+        private InterruptManager intMgr;
         
         private byte[] ports = new byte[NUM_PORTS];
-        private byte[] lastOUT = new byte[NUM_PORTS];
+        private byte lastFFout = 0;
         private bool noDrives = true;
 
-        public PortSet(Computer Computer, InterruptManager InterruptManager)
+        public PortSet(Computer Computer)
         {
             computer = Computer;
-            IntMgr = InterruptManager;
+        }
+        public void Initialize(FloppyController FloppyController, InterruptManager InterruptManager, Tape Tape)
+        {
+            floppyController = FloppyController;
+            intMgr = InterruptManager;
+            tape = Tape;
             Reset();
         }
-
         public bool NoDrives
         {
             get { return noDrives; }
@@ -42,11 +47,10 @@ namespace Sharp80
         }
         public void Reset()
         {
+            lastFFout = 0;
+
             for (int i = 0; i < NUM_PORTS; i++)
-            {
                 ports[i] = 0xFF;
-                lastOUT[i] = 0x00;
-            }
 
             ports[0x50] = 0x00;
             ports[0x51] = 0x00;
@@ -96,30 +100,31 @@ namespace Sharp80
                     case 0xE1:
                     case 0xE2:
                     case 0xE3:
-                        ports[PortNumber] = IntMgr.WrIntMaskReg;
+                        ports[PortNumber] = intMgr.E0in();
                         break;
                     case 0xEC:
                     case 0xED:
                     case 0xEE:
                     case 0xEF:
-                        IntMgr.ECin();
+                        ports[0xEC] = ports[0xED] = ports[0xEE] = ports[0xEF] = 0xFF;
+                        intMgr.ECin();
                         break;
                     case 0xE4:
-                        IntMgr.E4in();
+                        ports[0xE4] = intMgr.E4in();
                         break;
                     case 0xF0:
                         if (NoDrives)
                             ports[0xF0] = 0xFF; // cassette system
                         else
-                            FloppyController.FdcIoEvent(PortNumber, 0, false);
+                            floppyController.FdcIoEvent(PortNumber, 0, false);
                         break;
                     case 0xF1:
                     case 0xF2:
                     case 0xF3:
-                        FloppyController.FdcIoEvent(PortNumber, 0, false);
+                        floppyController.FdcIoEvent(PortNumber, 0, false);
                         break;
                     case 0xFF:
-                        ports[0xFF] &= 0xFC;
+                        ports[0xFF] = intMgr.FFin();
                         break;
                 }
                 Log.LogDebug("Reading Port " + PortNumber.ToHexString() + " [" + ports[PortNumber].ToHexString() + "]");
@@ -127,22 +132,20 @@ namespace Sharp80
             }
             set
             {
-                lastOUT[PortNumber] = value;
-
                 switch (PortNumber)
                 {
                     case 0xE0:
                     case 0xE1:
                     case 0xE2:
                     case 0xE3:
-                        IntMgr.WrIntMaskReg = value;
+                        intMgr.E0out(value);
                         break;
                     case 0xEC:
                     case 0xED:
                     case 0xEE:
                     case 0xEF:
                         // Update double width and Kanji character settings
-                        computer.SetVideoMode(value.IsBitSet(2), !value.IsBitSet(3));
+                        intMgr.ECout(value);
                         break;
                     case 0xE4:
                     case 0xE5:
@@ -153,7 +156,11 @@ namespace Sharp80
                     case 0xF2:
                     case 0xF3:
                     case 0xF4:
-                        FloppyController.FdcIoEvent(PortNumber, value, true);
+                        floppyController.FdcIoEvent(PortNumber, value, true);
+                        break;
+                    case 0xFF:
+                        lastFFout = value;
+                        intMgr.FFout(value);
                         break;
                     default:
                         break;
@@ -176,9 +183,10 @@ namespace Sharp80
         {
             return ports[PortNum];
         }
+        
         public byte CassetteOut()
         {
-            return lastOUT[0xFF];
+            return lastFFout;
         }
       
         // SNAPSHOTS
@@ -186,13 +194,13 @@ namespace Sharp80
         public void Serialize(System.IO.BinaryWriter Writer)
         {
             Writer.Write(ports);
-            Writer.Write(lastOUT);
+            Writer.Write(lastFFout);
             Writer.Write(NoDrives);
         }
         public void Deserialize(System.IO.BinaryReader Reader)
         {
             Array.Copy(Reader.ReadBytes(NUM_PORTS), ports, NUM_PORTS);
-            Array.Copy(Reader.ReadBytes(NUM_PORTS), lastOUT, NUM_PORTS);
+            lastFFout = Reader.ReadByte();
             NoDrives = Reader.ReadBoolean();
         }
     }

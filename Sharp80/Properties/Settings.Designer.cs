@@ -238,5 +238,17 @@ namespace Sharp80.Properties {
                 this["alt_keyboard_layout"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string last_cas_file {
+            get {
+                return ((string)(this["last_cas_file"]));
+            }
+            set {
+                this["last_cas_file"] = value;
+            }
+        }
     }
 }

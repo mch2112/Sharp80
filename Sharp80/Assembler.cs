@@ -62,22 +62,13 @@ namespace Sharp80.Assembler
                 {
                     cmdFilePath = Assemble(out int errs);
                     if (errs == 0)
-                        MessageBox.Show(string.Format("Assembled {0} to {1}.", Path.GetFileName(originalFilePath), cmdFilePath),
-                                        "Assemble Complete",
-                                        MessageBoxButtons.OK,
-                                        MessageBoxIcon.Information);
+                        Dialogs.InformUser(string.Format("Assembled {0} to {1}.", Path.GetFileName(originalFilePath), cmdFilePath));
                     else
-                        MessageBox.Show(string.Format("{0} errors, see {1}.int for details.", errs, Path.GetFileNameWithoutExtension(originalFilePath)),
-                                        "Errors",
-                                        MessageBoxButtons.OK,
-                                        MessageBoxIcon.Information);
+                        Dialogs.AlertUser(string.Format("{0} errors, see {1}.int for details.", errs, Path.GetFileNameWithoutExtension(originalFilePath)));
                 }
                 catch
                 {
-                    MessageBox.Show(string.Format("Failed to assemble {0}.", Path.GetFileName(originalFilePath)),
-                                    "Assemble Failed",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Error);
+                    Dialogs.AlertUser(string.Format("Failed to assemble {0}.", Path.GetFileName(originalFilePath)));
                 }
             }
             return cmdFilePath;
@@ -112,35 +103,20 @@ namespace Sharp80.Assembler
         private bool GetFilePath()
         {
             string path = Settings.LastAsmFile;
-            string filename = string.Empty;
 
-            if (string.IsNullOrWhiteSpace(path))
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             {
                 path = Storage.AppDataPath;
                 var p = Path.Combine(path, "ASM Files");
                 if (Directory.Exists(p))
                     path = p;
             }
-            else
-            {
-                filename = Path.GetFileName(path);
-                path = Path.GetDirectoryName(path);
-            }
-            var ofd = new OpenFileDialog()
-            {
-                Title = "Load assembly file",
-                Filter = "Z80 Assembly Files (*.asm)|*.asm|Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
-                FileName = filename,
-                InitialDirectory = path,
-                DefaultExt = "asm"
-            };
-            var res = ofd.ShowDialog();
 
-            if (res == DialogResult.OK && ofd.FileName.Length > 0 && File.Exists(ofd.FileName))
-            {
-                originalFilePath = ofd.FileName;
-                Settings.LastAsmFile = ofd.FileName;
+            path = Dialogs.GetAssemblyFile(path, false);
 
+            if (path.Length > 0)
+            {
+                Settings.LastAsmFile = originalFilePath = path;
                 return true;
             }
             else

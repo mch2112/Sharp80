@@ -8,34 +8,36 @@ namespace Sharp80
     internal sealed class InterruptManager : ISerializable
     {
         private Computer computer;
-        public PortSet Ports { private get; set; }
-
-        // Used
+        private PortSet ports;
+        private Tape tape;
 
         private Trigger rtcIntLatch;
         private Trigger fdcNmiLatch;
         private Trigger fdcMotorOffNmiLatch;
         private Trigger resetButtonLatch;
-
-        // Unused
-
-        private Trigger ioIntLatch;
+        private Trigger casMotorOnLatch;
         private Trigger casRisingEdgeIntLatch;
         private Trigger casFallingEdgeIntLatch;
+        private Trigger vidAltCharLatch;
+        private Trigger vidWideCharLatch;
+
+        private Trigger vidWaitLatch;
+        private Trigger extIoIntLatch;
+        private Trigger ioIntLatch;
         private Trigger rs232ErrorIntLatch;
         private Trigger rs232ReceiveIntLatch;
         private Trigger rs232XmitIntLatch;
 
-        public InterruptManager(Computer Comp)
+        public InterruptManager(Computer Computer)
         {
-            computer = Comp;
+            computer = Computer;
 
             rtcIntLatch = new Trigger(null,
                                       null,
                                       TriggerLock: true,
                                       CanLatchBeforeEnabled: true);
 
-            fdcNmiLatch         = new Trigger(null, null, TriggerLock: false, CanLatchBeforeEnabled: true);
+            fdcNmiLatch = new Trigger(null, null, TriggerLock: false, CanLatchBeforeEnabled: true);
             fdcMotorOffNmiLatch = new Trigger(null, null, TriggerLock: false, CanLatchBeforeEnabled: true);
 
             resetButtonLatch = new Trigger(
@@ -43,22 +45,58 @@ namespace Sharp80
                                 null,
                                 TriggerLock: true,
                                 CanLatchBeforeEnabled: false)
-                                {
-                                    Enabled = true
-                                };
+            {
+                Enabled = true
+            };
 
-            ioIntLatch = new Trigger(null, null);
-            casRisingEdgeIntLatch = new Trigger(null, null);
-            casFallingEdgeIntLatch = new Trigger(null, null);
+            ioIntLatch = new Trigger(null, null) { Enabled = true };
+            extIoIntLatch = new Trigger(null, null) { Enabled = true };
+            vidWaitLatch = new Trigger(null, null) { Enabled = true };
+
+            casMotorOnLatch = new Trigger(() => { computer.TapeMotorOnSignal = true; },
+                                          () => { computer.TapeMotorOnSignal = false; })
+            {
+                Enabled = true
+            };
+            //casRisingEdgeIntLatch = new Trigger(() => { casFallingEdgeIntLatch.Unlatch(); }, null, false, true)
+            casRisingEdgeIntLatch = new Trigger(null, null)
+            {
+                Enabled = false
+            };
+            //casFallingEdgeIntLatch = new Trigger(()=> { casRisingEdgeIntLatch.Unlatch(); }, null, false, true)
+            casFallingEdgeIntLatch = new Trigger(null, null)
+            {
+                Enabled = false
+            };
+
+            vidAltCharLatch = new Trigger(() => { computer.SetVideoMode(null, true);},
+                                          () => { computer.SetVideoMode(null, false); })
+            {
+                Enabled = true
+            };
+            vidWideCharLatch = new Trigger(() => { computer.SetVideoMode(true, null); },
+                                          () => { computer.SetVideoMode(false, null); })
+            {
+                Enabled = true
+            };
+
             rs232ErrorIntLatch = new Trigger(null, null);
             rs232ReceiveIntLatch = new Trigger(null, null);
             rs232XmitIntLatch = new Trigger(null, null);
+        }
+
+        public void Initialize(PortSet Ports, Tape Tape)
+        {
+            ports = Ports;
+            tape = Tape;
         }
 
         public Trigger RtcIntLatch { get { return rtcIntLatch; } }
         public Trigger FdcNmiLatch { get { return fdcNmiLatch; } }
         public Trigger FdcMotorOffNmiLatch { get { return fdcMotorOffNmiLatch; } }
         public Trigger ResetButtonLatch { get { return resetButtonLatch; } }
+        public Trigger CassetteRisingEdgeLatch {  get { return casRisingEdgeIntLatch; } }
+        public Trigger CassetteFallingEdgeLatch {  get { return casFallingEdgeIntLatch; } }
 
         public bool NmiTriggered
         {
@@ -73,23 +111,7 @@ namespace Sharp80
             fdcMotorOffNmiLatch.ResetTrigger();
             resetButtonLatch.ResetTrigger();
         }
-
-        public void E4in()
-        {
-            byte result = 0x00;
-
-            // Set bit if *not* interrupted
-            if (!fdcNmiLatch.Latched)
-                result |= 0x80;
-
-            if (!fdcMotorOffNmiLatch.Latched)
-                result |= 0x40;
-
-            if (!resetButtonLatch.Latched)
-                result |= 0x20;
-            
-            Ports.SetPortDirect(result, 0xE4);
-        }
+        
         public byte InterruptEnableStatus
         {
             set
@@ -104,54 +126,107 @@ namespace Sharp80
                 Log.LogDebug(string.Format("Motor / DRQ NMI Enable: {0} -> {1}", oldMotorOrDrqNmiEnabled, fdcMotorOffNmiLatch.Enabled));
             }
         }
+        public bool InterruptReq
+        {
+            get
+            {
+                return rtcIntLatch.Triggered ||
+                       casFallingEdgeIntLatch.Triggered ||
+                       casRisingEdgeIntLatch.Triggered;
+            }
+        }
+
+        // PORT IO
+
+        public byte E0in()
+        {
+            // reset bit indicates interrupt is in progress [opposite of Model I behavior]
+
+            byte retVal = 0x00;
+
+            // bit 7 is not used
+            if (!rs232ErrorIntLatch.Latched)     retVal |= 0x40;
+            if (!rs232ReceiveIntLatch.Latched)   retVal |= 0x20;
+            if (!rs232XmitIntLatch.Latched)      retVal |= 0x10;
+            if (!ioIntLatch.Latched)             retVal |= 0x08;
+            if (!rtcIntLatch.Latched)            retVal |= 0x04;
+            if (!casFallingEdgeIntLatch.Latched) retVal |= 0x02;
+            if (!casRisingEdgeIntLatch.Latched)  retVal |= 0x01;
+
+            Log.LogDebug(string.Format("Read port 0xE0: RTC Interrupt {0}in progress", rtcIntLatch.Latched ? string.Empty : "not "));
+
+            return retVal;
+        }
+        public byte E4in()
+        {
+            byte result = 0x00;
+
+            // Set bit if *not* interrupted
+            if (!fdcNmiLatch.Latched)
+                result |= 0x80;
+
+            if (!fdcMotorOffNmiLatch.Latched)
+                result |= 0x40;
+
+            if (!resetButtonLatch.Latched)
+                result |= 0x20;
+
+            return result;
+        }
         public void ECin()
         {
             if (rtcIntLatch.Latched)
                 Log.LogDebug("RTC Interrupt clear (in from port 0xEC)");
 
             rtcIntLatch.Unlatch();
-
-            Ports.SetPortDirect(0xFF, 0xEC);
         }
-        public void FFin()
+        public byte FFin()
         {
+            byte ret = 0;
+
+            if (casRisingEdgeIntLatch.Latched)
+                ret |= 0x01;
+            if (casMotorOnLatch.Latched)
+                ret |= 0x02;
+            if (vidWideCharLatch.Latched)
+                ret |= 0x04;
+            if (vidAltCharLatch.Latched)
+                ret |= 0x08;
+            if (extIoIntLatch.Latched)
+                ret |= 0x10;
+            if (vidWaitLatch.Latched)
+                ret |= 0x20;
+
+            ret |= tape.Out();
+
             casRisingEdgeIntLatch.Unlatch();
             casFallingEdgeIntLatch.Unlatch();
+
+            return ret;
         }
-        public byte WrIntMaskReg
+        
+        public void E0out(byte b)
         {
-            // uses input and output for port E0 to manage interrupts
-            get
-            {
-                // reset bit indicates interrupt is in progress [opposite of Model I behavior]
+            rs232ErrorIntLatch.Enabled =     b.IsBitSet(6);
+            rs232ReceiveIntLatch.Enabled =   b.IsBitSet(5);
+            rs232XmitIntLatch.Enabled =      b.IsBitSet(4);
+            ioIntLatch.Enabled =             b.IsBitSet(3);
+            rtcIntLatch.Enabled =            b.IsBitSet(2);
+            casFallingEdgeIntLatch.Enabled = b.IsBitSet(1);
+            casRisingEdgeIntLatch.Enabled =  b.IsBitSet(0);
 
-                byte retVal = 0x00;
-                
-                // bit 7 is not used
-                if (!rs232ErrorIntLatch.Latched)     retVal |= 0x40;
-                if (!rs232ReceiveIntLatch.Latched)   retVal |= 0x20;
-                if (!rs232XmitIntLatch.Latched)      retVal |= 0x10;
-                if (!ioIntLatch.Latched)             retVal |= 0x08;
-                if (!rtcIntLatch.Latched)            retVal |= 0x04;
-                if (!casFallingEdgeIntLatch.Latched) retVal |= 0x02;
-                if (!casRisingEdgeIntLatch.Latched)  retVal |= 0x01;
-
-                Log.LogDebug(string.Format("Read port 0xE0: RTC Interrupt {0}in progress", rtcIntLatch.Latched ? string.Empty : "not "));
-
-                return retVal;
-            }
-            set
-            {
-                rs232ErrorIntLatch.Enabled     = value.IsBitSet(6);
-                rs232ReceiveIntLatch.Enabled   = value.IsBitSet(5);
-                rs232XmitIntLatch.Enabled      = value.IsBitSet(4);
-                ioIntLatch.Enabled             = value.IsBitSet(3);
-                rtcIntLatch.Enabled            = value.IsBitSet(2);
-                casFallingEdgeIntLatch.Enabled = value.IsBitSet(1);
-                casRisingEdgeIntLatch.Enabled  = value.IsBitSet(0);
-
-                Log.LogDebug(rtcIntLatch.Enabled ? "Enabled RTC Interrupts" : "Disabled RTC Interrupts");
-            }
+            Log.LogDebug(rtcIntLatch.Enabled ? "Enabled RTC Interrupts" : "Disabled RTC Interrupts");
+        }
+        public void ECout(byte b)
+        {
+            casMotorOnLatch.LatchIf(b.IsBitSet(1));
+            vidWideCharLatch.LatchIf(b.IsBitSet(2));
+            vidAltCharLatch.LatchIf(b.IsBitSet(3));
+            extIoIntLatch.LatchIf(b.IsBitSet(4));
+        }
+        public void FFout(byte b)
+        {
+            tape.HandleCasPort(b);
         }
 
         public void Serialize(System.IO.BinaryWriter Writer)
@@ -161,6 +236,7 @@ namespace Sharp80
             fdcMotorOffNmiLatch.Serialize(Writer);
             resetButtonLatch.Serialize(Writer);
             ioIntLatch.Serialize(Writer);
+            casMotorOnLatch.Serialize(Writer);
             casRisingEdgeIntLatch.Serialize(Writer);
             casFallingEdgeIntLatch.Serialize(Writer);
             rs232ErrorIntLatch.Serialize(Writer);
@@ -174,6 +250,7 @@ namespace Sharp80
             fdcMotorOffNmiLatch.Deserialize(Reader);
             resetButtonLatch.Deserialize(Reader);
             ioIntLatch.Deserialize(Reader);
+            casMotorOnLatch.Deserialize(Reader);
             casRisingEdgeIntLatch.Deserialize(Reader);
             casFallingEdgeIntLatch.Deserialize(Reader);
             rs232ErrorIntLatch.Deserialize(Reader);

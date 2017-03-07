@@ -48,7 +48,10 @@ namespace Sharp80
         {
             get { return latched; }
         }
-
+        public void LatchIf(bool Latch)
+        {
+            Update(Enabled: null, Latched: Latch);
+        }
         public void Latch()
         {
             Update(Enabled: null, Latched: true);

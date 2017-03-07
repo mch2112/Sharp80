@@ -10,6 +10,7 @@ namespace Sharp80
     {
         protected override ViewMode Mode => ViewMode.Breakpoint;
         protected override bool ForceRedraw => false;
+
         protected override bool processKey(KeyState Key)
         {
             if (Key.Released)

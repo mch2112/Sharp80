@@ -19,7 +19,6 @@ namespace Sharp80
         // Internal State
 
         private readonly ulong ticksPerSec;
-        private readonly ulong tstatesPerSec;
         private readonly ulong ticksPerIRQ;
 
         private ulong tickCount;
@@ -50,7 +49,6 @@ namespace Sharp80
 
         public Clock(Computer Computer, Processor.Z80 Processor, InterruptManager InterruptManager, ulong FrequencyInHz, ulong MilliTStatesPerIRQ, ulong MilliTStatesPerSoundSample, SoundEventCallback SoundCallback, bool NormalSpeed)
         {
-            tstatesPerSec = FrequencyInHz;
             ticksPerSec = FrequencyInHz * TICKS_PER_TSTATE;
             ticksPerIRQ = MilliTStatesPerIRQ;
 
@@ -249,7 +247,7 @@ namespace Sharp80
             {
                 tickCount += TICKS_PER_TSTATE;
             }
-            else if (IntMgr.RtcIntLatch.Triggered && z80.CanInterrupt)
+            else if (IntMgr.InterruptReq && z80.CanInterrupt)
             {
                 IntMgr.RtcIntLatch.ResetTrigger();
                 tickCount += z80.Interrupt();

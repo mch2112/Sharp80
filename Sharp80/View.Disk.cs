@@ -80,6 +80,9 @@ namespace Sharp80
                         else
                             RevertMode();
                         break;
+                    case KeyCode.F5:
+                        CurrentMode = ViewMode.Normal;
+                        return base.processKey(Key);
                     default:
                         return base.processKey(Key);
                 }

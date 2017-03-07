@@ -9,8 +9,8 @@ using System.Text;
 
 namespace Sharp80
 {
-    public enum ViewMode { Normal, Memory, Disk, Help, Zap, Breakpoint, Jump, Options, Cpu, FloppyController, Splash }
-    public enum UserCommand { ToggleAdvancedView, ToggleFullScreen, Window, GreenScreen, ZoomIn, ZoomOut, HardReset, Exit }
+    public enum ViewMode { Normal, Tape, Memory, Disk, Help, Zap, Breakpoint, Jump, Options, Cpu, FloppyController, Splash }
+    public enum UserCommand { ToggleAdvancedView, ShowAdvancedView, ToggleFullScreen, Window, GreenScreen, ZoomIn, ZoomOut, HardReset, Exit }
 
     internal abstract class View
     {
@@ -79,6 +79,7 @@ namespace Sharp80
                 new ViewHelp();
                 new ViewOptions();
                 new ViewDisk();
+                new ViewTape();
                 new ViewZap();
                 new ViewBreakpoint();
                 new ViewJump();
@@ -125,9 +126,6 @@ namespace Sharp80
                             OnUserCommand?.Invoke(UserCommand.ToggleAdvancedView);
                             MessageCallback(Settings.AdvancedView ? "Advanced View" : "Normal View");
                             return true;
-                        case KeyCode.F6:
-                            CurrentMode = ViewMode.Jump;
-                            return true;
                         case KeyCode.F5:
                             if (Computer.IsRunning)
                             {
@@ -141,7 +139,12 @@ namespace Sharp80
                             }
                             Invalidate();
                             return true;
+                        case KeyCode.F6:
+                            OnUserCommand?.Invoke(UserCommand.ShowAdvancedView);
+                            CurrentMode = ViewMode.Jump;
+                            return true;
                         case KeyCode.F7:
+                            OnUserCommand?.Invoke(UserCommand.ShowAdvancedView);
                             CurrentMode = ViewMode.Breakpoint;
                             return true;
                         case KeyCode.F9:
@@ -226,17 +229,7 @@ namespace Sharp80
                             CurrentMode = ViewMode.FloppyController;
                             return true;
                         case KeyCode.E:
-                            if (Log.TraceOn)
-                            {
-                                Log.TraceOn = false;
-                                SaveLog(true);
-                                MessageCallback("Trace stopped.");
-                            }
-                            else
-                            {
-                                Log.TraceOn = true;
-                                MessageCallback("Collecting trace info...");
-                            }
+                            currentMode = ViewMode.Tape;
                             return true;
                         case KeyCode.F:
                             MakeAndSaveBlankFloppy(true);
@@ -297,6 +290,19 @@ namespace Sharp80
                         case KeyCode.U:
                             MakeAndSaveBlankFloppy(false);
                             return true;
+                        case KeyCode.V:
+                            if (Log.TraceOn)
+                            {
+                                Log.TraceOn = false;
+                                SaveLog(true);
+                                MessageCallback("Trace stopped.");
+                            }
+                            else
+                            {
+                                Log.TraceOn = true;
+                                MessageCallback("Collecting trace info...");
+                            }
+                            return true;
                         case KeyCode.Y:
                             LoadCMDFile(Computer.Assemble(), true);
                             return true;
@@ -342,7 +348,7 @@ namespace Sharp80
 
         private static void Disassemble(bool FromPc)
         {
-            string path = System.IO.Path.Combine(Storage.DocsPath, "Disassembly.txt");
+            string path = System.IO.Path.Combine(Storage.AppDataPath, "Disassembly.txt");
             Storage.SaveTextFile(path, Computer.Disassemble(true, FromPc));
             OnUserCommand?.Invoke(UserCommand.Window);
             Dialogs.ShowTextFile(path);
@@ -468,6 +474,7 @@ namespace Sharp80
 
             if (Path.Length > 0)
             {
+                Dialogs.ForceShowCursor();
                 if (Computer.LoadCMDFile(Path))
                 {
                     if (!SuppressNormalInform)
@@ -478,6 +485,7 @@ namespace Sharp80
                 {
                     Dialogs.AlertUser("CMD File load failed.");
                 }
+                Dialogs.NoForceShowCursor();
             }
         }
         private void MakeFloppyFromFile()

@@ -31,7 +31,7 @@ namespace Sharp80
         private const short MIN_SOUND_LEVEL = NULL_SOUND_LEVEL - MAX_SOUND_AMPLITUDE;
         private const short MAX_SOUND_LEVEL = NULL_SOUND_LEVEL + MAX_SOUND_AMPLITUDE;
 
-        private short[] outTable = new short[] { MAX_SOUND_LEVEL, NULL_SOUND_LEVEL, MIN_SOUND_LEVEL, MIN_SOUND_LEVEL };
+        private short[] outTable = new short[] { NULL_SOUND_LEVEL, MAX_SOUND_LEVEL, MIN_SOUND_LEVEL, NULL_SOUND_LEVEL };
 
         private Noise noise;
 

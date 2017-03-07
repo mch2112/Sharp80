@@ -10,7 +10,7 @@ namespace Sharp80
     {
         public const ulong CLOCK_RATE = 2027520;
 
-        private const int SERIALIZATION_VERSION = 3;
+        private const int SERIALIZATION_VERSION = 4;
 
         public bool HasRunYet { get; private set; }
 
@@ -21,6 +21,7 @@ namespace Sharp80
         private InterruptManager IntMgr { get; set; }
         private IScreen Screen { get; set; }
         private ISound Sound { get; set; }
+        private Tape Tape { get; set; }
 
         private bool ready;
         private bool isDisposed = false;
@@ -35,10 +36,10 @@ namespace Sharp80
             HasRunYet = false;
 
             this.Screen = Screen;
-            
+
             IntMgr = new InterruptManager(this);
-            Ports = new PortSet(this, IntMgr);
-            IntMgr.Ports = Ports;
+            Tape = new Tape(this);
+            Ports = new PortSet(this);
             Processor = new Processor.Z80(this, Ports);
 
             //Sound = new SoundNull();
@@ -56,16 +57,18 @@ namespace Sharp80
                               NormalSpeed);
 
             Clock.SpeedChanged += (s, e) => { Sound.Mute = !Clock.NormalSpeed; };
-            
+
             FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound);
 
-            Ports.FloppyController = FloppyController;
+            IntMgr.Initialize(Ports, Tape);
+            Tape.Initialize(Clock, IntMgr);
+            Ports.Initialize(FloppyController, IntMgr, Tape);
 
             ready = true;
         }
-        
+
         // PROPERTIES
-        
+
         public bool Ready
         {
             get { return ready; }
@@ -133,13 +136,13 @@ namespace Sharp80
         public FloppyControllerStatus FloppyControllerStatus { get { return FloppyController.GetStatus(); } }
         public bool DiskHasChanged(byte DriveNum) { return FloppyController.DiskHasChanged(DriveNum) ?? false; }
         public void SaveFloppy(byte DriveNum) { FloppyController.SaveFloppy(DriveNum); }
-        
+
         // RUN COMMANDS
 
         public void Start()
         {
             HasRunYet = true;
-             
+
             Clock.Start();
             Sound.Mute = !Clock.NormalSpeed;
         }
@@ -209,7 +212,7 @@ namespace Sharp80
                 Screen.Reset();
             }
         }
-        public void SetVideoMode(bool Wide, bool Kanji)
+        public void SetVideoMode(bool? Wide, bool? Kanji)
         {
             Screen.SetVideoMode(Wide, Kanji);
         }
@@ -217,7 +220,7 @@ namespace Sharp80
         {
             Clock.RegisterPulseReq(Req);
         }
-        
+
         // FLOPPY SUPPORT
 
         public bool HasDrivesAvailable
@@ -296,7 +299,7 @@ namespace Sharp80
             if (running)
                 Start();
         }
-        
+
         // SNAPSHOTS
 
         public void SaveSnapshotFile(string FilePath)
@@ -327,6 +330,51 @@ namespace Sharp80
             if (running)
                 Start();
         }
+
+        // CASSETTE
+
+        public void TapeLoad(string Path)
+        {
+            Tape.Load(Path);
+        }
+        public string TapeFilePath { get { return Tape.FilePath; } }
+        
+        public void TapeLoadBlank()
+        {
+            Tape.LoadBlank();
+        }
+        public void TapeSave()
+        {
+            Tape.Save();
+        }
+        public void TapePlay()
+        {
+            Tape.Play();
+        }
+        public void TapeRecord()
+        {
+            Tape.Record();
+        }
+        public void TapeRewind()
+        {
+            Tape.Rewind();
+        }
+        public bool TapeMotorOnSignal
+        {
+            set { Tape.MotorOnSignal = value; }
+        }
+        public TimeSpan TapeElapsedTime
+        {
+            get { return Tape.Time; }
+        }
+        public float TapeCounter
+        {
+            get { return Tape.Counter; }
+        }
+        public TapeStatus TapeStatus { get { return Tape.Status; } }
+        public string TapePulseStatus {  get { return Tape.PulseStatus; } }
+        public byte TapeValue { get { return (Tape.Out() == 0) ? (byte)0 : (byte)1; } }
+        public TapeSpeed TapeSpeed { get { return Tape.Speed; } }
 
         // MISC
 
@@ -407,6 +455,7 @@ namespace Sharp80
         {
             Processor.Memory.ResetKeyboard();
         }
+
         public void Dispose()
         {
             if (!isDisposed)
