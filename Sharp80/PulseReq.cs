@@ -7,7 +7,8 @@ namespace Sharp80
 {
     internal sealed class PulseReq
     {
-        private ulong delayInMicroSeconds;
+        private ulong delay;
+        private bool delayBasisIsTicks;
         private ulong trigger;
         private Clock.ClockCallback callback;
 
@@ -20,10 +21,17 @@ namespace Sharp80
         {
             ticksPerMillisecond = TicksPerSec / MILLISECONDS_PER_SECOND;
         }
-
+        public PulseReq(ulong DelayInTicks, Clock.ClockCallback Callback)
+        {
+            delay = DelayInTicks;
+            delayBasisIsTicks = true;
+            callback = Callback;
+            expired = false;
+        }
         public PulseReq(ulong DelayInMicroSeconds, Clock.ClockCallback Callback, bool Expired)
         {
-            delayInMicroSeconds = DelayInMicroSeconds;
+            delay = DelayInMicroSeconds;
+            delayBasisIsTicks = false;
             callback = Callback;
             expired = Expired;
         }
@@ -42,7 +50,10 @@ namespace Sharp80
         }
         public void SetTrigger(ulong BaselineTicks)
         {
-            trigger = BaselineTicks + delayInMicroSeconds * ticksPerMillisecond / MICROSECONDS_PER_MILLISECOND;
+            if (delayBasisIsTicks)
+                trigger = BaselineTicks + delay;
+            else
+                trigger = BaselineTicks + delay * ticksPerMillisecond / MICROSECONDS_PER_MILLISECOND;
             expired = false;
         }
         public void Expire()
@@ -56,14 +67,16 @@ namespace Sharp80
 
         public void Serialize(System.IO.BinaryWriter Writer)
         {
-            Writer.Write(delayInMicroSeconds);
+            Writer.Write(delay);
+            Writer.Write(delayBasisIsTicks);
             Writer.Write(trigger);
             Writer.Write(expired);
         }
         public void Deserialize(System.IO.BinaryReader Reader, Clock.ClockCallback Callback)
         {
             callback = Callback;
-            delayInMicroSeconds = Reader.ReadUInt64();
+            delay = Reader.ReadUInt64();
+            delayBasisIsTicks = Reader.ReadBoolean();
             trigger = Reader.ReadUInt64();
             expired = Reader.ReadBoolean();
         }

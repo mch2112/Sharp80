@@ -373,7 +373,7 @@ namespace Sharp80
         }
         public TapeStatus TapeStatus { get { return Tape.Status; } }
         public string TapePulseStatus {  get { return Tape.PulseStatus; } }
-        public byte TapeValue { get { return (Tape.Out() == 0) ? (byte)0 : (byte)1; } }
+        public byte TapeValue { get { return (Tape.FlipFlopVal() == 0) ? (byte)0 : (byte)1; } }
         public TapeSpeed TapeSpeed { get { return Tape.Speed; } }
 
         // MISC
@@ -387,6 +387,7 @@ namespace Sharp80
             FloppyController.Serialize(Writer);
             IntMgr.Serialize(Writer);
             Screen.Serialize(Writer);
+            Tape.Serialize(Writer);
         }
         private void Deserialize(BinaryReader Reader)
         {
@@ -400,6 +401,7 @@ namespace Sharp80
             FloppyController.Deserialize(Reader);
             IntMgr.Deserialize(Reader);
             Screen.Deserialize(Reader);
+            Tape.Deserialize(Reader);
         }
 
         public bool LoadCMDFile(string filePath)

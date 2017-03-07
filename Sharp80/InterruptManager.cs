@@ -59,12 +59,12 @@ namespace Sharp80
                 Enabled = true
             };
             //casRisingEdgeIntLatch = new Trigger(() => { casFallingEdgeIntLatch.Unlatch(); }, null, false, true)
-            casRisingEdgeIntLatch = new Trigger(null, null)
+            casRisingEdgeIntLatch = new Trigger(null, null, false, true)
             {
                 Enabled = false
             };
             //casFallingEdgeIntLatch = new Trigger(()=> { casRisingEdgeIntLatch.Unlatch(); }, null, false, true)
-            casFallingEdgeIntLatch = new Trigger(null, null)
+            casFallingEdgeIntLatch = new Trigger(null, null, false, true)
             {
                 Enabled = false
             };
@@ -197,7 +197,7 @@ namespace Sharp80
             if (vidWaitLatch.Latched)
                 ret |= 0x20;
 
-            ret |= tape.Out();
+            ret |= tape.FlipFlopVal();
 
             casRisingEdgeIntLatch.Unlatch();
             casFallingEdgeIntLatch.Unlatch();
