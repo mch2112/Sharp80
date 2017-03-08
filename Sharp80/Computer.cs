@@ -122,7 +122,10 @@ namespace Sharp80
         public IFloppy GetFloppy(byte DriveNum) { return FloppyController.GetFloppy(DriveNum); }
 
         public bool DriveIsUnloaded(byte DriveNum) { return FloppyController.DriveIsUnloaded(DriveNum); }
-        public string GetDriveStatusReport() { return FloppyController.GetDriveStatusReport(); }
+        public string GetIoStatusReport()
+        {
+            return FloppyController.StatusReport + (Tape.MotorOn ? " Tape: " + Tape.StatusReport : String.Empty);
+        }
         public bool? DriveBusyStatus { get { return FloppyController.DriveBusyStatus; } }
         public bool AnyDriveLoaded { get { return FloppyController.AnyDriveLoaded; } }
         public bool FloppyControllerDrq { get { return FloppyController.DRQ; } }
@@ -333,48 +336,23 @@ namespace Sharp80
 
         // CASSETTE
 
-        public void TapeLoad(string Path)
-        {
-            Tape.Load(Path);
-        }
-        public string TapeFilePath { get { return Tape.FilePath; } }
-        
-        public void TapeLoadBlank()
-        {
-            Tape.LoadBlank();
-        }
-        public void TapeSave()
-        {
-            Tape.Save();
-        }
-        public void TapePlay()
-        {
-            Tape.Play();
-        }
-        public void TapeRecord()
-        {
-            Tape.Record();
-        }
-        public void TapeRewind()
-        {
-            Tape.Rewind();
-        }
-        public bool TapeMotorOnSignal
-        {
-            set { Tape.MotorOnSignal = value; }
-        }
-        public TimeSpan TapeElapsedTime
-        {
-            get { return Tape.Time; }
-        }
-        public float TapeCounter
-        {
-            get { return Tape.Counter; }
-        }
+        public void TapeLoad(string Path) { Tape.Load(Path); }
+        public string TapeFilePath { get { return Tape.FilePath; } set { Tape.FilePath = value; } }
+        public void TapeLoadBlank() { Tape.LoadBlank(); }
+        public void TapePlay() { Tape.Play(); }
+        public void TapeRecord() { Tape.Record(); }
+        public void TapeRewind() { Tape.Rewind(); }
+        public void TapeEject() { Tape.Eject(); }
+        public void TapeStop() { Tape.Stop(); }
+        public void TapeSave()  { Tape.Save(); }
+        public bool TapeChanged { get { return Tape.Changed; } }
+        public bool TapeMotorOnSignal { set { Tape.MotorOnSignal = value; } }
+        public float TapePercent { get { return Tape.Percent; } }
+        public float TapeCounter { get { return Tape.Counter; } }
         public TapeStatus TapeStatus { get { return Tape.Status; } }
         public string TapePulseStatus {  get { return Tape.PulseStatus; } }
-        public byte TapeValue { get { return (Tape.FlipFlopVal() == 0) ? (byte)0 : (byte)1; } }
-        public TapeSpeed TapeSpeed { get { return Tape.Speed; } }
+        public bool Bit { get { return Tape.Bit; } }
+        public Baud TapeSpeed { get { return Tape.Speed; } }
 
         // MISC
 

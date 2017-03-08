@@ -281,8 +281,8 @@ namespace Sharp80
             if (commandPulseReq != null)
                 commandPulseReq.Expire();
 
-            motorOnPulseReq = new PulseReq(MOTOR_ON_DELAY_IN_USEC, MotorOnCallback, true);
-            motorOffPulseReq = new PulseReq(MOTOR_OFF_DELAY_IN_USEC, MotorOffCallback, true);
+            motorOnPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_ON_DELAY_IN_USEC, MotorOnCallback, true);
+            motorOffPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_OFF_DELAY_IN_USEC, MotorOffCallback, true);
             commandPulseReq = new PulseReq();
         }
         public void LoadFloppy(byte DriveNum, string FilePath)
@@ -343,12 +343,15 @@ namespace Sharp80
             UpdateTrack();
         }
 
-        public string GetDriveStatusReport()
+        public string StatusReport
         {
-            return "D" + CurrentDriveNumber.ToString() +
-                   ":S" + (SideOne ? "1" : "0") +
-                   ":T" + CurrentDrive.PhysicalTrackNumber.ToString("00") +
-                   ":S" + sectorRegister.ToString("00");
+            get
+            {
+                return "Dsk: " + CurrentDriveNumber.ToString() +
+                       ":S" + (SideOne ? "1" : "0") +
+                       ":T" + CurrentDrive.PhysicalTrackNumber.ToString("00") +
+                       ":S" + sectorRegister.ToString("00");
+            }
         }
 
         public bool? DriveBusyStatus
@@ -1157,7 +1160,7 @@ namespace Sharp80
             if (delayTime > 0)
             {
                 Log.LogDebug(string.Format("Callback Request. Command: {0} Opstatus: {1}", command, opStatus));
-                commandPulseReq = new PulseReq(delayTime, Callback, false);
+                commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, delayTime, Callback, false);
                 computer.RegisterPulseReq(commandPulseReq);
                 trackDataIndex += bytesToAdvance;
             }
@@ -1316,15 +1319,15 @@ namespace Sharp80
             }
 
             commandPulseReq.Deserialize(Reader, callback);
-            if (!commandPulseReq.Expired)
+            if (commandPulseReq.Active)
                 computer.RegisterPulseReq(commandPulseReq);
 
             motorOnPulseReq.Deserialize(Reader, MotorOnCallback);
-            if (!motorOnPulseReq.Expired)
+            if (motorOnPulseReq.Active)
                 computer.RegisterPulseReq(motorOnPulseReq);
 
             motorOffPulseReq.Deserialize(Reader, MotorOffCallback);
-            if (!motorOffPulseReq.Expired)
+            if (motorOffPulseReq.Active)
                 computer.RegisterPulseReq(motorOffPulseReq);
 
             UpdateTrack();

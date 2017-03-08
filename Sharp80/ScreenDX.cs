@@ -403,7 +403,6 @@ namespace Sharp80
             this.Size = Size;
 
             // Resize the backbuffer
-            System.Diagnostics.Debug.WriteLine(string.Format("Resizing swap chain buffers. W:{0} H:{1}.", Size.Width, Size.Height));
             try
             {
                 swapChain.ResizeBuffers(swapChainDescription.BufferCount,
@@ -414,7 +413,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(ex.ToString());
+                Log.LogException(ex);
             }
             CreateBackBuffer();
             CreateRenderTarget(Format.Unknown);
@@ -562,16 +561,20 @@ namespace Sharp80
                     renderTarget.FillRectangle(z80Rect, backgroundBrush);
                     renderTarget.FillRectangle(disassemRect, backgroundBrush);
 
+                    DrawStatusMessage();
+
                     // And draw new text
                     renderTarget.DrawText(computer.GetInternalsReport(), textFormat, z80Rect, foregroundBrush);
                     renderTarget.DrawText(computer.GetDisassembly(), textFormat, disassemRect, foregroundBrush);
                     renderTarget.DrawText(
-                        computer.GetClockReport() + Environment.NewLine + computer.GetDriveStatusReport(),
+                        computer.GetClockReport() + Environment.NewLine + computer.GetIoStatusReport(),
                         textFormat, infoRect, foregroundBrush);
                 }
-
-                DrawStatusMessage();
-
+                else
+                {
+                    DrawStatusMessage();
+                }
+                
                 invalid = false;
                 View.Validate();
             }

@@ -188,14 +188,6 @@ namespace Sharp80
         {
             if (k != VirtualKey.NONE)
             {
-                if (k != VirtualKey.LEFTSHIFT && k != VirtualKey.RIGHTSHIFT)
-                {
-                    if (IsPressed)
-                        System.Diagnostics.Debug.WriteLine("Key Pressed:  " + k.ToString());
-                    else
-                        System.Diagnostics.Debug.WriteLine("Key Released: " + k.ToString());
-                }
-
                 var m = keyAddresses[k];
 
                 if (IsPressed)

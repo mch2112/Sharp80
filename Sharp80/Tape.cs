@@ -1,234 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using System;
 using System.IO;
-using System.Linq;
 
 namespace Sharp80
 {
     internal enum TapeStatus { Stopped, Reading, ReadEngaged, Writing, WriteEngaged, Waiting }
-    internal enum TapeSpeed { Low, High, Unknown }
+    internal enum Baud { Low, High }
 
-    internal class Tape : ISerializable
+    internal partial class Tape : ISerializable
     {
-        private enum PulseState { Positive, Negative, PositiveClock, NegativeClock, PostClock, PostData, Expired, None}
-        private enum PulsePolarity {  Positive, Negative, Zero }
-        private class Pulse
-        {
-            public TapeSpeed PulseSpeed { get; private set; }
-            public bool Value { get; private set; }
+        
+        private const int DEFAULT_BLANK_TAPE_LENGTH = 0x0800;
+        private const int MAX_TAPE_LENGTH = 0x12000;
 
-            public ulong Age { get { return (Clock.ElapsedTStates - StartTime) * 1000000 * Clock.TICKS_PER_TSTATE / Clock.TicksPerSec; } }
+        public string FilePath { get; set; }
 
-            private ulong StartTime { get; set; }
-            private static Clock Clock { get; set; }
-            public bool FlipFlop { get; private set; }
-            private PulseState PrevNonZeroState { get; set; } = PulseState.None;
-            public static void Initialize(Clock Clock)
-            {
-                Pulse.Clock = Clock;
-            }
-            public Pulse(TapeSpeed Speed)
-            {
-                PulseSpeed = Speed;
-                StartTime = 0;
-            }
-            public void Start(bool Value)
-            {
-                if (StartTime == 0)
-                    StartTime = Clock.ElapsedTStates;
-                else
-                    StartTime += Duration * Clock.TicksPerSec / Clock.TICKS_PER_TSTATE / 1000000;
-
-                this.Value = Value;
-            }
-            public void ClearFlipFlop()
-            {
-                FlipFlop = false;
-            }
-            public PulseState State
-            {
-                get
-                {
-                    var s = _State;
-
-                    if (IsOpposite(PrevNonZeroState, s))
-
-                        FlipFlop = true;
-
-                    if (IsNonZero(s))
-                        PrevNonZeroState = s;
-
-                    return s;
-                }
-            }
-            private PulseState _State
-            {
-                get
-                {
-                    ulong age = Age;
-                    switch (PulseSpeed)
-                    {
-                        case TapeSpeed.High:
-                            if (Value)
-                            {
-                                if (age < 188)
-                                    return PulseState.Negative;
-                                else if (age < 188 * 2)
-                                    return PulseState.Positive;
-                                else
-                                    return PulseState.Expired;
-                            }
-                            else
-                            {
-                                if (age < 376)
-                                    return PulseState.Negative;
-                                else if (age < 376 * 2)
-                                    return PulseState.Positive;
-                                else
-                                    return PulseState.Expired;
-                            }
-                        case TapeSpeed.Low:
-                            if (age < 128)
-                                return PulseState.PositiveClock;
-                            else if (age < 128 + 128)
-                                return PulseState.NegativeClock;
-                            else if (age < 128 + 128 + 748)
-                                return PulseState.PostClock;
-                            else if (age > 128 + 128 + 748 + 128 + 128 + 860)
-                                return PulseState.Expired;
-                            else if (Value)
-                            {
-                                if (age < 128 + 128 + 748 + 128)
-                                    return PulseState.Positive;
-                                if (age < 128 + 128 + 748 + 128 + 128)
-                                    return PulseState.Negative;
-                                else
-                                    return PulseState.PostData;
-                            }
-                            else
-                            {
-                                return PulseState.PostData;
-                            }
-                    }
-                    throw new Exception();
-                }
-            }
-            public ulong TimeUntilNextTransition
-            {
-                get
-                {
-                    switch (State)
-                    {
-                        case PulseState.Negative:
-                            if (PulseSpeed == TapeSpeed.High)
-                                return (Value ? 188ul : 376ul) - Age;
-                            else
-                                return Duration - 860 - Age;
-                        case PulseState.Positive:
-                            if (PulseSpeed == TapeSpeed.High)
-                                return (Value ? 188ul : 376ul) * 2 - Age;
-                            else
-                                return Duration - 860 - 128 - Age;
-                        case PulseState.PositiveClock:
-                            return 128 - Age;
-                        case PulseState.NegativeClock:
-                            return 128 + 128 - Age;
-                        case PulseState.PostClock:
-                            return 128 + 128 + 748 - Age;
-                        case PulseState.PostData:
-                            return Duration - Age;
-                        case PulseState.None:
-                        case PulseState.Expired:
-                            return 0;
-                        default:
-                            throw new Exception();
-                    }
-                }
-            }
-            public ulong Duration
-            {
-                get
-                {
-                    switch (this.PulseSpeed)
-                    {
-                        case TapeSpeed.High:
-                            return Value ? 188ul * 2 : 376ul * 2;
-                        case TapeSpeed.Low:
-                            return 128 + 128 + 748 + 128 + 128 + 860;
-                        default:
-                            throw new Exception();
-                    }
-                }
-            }
-            public ulong StateDuration
-            {
-                get
-                {
-                    switch (PulseSpeed)
-                    {
-                        case TapeSpeed.High:
-                            switch (State)
-                            {
-                                case PulseState.Positive:
-                                case PulseState.Negative:
-                                    return Value ? 188ul : 376ul;
-                                case PulseState.Expired:
-                                    return 0;
-                                default:
-                                    throw new Exception();
-                            }
-                        case TapeSpeed.Low:
-                            switch (State)
-                            {
-                                case PulseState.PositiveClock:
-                                case PulseState.NegativeClock:
-                                case PulseState.Positive:
-                                case PulseState.Negative:
-                                    return 128;
-                                case PulseState.PostClock:
-                                    return 748;
-                                case PulseState.PostData:
-                                    return Value ? 860ul : 128 + 128 + 860;
-                                case PulseState.Expired:
-                                    return 0;
-                                default:
-                                    throw new Exception();
-                            }
-                        default:
-                            throw new Exception();
-                    }
-                }
-            }
-            private bool IsOpposite(PulseState State1, PulseState State2)
-            {
-                var p1 = Polarity(State1);
-                var p2 = Polarity(State2);
-
-                return p1 == PulsePolarity.Negative && p2 == PulsePolarity.Positive ||
-                       p2 == PulsePolarity.Negative && p1 == PulsePolarity.Positive;
-            }
-            private bool IsNonZero(PulseState State)
-            {
-                return Polarity(State) != PulsePolarity.Zero;
-            }
-            public PulsePolarity Polarity(PulseState State)
-            {
-                switch (State)
-                {
-                    case PulseState.Positive:
-                    case PulseState.PositiveClock:
-                        return PulsePolarity.Positive;
-                    case PulseState.Negative:
-                    case PulseState.NegativeClock:
-                        return PulsePolarity.Negative;
-                    default:
-                        return PulsePolarity.Zero;
-                }
-            }
-        } 
-
-        public string FilePath { get; private set; }
-        public TimeSpan Time { get { return TimeSpan.Zero; } }
         public TapeStatus Status
         {
             get
@@ -243,21 +31,44 @@ namespace Sharp80
                     return TapeStatus.Stopped;
             }
         }
-        public string PulseStatus
-        {
-            get { return pulse?.State.ToString() ?? PulseState.None.ToString(); }
-        }
-        public byte FlipFlopVal()
-        {
-            return (pulse?.FlipFlop ?? false) ? (byte)0x80 : (byte)0x00;
-        }
-        public TapeSpeed Speed { get; private set; }
-        public float Counter
+
+        public string StatusReport
         {
             get
             {
-                return byteCursor + ((7f - bitCursor) / 10);
+                if (MotorOn)
+                {
+                    return string.Format(@"{0:0000.0} {1:00.0%} {2} {3}", Counter, Percent, Speed == Baud.High ? "H" : "L", Status);
+                }
+                else
+                {
+                    return string.Empty;
+                }
             }
+        }
+
+        public string PulseStatus { get { return transition?.After.ToString() ?? PulseState.None.ToString(); } }
+        public bool Bit { get { return transition?.Value ?? false; } }
+        public byte ReadVal()
+        {
+            byte ret = 0;
+
+            if (transition?.FlipFlop ?? false)
+                ret |= 0x80;
+
+            if ((transition?.LastNonZero ?? PulseState.None) == PulseState.Positive)
+                ret |= 0x01;
+
+            return ret;
+        }
+
+        public float Counter
+        {
+            get { return byteCursor + ((7f - bitCursor) / 10); }
+        }
+        public float Percent
+        {
+            get { return (float)byteCursor / data.Length; }
         }
 
         public bool MotorOn
@@ -268,9 +79,12 @@ namespace Sharp80
                 if (motorOn != value)
                 {
                     motorOn = value;
-                    pulse = null;
                     if (motorOn)
+                    {
+                        if (!recordInvoked)
+                            transition = null;
                         Update();
+                    }
                 }
             }
         }
@@ -307,16 +121,23 @@ namespace Sharp80
 
         private bool recordInvoked = false;
 
-        private Pulse pulse;
+        private int consecutiveFiftyFives = 0;
+        private int consecutiveZeros = 0;
+
+        private Transition transition;
 
         public Tape(Computer Computer)
         {
             computer = Computer;
         }
+
+        public Baud Speed { get; private set; }
+        public bool Changed { get; private set; }
+
         public void Initialize(Clock Clock, InterruptManager InterruptManager)
         {
             clock = Clock;
-            Pulse.Initialize(clock);
+            Transition.Initialize(clock, Read);
             intMgr = InterruptManager;
             InitTape();
         }
@@ -327,15 +148,27 @@ namespace Sharp80
         public bool Load(string Path)
         {
             byte[] bytes;
-            if (String.IsNullOrWhiteSpace(Path))
-                bytes = new byte[0x20000];
-            else
-                bytes = Storage.LoadBinaryFile(Path);
 
-            if (bytes.Length > 0)
+            Stop();
+
+            if (String.IsNullOrWhiteSpace(Path))
             {
-                FilePath = Path;
-                InitTape(bytes);
+                bytes = new byte[DEFAULT_BLANK_TAPE_LENGTH];
+            }
+            else if (!Storage.LoadBinaryFile(Path, out bytes) || bytes.Length < 0x100)
+            {
+                bytes = new byte[DEFAULT_BLANK_TAPE_LENGTH];
+                return false;
+            }
+            FilePath = Path;
+            InitTape(bytes);
+            return true;
+        }
+        public bool Save()
+        {
+            if (Storage.SaveBinaryFile(FilePath, data))
+            {
+                Changed = false;
                 return true;
             }
             else
@@ -343,33 +176,43 @@ namespace Sharp80
                 return false;
             }
         }
-        public void Save()
-        {
-            Storage.SaveBinaryFile(@"C:\Users\Matthew\Desktop\foo.cas", data);
-        }
         public void Play()
         {
             MotorEngaged = true;
             recordInvoked = false;
-            pulse = null;
         }
         public void Record()
         {
             MotorEngaged = true;
             recordInvoked = true;
-            Speed = TapeSpeed.High;
-            pulse = null;
         }
         public void Stop()
         {
+            // test junk
+
+            if (Changed)
+            {
+                Storage.SaveBinaryFile(@"c:\Users\Matthew\Desktop\foo.cas", data);
+                Changed = false;
+            }
             MotorEngaged = false;
             recordInvoked = false;
-            pulse = null;
+            Rewind();
+        }
+        public void Eject()
+        {
+            if (Changed)
+            {
+                if (!Save())
+                    return;
+                else
+                    Changed = false;
+            }
+            InitTape();
         }
         public void Rewind()
         {
-            pulse = null;
-            bitCursor = 8;
+            bitCursor = 7;
             byteCursor = 0;
             recordInvoked = false;
         }
@@ -379,23 +222,19 @@ namespace Sharp80
             {
                 case TapeStatus.Reading:
 
-                    pulse = pulse ?? new Pulse(Speed);
+                    transition = transition ?? new Transition(Speed);
 
-                    if (pulse.State == PulseState.Expired)
-                        pulse.Start(Read());
-                    
-                    switch (pulse.State)
+                    while (transition.Update(Speed))
                     {
-                        case PulseState.Positive:
-                        case PulseState.PositiveClock:
+                        if (transition.IsRising)
                             intMgr.CassetteRisingEdgeLatch.Latch();
-                            break;
-                        case PulseState.Negative:
-                        case PulseState.NegativeClock:
+                        else if (transition.IsFalling)
                             intMgr.CassetteFallingEdgeLatch.Latch();
-                            break;
                     }
-                    computer.RegisterPulseReq(new PulseReq(pulse.TimeUntilNextTransition, Update, false));
+
+                    computer.RegisterPulseReq(new PulseReq(PulseReq.DelayBasis.Ticks,
+                                                           transition.TicksUntilNext,
+                                                           Update));
                     break;
             }
         }
@@ -407,50 +246,108 @@ namespace Sharp80
         private ulong nextLastWritePositive;
         private ulong nextLastWriteNegative;
         private PulsePolarity lastWritePolarity = PulsePolarity.Zero;
+       
+        private int speedHighEvidence = 0;
+        private bool skippedLast = false;
 
         public void HandleCasPort(byte b)
         {
             b &= 0x03;
             if (MotorOn)
             {
+                transition?.ClearFlipFlop();
+
                 switch (b)
                 {
                     case 0:
                     case 3:
-                        if (lastWriteZero < lastWritePositive || lastWriteZero < lastWriteNegative)
-                        {
-                            nextLastWriteZero = lastWriteZero;
-                            lastWriteZero = clock.ElapsedTStates;
-                        }
+                        if (lastWritePolarity == PulsePolarity.Zero)
+                            return;
+                        lastWritePolarity = PulsePolarity.Zero;
+                        nextLastWriteZero = lastWriteZero;
+                        lastWriteZero = clock.TickCount;
                         break;
                     case 1:
+                        if (lastWritePolarity == PulsePolarity.Positive)
+                            return;
                         lastWritePolarity = PulsePolarity.Positive;
-                        if (lastWritePositive < lastWriteNegative || lastWritePositive < lastWriteZero)
-                        {
-                            nextLastWritePositive = lastWritePositive;
-                            lastWritePositive = clock.ElapsedTStates;
-                        }
+                        nextLastWritePositive = lastWritePositive;
+                        lastWritePositive = clock.TickCount;
                         break;
                     case 2:
+                        if (lastWritePolarity == PulsePolarity.Negative)
+                            return;
                         lastWritePolarity = PulsePolarity.Negative;
-                        if (lastWriteNegative < lastWritePositive || lastWriteNegative < lastWriteZero)
-                        {
-                            nextLastWriteNegative = lastWriteNegative;
-                            lastWriteNegative = clock.ElapsedTStates;
-                        }
+                        nextLastWriteNegative = lastWriteNegative;
+                        lastWriteNegative = clock.TickCount;
                         break;
                 }
-                switch (Speed)
+
+                if (Status == TapeStatus.Writing)
                 {
-                    case TapeSpeed.High:
-                        if (lastWritePolarity == PulsePolarity.Positive)
-                            Write(GetWriteVal());
-                        break;
-                    case TapeSpeed.Low:
-                        throw new NotImplementedException();
+                    var posDelta = lastWritePositive - nextLastWritePositive;
+                    switch (lastWritePolarity)
+                    {
+                        case PulsePolarity.Positive:
+
+                            if (posDelta.IsBetween(725000, 801000) ||
+                                posDelta.IsBetween(1450000, 1900000))
+                            {
+                                speedHighEvidence++;
+                                if (speedHighEvidence > 8)
+                                {
+                                    Speed = Baud.High;
+                                    speedHighEvidence = Math.Min(speedHighEvidence, 16);
+                                    Write(lastWritePositive - nextLastWritePositive < 1100000);
+                                }
+                            }
+                            else if ((posDelta.IsBetween(1920000, 2316000)) ||
+                                     (posDelta.IsBetween(3858000, 4484500)))
+                            {
+                                speedHighEvidence--;
+
+                                if (speedHighEvidence < -8)
+                                {
+                                    Speed = Baud.Low;
+                                    speedHighEvidence = Math.Max(speedHighEvidence, -16);
+
+                                    if (posDelta > 3000000)
+                                    {
+                                        if (skippedLast)
+                                        {
+                                            // sync error since we saw a short (clock) last time
+                                            // but anything after a short clk is a one
+                                            // M3 rom does this when writing the A5 marker in CSAVE (bug?)
+                                            Write(true);
+                                            skippedLast = false;
+                                        }
+                                        else
+                                        {
+                                            // long pulse means we only saw the clock pulse so this is a zero
+                                            Write(false);
+                                        }
+                                    }
+                                    else if (skippedLast)
+                                    {
+                                        // we saw the clock pulse before and now this is data pulse one
+                                        skippedLast = false;
+                                        Write(true);
+                                    }
+                                    else
+                                    {
+                                        // this is the clock pulse, skip it
+                                        skippedLast = true;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                var x = 3;
+                            }
+                            break;
+                    }
                 }
             }
-            pulse?.ClearFlipFlop();
         }
         public void Deserialize(BinaryReader Reader)
         {
@@ -463,19 +360,48 @@ namespace Sharp80
         private bool AdvanceCursor()
         {
             if (bitCursor == 0)
-                { byteCursor++; bitCursor = 7; }
+            {
+                byteCursor++;
+                bitCursor = 7;
+            }
             else
-                { bitCursor--; }
-
+            {
+                bitCursor--;
+            }
             if (byteCursor >= data.Length)
             {
-                Stop();
-                return false;
+                if (Status == TapeStatus.Writing && data.Length < MAX_TAPE_LENGTH)
+                {
+                    Array.Resize(ref data, Math.Min(MAX_TAPE_LENGTH, data.Length * 11 / 10)); // Grow by 10%
+                }
+                else
+                {
+                    Stop();
+                    return false;
+                }
             }
-            else
+            if (bitCursor == 7 && Status == TapeStatus.Reading)
             {
-                return true;
+                switch (data[byteCursor])
+                {
+                    case 0x55:
+                    case 0xAA:
+                        consecutiveFiftyFives++;
+                        break;
+                    case 0x00:
+                        consecutiveZeros++;
+                        break;
+                    default:
+                        consecutiveFiftyFives = 0;
+                        consecutiveZeros = 0;
+                        break;
+                }
+                if (consecutiveFiftyFives > 20)
+                    Speed = Baud.High;
+                else if (consecutiveZeros > 20)
+                    Speed = Baud.Low;
             }
+            return true;
         }
         private bool Read()
         {
@@ -496,36 +422,19 @@ namespace Sharp80
                     data[byteCursor] = data[byteCursor].SetBit(bitCursor);
                 else
                     data[byteCursor] = data[byteCursor].ResetBit(bitCursor);
+                Changed = true;
             }
         }
         private void InitTape(byte[] Bytes = null)
         {
-            data = Bytes ?? new byte[0x20000];
-            
-            if (Bytes == null ||
-                data.Take(0x100).Count(b => b == 0x55) > 0x30 ||
-                data.Take(0x100).Count(b => b == 0xFF) > 0x30)
-                Speed = TapeSpeed.High;
-            else
-                Speed = TapeSpeed.Low;
+            if (Bytes == null)
+                FilePath = String.Empty;
 
-            ResetWriteHistory();
+            data = Bytes ?? new byte[DEFAULT_BLANK_TAPE_LENGTH];
             Rewind();
+            ResetWriteHistory();
         }
-        private bool GetWriteVal()
-        {
-            switch (Speed)
-            {
-                case TapeSpeed.High:
-                    //if (lastWritePositive > lastWriteNegative)
-                        return lastWritePositive - nextLastWritePositive < 1200;
-                    //else
-                      //  return lastWriteNegative - nextLastWriteNegative < 1200;
-                case TapeSpeed.Low:
-                default:
-                    return lastWriteZero - nextLastWriteZero > 1300;
-            }
-        }
+        
         private void ResetWriteHistory()
         {
             lastWriteZero = 100;
@@ -537,4 +446,3 @@ namespace Sharp80
         }
     }
 }
-

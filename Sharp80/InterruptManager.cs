@@ -41,7 +41,7 @@ namespace Sharp80
             fdcMotorOffNmiLatch = new Trigger(null, null, TriggerLock: false, CanLatchBeforeEnabled: true);
 
             resetButtonLatch = new Trigger(
-                                () => { computer.RegisterPulseReq(new PulseReq(200000, () => { resetButtonLatch.Unlatch(); }, false)); },
+                                () => { computer.RegisterPulseReq(new PulseReq(PulseReq.DelayBasis.Microseconds, 200000, () => { resetButtonLatch.Unlatch(); }, false)); },
                                 null,
                                 TriggerLock: true,
                                 CanLatchBeforeEnabled: false)
@@ -59,12 +59,12 @@ namespace Sharp80
                 Enabled = true
             };
             //casRisingEdgeIntLatch = new Trigger(() => { casFallingEdgeIntLatch.Unlatch(); }, null, false, true)
-            casRisingEdgeIntLatch = new Trigger(null, null, false, true)
+            casRisingEdgeIntLatch = new Trigger(null, null, false, false)
             {
                 Enabled = false
             };
             //casFallingEdgeIntLatch = new Trigger(()=> { casRisingEdgeIntLatch.Unlatch(); }, null, false, true)
-            casFallingEdgeIntLatch = new Trigger(null, null, false, true)
+            casFallingEdgeIntLatch = new Trigger(null, null, false, false)
             {
                 Enabled = false
             };
@@ -184,8 +184,6 @@ namespace Sharp80
         {
             byte ret = 0;
 
-            if (casRisingEdgeIntLatch.Latched)
-                ret |= 0x01;
             if (casMotorOnLatch.Latched)
                 ret |= 0x02;
             if (vidWideCharLatch.Latched)
@@ -197,7 +195,7 @@ namespace Sharp80
             if (vidWaitLatch.Latched)
                 ret |= 0x20;
 
-            ret |= tape.FlipFlopVal();
+            ret |= tape.ReadVal();
 
             casRisingEdgeIntLatch.Unlatch();
             casFallingEdgeIntLatch.Unlatch();

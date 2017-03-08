@@ -266,7 +266,7 @@ namespace Sharp80
                     if (tickCount > pulseReqs[i].Trigger)
                         pulseReqs[i].Execute();
                 }
-                pulseReqs.RemoveAll(r => r.Expired);
+                pulseReqs.RemoveAll(r => r.Inactive);
                 SetNextPulseReqTick();
             }
             if (normalSpeed)

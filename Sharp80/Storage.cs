@@ -10,9 +10,19 @@ namespace Sharp80
 {
     internal static class Storage
     {
-        public static byte[] LoadBinaryFile(string FilePath)
+        public static bool LoadBinaryFile(string FilePath, out byte[] Bytes)
         {
-            return File.ReadAllBytes(FilePath);
+            try
+            {
+                Bytes = File.ReadAllBytes(FilePath);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.LogException(ex);
+                Bytes = null;
+                return false;
+            }
         }
         public static List<string> LoadTextFile(string FilePath)
         {
@@ -98,7 +108,7 @@ namespace Sharp80
         }
         public static void SaveCMDFile(string Title, string FilePath, ushort[] Origin, byte[][] Data, ushort TransferAddress)
         {
-            BinaryWriter writer = new BinaryWriter(File.Open(FilePath, FileMode.Create));
+            var writer = new BinaryWriter(File.Open(FilePath, FileMode.Create));
 
             ushort dest;
             int cursor;
@@ -157,102 +167,94 @@ namespace Sharp80
             {
                 try
                 {
-                    byte[] b = LoadBinaryFile(FilePath);
-
-                    if (b.Length > 3)
+                    if (LoadBinaryFile(FilePath, out byte[] b))
                     {
-                        if (b[0] == 'H' && b[1] == 'E' && b[2] == 'X')
+                        int i = 0;
+                        while (i < b.Length)
                         {
-                            b = b.FromAsciiHex();
-                            SaveBinaryFile(FilePath, b);
-                        }
-                    }
+                            code = b[i++];
+                            length = b[i++];
 
-                    int i = 0;
-                    while (i < b.Length)
-                    {
-                        code = b[i++];
-                        length = b[i++];
+                            if (length == 0)
+                                length = 0x100;
 
-                        if (length == 0)
-                            length = 0x100;
+                            Array.Copy(b, i, data, 0, Math.Min(length, b.Length - i));
+                            i += length;
 
-                        Array.Copy(b, i, data, 0, Math.Min(length, b.Length - i));
-                        i += length;
+                            switch (code)
+                            {
+                                case 0x00:
+                                    // do nothing
+                                    break;
+                                case 0x01:          // object code (load block)
+                                    switch (length)
+                                    {
+                                        case 1:
+                                            destAddress = Lib.CombineBytes(data[0], b[i++]);
+                                            for (int k = 0; k < 0xFF; k++)
+                                                mem[destAddress++] = b[i++];
+                                            break;
+                                        case 2:
+                                            destAddress = Lib.CombineBytes(data[0], data[1]);
+                                            for (int k = 0; k < 0x100; k++)
+                                                mem[destAddress++] = b[i++];
+                                            break;
+                                        default:
+                                            destAddress = Lib.CombineBytes(data[0], data[1]);
+                                            for (int k = 2; k < length; k++)
+                                                mem[destAddress++] = data[k];
+                                            break;
+                                    }
+                                    Debug.Assert(length != 0x00);
+                                    break;
 
-                        switch (code)
-                        {
-                            case 0x00:
-                                // do nothing
-                                break;
-                            case 0x01:          // object code (load block)
-                                switch (length)
-                                {
-                                    case 1:
-                                        destAddress = Lib.CombineBytes(data[0], b[i++]);
-                                        for (int k = 0; k < 0xFF; k++)
-                                            mem[destAddress++] = b[i++];
-                                        break;
-                                    case 2:
-                                        destAddress = Lib.CombineBytes(data[0], data[1]);
-                                        for (int k = 0; k < 0x100; k++)
-                                            mem[destAddress++] = b[i++];
-                                        break;
-                                    default:
-                                        destAddress = Lib.CombineBytes(data[0], data[1]);
-                                        for (int k = 2; k < length; k++)
-                                            mem[destAddress++] = data[k];
-                                        break;
-                                }
-                                Debug.Assert(length != 0x00);
-                                break;
-
-                            case 0x02:          // transfer address
-                                if (length == 0x01)
-                                    execAddress = data[0];
-                                else if (length == 0x02)
-                                    execAddress = Lib.CombineBytes(data[0], data[1]);
-                                else
-                                    throw new Exception("CMD file Error.");
-                                break;
-                            case 0x03:
-                                // Do nothing (non executable marker)
-                                break;
-                            case 0x04:          // end of partitioned data set member
-                                // Do nothing
-                                break;
-                            case 0x05:          // load module header
-                                // Do nothing
-                                break;
-                            case 0x06:          // partitioned data set header
-                                // Do nothing
-                                break;
-                            case 0x07:          // patch name header
-                                // Do nothing
-                                break;
-                            case 0x08:          // ISAM directory entry
-                                // Do nothing
-                                break;
-                            case 0x09:          // unused code
-                                break;
-                            case 0x0A:          // end of ISAM directory
-                                // Do nothing
-                                break;
-                            case 0x0C:          // PDS directory entry
-                                // Do nothing
-                                break;
-                            case 0x0E:          // end of PDS directory
-                                // Do nothing
-                                break;
-                            case 0x10:          // yanked load block
-                                // Do nothing
-                                break;
-                            case 0x1F:          // copyright block
-                                // Do nothing
-                                break;
-                            default:
-                                //throw new Exception("Error in CMD file.");
-                                break;
+                                case 0x02:          // transfer address
+                                    if (length == 0x01)
+                                        execAddress = data[0];
+                                    else if (length == 0x02)
+                                        execAddress = Lib.CombineBytes(data[0], data[1]);
+                                    else
+                                        throw new Exception("CMD file Error.");
+                                    break;
+                                case 0x03:
+                                    // Do nothing (non executable marker)
+                                    break;
+                                case 0x04:          // end of partitioned data set member
+                                                    // Do nothing
+                                    break;
+                                case 0x05:          // load module header
+                                                    // Do nothing
+                                    break;
+                                case 0x06:          // partitioned data set header
+                                                    // Do nothing
+                                    break;
+                                case 0x07:          // patch name header
+                                                    // Do nothing
+                                    break;
+                                case 0x08:          // ISAM directory entry
+                                                    // Do nothing
+                                    break;
+                                case 0x09:          // unused code
+                                    break;
+                                case 0x0A:          // end of ISAM directory
+                                                    // Do nothing
+                                    break;
+                                case 0x0C:          // PDS directory entry
+                                                    // Do nothing
+                                    break;
+                                case 0x0E:          // end of PDS directory
+                                                    // Do nothing
+                                    break;
+                                case 0x10:          // yanked load block
+                                                    // Do nothing
+                                    break;
+                                case 0x1F:          // copyright block
+                                                    // Do nothing
+                                    break;
+                                default:
+                                    //throw new Exception("Error in CMD file.");
+                                    break;
+                            }
                         }
                     }
                 }
@@ -261,10 +263,6 @@ namespace Sharp80
                     Log.LogException(ex);
                     return null;
                 }
-            }
-            else
-            {
-                return null;
             }
             return execAddress;
         }
@@ -325,14 +323,45 @@ namespace Sharp80
             }
             return true;
         }
+        public static bool SaveTapeIfRequired(Computer Computer)
+        {
+            bool? save = false;
+
+            if (Computer.TapeChanged)
+                save = Dialogs.AskYesNoCancel("The tape has been written to. Save it?");
+
+            if (!save.HasValue)
+                return false;
+
+            if (save.Value)
+            {
+                var path = Computer.TapeFilePath;
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    path = Dialogs.GetTapeFilePath(Settings.LastCasFile, true);
+                    if (string.IsNullOrWhiteSpace(path))
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        Computer.TapeFilePath = path;
+                        Settings.LastCasFile = path;
+                    }
+                }
+                Computer.TapeSave();
+            }
+            return true;
+        }
         public static bool MakeFloppyFromFile(string FilePath)
         {
-            byte[] diskImage = DMK.MakeFloppyFromFile(LoadBinaryFile(FilePath), Path.GetFileName(FilePath)).Serialize(ForceDMK: true);
-
-            if (diskImage.Length > 0)
-                return SaveBinaryFile(Path.ChangeExtension(FilePath, "dsk"), diskImage);
-            else
-                return false;
+            if (LoadBinaryFile(FilePath, out byte[] bytes))
+            {
+                byte[] diskImage = DMK.MakeFloppyFromFile(bytes, Path.GetFileName(FilePath)).Serialize(ForceDMK: true);
+                if (diskImage.Length > 0)
+                    return SaveBinaryFile(Path.ChangeExtension(FilePath, "dsk"), diskImage);
+            }
+            return false;
         }
         private static string userPath = null;
         public static string DocsPath

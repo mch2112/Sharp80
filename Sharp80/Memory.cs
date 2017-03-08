@@ -41,9 +41,6 @@ namespace Sharp80
         {
             get
             {
-                if (Location >= 0x37e0 && Location <= 0x37ff)
-                    Debug.WriteLine("Model 1 FDC attempt?");
-
                 unchecked
                 {
                     if ((Location & 0xFF00) == KEYBOARD_MEMORY_BLOCK)  // Keyboard Memory Map

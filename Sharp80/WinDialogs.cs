@@ -142,6 +142,15 @@ namespace Sharp80
                                   DefaultExtension: "asm",
                                   SelectFileInDialog: true);
         }
+        public static string GetTapeFilePath(string DefaultPath, bool Save)
+        {
+            return UserSelectFile(Save: Save,
+                                  DefaultPath: DefaultPath,
+                                  Title: Save ? "Save Tape File" : "Load Tape File",
+                                  Filter: "Cassette Files (*.cas)|*.cas|All Files (*.*)|*.*",
+                                  DefaultExtension: "cas",
+                                  SelectFileInDialog: true);
+        }
 
         // CURSOR MANAGEMENT
 

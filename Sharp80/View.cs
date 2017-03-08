@@ -466,7 +466,16 @@ namespace Sharp80
             Array[Start]     = (Input >> 4)  .ToHexCharByte();
             Array[Start + 1] = (Input & 0x0F).ToHexCharByte();
         }
-
+        protected static string FitFilePath(string FilePath, int Size)
+        {
+            if (string.IsNullOrWhiteSpace(FilePath))
+                return "<Untitled>";
+            else if (FilePath.Length <= Size)
+                return FilePath;
+            else
+                return FilePath.Substring(0, 20) + "..." +
+                       FilePath.Substring(FilePath.Length - Size + 23);
+        }
         private void LoadCMDFile(string Path = "", bool SuppressNormalInform = false)
         {
             if (String.IsNullOrWhiteSpace(Path))

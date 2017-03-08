@@ -85,7 +85,9 @@ namespace Sharp80
 
             enabled = Enabled ?? enabled;
 
-            if (Latched == true && (enabled || canLatchBeforeEnabled))
+            if (Enabled == false && !canLatchBeforeEnabled)
+                latched = false;
+            else if (Latched == true && (enabled || canLatchBeforeEnabled))
                 latched = true;
             else
                 latched = Latched ?? latched;
@@ -106,6 +108,10 @@ namespace Sharp80
                 if (wasLatchedAndEnabled)
                     Reset?.Invoke();
             }
+        }
+        public override string ToString()
+        {
+            return String.Format("Latched: {0} Enabled: {1} Triggered: {2}", Latched, Enabled, Triggered);
         }
     }
 }

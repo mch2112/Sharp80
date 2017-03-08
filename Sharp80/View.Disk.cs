@@ -157,7 +157,7 @@ namespace Sharp80
             if (d == null)
                 line2 = String.Empty;
             else
-                line2 = FitFilePath(d.FilePath);
+                line2 = FitFilePath(d.FilePath, ScreenMetrics.NUM_SCREEN_CHARS_X);
 
             return Format(line1) + Format(line2);
         }
@@ -332,16 +332,6 @@ namespace Sharp80
                 if (f != null)
                     f.WriteProtected = !f.WriteProtected;
             }
-        }
-        private static string FitFilePath(string FilePath)
-        {
-            if (string.IsNullOrWhiteSpace(FilePath))
-                return "<Untitled>";
-            else if (FilePath.Length <= ScreenMetrics.NUM_SCREEN_CHARS_X)
-                return FilePath;
-            else
-                return FilePath.Substring(0, 20) + "..." +
-                       FilePath.Substring(FilePath.Length - ScreenMetrics.NUM_SCREEN_CHARS_X + 23);
         }
     }
 }

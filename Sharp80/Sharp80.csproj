@@ -150,6 +150,7 @@
     <Compile Include="InstructionSet.cs" />
     <Compile Include="ISerializable.cs" />
     <Compile Include="Tape.cs" />
+    <Compile Include="Tape.Transition.cs" />
     <Compile Include="Trigger.cs" />
     <Compile Include="Memory.Keyboard.cs" />
     <Compile Include="KeyboardDX.cs" />

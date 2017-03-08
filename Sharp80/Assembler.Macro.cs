@@ -40,6 +40,7 @@ namespace Sharp80.Assembler
                 int argNum;
                 string[] inputArgs = GetCSV(inputArguments);
 
+                // TODO: Write the as an error in the INT file and prevent compilation
                 if (inputArgs.Length != arguments.Count)
                     Console.WriteLine(string.Format("Macro {0} Arguments Mismatch: {1} Required, {2} Specified, Line {3}",
                                                     Name, 

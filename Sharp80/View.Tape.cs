@@ -38,6 +38,13 @@ namespace Sharp80
                                 break;
                         }
                         break;
+                    case KeyCode.E:
+                        if (Storage.SaveTapeIfRequired(Computer))
+                            Computer.TapeEject();
+                        break;
+                    case KeyCode.S:
+                        Computer.TapeStop();
+                        break;
                     case KeyCode.W:
                         Computer.TapeRewind();
                         break;
@@ -45,10 +52,8 @@ namespace Sharp80
                         Computer.TapeRecord();
                         break;
                     case KeyCode.B:
-                        Computer.TapeLoadBlank();
-                        break;
-                    case KeyCode.V:
-                        Computer.TapeSave();
+                        if (Storage.SaveTapeIfRequired(Computer))
+                            Computer.TapeLoadBlank();
                         break;
                     default:
                         return base.processKey(Key);
@@ -64,9 +69,9 @@ namespace Sharp80
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Cassette Management") +
                 Format() +
-                Format("Cassette File: " + (String.IsNullOrWhiteSpace(fileName) ? "{UNTITLED}" : fileName)) +
-                Format(string.Format(@"{0:0000.0}  {1:mm\:ss\:ff}", Computer.TapeCounter, Computer.TapeElapsedTime)) +
-                Format(string.Format("{0} {1} {2} {3}", stateStr(Computer.TapeStatus), Computer.TapeSpeed, Computer.TapeValue, Computer.TapePulseStatus)) +
+                Format("Cassette File: " + (String.IsNullOrWhiteSpace(fileName) ? "{UNTITLED}" : FitFilePath(fileName, ScreenMetrics.NUM_SCREEN_CHARS_X - "Cassette File: ".Length))) +
+                Format(string.Format(@"{0:0000.0}  {1:00.0%}", Computer.TapeCounter, Computer.TapePercent)) +
+                Format(string.Format("{0} {1} {2} {3}", stateStr(Computer.TapeStatus), Computer.TapeSpeed, Computer.Bit ? 1 : 0, Computer.TapePulseStatus)) +
                 Format() +
                 Format("[L] Load") +
                 Format("[P] Play") +
@@ -75,8 +80,7 @@ namespace Sharp80
                 Format("[B] Load Blank Tape")+
                 Format() +
                 Format("[W] Rewind") +
-                Format("[F] Fast Forward") +
-                Format("[V] Save Tape")
+                Format("[E] Eject")
                 ));
         }
         private string stateStr(TapeStatus Status)

@@ -7,12 +7,14 @@ namespace Sharp80
 {
     internal sealed class PulseReq
     {
+        public enum DelayBasis { Microseconds, Ticks }
+
         private ulong delay;
-        private bool delayBasisIsTicks;
+        private DelayBasis delayBasis;
         private ulong trigger;
         private Clock.ClockCallback callback;
 
-        private bool expired = false;
+        private bool active = false;
         private static ulong ticksPerMillisecond;
         private const ulong MICROSECONDS_PER_MILLISECOND = 1000;
         private const ulong MILLISECONDS_PER_SECOND = 1000;
@@ -21,26 +23,19 @@ namespace Sharp80
         {
             ticksPerMillisecond = TicksPerSec / MILLISECONDS_PER_SECOND;
         }
-        public PulseReq(ulong DelayInTicks, Clock.ClockCallback Callback)
+        public PulseReq(DelayBasis DelayBasis, ulong Delay, Clock.ClockCallback Callback, bool Active = false)
         {
-            delay = DelayInTicks;
-            delayBasisIsTicks = true;
+            delayBasis = DelayBasis;
+            delay = Delay;
             callback = Callback;
-            expired = false;
+            active = Active;
         }
-        public PulseReq(ulong DelayInMicroSeconds, Clock.ClockCallback Callback, bool Expired)
-        {
-            delay = DelayInMicroSeconds;
-            delayBasisIsTicks = false;
-            callback = Callback;
-            expired = Expired;
-        }
-        public PulseReq() : this(0, null, true) { }
+        public PulseReq() : this(DelayBasis.Ticks, 0, null, true) { }
         public void Execute()
         {
-            if (!expired)
+            if (active)
             {
-                expired = true;
+                active = false;
                 callback();
             }
         }
@@ -50,35 +45,37 @@ namespace Sharp80
         }
         public void SetTrigger(ulong BaselineTicks)
         {
-            if (delayBasisIsTicks)
-                trigger = BaselineTicks + delay;
-            else
-                trigger = BaselineTicks + delay * ticksPerMillisecond / MICROSECONDS_PER_MILLISECOND;
-            expired = false;
+            switch (delayBasis)
+            {
+                case DelayBasis.Ticks:
+                    trigger = BaselineTicks + delay;
+                    break;
+                case DelayBasis.Microseconds:
+                    trigger = BaselineTicks + delay * ticksPerMillisecond / MICROSECONDS_PER_MILLISECOND;
+                    break;
+            }
+            active = true;
         }
-        public void Expire()
-        {
-            expired = true;
-        }
-        public bool Expired
-        {
-            get { return expired; }
-        }
+
+        public void Expire() { active = false; }
+        public bool Active {  get { return active; } }
+        public bool Inactive { get { return !active; } }
 
         public void Serialize(System.IO.BinaryWriter Writer)
         {
             Writer.Write(delay);
-            Writer.Write(delayBasisIsTicks);
+            Writer.Write((int)delayBasis);
             Writer.Write(trigger);
-            Writer.Write(expired);
+            Writer.Write(active);
         }
         public void Deserialize(System.IO.BinaryReader Reader, Clock.ClockCallback Callback)
         {
             callback = Callback;
+
             delay = Reader.ReadUInt64();
-            delayBasisIsTicks = Reader.ReadBoolean();
+            delayBasis = (DelayBasis)Reader.ReadInt32();
             trigger = Reader.ReadUInt64();
-            expired = Reader.ReadBoolean();
+            active = Reader.ReadBoolean();
         }
     }
 }

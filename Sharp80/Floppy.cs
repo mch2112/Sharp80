@@ -80,21 +80,17 @@ namespace Sharp80
         public abstract byte SectorCount(byte TrackNumber, bool SideOne);
         public static Floppy LoadDisk(string FilePath)
         {
-            Floppy f = null;
-            byte[] diskData = null;
-            try
-            {
-                diskData = Storage.LoadBinaryFile(FilePath);
-                //var bb = Lib.Compress(diskData);
-                //var s = String.Join(", ", bb.Select(b => "0x" + b.ToString("X2")));
+            Floppy f;
 
+            if (Storage.LoadBinaryFile(FilePath, out byte[] diskData))
+            {
                 f = LoadDisk(diskData, FilePath);
                 if (f != null)
                     f.FilePath = FilePath;
             }
-            catch (Exception ex)
+            else
             {
-                Log.LogDebug(string.Format("Error loading floppy: {0}", ex));
+                Log.LogDebug("Error loading floppy");
                 f = null;
             }
 
