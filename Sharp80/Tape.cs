@@ -319,16 +319,18 @@ namespace Sharp80
         {
             if (Status == TapeStatus.Reading)
             {
-                transition = transition ?? new Transition(Speed);
-                while (transition.Update(Speed))
+                // capture transition in t in case transition is nullified
+                // asynchronously
+                var t = transition = transition ?? new Transition(Speed);
+                while (t.Update(Speed))
                 {
-                    if (transition.IsRising) intMgr.CassetteRisingEdgeLatch.Latch();
-                    else if (transition.IsFalling) intMgr.CassetteFallingEdgeLatch.Latch();
+                    if (t.IsRising) intMgr.CassetteRisingEdgeLatch.Latch();
+                    else if (t.IsFalling) intMgr.CassetteFallingEdgeLatch.Latch();
                 }
                 // Keep coming back as long as we're in read status
                 readPulseReq?.Expire();
                 computer.RegisterPulseReq(readPulseReq = new PulseReq(PulseReq.DelayBasis.Ticks,
-                                                                      transition.TicksUntilNext,
+                                                                      t.TicksUntilNext,
                                                                       Update));
             }
         }

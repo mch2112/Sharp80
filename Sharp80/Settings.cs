@@ -280,7 +280,7 @@ namespace Sharp80
             if (!String.IsNullOrWhiteSpace(lastSnapshotFile))
                 psd.last_snapshot_file = lastSnapshotFile;
             if (!String.IsNullOrWhiteSpace(lastTapeFile))
-                psd.last_tape_file = lastCmdFile;
+                psd.last_tape_file = lastTapeFile;
             if (soundOn.HasValue)
                 psd.sound = soundOn.Value;
             if (normalSpeed.HasValue)

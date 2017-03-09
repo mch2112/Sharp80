@@ -339,6 +339,28 @@ namespace Sharp80
         public string TapePulseStatus {  get { return Tape.PulseStatus; } }
         public Baud TapeSpeed { get { return Tape.Speed; } }
 
+        /// <summary>
+        /// Backdoor to get or change the initial user selection at
+        /// the "Cass?" prompt
+        /// </summary>
+        public Baud TapeUserSelectedSpeed
+        {
+            get
+            {
+                switch (Memory[0x4211])
+                {
+                    case 0x00:
+                        return Baud.Low;
+                    default:
+                        return Baud.High;
+                }
+            }
+            set
+            {
+                 Memory[0x4211] = (value == Baud.High) ? (byte)0x48 : (byte)0x00;
+            }
+        }
+
         // PRINTER
 
         public bool PrinterHasContent {  get { return Printer.HasContent; } }

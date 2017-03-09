@@ -15,13 +15,14 @@ namespace Sharp80
                 Invalidate();
                 switch (Key.Key)
                 {
-                    case KeyCode.P:
-                        Computer.TapePlay();
-                        MessageCallback("Playing Tape");
-                        break;
-                    case KeyCode.L:
+                    case KeyCode.B:
                         if (Storage.SaveTapeIfRequired(Computer))
-                            Load();
+                        {
+                            Computer.TapeLoadBlank();
+                            Settings.LastTapeFile = Computer.TapeFilePath;
+                            MessageCallback("Blank Tape Loaded");
+
+                        }
                         break;
                     case KeyCode.E:
                         if (Storage.SaveTapeIfRequired(Computer))
@@ -30,13 +31,17 @@ namespace Sharp80
                             MessageCallback("Tape Ejected");
                         }
                         break;
+                    case KeyCode.L:
+                        if (Storage.SaveTapeIfRequired(Computer))
+                            Load();
+                        break;
+                    case KeyCode.P:
+                        Computer.TapePlay();
+                        MessageCallback("Playing Tape");
+                        break;
                     case KeyCode.S:
                         Computer.TapeStop();
                         MessageCallback("Tape Stopped");
-                        break;
-                    case KeyCode.W:
-                        Computer.TapeRewind();
-                        MessageCallback("Tape Rewound");
                         break;
                     case KeyCode.R:
                         Computer.TapeRecord();
@@ -50,14 +55,12 @@ namespace Sharp80
                                 break;
                         }
                         break;
-                    case KeyCode.B:
-                        if (Storage.SaveTapeIfRequired(Computer))
-                        {
-                            Computer.TapeLoadBlank();
-                            Settings.LastTapeFile = Computer.TapeFilePath;
-                            MessageCallback("Blank Tape Loaded");
-
-                        }
+                    case KeyCode.W:
+                        Computer.TapeRewind();
+                        MessageCallback("Tape Rewound");
+                        break;
+                    case KeyCode.X:
+                        Computer.TapeUserSelectedSpeed = Computer.TapeUserSelectedSpeed == Baud.High ? Baud.Low : Baud.High;
                         break;
                     default:
                         return base.processKey(Key);
@@ -72,6 +75,7 @@ namespace Sharp80
 
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Tape Management") +
+                Format(string.Format("Speed Selected: {0} Baud ([X] to change)", Computer.TapeUserSelectedSpeed == Baud.High ? "High 1500" : "Low 500")) +
                 Format("Tape File: " + FitFilePath(fileName, ScreenMetrics.NUM_SCREEN_CHARS_X - "Tape File: ".Length)) +
                 Format(string.Format(@"{0:0000.0} ({1:00.0%})", Computer.TapeCounter, Computer.TapePercent)) +
                 Format(string.Format("{0} {1} {2}",
@@ -79,7 +83,6 @@ namespace Sharp80
                        Computer.TapeIsBlank ? String.Empty : Computer.TapeSpeed == Baud.High ? "1500 Baud" : "500 Baud",
                        Computer.TapeMotorOn ? Computer.TapePulseStatus : String.Empty)) +
                 Separator() +
-                Format() +
                 Format("[L] Load From File") +
                 Format("[B] Load Blank Tape") +
                 Format() +
