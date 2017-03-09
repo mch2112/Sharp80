@@ -10,9 +10,9 @@ namespace Sharp80
 {
     internal static class Storage
     {
-        public const string FILE_NAME_TRSDOS =      "{{TRSDOS}}";
-        public const string FILE_NAME_NEW =         "{{NEW}}";
-        public const string FILE_NAME_UNFORMATTED = "{{UNFORMATTED}}";
+        public const string FILE_NAME_TRSDOS =      "{TRSDOS}";
+        public const string FILE_NAME_NEW =         "{NEW}";
+        public const string FILE_NAME_UNFORMATTED = "{UNFORMATTED}";
 
         private static string userPath = null;
         private static string appDataPath = null;
@@ -394,9 +394,12 @@ namespace Sharp80
             if (save.Value)
             {
                 var path = Computer.TapeFilePath;
-                if (string.IsNullOrWhiteSpace(path))
+                if (String.IsNullOrWhiteSpace(path) || IsFileNameToken(path)|| !Directory.Exists(Path.GetDirectoryName(path)))
                 {
-                    path = Dialogs.GetTapeFilePath(Settings.LastTapeFile, true);
+                    if (!Directory.Exists(Path.GetDirectoryName(path)))
+                        path = Path.Combine(AppDataPath, "Tapes\\");
+
+                    path = Dialogs.GetTapeFilePath(path, true);
                     if (string.IsNullOrWhiteSpace(path))
                     {
                         return false;

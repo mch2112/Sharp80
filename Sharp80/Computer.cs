@@ -10,7 +10,7 @@ namespace Sharp80
     {
         public const ulong CLOCK_RATE = 2027520;
 
-        private const int SERIALIZATION_VERSION = 4;
+        private const int SERIALIZATION_VERSION = 5;
 
         public bool HasRunYet { get; private set; }
 
@@ -219,9 +219,22 @@ namespace Sharp80
         {
             Screen.SetVideoMode(Wide, Kanji);
         }
+        /// <summary>
+        /// Adds a pulse req and also sets the trigger based on the 
+        /// trigger's delay
+        /// </summary>
+        /// <param name="Req"></param>
         public void RegisterPulseReq(PulseReq Req)
         {
             Clock.RegisterPulseReq(Req);
+        }
+        /// <summary>
+        /// Adds a pulse req without resetting the trigger
+        /// </summary>
+        /// <param name="Req"></param>
+        public void AddPulseReq(PulseReq Req)
+        {
+            Clock.AddPulseReq(Req);
         }
 
         // FLOPPY SUPPORT
@@ -372,15 +385,19 @@ namespace Sharp80
         {
             int ver = Reader.ReadInt32(); // SERIALIZATION_VERSION
 
-            if (ver != SERIALIZATION_VERSION)
+            if (ver == SERIALIZATION_VERSION)
+            {
+                Processor.Deserialize(Reader);
+                Clock.Deserialize(Reader);
+                FloppyController.Deserialize(Reader);
+                IntMgr.Deserialize(Reader);
+                Screen.Deserialize(Reader);
+                Tape.Deserialize(Reader);
+            }
+            else
+            {
                 Dialogs.AlertUser("Snapshot load failed: incompatible snapshot version.");
-
-            Processor.Deserialize(Reader);
-            Clock.Deserialize(Reader);
-            FloppyController.Deserialize(Reader);
-            IntMgr.Deserialize(Reader);
-            Screen.Deserialize(Reader);
-            Tape.Deserialize(Reader);
+            }
         }
 
         public bool LoadCMDFile(string filePath)

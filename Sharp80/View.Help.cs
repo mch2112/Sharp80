@@ -24,23 +24,29 @@ namespace Sharp80
                     return PadScreen(Encoding.ASCII.GetBytes(
                                         Header(helpHeaderText, "BASIC COMMANDS (1/5)") +
                                         Indent("[F1] Show This Help") +
+                                        Format() +
                                         Indent("[F2] Show Options") +
                                         Indent("[F3] Floppy Disk Manager") +
                                         Indent("[F4] Tape Manager") +
-                                        Indent("[F5] Show / Hide Z80 CPU Internal Info") +
                                         Format() +
                                         Indent("[F8] Run / Pause") +
-                                        Indent("[F9] Single Step") +
                                         Format() +
                                         Indent("[Control]+[+] / [Control]+[-]   Zoom In / Out") +
+                                        Format() +
                                         Footer(footerText)));
                 case 1:
                     return PadScreen(Encoding.ASCII.GetBytes(
                                         Header(helpHeaderText, "MORE BASIC COMMANDS (2/5)") +
-                                        Indent("[Shift]+[Alt]+[End]             Hard Reset (Power Cycle)") +
-                                        Indent("[Shift]+[Alt]+[X]               Exit") +
+                                        Indent("[Alt]+[End]            Reset Button      ") + 
+                                        Indent("[Shift]+[Alt]+[End]    Hard Reset (Power Cycle)") +
+                                        Indent("[Shift]+[Alt]+[X]      Exit") +
                                         Format() + 
-                                        Indent("[S]  Toggle Sound") +
+                                        Indent("[Alt]+[S]              Toggle Sound") +
+                                        Format() +
+                                        Indent("[F5] Show / Hide Z80 CPU Internal Info") +
+                                        Format() +
+                                        Indent("[F9] Single Step (when paused)") +
+                                        Format() +
                                         Footer(footerText)));
                 case 2:
                     return PadScreen(Encoding.ASCII.GetBytes(

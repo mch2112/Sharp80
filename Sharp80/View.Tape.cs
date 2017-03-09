@@ -100,7 +100,7 @@ namespace Sharp80
 
             bool selectFile = true;
 
-            if (path == Storage.FILE_NAME_NEW)
+            if (Storage.IsFileNameToken(path))
             {
                 path = System.IO.Path.Combine(Storage.AppDataPath, "Tapes\\");
                 selectFile = false;

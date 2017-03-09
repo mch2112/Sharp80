@@ -146,6 +146,10 @@ namespace Sharp80
         {
             Req.SetTrigger(BaselineTicks: tickCount);
 
+            AddPulseReq(Req);
+        }
+        public void AddPulseReq(PulseReq Req)
+        {
             if (!pulseReqs.Contains(Req))
                 pulseReqs.Add(Req);
 

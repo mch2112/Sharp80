@@ -41,6 +41,7 @@ namespace Sharp80
         private Computer computer;
         private InterruptManager intMgr;
         private Clock clock;
+        private PulseReq readPulseReq = null;
 
         public string FilePath { get; set; }
 
@@ -181,10 +182,10 @@ namespace Sharp80
 
             byte[] bytes;
             FilePath = Path;
-            if (String.IsNullOrWhiteSpace(Path) || FilePath == Storage.FILE_NAME_NEW)
+            if (String.IsNullOrWhiteSpace(Path) || Storage.IsFileNameToken(FilePath))
             {
-                FilePath = Storage.FILE_NAME_NEW;
-                bytes = new byte[DEFAULT_BLANK_TAPE_LENGTH];
+                // init tape will take care of it
+                bytes = null;
             }
             else if (!Storage.LoadBinaryFile(Path, out bytes) || bytes.Length < 0x100)
             {
@@ -325,9 +326,10 @@ namespace Sharp80
                     else if (transition.IsFalling) intMgr.CassetteFallingEdgeLatch.Latch();
                 }
                 // Keep coming back as long as we're in read status
-                computer.RegisterPulseReq(new PulseReq(PulseReq.DelayBasis.Ticks,
-                                                       transition.TicksUntilNext,
-                                                       Update));
+                readPulseReq?.Expire();
+                computer.RegisterPulseReq(readPulseReq = new PulseReq(PulseReq.DelayBasis.Ticks,
+                                                                      transition.TicksUntilNext,
+                                                                      Update));
             }
         }
         private bool Read()
@@ -472,6 +474,17 @@ namespace Sharp80
             {
                 transition = null;
             }
+            if (Reader.ReadBoolean())
+            {
+                readPulseReq = readPulseReq ?? new PulseReq();
+                readPulseReq.Deserialize(Reader, Update);
+                if (readPulseReq.Active)
+                    computer.AddPulseReq(readPulseReq);
+            }
+            else
+            {
+                readPulseReq = null;
+            }
         }
         public void Serialize(BinaryWriter Writer)
         {
@@ -497,6 +510,9 @@ namespace Sharp80
             Writer.Write(transition != null);
             if (transition != null)
                 transition.Serialize(Writer);
+            Writer.Write(readPulseReq != null);
+            if (readPulseReq != null)
+                readPulseReq.Serialize(Writer);
         }
     }
 }

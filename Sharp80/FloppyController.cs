@@ -1320,15 +1320,15 @@ namespace Sharp80
 
             commandPulseReq.Deserialize(Reader, callback);
             if (commandPulseReq.Active)
-                computer.RegisterPulseReq(commandPulseReq);
+                computer.AddPulseReq(commandPulseReq);
 
             motorOnPulseReq.Deserialize(Reader, MotorOnCallback);
             if (motorOnPulseReq.Active)
-                computer.RegisterPulseReq(motorOnPulseReq);
+                computer.AddPulseReq(motorOnPulseReq);
 
             motorOffPulseReq.Deserialize(Reader, MotorOffCallback);
             if (motorOffPulseReq.Active)
-                computer.RegisterPulseReq(motorOffPulseReq);
+                computer.AddPulseReq(motorOffPulseReq);
 
             UpdateTrack();
         }
