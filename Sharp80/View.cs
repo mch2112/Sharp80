@@ -123,10 +123,21 @@ namespace Sharp80
                             CurrentMode = ViewMode.Disk;
                             return true;
                         case KeyCode.F4:
+                            CurrentMode = ViewMode.Tape;
+                            return true;
+                        case KeyCode.F5:
                             OnUserCommand?.Invoke(UserCommand.ToggleAdvancedView);
                             MessageCallback(Settings.AdvancedView ? "Advanced View" : "Normal View");
                             return true;
-                        case KeyCode.F5:
+                        case KeyCode.F6:
+                            OnUserCommand?.Invoke(UserCommand.ShowAdvancedView);
+                            CurrentMode = ViewMode.Jump;
+                            return true;
+                        case KeyCode.F7:
+                            OnUserCommand?.Invoke(UserCommand.ShowAdvancedView);
+                            CurrentMode = ViewMode.Breakpoint;
+                            return true;
+                        case KeyCode.F8:
                             if (Computer.IsRunning)
                             {
                                 Computer.Stop(true);
@@ -138,14 +149,6 @@ namespace Sharp80
                                 MessageCallback("Started");
                             }
                             Invalidate();
-                            return true;
-                        case KeyCode.F6:
-                            OnUserCommand?.Invoke(UserCommand.ShowAdvancedView);
-                            CurrentMode = ViewMode.Jump;
-                            return true;
-                        case KeyCode.F7:
-                            OnUserCommand?.Invoke(UserCommand.ShowAdvancedView);
-                            CurrentMode = ViewMode.Breakpoint;
                             return true;
                         case KeyCode.F9:
                             Computer.SingleStep();
@@ -198,6 +201,10 @@ namespace Sharp80
                             // start the disassembly at the current PC location
                             Disassemble(true);
                             return true;
+                        case KeyCode.S:
+                            Settings.DriveNoise = Computer.DriveNoise = !Computer.DriveNoise;
+                            MessageCallback(Settings.DriveNoise ? "Drive noise on" : "Drive noise off");
+                            return true;
                         case KeyCode.X:
                             OnUserCommand?.Invoke(UserCommand.Exit);
                             return true;
@@ -227,9 +234,6 @@ namespace Sharp80
                             return true;
                         case KeyCode.D:
                             CurrentMode = ViewMode.FloppyController;
-                            return true;
-                        case KeyCode.E:
-                            currentMode = ViewMode.Tape;
                             return true;
                         case KeyCode.F:
                             MakeAndSaveBlankFloppy(true);
@@ -282,10 +286,6 @@ namespace Sharp80
                         case KeyCode.S:
                             Settings.SoundOn = Computer.SoundOn = !Computer.SoundOn;
                             MessageCallback(Settings.SoundOn ? "Sound On" : "Sound Off");
-                            return true;
-                        case KeyCode.T:
-                            Settings.DriveNoise = Computer.DriveNoise = !Computer.DriveNoise;
-                            MessageCallback(Settings.DriveNoise ? "Drive noise on" : "Drive noise off");
                             return true;
                         case KeyCode.U:
                             MakeAndSaveBlankFloppy(false);

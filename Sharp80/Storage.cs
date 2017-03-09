@@ -10,6 +10,38 @@ namespace Sharp80
 {
     internal static class Storage
     {
+        public const string FILE_NAME_TRSDOS =      "{{TRSDOS}}";
+        public const string FILE_NAME_NEW =         "{{NEW}}";
+        public const string FILE_NAME_UNFORMATTED = "{{UNFORMATTED}}";
+
+        private static string userPath = null;
+        private static string appDataPath = null;
+
+        public static string DocsPath
+        {
+            get
+            {
+                if (userPath == null)
+                {
+                    userPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Sharp80");
+                    Directory.CreateDirectory(userPath);
+                }
+                return userPath;
+            }
+        }
+        public static string AppDataPath
+        {
+            get
+            {
+                if (appDataPath == null)
+                {
+                    appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Sharp80");
+                    Directory.CreateDirectory(appDataPath);
+                }
+                return appDataPath;
+            }
+        }
+
         public static bool LoadBinaryFile(string FilePath, out byte[] Bytes)
         {
             try
@@ -68,12 +100,33 @@ namespace Sharp80
                     fileName = Settings.Disk3Filename;
                     break;
             }
-            if (File.Exists(fileName) || Floppy.IsFileNameToken(fileName))
+            if (File.Exists(fileName) || IsFileNameToken(fileName))
                 return fileName;
             else
                 return String.Empty;
         }
 
+        /// <summary>
+        /// Returns a token or the latest path used. The path is confirmed to exist.
+        /// </summary>
+        /// <returns></returns>
+        public static string GetDefaultTapeFileName()
+        {
+            string path = Settings.LastTapeFile;
+            if (File.Exists(path) || IsFileNameToken(path))
+                return path;
+            else
+                return String.Empty;
+        }
+        public static string GetTapeFilePath(string Prompt, string DefaultPath, bool Save, bool SelectFileInDialog)
+        {
+            return Dialogs.UserSelectFile(Save: Save,
+                                          DefaultPath: DefaultPath,
+                                          Title: Prompt,
+                                          Filter: "TRS-80 Tape Files (*.cas)|*.cas|All Files (*.*)|*.*",
+                                          DefaultExtension: ".cas",
+                                          SelectFileInDialog: SelectFileInDialog);
+        }
         /// <summary>
         /// Should be called when the floppy is put in the drive. Note that the
         /// floppy's file path may be empty but we may want to save a token
@@ -102,7 +155,7 @@ namespace Sharp80
             var f = DMK.MakeBlankFloppy(NumTracks: 40,
                                            DoubleSided: true,
                                            Formatted: Formatted);
-            f.FilePath = Formatted ? Floppy.FILE_NAME_BLANK : Floppy.FILE_NAME_UNFORMATTED;
+            f.FilePath = Formatted ? FILE_NAME_NEW : FILE_NAME_UNFORMATTED;
 
             return f;
         }
@@ -282,6 +335,11 @@ namespace Sharp80
                                           SelectFileInDialog: SelectFileInDialog);
         }
 
+        public static bool IsFileNameToken(string Path)
+        {
+            return Path == FILE_NAME_UNFORMATTED || Path == FILE_NAME_NEW || Path == FILE_NAME_TRSDOS;
+        }
+
         // returns false if the user cancelled a needed save
         public static bool SaveFloppies(Computer Computer)
         {
@@ -306,7 +364,7 @@ namespace Sharp80
             if (save.Value)
             {
                 var path = Computer.GetFloppyFilePath(DriveNum);
-                if (string.IsNullOrWhiteSpace(path) || Floppy.IsFileNameToken(path))
+                if (string.IsNullOrWhiteSpace(path) || IsFileNameToken(path))
                 {
                     path = GetFloppyFilePath("Choose path to save floppy", Settings.DefaultFloppyDirectory, true, false, true);
                     if (string.IsNullOrWhiteSpace(path))
@@ -338,7 +396,7 @@ namespace Sharp80
                 var path = Computer.TapeFilePath;
                 if (string.IsNullOrWhiteSpace(path))
                 {
-                    path = Dialogs.GetTapeFilePath(Settings.LastCasFile, true);
+                    path = Dialogs.GetTapeFilePath(Settings.LastTapeFile, true);
                     if (string.IsNullOrWhiteSpace(path))
                     {
                         return false;
@@ -346,7 +404,7 @@ namespace Sharp80
                     else
                     {
                         Computer.TapeFilePath = path;
-                        Settings.LastCasFile = path;
+                        Settings.LastTapeFile = path;
                     }
                 }
                 Computer.TapeSave();
@@ -363,32 +421,6 @@ namespace Sharp80
             }
             return false;
         }
-        private static string userPath = null;
-        public static string DocsPath
-        {
-            get
-            {
-                if (userPath == null)
-                {
-                    userPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Sharp80");
-                    Directory.CreateDirectory(userPath);
-                }
-                return userPath;
-            }
-        }
-        private static string appDataPath = null;
-        public static string AppDataPath
-        {
-            get
-            {
-                if (appDataPath == null)
-                {
-                    appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Sharp80");
-                    Directory.CreateDirectory(appDataPath);
-                }
-                return appDataPath;
-            }
-        }   
     }
 }
 

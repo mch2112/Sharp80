@@ -46,18 +46,38 @@ namespace Sharp80
 
         private void SetupClientArea()
         {
-            int h = (int)ScreenMetrics.WINDOWED_HEIGHT;
-            int w = (int)(screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL);
             var scn = Screen.FromHandle(Handle);
 
-            float defaultScale = 1f;
+            int clientExtraW = Width - ClientSize.Width;
+            int clientExtraH = Height - ClientSize.Height;
 
-            while (w * defaultScale < scn.WorkingArea.Width / 2 && h * defaultScale < scn.WorkingArea.Height / 2)
+            int sw = scn.WorkingArea.Width;
+            int sh = scn.WorkingArea.Height;
+
+            int w = Settings.WindowWidth;
+            int h = Settings.WindowHeight;
+
+            if (w <= 0 || h <= 0 || w + clientExtraW > sw || h + clientExtraH > sh)
             {
-                defaultScale *= 2f;
+                w = (int)(screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL);
+                h = (int)ScreenMetrics.WINDOWED_HEIGHT;
             }
+            
+            int x = Settings.WindowX;
+            int y = Settings.WindowY;
 
-            ClientSize = new System.Drawing.Size((int)(w * defaultScale), (int)(h * defaultScale));
+            if (x <= 0 || y <= 0)
+            {
+                x = (sw - w - clientExtraW) / 2;
+                y = (sh - h - clientExtraH) / 2;
+            }
+            if (x + w + clientExtraW > sw)
+                x = sw - w - clientExtraW;
+            if (y + h + clientExtraH > sh)
+                y = sh - h - clientExtraH;
+
+            ClientSize = new System.Drawing.Size(w, h);
+            Location = new System.Drawing.Point(x, y);
         }
 
         public bool IsMinimized { get { return WindowState == FormWindowState.Minimized; } }
@@ -174,7 +194,7 @@ namespace Sharp80
                     case KeyCode.Right:
                     case KeyCode.PageUp:
                     case KeyCode.PageDown:
-                    case KeyCode.F5:
+                    case KeyCode.F8:
                     case KeyCode.F9:
                     case KeyCode.F10:
                         repeatKey = k.Key;
@@ -249,6 +269,10 @@ namespace Sharp80
         {
             if (Storage.SaveFloppies(computer))
             {
+                Settings.WindowX = Location.X;
+                Settings.WindowY = Location.Y;
+                Settings.WindowWidth = ClientSize.Width;
+                Settings.WindowHeight = ClientSize.Height;
                 Settings.Save();
                 Log.Save(true, out string _);
                 Dispose();

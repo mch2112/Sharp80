@@ -16,12 +16,12 @@ namespace Sharp80
                                 Header("Sharp 80 - TRS-80 Model III Emulator", 
                                     string.Format("Version {0}  (c) Matthew Hamilton 2016 - {1}", System.Windows.Forms.Application.ProductVersion.ToString(), DateTime.Now.Year)) +
                                 Format() + 
-                                Indent("[F5] Start Emulator") +
+                                Indent("[F8] Start Emulator") +
                                 Format() +
                                 Indent("[F1] Command Help") +
                                 Indent("[F2] Options") +
                                 Indent("[F3] Floppy Disk Manager") +
-                                Format() +
+                                Indent("[F4] Tape Manager") +
                                 Format() +
                                 Format() +
                                 Format() +
@@ -34,7 +34,7 @@ namespace Sharp80
             {
                 switch (Key.Key)
                 {
-                    case KeyCode.F5:
+                    case KeyCode.F8:
                         // Note: doesn't consume key event
                         if (!Computer.IsRunning)
                             CurrentMode = ViewMode.Normal;

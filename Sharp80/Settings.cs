@@ -18,14 +18,20 @@ namespace Sharp80
         private static string disk2Filename;
         private static string disk3Filename;
         private static bool? driveNoise;
-        private static bool? fullScreen;
         private static bool? greenScreen;
         private static string lastAsmFile;
-        private static string lastCasFile;
         private static string lastCmdFile;
+        private static string lastTapeFile;
         private static string lastSnapshotFile;
         private static bool? soundOn;
         private static bool? normalSpeed;
+
+        private static bool? fullScreen;
+        private static int? windowX;
+        private static int? windowY;
+        private static int? windowWidth;
+        private static int? windowHeight;
+
 
         static Settings()
         {
@@ -133,15 +139,6 @@ namespace Sharp80
             }
             set { driveNoise = value; }
         }
-        public static bool FullScreen
-        {
-            get
-            {
-                fullScreen = fullScreen ?? Properties.Settings.Default.full_screen;
-                return fullScreen.Value;
-            }
-            set { fullScreen = value; }
-        }
         public static bool GreenScreen
         {
             get
@@ -173,17 +170,6 @@ namespace Sharp80
             }
             set { lastCmdFile = value; }
         }
-        public static string LastCasFile
-        {
-            get
-            {
-                lastCasFile = lastCasFile ?? Properties.Settings.Default.last_cas_file;
-                if (String.IsNullOrWhiteSpace(lastCasFile))
-                    lastCasFile = System.IO.Path.Combine(Storage.AppDataPath, "CAS Files\\");
-                return lastCasFile;
-            }
-            set { lastCasFile = value; }
-        }
         public static string LastSnapshotFile
         {
             get
@@ -194,6 +180,15 @@ namespace Sharp80
                 return lastSnapshotFile;
             }
             set { lastSnapshotFile = value; }
+        }
+        public static string LastTapeFile
+        {
+            get
+            {
+                lastTapeFile = lastTapeFile ?? Properties.Settings.Default.last_tape_file;
+                return lastTapeFile;
+            }
+            set { lastTapeFile = value; }
         }
         public static bool SoundOn
         {
@@ -213,7 +208,51 @@ namespace Sharp80
             }
             set { normalSpeed = value; }
         }
-        
+        public static bool FullScreen
+        {
+            get
+            {
+                fullScreen = fullScreen ?? Properties.Settings.Default.full_screen;
+                return fullScreen.Value;
+            }
+            set { fullScreen = value; }
+        }
+        public static int WindowX
+        {
+            get
+            {
+                windowX = windowX ?? Properties.Settings.Default.window_x;
+                return windowX.Value;
+            }
+            set { windowX = value; }
+        }
+        public static int WindowY
+        {
+            get
+            {
+                windowY = windowY ?? Properties.Settings.Default.window_y;
+                return windowY.Value;
+            }
+            set { windowY = value; }
+        }
+        public static int WindowWidth
+        {
+            get
+            {
+                windowWidth = windowWidth ?? Properties.Settings.Default.window_width;
+                return windowWidth.Value;
+            }
+            set { windowWidth = value; }
+        }
+        public static int WindowHeight
+        {
+            get
+            {
+                windowHeight = windowHeight ?? Properties.Settings.Default.window_height;
+                return windowHeight.Value;
+            }
+            set { windowHeight = value; }
+        }
         public static void Save()
         {
             var psd = Properties.Settings.Default;
@@ -238,23 +277,30 @@ namespace Sharp80
                 psd.disk3 = disk3Filename;
             if (driveNoise.HasValue)
                 psd.drive_noise = driveNoise.Value;
-            if (fullScreen.HasValue)
-                psd.full_screen = fullScreen.Value;
             if (greenScreen.HasValue)
                 psd.green_screen = greenScreen.Value;
             if (!String.IsNullOrWhiteSpace(lastAsmFile))
                 psd.last_asm_file = lastAsmFile;
-            if (!String.IsNullOrWhiteSpace(lastCasFile))
-                psd.last_cas_file = lastCmdFile;
             if (!String.IsNullOrWhiteSpace(lastCmdFile))
                 psd.last_cmd_file = lastCmdFile;
             if (!String.IsNullOrWhiteSpace(lastSnapshotFile))
                 psd.last_snapshot_file = lastSnapshotFile;
+            if (!String.IsNullOrWhiteSpace(lastTapeFile))
+                psd.last_tape_file = lastCmdFile;
             if (soundOn.HasValue)
                 psd.sound = soundOn.Value;
             if (normalSpeed.HasValue)
                 psd.normal_speed = normalSpeed.Value;
-
+            if (fullScreen.HasValue)
+                psd.full_screen = fullScreen.Value;
+            if (windowX.HasValue)
+                psd.window_x = windowX.Value;
+            if (windowY.HasValue)
+                psd.window_y = windowY.Value;
+            if (windowWidth.HasValue)
+                psd.window_width = windowWidth.Value;
+            if (windowHeight.HasValue)
+                psd.window_height = windowHeight.Value;
             Properties.Settings.Default.Save();
         }
     }

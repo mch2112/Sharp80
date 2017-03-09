@@ -249,13 +249,13 @@ namespace Sharp80
 
             switch (FilePath)
             {
-                case Floppy.FILE_NAME_TRSDOS:
+                case Storage.FILE_NAME_TRSDOS:
                     LoadTrsDosFloppy(DriveNum);
                     break;
-                case Floppy.FILE_NAME_BLANK:
+                case Storage.FILE_NAME_NEW:
                     LoadFloppy(DriveNum, Storage.MakeBlankFloppy(true));
                     break;
-                case Floppy.FILE_NAME_UNFORMATTED:
+                case Storage.FILE_NAME_UNFORMATTED:
                     LoadFloppy(DriveNum, Storage.MakeBlankFloppy(false));
                     break;
                 case "":
@@ -283,8 +283,8 @@ namespace Sharp80
         }
         public void LoadTrsDosFloppy(byte DriveNum)
         {
-            LoadFloppy(DriveNum, new DMK(Resources.TRSDOS) { FilePath = Floppy.FILE_NAME_TRSDOS });
-            Storage.SaveDefaultDriveFileName(DriveNum, Floppy.FILE_NAME_TRSDOS);
+            LoadFloppy(DriveNum, new DMK(Resources.TRSDOS) { FilePath = Storage.FILE_NAME_TRSDOS });
+            Storage.SaveDefaultDriveFileName(DriveNum, Storage.FILE_NAME_TRSDOS);
         }
         public void EjectFloppy(byte DriveNum)
         {
@@ -336,7 +336,7 @@ namespace Sharp80
 
         // CASSETTE
 
-        public void TapeLoad(string Path) { Tape.Load(Path); }
+        public bool TapeLoad(string Path) { return Tape.Load(Path); }
         public string TapeFilePath { get { return Tape.FilePath; } set { Tape.FilePath = value; } }
         public void TapeLoadBlank() { Tape.LoadBlank(); }
         public void TapePlay() { Tape.Play(); }
@@ -347,11 +347,12 @@ namespace Sharp80
         public void TapeSave()  { Tape.Save(); }
         public bool TapeChanged { get { return Tape.Changed; } }
         public bool TapeMotorOnSignal { set { Tape.MotorOnSignal = value; } }
+        public bool TapeMotorOn { get { return Tape.MotorOn; } }
         public float TapePercent { get { return Tape.Percent; } }
         public float TapeCounter { get { return Tape.Counter; } }
         public TapeStatus TapeStatus { get { return Tape.Status; } }
+        public bool TapeIsBlank {  get { return Tape.IsBlank; } }
         public string TapePulseStatus {  get { return Tape.PulseStatus; } }
-        public bool Bit { get { return Tape.Bit; } }
         public Baud TapeSpeed { get { return Tape.Speed; } }
 
         // MISC

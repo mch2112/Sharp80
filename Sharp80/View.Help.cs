@@ -9,7 +9,7 @@ namespace Sharp80
     internal class ViewHelp : View
     {
         private int ScreenNum { get; set; }
-        private const int NUM_SCREENS = 4;
+        private const int NUM_SCREENS = 5;
         private string helpHeaderText = "Sharp 80 Help";
         private string footerText = "[Left/Right Arrow] Show More Commands";
 
@@ -22,21 +22,29 @@ namespace Sharp80
             {
                 case 0:
                     return PadScreen(Encoding.ASCII.GetBytes(
-                                        Header(helpHeaderText, "BASIC COMMANDS (1/4)") +
+                                        Header(helpHeaderText, "BASIC COMMANDS (1/5)") +
                                         Indent("[F1] Show This Help") +
                                         Indent("[F2] Show Options") +
                                         Indent("[F3] Floppy Disk Manager") +
-                                        Indent("[F4] Show / Hide Z80 CPU Internal Info") +
+                                        Indent("[F4] Tape Manager") +
+                                        Indent("[F5] Show / Hide Z80 CPU Internal Info") +
                                         Format() +
-                                        Format(new string[] { "[F5] Run / Pause", "[F9] Single Step" }, true) +
-                                        Format() + 
+                                        Indent("[F8] Run / Pause") +
+                                        Indent("[F9] Single Step") +
+                                        Format() +
                                         Indent("[Control]+[+] / [Control]+[-]   Zoom In / Out") +
-                                        Indent("[Shift]+[Alt]+[End]             Hard Reset (Power Cycle)") +
-                                        Indent("[Shift]+[Alt]+[X]               Exit") +
                                         Footer(footerText)));
                 case 1:
                     return PadScreen(Encoding.ASCII.GetBytes(
-                                        Header(helpHeaderText, "TRS-80 KEYBOARD HELP (2/4)") +
+                                        Header(helpHeaderText, "MORE BASIC COMMANDS (2/5)") +
+                                        Indent("[Shift]+[Alt]+[End]             Hard Reset (Power Cycle)") +
+                                        Indent("[Shift]+[Alt]+[X]               Exit") +
+                                        Format() + 
+                                        Indent("[S]  Toggle Sound") +
+                                        Footer(footerText)));
+                case 2:
+                    return PadScreen(Encoding.ASCII.GetBytes(
+                                        Header(helpHeaderText, "TRS-80 KEYBOARD HELP (3/5)") +
                                         Format(new string[] { "Keyboard Key", "Virtual TRS-80 Key" }, true) +
                                         Format(new string[] { "-------------------", "------------------" }, true) +
                                         Format(new string[] { "[Esc]", "[Break]           " }, true) +
@@ -48,9 +56,9 @@ namespace Sharp80
                                         Format(new string[] { "[Alt]+[End]", "Reset Button      " }, true) +
                                         Format() +
                                         Footer(footerText)));
-                case 2:
+                case 3:
                     return PadScreen(Encoding.ASCII.GetBytes(
-                                        Header(helpHeaderText, "DISK COMMANDS (3/4)") +
+                                        Header(helpHeaderText, "DISK COMMANDS (4/5)") +
                                         Indent("[F3] Floppy Disk Manager") +
                                         Format() +
                                         Indent("[Alt]+[F] Create Formatted Floppy") +
@@ -62,9 +70,9 @@ namespace Sharp80
                                         Indent("[Alt]+[C] Load CMD file") +
                                         Indent("[Alt]+[Q] Create Floppy from File") +
                                         Footer(footerText)));
-                case 3:
+                case 4:
                     return PadScreen(Encoding.ASCII.GetBytes(
-                                        Header(helpHeaderText, "ADVANCED COMMANDS (4/4)") +
+                                        Header(helpHeaderText, "ADVANCED COMMANDS (5/5)") +
                                         Format(new string[] { "[F9] Single Step", "[F10] Step Over", "[F11] Step Out" }, true) +
                                         Format(new string[] { "[F7] Set/Clear Breakpoint", "[Alt]+[V] Trace On / Off" }, true) +
                                         Format() +
@@ -96,7 +104,7 @@ namespace Sharp80
                     ScreenNum += NUM_SCREENS - 1;
                     ScreenNum %= NUM_SCREENS;
                     break;
-                case KeyCode.F5:
+                case KeyCode.F8:
                     // Note: doesn't consume key event
                     if (!Computer.IsRunning)
                         CurrentMode = ViewMode.Normal;

@@ -6,54 +6,58 @@ namespace Sharp80
     internal class ViewTape : View
     {
         protected override ViewMode Mode => ViewMode.Tape;
-
-        protected override bool ForceRedraw => true;
-
-        int cursor = 0;
+        protected override bool ForceRedraw => Computer.TapeStatus == TapeStatus.Reading || Computer.TapeStatus == TapeStatus.Writing;
 
         protected override bool processKey(KeyState Key)
         {
             if (Key.Pressed)
             {
+                Invalidate();
                 switch (Key.Key)
                 {
                     case KeyCode.P:
                         Computer.TapePlay();
+                        MessageCallback("Playing Tape");
                         break;
                     case KeyCode.L:
-                        cursor = ++cursor % 4;
-                        switch (cursor)
-                        {
-                            case 0:
-                                Computer.TapeLoad(@"c:\Users\Matthew\Desktop\mcarpet.cas");
-                                break;
-                            case 1:
-                                Computer.TapeLoad(@"c:\Users\Matthew\Desktop\startrek.bas.cas");
-                                break;
-                            case 2:
-                                Computer.TapeLoad(@"c:\Users\Matthew\Desktop\seadragon.cas");
-                                break;
-                            case 3:
-                                Computer.TapeLoad(@"c:\Users\Matthew\Desktop\foo.cas");
-                                break;
-                        }
+                        if (Storage.SaveTapeIfRequired(Computer))
+                            Load();
                         break;
                     case KeyCode.E:
                         if (Storage.SaveTapeIfRequired(Computer))
+                        {
                             Computer.TapeEject();
+                            MessageCallback("Tape Ejected");
+                        }
                         break;
                     case KeyCode.S:
                         Computer.TapeStop();
+                        MessageCallback("Tape Stopped");
                         break;
                     case KeyCode.W:
                         Computer.TapeRewind();
+                        MessageCallback("Tape Rewound");
                         break;
                     case KeyCode.R:
                         Computer.TapeRecord();
+                        switch (Computer.TapeStatus)
+                        {
+                            case TapeStatus.WriteEngaged:
+                                MessageCallback("Waiting to Record");
+                                break;
+                            case TapeStatus.Writing:
+                                MessageCallback("Recording");
+                                break;
+                        }
                         break;
                     case KeyCode.B:
                         if (Storage.SaveTapeIfRequired(Computer))
+                        {
                             Computer.TapeLoadBlank();
+                            Settings.LastTapeFile = Computer.TapeFilePath;
+                            MessageCallback("Blank Tape Loaded");
+
+                        }
                         break;
                     default:
                         return base.processKey(Key);
@@ -67,23 +71,57 @@ namespace Sharp80
             string fileName = Computer.TapeFilePath;
 
             return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Cassette Management") +
+                Header("Tape Management") +
+                Format("Tape File: " + FitFilePath(fileName, ScreenMetrics.NUM_SCREEN_CHARS_X - "Tape File: ".Length)) +
+                Format(string.Format(@"{0:0000.0} ({1:00.0%})", Computer.TapeCounter, Computer.TapePercent)) +
+                Format(string.Format("{0} {1} {2}",
+                       StatusToString(Computer.TapeStatus),
+                       Computer.TapeIsBlank ? String.Empty : Computer.TapeSpeed == Baud.High ? "1500 Baud" : "500 Baud",
+                       Computer.TapeMotorOn ? Computer.TapePulseStatus : String.Empty)) +
+                Separator() +
                 Format() +
-                Format("Cassette File: " + (String.IsNullOrWhiteSpace(fileName) ? "{UNTITLED}" : FitFilePath(fileName, ScreenMetrics.NUM_SCREEN_CHARS_X - "Cassette File: ".Length))) +
-                Format(string.Format(@"{0:0000.0}  {1:00.0%}", Computer.TapeCounter, Computer.TapePercent)) +
-                Format(string.Format("{0} {1} {2} {3}", stateStr(Computer.TapeStatus), Computer.TapeSpeed, Computer.Bit ? 1 : 0, Computer.TapePulseStatus)) +
+                Format("[L] Load From File") +
+                Format("[B] Load Blank Tape") +
                 Format() +
-                Format("[L] Load") +
                 Format("[P] Play") +
                 Format("[R] Record") +
                 Format("[S] Stop") +
-                Format("[B] Load Blank Tape")+
-                Format() +
                 Format("[W] Rewind") +
+                Format() +
                 Format("[E] Eject")
                 ));
         }
-        private string stateStr(TapeStatus Status)
+        private void Load()
+        {
+            var path = Storage.GetDefaultTapeFileName();
+
+            if (String.IsNullOrWhiteSpace(path))
+                path = Storage.FILE_NAME_NEW;
+
+            bool selectFile = true;
+
+            if (path == Storage.FILE_NAME_NEW)
+            {
+                path = System.IO.Path.Combine(Storage.AppDataPath, "Tapes\\");
+                selectFile = false;
+            }
+            path = Storage.GetTapeFilePath(Prompt: "Select tape file to load",
+                                     DefaultPath: path,
+                                     Save: false,
+                                     SelectFileInDialog: selectFile);
+
+            if (path.Length > 0)
+            {
+                if (!Computer.TapeLoad(path))
+                {
+                    Dialogs.AlertUser("Failed to load tape file.");
+                    return;
+                }
+            }
+            Settings.LastTapeFile = Computer.TapeFilePath;
+            MessageCallback("Tape Loaded");
+        }
+        private string StatusToString(TapeStatus Status)
         {
             switch (Status)
             {

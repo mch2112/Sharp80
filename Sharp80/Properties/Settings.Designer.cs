@@ -242,12 +242,60 @@ namespace Sharp80.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string last_cas_file {
+        public string last_tape_file {
             get {
-                return ((string)(this["last_cas_file"]));
+                return ((string)(this["last_tape_file"]));
             }
             set {
-                this["last_cas_file"] = value;
+                this["last_tape_file"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int window_x {
+            get {
+                return ((int)(this["window_x"]));
+            }
+            set {
+                this["window_x"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int window_y {
+            get {
+                return ((int)(this["window_y"]));
+            }
+            set {
+                this["window_y"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int window_width {
+            get {
+                return ((int)(this["window_width"]));
+            }
+            set {
+                this["window_width"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int window_height {
+            get {
+                return ((int)(this["window_height"]));
+            }
+            set {
+                this["window_height"] = value;
             }
         }
     }

@@ -21,7 +21,7 @@ namespace Sharp80
                 Indent(string.Format("[Alt]+[S] Sound                    {0}",
                     Computer.SoundOn ? "[ON] /  OFF" : " ON  / [OFF]")) +
                 (Computer.SoundOn
-                    ? Indent(string.Format("[Alt]+[T] Drive Noise              {0}",
+                    ? Indent(string.Format("[Alt]+[Shift]+[S] Drive Noise      {0}",
                         Computer.DriveNoise ? "[ON] /  OFF" : " ON  / [OFF]"))
                     : Format()) +
                 Format() +

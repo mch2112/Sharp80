@@ -195,7 +195,7 @@ namespace Sharp80
             if (vidWaitLatch.Latched)
                 ret |= 0x20;
 
-            ret |= tape.ReadVal();
+            ret |= tape.Value;
 
             casRisingEdgeIntLatch.Unlatch();
             casFallingEdgeIntLatch.Unlatch();

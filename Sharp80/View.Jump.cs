@@ -32,7 +32,7 @@ namespace Sharp80
                     case KeyCode.Return:
                         RevertMode();
                         return true;
-                    case KeyCode.F5:
+                    case KeyCode.F8:
                         CurrentMode = ViewMode.Normal;
                         return false;
                     default:

@@ -80,7 +80,7 @@ namespace Sharp80
                         else
                             RevertMode();
                         break;
-                    case KeyCode.F5:
+                    case KeyCode.F8:
                         CurrentMode = ViewMode.Normal;
                         return base.processKey(Key);
                     default:
@@ -267,7 +267,7 @@ namespace Sharp80
                 string path = FromLibrary ? Path.Combine(Storage.AppDataPath, "Disks") + "\\"
                                           : Storage.GetDefaultDriveFileName(DriveNumber.Value);
 
-                if (Floppy.IsFileNameToken(path))
+                if (Storage.IsFileNameToken(path))
                     path = String.Empty;
 
                 bool selectFile = true;
@@ -320,7 +320,7 @@ namespace Sharp80
                 if (Storage.SaveFloppyIfRequired(Computer, DriveNumber.Value))
                 {
                     Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted));
-                    Storage.SaveDefaultDriveFileName(DriveNumber.Value, Formatted ? Floppy.FILE_NAME_BLANK : Floppy.FILE_NAME_UNFORMATTED);
+                    Storage.SaveDefaultDriveFileName(DriveNumber.Value, Formatted ? Storage.FILE_NAME_NEW : Storage.FILE_NAME_UNFORMATTED);
                 }
             }
         }
