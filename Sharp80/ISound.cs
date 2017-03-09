@@ -19,6 +19,5 @@ namespace Sharp80
         bool DriveMotorRunning { set; }
         bool On { get; set; }
         bool Mute { get; set; }
-        bool IsDisposed { get; }
-    }
+    }   
 }

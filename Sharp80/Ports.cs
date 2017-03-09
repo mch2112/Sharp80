@@ -12,6 +12,7 @@ namespace Sharp80
         private const int NUM_PORTS = 0x100;
         private Computer computer;
         private Tape tape;
+        private Printer printer;
         private InterruptManager intMgr;
         
         private byte[] ports = new byte[NUM_PORTS];
@@ -22,11 +23,12 @@ namespace Sharp80
         {
             computer = Computer;
         }
-        public void Initialize(FloppyController FloppyController, InterruptManager InterruptManager, Tape Tape)
+        public void Initialize(FloppyController FloppyController, InterruptManager InterruptManager, Tape Tape, Printer Printer)
         {
             floppyController = FloppyController;
             intMgr = InterruptManager;
             tape = Tape;
+            printer = Printer;
             Reset();
         }
         public bool NoDrives
@@ -76,18 +78,17 @@ namespace Sharp80
             ports[0x6D] = 0x04; 
             ports[0x71] = 0x00;
             ports[0xE0] = 0xFB;
-            ports[0xE4] = 0x00;                // FDC Status
-            ports[0xEC] = 0x12;                // Reset clock / Various controls
+            ports[0xE4] = 0x00;     // FDC Status
+            ports[0xEC] = 0x12;     // Reset clock / Various controls
             ports[0xF0] = 0x80;                
             ports[0xF1] = 0x00;            
-            ports[0xF8] = 0x3F;
             ports[0xF9] = 0x3F;
             ports[0xFA] = 0x3F;
             ports[0xFB] = 0x3F;
             ports[0xFC] = 0x89;
             ports[0xFD] = 0x89;
             ports[0xFE] = 0x89;
-            ports[0xFF] = 0x89;                 // cassette, not ready
+            ports[0xFF] = 0x89;     // cassette, not ready
         }
 
         public byte this[byte PortNumber]
@@ -123,6 +124,9 @@ namespace Sharp80
                     case 0xF3:
                         floppyController.FdcIoEvent(PortNumber, 0, false);
                         break;
+                    case 0xF8:
+                        ports[0xF8] = printer.PrinterStatus;
+                        break;
                     case 0xFF:
                         ports[0xFF] = intMgr.FFin();
                         break;
@@ -157,6 +161,9 @@ namespace Sharp80
                     case 0xF3:
                     case 0xF4:
                         floppyController.FdcIoEvent(PortNumber, value, true);
+                        break;
+                    case 0xF8:
+                        printer.Print(value);
                         break;
                     case 0xFF:
                         lastFFout = value;

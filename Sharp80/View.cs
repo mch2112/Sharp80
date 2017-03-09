@@ -210,6 +210,9 @@ namespace Sharp80
                             return true;
                         case KeyCode.End:
                             OnUserCommand?.Invoke(UserCommand.HardReset);
+                            // don't just leave a blank screen
+                            if (!Computer.IsRunning)
+                                CurrentMode = ViewMode.Splash;
                             return true;
                     }
                 }

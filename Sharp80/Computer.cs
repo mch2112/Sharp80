@@ -22,6 +22,7 @@ namespace Sharp80
         private IScreen Screen { get; set; }
         private ISound Sound { get; set; }
         private Tape Tape { get; set; }
+        private Printer Printer { get; set; }
 
         private bool ready;
         private bool isDisposed = false;
@@ -41,6 +42,7 @@ namespace Sharp80
             Tape = new Tape(this);
             Ports = new PortSet(this);
             Processor = new Processor.Z80(this, Ports);
+            Printer = new Printer();
 
             //Sound = new SoundNull();
             Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut))
@@ -62,7 +64,7 @@ namespace Sharp80
 
             IntMgr.Initialize(Ports, Tape);
             Tape.Initialize(Clock, IntMgr);
-            Ports.Initialize(FloppyController, IntMgr, Tape);
+            Ports.Initialize(FloppyController, IntMgr, Tape, Printer);
 
             ready = true;
         }
@@ -458,9 +460,9 @@ namespace Sharp80
         {
             if (!isDisposed)
             {
-                if (!Sound.IsDisposed)
-                    Sound.Dispose();
-                
+                Sound.Dispose();
+                Printer.Dispose();
+
                 Stop(WaitForStop: false);
                 
                 isDisposed = true;

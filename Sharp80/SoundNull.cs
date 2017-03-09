@@ -13,7 +13,6 @@ namespace Sharp80
         public bool Mute { get; set; } = true;
         public bool UseDriveNoise { get; set; } = false;
         public bool DriveMotorRunning { get; set; } = false;
-        public bool IsDisposed { get; private set; } = false;
         public void TrackStep() { }
 
         public SoundNull()
@@ -25,7 +24,6 @@ namespace Sharp80
 
         public void Dispose()
         {
-            IsDisposed = true;
         }
     }
 }

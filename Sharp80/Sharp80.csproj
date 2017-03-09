@@ -139,6 +139,7 @@
     <Compile Include="IAppWindow.cs" />
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="NativeMethods.cs" />
+    <Compile Include="Printer.cs" />
     <Compile Include="Resources.CharGen.cs" />
     <Compile Include="IScreen.cs" />
     <Compile Include="Resources.Rom.cs" />

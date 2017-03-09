@@ -40,7 +40,8 @@ namespace Sharp80
 
         private bool on = false;
         private bool mute = false;
-        
+        private bool isDisposed = false;
+
         public bool On
         {
             get { return on; }
@@ -75,11 +76,8 @@ namespace Sharp80
         }
         public bool UseDriveNoise { get; set; } = false;
         public bool DriveMotorRunning { get; set; } = false;
-        public bool IsDisposed { get; private set; } = false;
-        public void TrackStep()
-        {
-            noise.TrackStep();
-        }
+
+        public void TrackStep() { noise.TrackStep(); }
 
         private int ringCursor = 0;
         private AudioBuffer[] audioBuffersRing = new AudioBuffer[RING_SIZE];
@@ -125,7 +123,7 @@ namespace Sharp80
         {
             try
             {
-                while (!IsDisposed)
+                while (!isDisposed)
                 {
                     if (sourceVoice.State.BuffersQueued >= RING_SIZE)
                     {
@@ -169,13 +167,16 @@ namespace Sharp80
 
         public void Dispose()
         {
-            IsDisposed = true;
+            if (!isDisposed)
+            {
+                isDisposed = true;
 
-            sourceVoice.DestroyVoice();
-            sourceVoice.Dispose();
-            bufferEndEvent.Dispose();
-            masteringVoice.Dispose();
-            xaudio.Dispose();
+                sourceVoice.DestroyVoice();
+                sourceVoice.Dispose();
+                bufferEndEvent.Dispose();
+                masteringVoice.Dispose();
+                xaudio.Dispose();
+            }
         }
         private void SourceVoice_BufferEnd(IntPtr obj)
         {
