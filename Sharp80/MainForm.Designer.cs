@@ -31,11 +31,6 @@ namespace Sharp80
                 }
                 if (!computer.IsDisposed)
                 {
-                    if (computer.Ready)
-                    {
-                        computer.HardwareReset();
-                        computer.ShutDown();
-                    }
                     computer.Dispose();
                 }
                 if (!keyboard.IsDisposed)

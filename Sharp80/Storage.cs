@@ -41,7 +41,22 @@ namespace Sharp80
                 return appDataPath;
             }
         }
+        public static string GetUniquePath(string Directory, string FileNameWithoutExtension, string Extension)
+        {
+            string path;
+            int i = 0;
+            do
+            {
+                string name = i++ > 0 ? string.Format("{0} ({1})", FileNameWithoutExtension, i)
+                                      : FileNameWithoutExtension;
 
+                path = Path.Combine(Directory,
+                                    name + "." + Extension);
+            }
+            while (File.Exists(path));
+
+            return path;
+        }
         public static bool LoadBinaryFile(string FilePath, out byte[] Bytes)
         {
             try

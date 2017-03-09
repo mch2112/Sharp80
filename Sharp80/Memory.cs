@@ -29,8 +29,7 @@ namespace Sharp80
 #else
             LoadRom();
 #endif
-            for (int i = firstRAMByte; i < mem.GetUpperBound(0); i++)
-                mem[i] = 0x00;
+            Array.Clear(mem, firstRAMByte, mem.Length - firstRAMByte);
 
             SetupDXKeyboardMatrix();
         }
@@ -83,7 +82,7 @@ namespace Sharp80
                     }
                     else
                     {
-                        Log.LogDebug(string.Format("Write attempt {0:X2} to ROM Locdtion {1:X4}", Location, value));
+                        Log.LogDebug(string.Format("Write attempt {0:X2} to ROM Location {1:X4}", Location, value));
                     }
                 }
             }

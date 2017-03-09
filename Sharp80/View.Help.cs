@@ -11,7 +11,7 @@ namespace Sharp80
         private int ScreenNum { get; set; }
         private const int NUM_SCREENS = 5;
         private string helpHeaderText = "Sharp 80 Help";
-        private string footerText = "[Left/Right Arrow] Show More Commands";
+        private string footerText = "Left/Right Arrow: Show More Commands";
 
         protected override ViewMode Mode => ViewMode.Help;
 
@@ -23,29 +23,29 @@ namespace Sharp80
                 case 0:
                     return PadScreen(Encoding.ASCII.GetBytes(
                                         Header(helpHeaderText, "BASIC COMMANDS (1/5)") +
-                                        Indent("[F1] Show This Help") +
+                                        Indent("[F8]        Run / Pause") +
                                         Format() +
-                                        Indent("[F2] Show Options") +
-                                        Indent("[F3] Floppy Disk Manager") +
-                                        Indent("[F4] Tape Manager") +
+                                        Indent("[F1]        Show This Help") +
+                                        Indent("[F2]        Show Options") +
+                                        Indent("[F3]        Floppy Disk Manager") +
+                                        Indent("[F4]        Tape Manager") +
                                         Format() +
-                                        Indent("[F8] Run / Pause") +
-                                        Format() +
-                                        Indent("[Control]+[+] / [Control]+[-]   Zoom In / Out") +
+                                        Indent("[Alt]+[S]                 Toggle Sound") +
+                                        Indent("[Ctrl]+[+] / [Ctrl]+[-]   Zoom In / Out") +
                                         Format() +
                                         Footer(footerText)));
                 case 1:
                     return PadScreen(Encoding.ASCII.GetBytes(
                                         Header(helpHeaderText, "MORE BASIC COMMANDS (2/5)") +
-                                        Indent("[Alt]+[End]            Reset Button      ") + 
-                                        Indent("[Shift]+[Alt]+[End]    Hard Reset (Power Cycle)") +
-                                        Indent("[Shift]+[Alt]+[X]      Exit") +
-                                        Format() + 
-                                        Indent("[Alt]+[S]              Toggle Sound") +
+                                        Indent("[F5]                  Show / Hide CPU Internal Info") +
+                                        Indent("[F9]                  Single Step (when paused)") +
                                         Format() +
-                                        Indent("[F5] Show / Hide Z80 CPU Internal Info") +
+                                        Indent("[Alt]+[P]             Save and Show Printer Output") +
+                                        Indent("[Alt]+[Shift]+[P]     Save and Reset Printer") +
                                         Format() +
-                                        Indent("[F9] Single Step (when paused)") +
+                                        Indent("[Alt]+[End]           Reset Button") +
+                                        Indent("[Alt]+[Shift]+[End]   Hard Reset (Power Cycle)") +
+                                        Indent("[Alt]+[Shift]+[X]     Exit") +
                                         Format() +
                                         Footer(footerText)));
                 case 2:
@@ -57,7 +57,7 @@ namespace Sharp80
                                         Format(new string[] { "[Home]", "[Clear]           " }, true) +
                                         Format() +
                                         Format(new string[] { "[\\] or [Shift]+[2]", "[@]               " }, true) +
-                                        Format(new string[] { "[Caps Lock]", "[Shift] + [0]     " }, true) +
+                                        Format(new string[] { "[Caps Lock]", "[Shift]+[0]       " }, true) +
                                         Format() +
                                         Format(new string[] { "[Alt]+[End]", "Reset Button      " }, true) +
                                         Format() +
@@ -65,16 +65,16 @@ namespace Sharp80
                 case 3:
                     return PadScreen(Encoding.ASCII.GetBytes(
                                         Header(helpHeaderText, "DISK COMMANDS (4/5)") +
-                                        Indent("[F3] Floppy Disk Manager") +
+                                        Indent("[F3]               Floppy Disk Manager") +
                                         Format() +
-                                        Indent("[Alt]+[F] Create Formatted Floppy") +
-                                        Indent("[Alt]+[U] Create Unformatted Floppy") +
+                                        Indent("[Alt]+[F]          Create Formatted Floppy") +
+                                        Indent("[Alt]+[U]          Create Unformatted Floppy") +
                                         Format() +
-                                        Indent("[Shift]+[Alt]+[N] Save Snapshot File") +
-                                        Indent("[Alt]+[N]         Load Snapshot File") +
+                                        Indent("[Alt]+[Shift]+[N]  Save Snapshot File") +
+                                        Indent("[Alt]+[N]          Load Snapshot File") +
                                         Format() +
-                                        Indent("[Alt]+[C] Load CMD file") +
-                                        Indent("[Alt]+[Q] Create Floppy from File") +
+                                        Indent("[Alt]+[C]          Load CMD file") +
+                                        Indent("[Alt]+[Q]          Create Floppy from File") +
                                         Footer(footerText)));
                 case 4:
                     return PadScreen(Encoding.ASCII.GetBytes(
@@ -85,7 +85,7 @@ namespace Sharp80
                                         Indent("[F6] Jump to Address") +
                                         Format() +
                                         Indent("[Alt]+[Y] Invoke Z80 Assembler") +
-                                        Indent("[Alt]+[P] Dump Memory Disassembly to File") +
+                                        Indent("[Alt]+[B] Dump Memory Disassembly to File") +
                                         Format() +
                                         Format(new string[] { "[Alt]+[M] Memory Viewer" }, true) +
                                         Format(new string[] { "[Alt]+[I] Instruction Set Report" }, true) +

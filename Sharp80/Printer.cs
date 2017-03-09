@@ -8,9 +8,20 @@ namespace Sharp80
 {
     internal class Printer : IDisposable
     {
-        private StringBuilder print = new StringBuilder();
+        private StringBuilder printBuffer = new StringBuilder();
         private bool isDisposed = false;
+        private bool hasUnsavedContent = false;
 
+        public string FilePath { get; private set; } = null;
+
+        public bool HasContent
+        {
+            get { return printBuffer.Length > 0; }
+        }
+        public bool HasUnsavedContent
+        {
+            get { return hasUnsavedContent; }
+        }
         public byte PrinterStatus
         {
             get
@@ -24,24 +35,44 @@ namespace Sharp80
             switch (b)
             {
                 case 0x0D:
-                    print.AppendLine();
+                    printBuffer.AppendLine();
                     break;
                 default:
-                    print.Append((char)b);
+                    printBuffer.Append((char)b);
+                    hasUnsavedContent = true;
                     break;
             }
         }
-    
-        public override string ToString()
+        public string PrintBuffer
         {
-            return print.ToString();
+            get { return printBuffer.ToString(); }
+        }
+        public void Reset()
+        {
+            FilePath = null;
+            printBuffer = new StringBuilder();
+        }
+        public bool Save()
+        {
+            if (hasUnsavedContent)
+            {
+                FilePath = FilePath ?? Storage.GetUniquePath(Storage.AppDataPath, "Printer", "txt");
+                Storage.SaveTextFile(FilePath,
+                                     printBuffer.ToString());
+                hasUnsavedContent = false;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
         public void Dispose()
         {
             if (!isDisposed)
             {
-                if (print.Length > 0)
-                    Storage.SaveTextFile(System.IO.Path.Combine(Storage.AppDataPath, "printer.txt"), print.ToString());
+                if (hasUnsavedContent)
+                    Save();
                 isDisposed = true;
             }
         }

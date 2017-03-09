@@ -185,6 +185,10 @@ namespace Sharp80
                     // SHIFT-ALT
                     switch (Key.Key)
                     {
+                        case KeyCode.B:
+                            // start the disassembly at the current PC location
+                            Disassemble(true);
+                            return true;
                         case KeyCode.N:
                             bool wasRunning = Computer.IsRunning;
                             Computer.Stop(true);
@@ -198,9 +202,8 @@ namespace Sharp80
                                 Computer.Start();
                             return true;
                         case KeyCode.P:
-                            // start the disassembly at the current PC location
-                            Disassemble(true);
-                            return true;
+                            FlushPrinterOutput();
+                            break;
                         case KeyCode.S:
                             Settings.DriveNoise = Computer.DriveNoise = !Computer.DriveNoise;
                             MessageCallback(Settings.DriveNoise ? "Drive noise on" : "Drive noise off");
@@ -230,6 +233,9 @@ namespace Sharp80
                         case KeyCode.A:
                             Settings.AutoStartOnReset = !Settings.AutoStartOnReset;
                             MessageCallback("Auto Start on Reset " + (Settings.AutoStartOnReset ? "On" : "Off"));
+                            return true;
+                        case KeyCode.B:
+                            Disassemble(false);
                             return true;
                         case KeyCode.C:
                             LoadCMDFile();
@@ -278,8 +284,8 @@ namespace Sharp80
                             }
                             return true;
                         case KeyCode.P:
-                            Disassemble(false);
-                            return true;
+                            ShowPrinterOutput();
+                            break;
                         case KeyCode.Q:
                             MakeFloppyFromFile();
                             return true;
@@ -537,6 +543,28 @@ namespace Sharp80
                 else
                     Dialogs.AlertUser(string.Format("Failed to create floppy with filename {0}.", path),
                                       "Create floppy failed");
+            }
+        }
+        private bool ShowPrinterOutput()
+        {
+            if (Computer.PrinterHasContent)
+            {
+                Computer.PrinterSave();
+                Dialogs.ShowTextFile(Computer.PrinterFilePath);
+                return true;
+            }
+            else
+            {
+                Dialogs.AlertUser("Nothing printed yet.");
+                return false;
+            }
+        }
+        private void FlushPrinterOutput()
+        {
+            if (ShowPrinterOutput())
+            {
+                Computer.PrinterReset();
+                MessageCallback("Print Job Done");
             }
         }
     }

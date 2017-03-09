@@ -318,6 +318,35 @@ namespace Sharp80
                 Start();
         }
 
+        // TAPE DRIVE
+
+        public bool TapeLoad(string Path) { return Tape.Load(Path); }
+        public string TapeFilePath { get { return Tape.FilePath; } set { Tape.FilePath = value; } }
+        public void TapeLoadBlank() { Tape.LoadBlank(); }
+        public void TapePlay() { Tape.Play(); }
+        public void TapeRecord() { Tape.Record(); }
+        public void TapeRewind() { Tape.Rewind(); }
+        public void TapeEject() { Tape.Eject(); }
+        public void TapeStop() { Tape.Stop(); }
+        public void TapeSave()  { Tape.Save(); }
+        public bool TapeChanged { get { return Tape.Changed; } }
+        public bool TapeMotorOnSignal { set { Tape.MotorOnSignal = value; } }
+        public bool TapeMotorOn { get { return Tape.MotorOn; } }
+        public float TapePercent { get { return Tape.Percent; } }
+        public float TapeCounter { get { return Tape.Counter; } }
+        public TapeStatus TapeStatus { get { return Tape.Status; } }
+        public bool TapeIsBlank {  get { return Tape.IsBlank; } }
+        public string TapePulseStatus {  get { return Tape.PulseStatus; } }
+        public Baud TapeSpeed { get { return Tape.Speed; } }
+
+        // PRINTER
+
+        public bool PrinterHasContent {  get { return Printer.HasContent; } }
+        public bool PrinterSave() { return Printer.Save(); }
+        public string PrinterContent { get { return Printer.PrintBuffer; } }
+        public string PrinterFilePath { get { return Printer.FilePath; } }
+        public void PrinterReset() { Printer.Reset(); }
+
         // SNAPSHOTS
 
         public void SaveSnapshotFile(string FilePath)
@@ -348,30 +377,6 @@ namespace Sharp80
             if (running)
                 Start();
         }
-
-        // CASSETTE
-
-        public bool TapeLoad(string Path) { return Tape.Load(Path); }
-        public string TapeFilePath { get { return Tape.FilePath; } set { Tape.FilePath = value; } }
-        public void TapeLoadBlank() { Tape.LoadBlank(); }
-        public void TapePlay() { Tape.Play(); }
-        public void TapeRecord() { Tape.Record(); }
-        public void TapeRewind() { Tape.Rewind(); }
-        public void TapeEject() { Tape.Eject(); }
-        public void TapeStop() { Tape.Stop(); }
-        public void TapeSave()  { Tape.Save(); }
-        public bool TapeChanged { get { return Tape.Changed; } }
-        public bool TapeMotorOnSignal { set { Tape.MotorOnSignal = value; } }
-        public bool TapeMotorOn { get { return Tape.MotorOn; } }
-        public float TapePercent { get { return Tape.Percent; } }
-        public float TapeCounter { get { return Tape.Counter; } }
-        public TapeStatus TapeStatus { get { return Tape.Status; } }
-        public bool TapeIsBlank {  get { return Tape.IsBlank; } }
-        public string TapePulseStatus {  get { return Tape.PulseStatus; } }
-        public Baud TapeSpeed { get { return Tape.Speed; } }
-
-        // MISC
-
         private void Serialize(BinaryWriter Writer)
         {
             Writer.Write(SERIALIZATION_VERSION);
@@ -401,6 +406,8 @@ namespace Sharp80
                 Dialogs.AlertUser("Snapshot load failed: incompatible snapshot version.");
             }
         }
+
+        // MISC
 
         public bool LoadCMDFile(string filePath)
         {
@@ -460,9 +467,13 @@ namespace Sharp80
         {
             if (!isDisposed)
             {
+                if (Ready)
+                {
+                    HardwareReset();
+                    ShutDown();
+                }
                 Sound.Dispose();
                 Printer.Dispose();
-
                 Stop(WaitForStop: false);
                 
                 isDisposed = true;
