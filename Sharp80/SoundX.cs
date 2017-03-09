@@ -1,28 +1,31 @@
 ﻿/// Sharp 80 (c) Matthew Hamilton
 /// Licensed Under GPL v3
 
-using SharpDX;
-using SharpDX.Multimedia;
-using SharpDX.XAudio2;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
+using SharpDX;
+using SharpDX.Multimedia;
+using SharpDX.XAudio2;
+
 namespace Sharp80
 {
-    internal class SoundX : ISound, IDisposable
+    internal partial class SoundX : ISound, IDisposable
     {
         public const int SAMPLE_RATE = 16000;
 
         private XAudio2 xaudio;
         private MasteringVoice masteringVoice;
+        private SourceVoice sourceVoice;
         private Task playingTask;
         private AutoResetEvent bufferEndEvent;
 
         private const int FRAMES_PER_SECOND = 20;
         private const int BITS_PER_SAMPLE = 16;
         private const int BYTES_PER_SAMPLE = BITS_PER_SAMPLE / 8;
-        private const int CHANNELS = 1;
+        private const int CHANNELS = 1; // glorious TRS-80 mono
+        private const int RING_SIZE = 2;
         private const int FRAME_SIZE_SAMPLES = SAMPLE_RATE / FRAMES_PER_SECOND * CHANNELS;
         private const int FRAME_SIZE_BYTES = FRAME_SIZE_SAMPLES * BYTES_PER_SAMPLE;
 
@@ -37,9 +40,7 @@ namespace Sharp80
 
         private bool on = false;
         private bool mute = false;
-
-        private SourceVoice sourceVoice;
-
+        
         public bool On
         {
             get { return on; }
@@ -80,11 +81,11 @@ namespace Sharp80
             noise.TrackStep();
         }
 
-        private const int RING_SIZE = 2;
         private int ringCursor = 0;
         private AudioBuffer[] audioBuffersRing = new AudioBuffer[RING_SIZE];
         private DataPointer[] memBuffers = new DataPointer[RING_SIZE];
         private FrameBuffer<short> frameBuffer;
+        private Random r = new Random();
 
         private GetSampleCallback getSampleCallback;
 
@@ -119,6 +120,7 @@ namespace Sharp80
 
             playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
         }
+
         private void Loop()
         {
             try
@@ -149,7 +151,6 @@ namespace Sharp80
                 Log.LogException(ex);
             }
         }
-        private Random r = new Random();
         public void Sample()
         {
             if (On && !Mute)
@@ -179,195 +180,6 @@ namespace Sharp80
         private void SourceVoice_BufferEnd(IntPtr obj)
         {
             bufferEndEvent.Set();
-        }
-        private class Noise
-        {
-            private const double TRACK_STEP_WAV_1_FREQ = 783.99; // G
-            private const double TRACK_STEP_WAV_2_FREQ = 523.25; // C
-
-            private const double DRIVE_NOISE_WAV_1_FREQ = 251;
-            private const double DRIVE_NOISE_WAV_2_FREQ = 133;
-
-            private const double DRIVE_NOISE_WAV_1_PERIOD = SAMPLE_RATE / DRIVE_NOISE_WAV_1_FREQ;
-            private const double DRIVE_NOISE_WAV_2_PERIOD = SAMPLE_RATE / DRIVE_NOISE_WAV_2_FREQ;
-
-            private const double MAX_DRIVE_NOISE_AMP_1 = MAX_SOUND_AMPLITUDE / 27.0d;
-            private const double MAX_DRIVE_NOISE_AMP_2 = MAX_SOUND_AMPLITUDE / 23.0d;
-
-            private const double MAX_TRACK_NOISE_AMP = MAX_SOUND_AMPLITUDE / 30.0d;
-
-            private const int DRIVE_NOISE_SAMPLE_SIZE = (int)(DRIVE_NOISE_WAV_1_PERIOD * DRIVE_NOISE_WAV_2_PERIOD * 2.0 * Math.PI);
-            private const int TRACK_STEP_NOISE_SAMPLE_SIZE = SAMPLE_RATE / 6;
-
-            private short[] driveNoise;
-            private short[] trackStepNoise;
-            private double trackWav1Period, trackWav2Period;
-
-            Random r = new Random();
-
-            private int noiseCursor, trackStepCursor;
-
-            public Noise(int SampleRate)
-            {
-                trackWav1Period = SampleRate / TRACK_STEP_WAV_1_FREQ;
-                trackWav2Period = SampleRate / TRACK_STEP_WAV_2_FREQ;
-
-                driveNoise = new short[DRIVE_NOISE_SAMPLE_SIZE];
-                trackStepNoise = new short[TRACK_STEP_NOISE_SAMPLE_SIZE];
-
-                for (int i = 0; i < DRIVE_NOISE_SAMPLE_SIZE; ++i)
-                    driveNoise[i] = (short)(MAX_DRIVE_NOISE_AMP_1 * Math.Sin(i / DRIVE_NOISE_WAV_1_PERIOD * (Math.PI * 2)) +
-                                            MAX_DRIVE_NOISE_AMP_2 * Math.Sin(i / DRIVE_NOISE_WAV_2_PERIOD * (Math.PI * 2))
-                                            // random noise
-                                            * (0.85 + 0.15 * ((double)r.Next() / (double)(int.MaxValue)))
-                                            );
-
-                for (int i = 0; i < TRACK_STEP_NOISE_SAMPLE_SIZE; ++i)
-                {
-                    trackStepNoise[i] = (short)(((MAX_TRACK_NOISE_AMP * Math.Sin(i / trackWav1Period * (Math.PI * 2)))
-                                               + (MAX_TRACK_NOISE_AMP * Math.Sin(i / trackWav2Period * (Math.PI * 2)))
-                                          )
-                                          // Fade in/out
-                                          //* (1.0 - (Math.Abs((i - TRACK_STEP_NOISE_SAMPLE_SIZE / 2.0) / (TRACK_STEP_NOISE_SAMPLE_SIZE / 2.0))))
-                                          // Random noise
-                                          //* (0.85 + 0.15 * ((double)r.Next() / (double)(int.MaxValue)))
-                                          );
-                }
-                Reset();
-            }
-            public void Reset()
-            {
-                trackStepCursor = TRACK_STEP_NOISE_SAMPLE_SIZE;
-                noiseCursor = 0;
-            }
-            public short GetNoiseSample()
-            {
-                var sample = driveNoise[noiseCursor];
-                noiseCursor = ++noiseCursor % DRIVE_NOISE_SAMPLE_SIZE;
-
-                if (trackStepCursor < TRACK_STEP_NOISE_SAMPLE_SIZE)
-                    sample += trackStepNoise[trackStepCursor++];
-
-                return sample;
-            }
-            public void TrackStep()
-            {
-                trackStepCursor = 0;
-            }
-        }
-        private class FrameBuffer<T> where T:struct
-        {
-            private int bufferSize;
-            private int readCursor;
-            private int writeCursor;
-            private int frameSize;
-            private int minLatency;
-            private int maxLatency;
-
-            private bool writeWrap;
-
-            private T[] buffer;
-            private T[] silentFrame;
-
-            public FrameBuffer(int FrameSize, int MinLatencyFrames)
-            {
-                frameSize = FrameSize;
-                bufferSize = 100 * frameSize;
-
-                minLatency = MinLatencyFrames * frameSize;
-                maxLatency = minLatency * 2;
-                
-                buffer = new T[bufferSize];
-                silentFrame = new T[frameSize];
-                
-                Reset();
-            }
-            private long resets, wrapArounds, drops, doubles, overreads, frameReads, total;
-            public void Sample(T Val)
-            {
-                total++;
-                if (Latency < minLatency)
-                {
-                    doubles++;
-                    // double sample
-                    buffer[writeCursor++] = Val;
-                    ZeroWriteCursor();
-                    buffer[writeCursor++] = Val;
-                    ZeroWriteCursor();
-                }
-                else if (Latency > maxLatency)
-                {
-                    drops++;
-                    // drop sample
-                }
-                else
-                {
-                    // Normal 
-                    buffer[writeCursor++] = Val;
-                    ZeroWriteCursor();
-                }
-                CheckOverread();
-            }
-            public void ReadSilentFrame(DataPointer Buffer)
-            {
-                Buffer.CopyFrom<T>(silentFrame, 0, frameSize);
-            }
-            public void ReadFrame(DataPointer Buffer)
-            {
-                frameReads++;
-
-                int startFrame = readCursor;
-                Buffer.CopyFrom<T>(buffer, readCursor, frameSize);
-
-                readCursor += frameSize;
-
-                if (readCursor >= bufferSize)
-                {
-                    readCursor = 0;
-                    if (writeWrap)
-                        writeWrap = false;
-                    else
-                        WrapAround();
-                }
-                CheckOverread();
-            }
-            public void Reset()
-            {
-                readCursor = 0;
-                writeCursor = maxLatency * 2;
-                Array.Clear(buffer, 0, writeCursor);
-                writeWrap = false;
-                resets++;
-            }
-            private int Latency
-            {
-                get { return (writeCursor + bufferSize - readCursor) % bufferSize; }
-            }
-            private void ZeroWriteCursor()
-            {
-                if (writeCursor >= bufferSize)
-                {
-                    writeCursor = 0;
-
-                    if (writeWrap)
-                        WrapAround();
-                    else
-                        writeWrap = true;
-                }
-            }
-            private void CheckOverread()
-            {
-                if ((writeWrap && writeCursor > readCursor) || (!writeWrap && writeCursor < readCursor + frameSize))
-                {
-                    overreads++;
-                    Reset();
-                }
-            }
-            private void WrapAround()
-            {
-                wrapArounds++;
-                Reset();
-            }            
         }
     }
 }

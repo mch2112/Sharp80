@@ -149,6 +149,8 @@
     <Compile Include="IMemory.cs" />
     <Compile Include="InstructionSet.cs" />
     <Compile Include="ISerializable.cs" />
+    <Compile Include="SoundX.FrameBuffer.cs" />
+    <Compile Include="SoundX.Noise.cs" />
     <Compile Include="Tape.cs" />
     <Compile Include="Tape.Transition.cs" />
     <Compile Include="Trigger.cs" />

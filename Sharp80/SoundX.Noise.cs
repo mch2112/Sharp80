@@ -1,9 +1,13 @@
-﻿using System;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
+using System;
 
 namespace Sharp80
 {
     internal partial class SoundX : ISound, IDisposable
     {
+
         private class Noise
         {
             private const double TRACK_STEP_WAV_1_FREQ = 783.99; // G

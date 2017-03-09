@@ -1,59 +1,61 @@
-﻿using SharpDX;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3
+
 using System;
+using SharpDX;
 
 namespace Sharp80
 {
     internal partial class SoundX : ISound, IDisposable
     {
-        private class FrameBuffer<T> where T:struct
+        /// <summary>
+        /// A circular frame buffer with read and write cursors and support for managing
+        /// reading and writing out of sync
+        /// </summary>
+        private class FrameBuffer<T> where T : struct
         {
             private int bufferSize;
             private int readCursor;
             private int writeCursor;
             private int frameSize;
-            private int latencyLimit;
+            private int minLatency;
+            private int maxLatency;
 
+            // has the write cursor wrapped around and is now before
+            // the read cursor?
             private bool writeWrap;
 
             private T[] buffer;
             private T[] silentFrame;
 
-            // Debug info
-            private long resets, wrapArounds, drops, doubles, /* overreads, */ frameReads, total;
-            
-            public FrameBuffer(int FrameSize, int MaxLatencyFrames)
+            public FrameBuffer(int FrameSize, int MinLatencyFrames)
             {
                 frameSize = FrameSize;
                 bufferSize = 100 * frameSize;
 
-                latencyLimit = MaxLatencyFrames * frameSize;
-                
+                minLatency = MinLatencyFrames * frameSize;
+                maxLatency = minLatency * 2;
+
                 buffer = new T[bufferSize];
                 silentFrame = new T[frameSize];
-                
+
                 Reset();
             }
-            public bool FrameReady
-            {
-                get { return Latency > frameSize; }
-            }
+            
             public void Sample(T Val)
             {
-                total++;
-                /*if (Latency < minLatency)
+                if (Latency < minLatency)
                 {
-                    doubles++;
-                    // double sample
+                    // Samples not fast enough, so
+                    // double this sample
                     buffer[writeCursor++] = Val;
                     ZeroWriteCursor();
                     buffer[writeCursor++] = Val;
                     ZeroWriteCursor();
                 }
-                else
-                */if (Latency > latencyLimit)
+                else if (Latency > maxLatency)
                 {
-                    drops++;
-                    // drop sample
+                    // Samples coming in too fast: drop sample
                 }
                 else
                 {
@@ -61,20 +63,16 @@ namespace Sharp80
                     buffer[writeCursor++] = Val;
                     ZeroWriteCursor();
                 }
-                //CheckOverread();
+                CheckOverread();
             }
             public void ReadSilentFrame(DataPointer Buffer)
             {
-                Buffer.CopyFrom<T>(silentFrame, 0, frameSize);
+                Buffer.CopyFrom(silentFrame, 0, frameSize);
             }
             public void ReadFrame(DataPointer Buffer)
             {
-                if (!FrameReady)
-                    throw new Exception();
-
-                frameReads++;
-
-                Buffer.CopyFrom<T>(buffer, readCursor, frameSize);
+                int startFrame = readCursor;
+                Buffer.CopyFrom(buffer, readCursor, frameSize);
 
                 readCursor += frameSize;
 
@@ -84,17 +82,16 @@ namespace Sharp80
                     if (writeWrap)
                         writeWrap = false;
                     else
-                        WrapAround();
+                        Reset();
                 }
-                //CheckOverread();
+                CheckOverread();
             }
             public void Reset()
             {
                 readCursor = 0;
-                writeCursor = latencyLimit * 2;
+                writeCursor = maxLatency * 2;
                 Array.Clear(buffer, 0, writeCursor);
                 writeWrap = false;
-                resets++;
             }
             private int Latency
             {
@@ -105,27 +102,21 @@ namespace Sharp80
                 if (writeCursor >= bufferSize)
                 {
                     writeCursor = 0;
-
                     if (writeWrap)
-                        WrapAround();
+                        Reset();  // Overwrite: the write cursor has completely lapped the read cursor: punt
                     else
                         writeWrap = true;
                 }
             }
-            //private void CheckOverread()
-            //{
-            //    if ((writeWrap && writeCursor > readCursor) || (!writeWrap && writeCursor < readCursor + frameSize))
-            //    {
-            //        overreads++;
-            //        //Log.LogMessage(string.Format("Sound Buffer Error: Read: {0} Write: {1} Frame Size: {2} Wrap: {3}", readCursor, writeCursor, frameSize, writeWrap ? "Yes" : "No"));
-            //        Reset();
-            //    }
-            //}
-            private void WrapAround()
+            private void CheckOverread()
             {
-                wrapArounds++;
-                Reset();
-            }            
+                if ((writeWrap && writeCursor > readCursor) || (!writeWrap && writeCursor < readCursor + frameSize))
+                {
+                    // We've exhausted our latency and the read cursor 
+                    // has run past the write cursor
+                    Reset();
+                }
+            }
         }
     }
 }
