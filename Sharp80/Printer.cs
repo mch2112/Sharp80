@@ -40,7 +40,7 @@ namespace Sharp80
         {
             if (!isDisposed)
             {
-                       if (print.Length > 0)
+                if (print.Length > 0)
                     Storage.SaveTextFile(System.IO.Path.Combine(Storage.AppDataPath, "printer.txt"), print.ToString());
                 isDisposed = true;
             }
