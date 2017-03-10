@@ -1,5 +1,5 @@
 /// Sharp 80 (c) Matthew Hamilton
-/// Licensed Under GPL v3
+/// Licensed Under GPL v3. See license.txt for details.
 
 using System;
 
@@ -11,16 +11,16 @@ namespace Sharp80.Processor
 
         private void SetupInstructionObjects()
         {
-            Register8[] r8 = new Register8[] { B, C, D, E, H, L, HLM, A };
-            Register16[] r16s = new Register16[] { BC, DE, HL, SP };
-            Register16[] r16a = new Register16[] { BC, DE, HL, AF };
-            Register16[] r16xs = new Register16[] { BC, DE, IX, SP };
-            Register16[] r16ys = new Register16[] { BC, DE, IY, SP };
-            Register8Indexed[] rxyi = new Register8Indexed[] { IXM, IYM };
-            Register16[] rxy = new Register16[] { IX, IY };
+            IRegister<byte>[] r8 = new IRegister<byte>[] { B, C, D, E, H, L, HLM, A };
+            IRegister<ushort>[] r16s = new IRegister<ushort>[] { BC, DE, HL, SP };
+            IRegister<ushort>[] r16a = new IRegister<ushort>[] { BC, DE, HL, AF };
+            IRegister<ushort>[] r16xs = new IRegister<ushort>[] { BC, DE, IX, SP };
+            IRegister<ushort>[] r16ys = new IRegister<ushort>[] { BC, DE, IY, SP };
+            IRegisterIndexed[] rxyi = new IRegisterIndexed[] { IXM, IYM };
+            IRegister<ushort>[] rxy = new IRegister<ushort>[] { IX, IY };
 
-            Register8[] r8x = new Register8[] { B, C, D, E, IX.H, IX.L, null, A };
-            Register8[] r8y = new Register8[] { B, C, D, E, IY.H, IY.L, null, A };
+            IRegister<byte>[] r8x = new IRegister<byte>[] { B, C, D, E, IX.H, IX.L, null, A };
+            IRegister<byte>[] r8y = new IRegister<byte>[] { B, C, D, E, IY.H, IY.L, null, A };
 
             byte[] iter8 = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 }; // prevent closure capture by using foreach instead of for
             byte[] iter4 = new byte[] { 0, 1, 2, 3 };

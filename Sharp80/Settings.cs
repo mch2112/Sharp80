@@ -1,5 +1,5 @@
 ﻿/// Sharp 80 (c) Matthew Hamilton
-/// Licensed Under GPL v3
+/// Licensed Under GPL v3. See license.txt for details.
 
 using System;
 
@@ -17,6 +17,7 @@ namespace Sharp80
         private static string disk1Filename;
         private static string disk2Filename;
         private static string disk3Filename;
+        private static bool? diskEnabled;
         private static bool? driveNoise;
         private static bool? greenScreen;
         private static string lastAsmFile;
@@ -129,6 +130,15 @@ namespace Sharp80
                 return disk3Filename;
             }
             set { disk3Filename = value; }
+        }
+        public static bool DiskEnabled
+        {
+            get
+            {
+                diskEnabled = diskEnabled ?? Properties.Settings.Default.disk_enabled;
+                return diskEnabled.Value;
+            }
+            set { diskEnabled = value; }
         }
         public static bool DriveNoise
         {
@@ -269,6 +279,8 @@ namespace Sharp80
                 psd.disk2 = disk2Filename;
             if (disk3Filename != null)
                 psd.disk3 = disk3Filename;
+            if (diskEnabled.HasValue)
+                psd.disk_enabled = diskEnabled.Value;
             if (driveNoise.HasValue)
                 psd.drive_noise = driveNoise.Value;
             if (greenScreen.HasValue)

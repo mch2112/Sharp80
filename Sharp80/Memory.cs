@@ -1,5 +1,5 @@
 /// Sharp 80 (c) Matthew Hamilton
-/// Licensed Under GPL v3
+/// Licensed Under GPL v3. See license.txt for details.
 
 //#define NOROM
 
@@ -29,7 +29,12 @@ namespace Sharp80
 #else
             LoadRom();
 #endif
-            Array.Clear(mem, firstRAMByte, mem.Length - firstRAMByte);
+            // printer status, same as port 0xF8 in
+            // some emulators map writes to this address to the printer port,
+            // but this isn't reflected in the technical docuentaion so 
+            // we ignore writes to this (and all addresses below 0x3c00)
+
+            mem[0x37E8] = 0x30;
 
             SetupDXKeyboardMatrix();
         }

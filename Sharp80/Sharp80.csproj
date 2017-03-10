@@ -123,9 +123,11 @@
     <Compile Include="Clock.cs" />
     <Compile Include="Computer.cs" />
     <Compile Include="Extensions.cs" />
-    <Compile Include="FloppyControllerStatus.cs" />
+    <Compile Include="FloppyController.DriveState.cs" />
+    <Compile Include="IFloppyControllerStatus.cs" />
     <Compile Include="IFloppy.cs" />
     <Compile Include="IKeyboard.cs" />
+    <Compile Include="IRegister.cs" />
     <Compile Include="ISound.cs" />
     <Compile Include="KeyCode.cs" />
     <Compile Include="KeyState.cs" />

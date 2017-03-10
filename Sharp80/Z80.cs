@@ -1,5 +1,5 @@
 /// Sharp 80 (c) Matthew Hamilton
-/// Licensed Under GPL v3
+/// Licensed Under GPL v3. See license.txt for details.
 
 using System;
 using System.Collections.Generic;
@@ -13,13 +13,13 @@ namespace Sharp80.Processor
 
         // REGISTERS
 
-        private Register16Normal PC, SP, WZ;
-        private Register8 A, F, B, C, D, E, H, L, I, R, Ap, Fp, Bp, Cp, Dp, Ep, Hp, Lp;
-        private Register16Compound IX, IY, BC, DE, HL, AF, BCp, DEp, HLp, AFp;
+        private IRegister<ushort> PC, SP, WZ;
+        private IRegister<byte> A, F, B, C, D, E, H, L, I, R, Ap, Fp, Bp, Cp, Dp, Ep, Hp, Lp;
+        private IRegisterCompound IX, IY, BC, DE, HL, AF, BCp, DEp, HLp, AFp;
 
-        private Register8Indirect BCM, DEM, HLM;
-        private Register8Indexed IXM, IYM;
-        private Register16Indirect SPM;
+        private IRegister<byte> BCM, DEM, HLM;
+        private IRegisterIndexed IXM, IYM;
+        private IRegister<ushort> SPM;
 
         // FLAGS
 
@@ -109,50 +109,50 @@ namespace Sharp80.Processor
 
             ports = Ports;
 
-            PC = new Register16Normal(this, "PC");
-            SP = new Register16Normal(this, "SP");
+            PC = new Register16("PC");
+            SP = new Register16("SP");
 
-            I = new Register8(this, "I");
-            R = new Register8(this, "R");
+            I = new Register8("I");
+            R = new Register8("R");
 
-            A = new Register8(this, "A");
-            F = new Register8(this, "F");
-            B = new Register8(this, "B");
-            C = new Register8(this, "C");
-            D = new Register8(this, "D");
-            E = new Register8(this, "E");
-            H = new Register8(this, "H");
-            L = new Register8(this, "L");
+            A = new Register8("A");
+            F = new Register8("F");
+            B = new Register8("B");
+            C = new Register8("C");
+            D = new Register8("D");
+            E = new Register8("E");
+            H = new Register8("H");
+            L = new Register8("L");
 
-            Ap = new Register8(this, "A'");
-            Fp = new Register8(this, "F'");
-            Bp = new Register8(this, "B'");
-            Cp = new Register8(this, "C'");
-            Dp = new Register8(this, "D'");
-            Ep = new Register8(this, "E'");
-            Hp = new Register8(this, "H'");
-            Lp = new Register8(this, "L'");
+            Ap = new Register8("A'");
+            Fp = new Register8("F'");
+            Bp = new Register8("B'");
+            Cp = new Register8("C'");
+            Dp = new Register8("D'");
+            Ep = new Register8("E'");
+            Hp = new Register8("H'");
+            Lp = new Register8("L'");
 
-            IX = new Register16Compound(this, "IX");
-            IY = new Register16Compound(this, "IY");
+            IX = new RegisterCompound("IX");
+            IY = new RegisterCompound("IY");
 
-            BC = new Register16Compound(C, B, this, "BC");
-            DE = new Register16Compound(E, D, this, "DE");
-            HL = new Register16Compound(L, H, this, "HL");
-            AF = new Register16Compound(F, A, this, "AF");
+            BC = new RegisterCompound(C, B, "BC");
+            DE = new RegisterCompound(E, D, "DE");
+            HL = new RegisterCompound(L, H, "HL");
+            AF = new RegisterCompound(F, A, "AF");
 
-            BCp = new Register16Compound(Cp, Bp, this, "BC'");
-            DEp = new Register16Compound(Ep, Dp, this, "DE'");
-            HLp = new Register16Compound(Lp, Hp, this, "HL'");
-            AFp = new Register16Compound(Fp, Ap, this, "AF'");
+            BCp = new RegisterCompound(Cp, Bp, "BC'");
+            DEp = new RegisterCompound(Ep, Dp, "DE'");
+            HLp = new RegisterCompound(Lp, Hp, "HL'");
+            AFp = new RegisterCompound(Fp, Ap, "AF'");
 
-            WZ = new Register16Normal(this, "WZ");
+            WZ = new Register16("WZ");
 
             BCM = new Register8Indirect(this, BC, "(BC)");
             DEM = new Register8Indirect(this, DE, "(DE)");
             HLM = new Register8Indirect(this, HL, "(HL)");
-            IXM = new Register8Indexed(this, IX, "(IX)");
-            IYM = new Register8Indexed(this, IY, "(IY)");
+            IXM = new RegisterIndexed(this, IX, "(IX)");
+            IYM = new RegisterIndexed(this, IY, "(IY)");
             SPM = new Register16Indirect(this, SP, "(SP)");
 
             InitInstructionSet();
@@ -563,7 +563,7 @@ namespace Sharp80.Processor
         {
             ports[pornNum] = value;
         }
-        private void OutPortR(Register8 r)
+        private void OutPortR(IRegister<byte> r)
         {
             OutPort(C.val, r.val);
         }
@@ -600,7 +600,7 @@ namespace Sharp80.Processor
             F.val = (byte)((F.val & S_CF) | SZ53P(b));
             return b;
         }
-        private void InPortR(Register8 r)
+        private void InPortR(IRegister<byte> r)
         {
             r.val = InPortC();
         }

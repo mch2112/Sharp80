@@ -298,5 +298,17 @@ namespace Sharp80.Properties {
                 this["window_height"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool disk_enabled {
+            get {
+                return ((bool)(this["disk_enabled"]));
+            }
+            set {
+                this["disk_enabled"] = value;
+            }
+        }
     }
 }

@@ -1,5 +1,5 @@
 ﻿/// Sharp 80 (c) Matthew Hamilton
-/// Licensed Under GPL v3
+/// Licensed Under GPL v3. See license.txt for details.
 
 using System;
 using System.IO;
@@ -138,7 +138,7 @@ namespace Sharp80
             if (f != null)
                 f.FilePath = Path;
         }
-        public FloppyControllerStatus FloppyControllerStatus { get { return FloppyController.GetStatus(); } }
+        public IFloppyControllerStatus FloppyControllerStatus { get { return FloppyController; } }
         public bool DiskHasChanged(byte DriveNum) { return FloppyController.DiskHasChanged(DriveNum) ?? false; }
         public void SaveFloppy(byte DriveNum) { FloppyController.SaveFloppy(DriveNum); }
 
@@ -241,11 +241,7 @@ namespace Sharp80
 
         // FLOPPY SUPPORT
 
-        public bool HasDrivesAvailable
-        {
-            get { return !Ports.NoDrives; }
-            set { Ports.NoDrives = !value; }
-        }
+        public bool FloppyEnabled { get; set; }
         public void StartupLoadFloppies()
         {
             for (byte i = 0; i < 4; i++)
