@@ -198,6 +198,14 @@ namespace Sharp80
         }
         public bool Save()
         {
+            // Leave at most 0x100 trailing zeros in file
+            int i = data.Length - 1;
+            while (i > 0x100 && data[i] == 0)
+                i--;
+            i += 0x100;
+            if (data.Length > i)
+                Array.Resize(ref data, i);
+
             if (Storage.SaveBinaryFile(FilePath, data))
             {
                 Changed = false;

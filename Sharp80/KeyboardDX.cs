@@ -19,6 +19,7 @@ namespace Sharp80
         public bool LeftShiftPressed { get; private set; }
         public bool RightShiftPressed { get; private set; }
 
+        private bool enabled = false;
         private bool leftControlPressed = false;
         private bool rightControlPressed = false;
         private bool leftAltPressed = false;
@@ -34,6 +35,17 @@ namespace Sharp80
             keyboard.Properties.BufferSize = 128;
             keyboard.Acquire();
         }
+        
+        public bool Enabled { get { return enabled; }
+        set
+            {
+                enabled = value;
+
+                // Throw away strays that may have accumulated
+                if (enabled)
+                    keyboard.GetBufferedData();
+            }
+        }
 
         // required explicit interface implementation
         IEnumerator IEnumerable.GetEnumerator()
@@ -43,18 +55,22 @@ namespace Sharp80
         public IEnumerator<KeyState> GetEnumerator()
         {
             var data = keyboard.GetBufferedData();
+
             foreach (var d in data)
             {
                 switch (d.Key)
                 {
-                    case Key.LeftShift:    LeftShiftPressed = d.IsPressed; break;
-                    case Key.RightShift:   RightShiftPressed = d.IsPressed; break;
-                    case Key.LeftControl:  leftControlPressed = d.IsPressed; break;
+                    case Key.LeftShift: LeftShiftPressed = d.IsPressed; break;
+                    case Key.RightShift: RightShiftPressed = d.IsPressed; break;
+                    case Key.LeftControl: leftControlPressed = d.IsPressed; break;
                     case Key.RightControl: rightControlPressed = d.IsPressed; break;
-                    case Key.LeftAlt:      leftAltPressed = d.IsPressed; break;
-                    case Key.RightAlt:     rightAltPressed = d.IsPressed; break;
+                    case Key.LeftAlt: leftAltPressed = d.IsPressed; break;
+                    case Key.RightAlt: rightAltPressed = d.IsPressed; break;
                 }
-                yield return new KeyState((KeyCode)d.Key, IsShifted, IsControlPressed, IsAltPressed, d.IsPressed);
+                if (Enabled)
+                {
+                    yield return new KeyState((KeyCode)d.Key, IsShifted, IsControlPressed, IsAltPressed, d.IsPressed);
+                }
             }
         }
         public bool IsPressed(KeyCode Key)

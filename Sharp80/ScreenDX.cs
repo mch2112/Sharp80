@@ -16,7 +16,6 @@ using Color = SharpDX.Color;
 using DXBitmap = SharpDX.Direct2D1.Bitmap;
 
 using Device3D = SharpDX.Direct3D10.Device1;
-using Device2D = SharpDX.Direct2D1.Device;
 using DriverType = SharpDX.Direct3D10.DriverType;
 
 namespace Sharp80
@@ -65,7 +64,6 @@ namespace Sharp80
                                 driveActiveBrush;
 
         private Ellipse driveLightEllipse;
-        private int advancedViewDrawCount;
         private bool isFullScreen = false;
         private bool isGreenScreen = false;
         private bool isWideCharMode = false;
@@ -201,7 +199,6 @@ namespace Sharp80
                 {
                     isFullScreen = value;
                     Resize(DesiredLogicalSize);
-                    Dialogs.SuppressCursor = isFullScreen;
                 }
             }
         }
@@ -266,6 +263,7 @@ namespace Sharp80
             for (int i = 0xC0; i < 0x100; i++)
                 charGenKanjiWide[i] = CreateBitmap(renderTarget, ms, filterABGR, true, properties);
         }
+
         private static DXBitmap CreateBitmap(RenderTarget renderTarget, System.IO.MemoryStream MS, uint FilterABGR, bool Wide, BitmapProperties Properties)
         {
             var width = Wide ? ScreenMetrics.CHAR_PIXELS_X * 2 : ScreenMetrics.CHAR_PIXELS_X;
@@ -658,15 +656,15 @@ namespace Sharp80
 
             // Create Device and SwapChain
             Device3D.CreateWithSwapChain(DriverType.Hardware,
-                                        DeviceCreationFlags.BgraSupport,
-                                        swapChainDescription,
-                                        SharpDX.Direct3D10.FeatureLevel.Level_10_1,
-                                        out device3D,
-                                        out swapChain);
+                                         DeviceCreationFlags.BgraSupport,
+                                         swapChainDescription,
+                                         SharpDX.Direct3D10.FeatureLevel.Level_10_1,
+                                         out device3D,
+                                         out swapChain);
 
             // Ignore all windows events
-            swapChain.GetParent<SharpDX.DXGI.Factory>().MakeWindowAssociation(this.parent.Handle,
-                                          WindowAssociationFlags.IgnoreAll);
+            swapChain.GetParent<SharpDX.DXGI.Factory>().MakeWindowAssociation(parent.Handle,
+                                                                              WindowAssociationFlags.IgnoreAll);
 
             CreateBackBuffer();
             CreateRenderTarget(Format.Unknown);

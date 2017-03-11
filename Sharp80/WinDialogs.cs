@@ -9,6 +9,11 @@ namespace Sharp80
 {
     internal static class Dialogs
     {
+        internal delegate void DialogDelegate();
+
+        public static event DialogDelegate BeforeShowDialog;
+        public static event DialogDelegate AfterShowDialog;
+
         private static IWin32Window Parent { get; set; }
 
         public static void Initialize(IWin32Window Parent)
@@ -19,8 +24,7 @@ namespace Sharp80
         public static bool AskYesNo(string Question, string Caption = "Sharp 80")
         {
             bool res;
-            ForceShowCursor();
-
+            BeforeShowDialog?.Invoke();
             switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
             {
                 case DialogResult.Yes:
@@ -30,13 +34,13 @@ namespace Sharp80
                     res = false;
                     break;
             }
-            NoForceShowCursor();
+            AfterShowDialog?.Invoke();
             return res;
         }
         public static bool? AskYesNoCancel(string Question, string Caption = "Sharp 80")
         {
             bool? res;
-            ForceShowCursor();
+            BeforeShowDialog?.Invoke();
             switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
             {
                 case DialogResult.Yes:
@@ -49,20 +53,20 @@ namespace Sharp80
                     res = null;
                     break;
             }
-            NoForceShowCursor();
+            AfterShowDialog?.Invoke();
             return res;
         }
         public static void InformUser(string Information, string Caption = "Sharp 80")
         {
-            ForceShowCursor();
+            BeforeShowDialog?.Invoke();
             MessageBox.Show(Parent, Information, Caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            NoForceShowCursor();
+            AfterShowDialog?.Invoke();
         }
         public static void AlertUser(string Alert, string Caption = "Sharp 80")
         {
-            ForceShowCursor();
+            BeforeShowDialog?.Invoke();
             MessageBox.Show(Parent, Alert, Caption, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            NoForceShowCursor();
+            AfterShowDialog?.Invoke();
         }
         public static string UserSelectFile(bool Save, string DefaultPath, string Title, string Filter, string DefaultExtension, bool SelectFileInDialog)
         {
@@ -94,9 +98,9 @@ namespace Sharp80
             dialog.AddExtension = true;
             dialog.DefaultExt = DefaultExtension;
 
-            ForceShowCursor();
+            BeforeShowDialog?.Invoke();
             var dr = dialog.ShowDialog(Parent);
-            NoForceShowCursor();
+            AfterShowDialog?.Invoke();
 
             string path = dialog.FileName;
 
@@ -152,50 +156,6 @@ namespace Sharp80
                                   SelectFileInDialog: true);
         }
 
-        // CURSOR MANAGEMENT
-
-        private static bool suppressCursor = false;
-        private static int cursorLevel = 0;
-        private static bool cursorHidden = false;
-
-        public static bool SuppressCursor
-        {
-            get { return suppressCursor; }
-            set
-            {
-                suppressCursor = value;
-                UpdateCursor();
-            }
-        }
-        public static void ForceShowCursor()
-        {
-            cursorLevel++;
-            UpdateCursor();
-        }
-        public static void NoForceShowCursor()
-        {
-            cursorLevel--;
-            UpdateCursor();
-        }
-        private static void UpdateCursor()
-        {
-            if (cursorLevel < 0)
-                throw new Exception();
-
-            if (suppressCursor && cursorLevel == 0)
-            {
-                if (!cursorHidden)
-                {
-                    Cursor.Hide();
-                    cursorHidden = true;
-                }
-            }
-            else if (cursorHidden)
-            {
-                Cursor.Show();
-                cursorHidden = false;
-            }
-        }
         // TEXT FILE LAUNCHING
 
         public static void ShowTextFile(string Path)

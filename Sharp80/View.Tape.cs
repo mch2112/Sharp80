@@ -75,7 +75,7 @@ namespace Sharp80
 
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Tape Management") +
-                Format(string.Format("Speed Selected: {0} Baud ([X] to change)", Computer.TapeUserSelectedSpeed == Baud.High ? "High 1500" : "Low 500")) +
+                Format(string.Format("Speed Selected: {0} Baud", Computer.TapeUserSelectedSpeed == Baud.High ? "High 1500" : "Low 500")) +
                 Format("Tape File: " + FitFilePath(fileName, ScreenMetrics.NUM_SCREEN_CHARS_X - "Tape File: ".Length)) +
                 Format(string.Format(@"{0:0000.0} ({1:00.0%})", Computer.TapeCounter, Computer.TapePercent)) +
                 Format(string.Format("{0} {1} {2}",
@@ -83,15 +83,15 @@ namespace Sharp80
                        Computer.TapeIsBlank ? String.Empty : Computer.TapeSpeed == Baud.High ? "1500 Baud" : "500 Baud",
                        Computer.TapeMotorOn ? Computer.TapePulseStatus : String.Empty)) +
                 Separator() +
-                Format("[L] Load From File") +
-                Format("[B] Load Blank Tape") +
+                Format("[L] Load from file") +
+                Format("[B] Load blank tape") +
                 Format() +
-                Format("[P] Play") +
-                Format("[R] Record") +
-                Format("[S] Stop") +
-                Format("[W] Rewind") +
+                Format("[P] Play    [R] Record") +
+                Format("[S] Stop    [W] Rewind") +
                 Format() +
-                Format("[E] Eject")
+                Format("[E] Eject") +
+                Format() +
+                Format("[X] Toggle user selected speed")
                 ));
         }
         private void Load()

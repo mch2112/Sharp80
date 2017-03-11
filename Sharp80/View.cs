@@ -496,7 +496,6 @@ namespace Sharp80
 
             if (Path.Length > 0)
             {
-                Dialogs.ForceShowCursor();
                 if (Computer.LoadCMDFile(Path))
                 {
                     if (!SuppressNormalInform)
@@ -507,7 +506,6 @@ namespace Sharp80
                 {
                     Dialogs.AlertUser("CMD File load failed.");
                 }
-                Dialogs.NoForceShowCursor();
             }
         }
         private void MakeFloppyFromFile()

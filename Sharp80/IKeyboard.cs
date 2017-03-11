@@ -11,6 +11,7 @@ namespace Sharp80
     /// </summary>
     internal interface IKeyboard : IEnumerable<KeyState>, IDisposable
     {
+        bool Enabled { get; set; }
         bool IsShifted { get; }
         bool LeftShiftPressed { get; }
         bool RightShiftPressed { get; }

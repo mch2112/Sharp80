@@ -32,6 +32,8 @@ namespace Sharp80
             Text = "Sharp 80 - TRS-80 Model III Emulator";
 
             Dialogs.Initialize(this);
+            Dialogs.BeforeShowDialog += BeforeDialog;
+            Dialogs.AfterShowDialog += AfterDialog;
 
             screen = new ScreenDX(Settings.AdvancedView,
                                   DISPLAY_MESSAGE_CYCLE_DURATION,
@@ -105,6 +107,8 @@ namespace Sharp80
 
                 if (Settings.FullScreen)
                     ToggleFullScreen();
+
+                UpdateDialogLevel();
             }
             catch (Exception ex)
             {
@@ -261,7 +265,7 @@ namespace Sharp80
                                                                previousClientHeight);
                 }
             }
-
+            SuppressCursor = fs;
             resizing--;
         }
         private void SetWindowStyle()
@@ -420,6 +424,55 @@ namespace Sharp80
             {
                 Log.LogException(ex);
             }
+        }
+
+        // CURSOR & DIALOG MANAGEMENT
+
+        private static bool suppressCursor = false;
+        private static int dialogLevel = 0;
+        private static bool cursorHidden = false;
+
+        private bool SuppressCursor
+        {
+            get { return suppressCursor; }
+            set
+            {
+                suppressCursor = value;
+                UpdateDialogLevel();
+            }
+        }
+        private void BeforeDialog()
+        {
+            // Force show cursor
+            dialogLevel++;
+            UpdateDialogLevel();
+        }
+        private void AfterDialog()
+        {
+            // No force show cursor
+            dialogLevel--;
+            UpdateDialogLevel();
+        }
+        private void UpdateDialogLevel()
+        {
+            if (dialogLevel < 0)
+                throw new Exception("Dialog level less than zero.");
+
+            if (suppressCursor && dialogLevel == 0)
+            {
+                if (!cursorHidden)
+                {
+                    Cursor.Hide();
+                    cursorHidden = true;
+                }
+            }
+            else if (cursorHidden)
+            {
+                Cursor.Show();
+                cursorHidden = false;
+            }
+
+            keyboard.Enabled = dialogLevel == 0;
         }
     }
 }
