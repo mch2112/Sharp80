@@ -26,6 +26,8 @@ namespace Sharp80
         private const ulong HIGH_SPEED_THRESHOLD = 1200000;
         private const ulong HIGH_SPEED_ZERO_DELTA_RANGE_MIN = 1459000;
         private const ulong HIGH_SPEED_ZERO_DELTA_RANGE_MAX = 1860000;
+        private const ulong HIGH_SPEED_ZERO_DELTA_OUTLIER_MIN = 3660000;
+        private const ulong HIGH_SPEED_ZERO_DELTA_OUTLIER_MAX = 3885999;
 
         private const ulong LOW_SPEED_PULSE_NEGATIVE = 203000;
         private const ulong LOW_SPEED_PULSE_POSITIVE = 189000;
@@ -35,7 +37,7 @@ namespace Sharp80
         private const ulong LOW_SPEED_ONE_DELTA_RANGE_MIN = 1923000;
         private const ulong LOW_SPEED_ONE_DELTA_RANGE_MAX = 2281000;
         private const ulong LOW_SPEED_THRESHOLD = 3000000;
-        private const ulong LOW_SPEED_ZERO_DELTA_RANGE_MIN = 3858000;
+        private const ulong LOW_SPEED_ZERO_DELTA_RANGE_MIN = 3886000;
         private const ulong LOW_SPEED_ZERO_DELTA_RANGE_MAX = 4379000;
 
         private Computer computer;
@@ -372,6 +374,7 @@ namespace Sharp80
                             {
                                 Speed = Baud.High;
                                 highSpeedWriteEvidence = Math.Min(highSpeedWriteEvidence, 16);
+                                Write(posDelta < HIGH_SPEED_THRESHOLD);
                             }
                         }
                         else if ((posDelta.IsBetween(LOW_SPEED_ONE_DELTA_RANGE_MIN, LOW_SPEED_ONE_DELTA_RANGE_MAX)) ||
@@ -382,21 +385,13 @@ namespace Sharp80
                             {
                                 Speed = Baud.Low;
                                 highSpeedWriteEvidence = Math.Max(highSpeedWriteEvidence, -16);
-                            }
-                        }
-                        switch (Speed)
-                        {
-                            case Baud.High:
-                                Write(posDelta < HIGH_SPEED_THRESHOLD);
-                                break;
-                            case Baud.Low:
                                 if (posDelta > LOW_SPEED_THRESHOLD)
                                 {
                                     if (skippedLast)
                                     {
                                         // sync error since we saw a short (clock) last time
                                         // but anything after a short clk is a one
-                                        // M3 rom does this when writing the A5 marker in CSAVE (bug?)
+                                        // M3 ROM does this when writing the A5 marker in CSAVE
                                         Write(true);
                                         skippedLast = false;
                                     }
@@ -417,7 +412,16 @@ namespace Sharp80
                                     // this is the clock pulse, skip it
                                     skippedLast = true;
                                 }
-                                break;
+                            }
+                        }
+                        else
+                        {
+                            // we have an outlier pulse length
+                            if (Speed == Baud.High && posDelta.IsBetween(HIGH_SPEED_ZERO_DELTA_OUTLIER_MIN, HIGH_SPEED_ZERO_DELTA_OUTLIER_MAX))
+                            {
+                                // Delay that M3 Rom puts after 0x7F sync byte, accept as a valid zero
+                                Write(false);
+                            }
                         }
                     }
                 }
