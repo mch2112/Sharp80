@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
@@ -46,23 +47,25 @@ namespace Sharp80
         private int  isResizing =         0;
 
         private string statusMessage = String.Empty;
-        private uint cyclesForMessageRemaining = 0;
+        private int cyclesForMessageRemaining = 0;
         private readonly uint messageDisplayDuration;
 
-        private DXBitmap[] charGen, charGenNormal, charGenWide, charGenKanji, charGenKanjiWide;
+        private DXBitmap[] charGenNormal, charGenWide, charGenKanji, charGenKanjiWide;
         private RawRectangleF infoRect, z80Rect, disassemRect, statusMsgRect;
-        private RawRectangleF[] cells, cellsNormal, cellsWide;        
+        private RawRectangleF[] cellsNormal, cellsWide;
+
         private byte[] shadowScreen;
+        private bool shadowIsStdWidth;
 
         private SolidColorBrush foregroundBrush,
                                 foregroundBrushWhite,
                                 foregroundBrushGreen,
                                 backgroundBrush,
-                                statusBrush,
                                 driveOnBrush,
                                 driveActiveBrush;
 
         private Ellipse driveLightEllipse;
+        private int advancedViewDrawCount;
         private bool isFullScreen = false;
         private bool isGreenScreen = false;
         private bool isWideCharMode = false;
@@ -95,27 +98,7 @@ namespace Sharp80
                 isWideCharMode = IsWide.Value;
             if (IsKanji.HasValue)
                 isKanjiCharMode = IsKanji.Value;
-
-            if (isWideCharMode && isKanjiCharMode)
-            {
-                charGen = charGenKanjiWide;
-                cells = cellsWide;
-            }
-            else if (isWideCharMode && !isKanjiCharMode)
-            {
-                charGen = charGenWide;
-                cells = cellsWide;
-            }
-            else if (!isWideCharMode && isKanjiCharMode)
-            {
-                charGen = charGenKanji;
-                cells = cellsNormal;
-            }
-            else
-            {
-                charGen = charGenNormal;
-                cells = cellsNormal;
-            }
+            
             Invalidate();
         }
         public string StatusMessage
@@ -125,15 +108,9 @@ namespace Sharp80
             {
                 statusMessage = value;
                 if (value.Length == 0)
-                {
-                    statusBrush.Opacity = 0;
                     cyclesForMessageRemaining = 0;
-                }
                 else
-                {
-                    cyclesForMessageRemaining = messageDisplayDuration;
-                    statusBrush.Opacity = 1f;
-                }
+                    cyclesForMessageRemaining = (int)messageDisplayDuration;
                 Invalidate();
             }
         }
@@ -143,10 +120,9 @@ namespace Sharp80
             {
                 case UserCommand.ToggleAdvancedView:
                     AdvancedView = !AdvancedView;
-                    Settings.AdvancedView = AdvancedView;
                     break;
                 case UserCommand.ShowAdvancedView:
-                    Settings.AdvancedView = true;
+                    AdvancedView = true;
                     break;
                 case UserCommand.GreenScreen:
                     Settings.GreenScreen = GreenScreen = !GreenScreen;
@@ -210,6 +186,7 @@ namespace Sharp80
                     foregroundBrush = isGreenScreen ? foregroundBrushGreen : foregroundBrushWhite;
 
                     StatusMessage = "Screen color changed.";
+                    erase = true;
                     Invalidate();
                 }
             }
@@ -235,6 +212,7 @@ namespace Sharp80
                 if (advancedView != value)
                 {
                     advancedView = value;
+                    Settings.AdvancedView = value;
 
                     if (!IsFullScreen)
                         parent.ClientSize =
@@ -347,8 +325,6 @@ namespace Sharp80
                     cellsWide[i + j * ScreenMetrics.NUM_SCREEN_CHARS_X] = new RawRectangleF((int)x, (int)y, (int)(x + ScreenMetrics.CHAR_PIXELS_X + ScreenMetrics.CHAR_PIXELS_X), (int)(y + ScreenMetrics.CHAR_PIXELS_Y));
                 }
             }
-
-            cells = cells ?? cellsNormal;
 
             driveLightEllipse = new Ellipse(new RawVector2(10, 10), 5, 5);
 
@@ -533,11 +509,19 @@ namespace Sharp80
                     invalid = true;
                 }
 
+                bool drawAdvanced = advancedView;// && (!computer.IsRunning || ++advancedViewDrawCount % 2 == 0);
+
                 if (erase)
                 {
                     invalid = true;
-                    erase = false;
                     renderTarget.Clear(Color.Black);
+                }
+                else if (drawAdvanced)
+                {
+                    // Erase adv info regions...
+                    renderTarget.FillRectangle(infoRect, backgroundBrush);
+                    renderTarget.FillRectangle(z80Rect, backgroundBrush);
+                    renderTarget.FillRectangle(disassemRect, backgroundBrush);
                 }
 
                 var dbs = computer.DriveBusyStatus;
@@ -546,23 +530,20 @@ namespace Sharp80
                 else
                     renderTarget.FillEllipse(driveLightEllipse, backgroundBrush);
 
+                if (--cyclesForMessageRemaining <= 0)
+                    invalid = true;
+
+                // Draw the screen
                 if (View.CurrentMode == ViewMode.Normal || invalid)
-                    DrawView(View.GetViewData());
+                    DrawView(View.GetViewData(), erase);
 
                 // Used to debug layout issues: frames the virtual screen
                 //renderTarget.DrawRectangle(new RawRectangleF(cells[0].Left, cells[0].Top, cells[0x3ff].Right, cells[0x3ff].Bottom), foregroundBrush);
                 //renderTarget.FillRectangle(cells[0], foregroundBrush);
                 //renderTarget.FillRectangle(cells[0x3ff], foregroundBrush);
 
-                if (advancedView)
+                if (drawAdvanced)
                 {
-                    // Erase adv info regions...
-                    renderTarget.FillRectangle(infoRect, backgroundBrush);
-                    renderTarget.FillRectangle(z80Rect, backgroundBrush);
-                    renderTarget.FillRectangle(disassemRect, backgroundBrush);
-
-                    DrawStatusMessage();
-
                     // And draw new text
                     renderTarget.DrawText(computer.GetInternalsReport(), textFormat, z80Rect, foregroundBrush);
                     renderTarget.DrawText(computer.GetDisassembly(), textFormat, disassemRect, foregroundBrush);
@@ -570,58 +551,77 @@ namespace Sharp80
                         computer.GetClockReport() + Environment.NewLine + computer.GetIoStatusReport(),
                         textFormat, infoRect, foregroundBrush);
                 }
-                else
-                {
-                    DrawStatusMessage();
-                }
                 
-                invalid = false;
+                erase = invalid = false;
                 View.Validate();
             }
         }
-        private void DrawNormal()
+        private void DrawView(IEnumerable<byte> View, bool ForceRedraw)
         {
-            var mem = computer.Memory;
+            bool stdWidth;
+            DXBitmap[] charGen;
 
-            if (mem.ScreenWritten || invalid)
+            int end;
+            string msg;
+
+            // Tag the status message at the end if there is one
+            if (cyclesForMessageRemaining > 0 || (!AdvancedView && !computer.IsRunning && computer.HasRunYet))
             {
-                mem.ScreenWritten = false;
-                int k = 0;
-                ushort memPtr = Memory.VIDEO_MEMORY_BLOCK;
-                for (int i = 0; i < ScreenMetrics.NUM_SCREEN_CHARS; ++i, ++k, ++memPtr)
+                if (cyclesForMessageRemaining > 0)
                 {
-                    PaintCell(k, mem[memPtr], cells, charGen);
-                    if (isWideCharMode)
-                    { i++; k++; memPtr++; }
+                    msg = " " + StatusMessage;
+                    end = ScreenMetrics.NUM_SCREEN_CHARS - msg.Length;
                 }
-            }
-        }
-        private void DrawView(byte[] View)
-        {
-            if (View == null)
-            {
-                DrawNormal();
+                else
+                {
+                    msg = " Paused";
+                    end = ScreenMetrics.NUM_SCREEN_CHARS - 7;
+                }
             }
             else
             {
-                for (int i = 0; i < ScreenMetrics.NUM_SCREEN_CHARS; i++)
-                    PaintCell(i, View[i], cellsNormal, charGenNormal);
+                end = ScreenMetrics.NUM_SCREEN_CHARS;
+                msg = String.Empty;
             }
-        }
-        private void DrawStatusMessage()
-        {
-            if (cyclesForMessageRemaining > 0)
+
+            // Figure out what we are displaying and which char set to use
+
+            if (View == null)
             {
-                cyclesForMessageRemaining--;
-
-                renderTarget.FillRectangle(statusMsgRect, backgroundBrush);
-                renderTarget.DrawText(StatusMessage, statusTextFormat, statusMsgRect, statusBrush);
-
-                statusBrush.Opacity *= 0.95f;
-
-                if (cyclesForMessageRemaining == 0)
-                    invalidateNextDraw = true;
+                View = computer.Memory.VideoMemory;
+                stdWidth = !isWideCharMode;
+                if (stdWidth)
+                    charGen = isKanjiCharMode ? charGenKanji : charGenNormal;
+                else
+                    charGen = isKanjiCharMode ? charGenKanjiWide : charGenWide;
             }
+            else
+            {
+                stdWidth = true;
+                charGen = charGenNormal;
+            }
+
+            var cells = stdWidth ? cellsNormal : cellsWide ;
+            bool drawAll = ForceRedraw || stdWidth != shadowIsStdWidth;
+
+            // and draw it
+
+            int i = 0;
+            foreach (byte v in View)
+            {
+                byte b = (i < end) ? v : (byte)msg[(i - end) / (stdWidth ? 1 : 2)];
+
+                if ((stdWidth || i % 2 == 0) && (drawAll|| shadowScreen[i] != b))
+                {
+                    renderTarget.DrawBitmap(charGen[b],
+                        cells[i],
+                        1.0f,
+                        BitmapInterpolationMode.Linear);
+                    shadowScreen[i] = b;
+                }
+                i++;
+            }
+            shadowIsStdWidth = stdWidth;
         }
         private void BeginDraw()
         {
@@ -633,18 +633,6 @@ namespace Sharp80
         {
             renderTarget.EndDraw();
             swapChain.Present(0, PresentFlags.None);
-        }
-        private void PaintCell(int cell, byte c, RawRectangleF[] Cells, DXBitmap[] Chars)
-        {
-            if (shadowScreen[cell] != c || invalid)
-            {
-                renderTarget.DrawBitmap(Chars[c],
-                    Cells[cell],
-                    1.0f,
-                    BitmapInterpolationMode.Linear);
-
-                shadowScreen[cell] = c;
-            }
         }
 
         // DX INTEROP
@@ -686,7 +674,6 @@ namespace Sharp80
             foregroundBrushWhite = new SolidColorBrush(renderTarget, Color.White);
             foregroundBrushGreen = new SolidColorBrush(renderTarget, new RawColor4(0.3f, 1.0f, 0.3f, 1f));
             backgroundBrush = new SolidColorBrush(renderTarget, Color4.Black);
-            statusBrush = new SolidColorBrush(renderTarget, Color4.White) { Opacity = 1f };
             driveOnBrush = new SolidColorBrush(renderTarget, new RawColor4(0.4f, 0.4f, 0.4f, 0.3f));
             driveActiveBrush = new SolidColorBrush(renderTarget, new RawColor4(1f, 0, 0, 0.3f));
 
@@ -744,30 +731,15 @@ namespace Sharp80
         {
             if (!isDisposed)
             {
-                Dispose(true);
                 isDisposed = true;
+                if (!backBufferView.IsDisposed)
+                    backBufferView.Dispose();
+                GC.SuppressFinalize(this);
             }
-            GC.SuppressFinalize(this);
         }
-        private void Dispose(bool disposeManagedResources)
-        {
-            if (disposeManagedResources)
-            {
-                if (parent != null)
-                    parent.Dispose();
-            }
-
-            if (!backBufferView.IsDisposed)
-                backBufferView.Dispose();
-        }
-        public bool IsDisposed { get { return isDisposed; } }
         ~ScreenDX()
         {
-            if (!isDisposed)
-            {
-                Dispose(false);
-                isDisposed = true;
-            }
+            Dispose();
         }
     }
 }

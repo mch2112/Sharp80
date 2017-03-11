@@ -67,7 +67,7 @@ namespace Sharp80
                                         Header(helpHeaderText, "DISK COMMANDS (4/5)") +
                                         Indent("[F3]               Floppy Disk Manager") +
                                         Format() +
-                                        Indent("[Alt]+[F]          Create Formatted Floppy") +
+                                        Indent("[Alt]+[B]          Create Blank Formatted Floppy") +
                                         Indent("[Alt]+[U]          Create Unformatted Floppy") +
                                         Format() +
                                         Indent("[Alt]+[Shift]+[N]  Save Snapshot File") +
@@ -85,7 +85,7 @@ namespace Sharp80
                                         Indent("[F6] Jump to Address") +
                                         Format() +
                                         Indent("[Alt]+[Y] Invoke Z80 Assembler") +
-                                        Indent("[Alt]+[B] Dump Memory Disassembly to File") +
+                                        Indent("[Alt]+[E] Dump Memory Disassembly to File") +
                                         Format() +
                                         Format(new string[] { "[Alt]+[M] Memory Viewer" }, true) +
                                         Format(new string[] { "[Alt]+[I] Instruction Set Report" }, true) +

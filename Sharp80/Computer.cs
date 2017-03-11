@@ -10,7 +10,7 @@ namespace Sharp80
     {
         public const ulong CLOCK_RATE = 2027520;
 
-        private const int SERIALIZATION_VERSION = 5;
+        private const int SERIALIZATION_VERSION = 6;
 
         public bool HasRunYet { get; private set; }
 
@@ -29,7 +29,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Computer(IAppWindow MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool NormalSpeed)
+        public Computer(IAppWindow MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool FloppyEnabled, bool NormalSpeed, bool SoundOn)
         {
             ulong milliTStatesPerIRQ = CLOCK_RATE * Clock.TICKS_PER_TSTATE / 30;
             ulong milliTStatesPerSoundSample = CLOCK_RATE * Clock.TICKS_PER_TSTATE / SoundX.SAMPLE_RATE;
@@ -47,7 +47,7 @@ namespace Sharp80
             //Sound = new SoundNull();
             Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut))
             {
-                On = Settings.SoundOn
+                On = SoundOn
             };
             Clock = new Clock(this,
                               Processor,
@@ -60,7 +60,7 @@ namespace Sharp80
 
             Clock.SpeedChanged += (s, e) => { Sound.Mute = !Clock.NormalSpeed; };
 
-            FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound);
+            FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound, FloppyEnabled);
 
             IntMgr.Initialize(Ports, Tape);
             Tape.Initialize(Clock, IntMgr);
@@ -74,6 +74,15 @@ namespace Sharp80
         public bool Ready
         {
             get { return ready; }
+        }
+
+        /// <summary>
+        /// This may vary from Settings.DiskEnabled because we'll disable
+        /// the floppy contoller on start if no disk is in drive 0
+        /// </summary>
+        public bool DiskEnabled
+        {
+            get { return FloppyController.Enabled; }
         }
         public bool IsRunning
         {
@@ -146,6 +155,10 @@ namespace Sharp80
 
         public void Start()
         {
+            if (!HasRunYet)
+                if (!FloppyController.Available)
+                    FloppyController.Disable();
+
             HasRunYet = true;
 
             Clock.Start();
@@ -165,18 +178,6 @@ namespace Sharp80
         {
             IntMgr.ResetButtonLatch.Latch();
         }
-        public void HardwareReset()
-        {
-            Stop(WaitForStop: true);
-            FloppyController.HardwareReset();
-            Ports.Reset();
-            Processor.Reset();
-            HasRunYet = false;
-        }
-        public void ShutDown()
-        {
-            ready = false;
-        }
         public void StepOver()
         {
             if (!IsRunning)
@@ -184,7 +185,7 @@ namespace Sharp80
                 if (Processor.StepOver())
                     Start();
                 else
-                    SingleStep();
+                    Step();
             }
         }
         public void StepOut()
@@ -195,9 +196,17 @@ namespace Sharp80
                 Start();
             }
         }
-        public void SingleStep()
+        public void Step()
         {
-            Clock.SingleStep();
+            if (!HasRunYet)
+            {
+                Start();
+                Stop(true);
+            }
+            else
+            {
+                Clock.Step();
+            }
         }
         public void Jump(ushort Address)
         {
@@ -279,18 +288,12 @@ namespace Sharp80
 
             Storage.SaveDefaultDriveFileName(DriveNum, FilePath);
 
-            if (DriveNum == 0 && !HasRunYet)
-                Ports.NoDrives = FloppyController.DriveIsUnloaded(0);
-
             if (running)
                 Start();
         }
         public void LoadFloppy(byte DriveNum, Floppy Floppy)
         {
             FloppyController.LoadFloppy(DriveNum, Floppy);
-
-            if (DriveNum == 0 && !HasRunYet)
-                Ports.NoDrives = FloppyController.DriveIsUnloaded(0);
         }
         public void LoadTrsDosFloppy(byte DriveNum)
         {
@@ -306,9 +309,6 @@ namespace Sharp80
 
             FloppyController.UnloadDrive(DriveNum);
             Storage.SaveDefaultDriveFileName(DriveNum, String.Empty);
-
-            if (DriveNum == 0 && !HasRunYet)
-                Ports.NoDrives = FloppyController.DriveIsUnloaded(0);
 
             if (running)
                 Start();
@@ -487,16 +487,15 @@ namespace Sharp80
             {
                 if (Ready)
                 {
-                    HardwareReset();
-                    ShutDown();
+                    Stop(true);
+                    ready = false;
                 }
+                FloppyController.Dispose();
                 Sound.Dispose();
                 Printer.Dispose();
                 Stop(WaitForStop: false);
-                
                 isDisposed = true;
             }
         }
-        public bool IsDisposed { get { return isDisposed; } }
     }
 }

@@ -31,10 +31,12 @@ namespace Sharp80
             public FrameBuffer(int FrameSize, int MinLatencyFrames)
             {
                 frameSize = FrameSize;
-                bufferSize = 100 * frameSize;
-
+                
                 minLatency = MinLatencyFrames * frameSize;
                 maxLatency = minLatency * 2;
+
+                // don't skimp
+                bufferSize = 10 * maxLatency;
 
                 buffer = new T[bufferSize];
                 silentFrame = new T[frameSize];

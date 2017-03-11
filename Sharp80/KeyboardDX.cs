@@ -78,6 +78,5 @@ namespace Sharp80
                 keyboard.Dispose();
             }
         }
-        public bool IsDisposed { get { return keyboard.IsDisposed; } }
     }
 }

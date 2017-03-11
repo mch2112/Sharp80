@@ -18,6 +18,9 @@ namespace Sharp80
         {
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Sharp 80 Options") +
+                Indent(string.Format("[F12] Speed                        {0}",
+                    Computer.NormalSpeed ? "[NORMAL] /  FAST" : " NORMAL  / [FAST]")) +
+                Format() +
                 Indent(string.Format("[Alt]+[S] Sound                    {0}",
                     Computer.SoundOn ? "[ON] /  OFF" : " ON  / [OFF]")) +
                 (Computer.SoundOn
@@ -31,10 +34,7 @@ namespace Sharp80
                 Indent(string.Format("[Alt]+[A] Auto Start on Reset      {0}",
                     Settings.AutoStartOnReset ? "[ON] /  OFF" : " ON  / [OFF]")) +
                 Format() +
-                Indent(string.Format("[F12] Speed                        {0}",
-                    Computer.NormalSpeed ? "[NORMAL] /  FAST" : " NORMAL  / [FAST]")) +
-                Format() +
-                Indent(string.Format("[F4] Z80 Internals Display         {0}",
+                Indent(string.Format("[F5] Z80 Internals Display         {0}",
                     Settings.AdvancedView ? "[ON] /  OFF" : " ON  / [OFF]")) +
                 (Settings.AdvancedView
                     ? Indent(string.Format("[Alt]+[H] Disassembly Mode         {0}",

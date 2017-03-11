@@ -17,7 +17,6 @@ namespace Sharp80
         
         private byte[] ports = new byte[NUM_PORTS];
         private byte lastFFout = 0;
-        private bool noDrives = true;
 
         public PortSet(Computer Computer)
         {
@@ -30,22 +29,6 @@ namespace Sharp80
             tape = Tape;
             printer = Printer;
             Reset();
-        }
-        public bool NoDrives
-        {
-            get { return noDrives; }
-            set
-            {
-                if (noDrives != value)
-                {
-                    if (noDrives)
-                        ports[0xF0] = 0xFF;
-                    else
-                        ports[0xF0] = 0x80;
-
-                    noDrives = value;
-                }
-            }
         }
         public void Reset()
         {
@@ -114,11 +97,6 @@ namespace Sharp80
                         ports[0xE4] = intMgr.E4in();
                         break;
                     case 0xF0:
-                        if (NoDrives)
-                            ports[0xF0] = 0xFF; // cassette system
-                        else
-                            floppyController.FdcIoEvent(PortNumber, 0, false);
-                        break;
                     case 0xF1:
                     case 0xF2:
                     case 0xF3:
@@ -202,13 +180,11 @@ namespace Sharp80
         {
             Writer.Write(ports);
             Writer.Write(lastFFout);
-            Writer.Write(NoDrives);
         }
         public void Deserialize(System.IO.BinaryReader Reader)
         {
             Array.Copy(Reader.ReadBytes(NUM_PORTS), ports, NUM_PORTS);
             lastFFout = Reader.ReadByte();
-            NoDrives = Reader.ReadBoolean();
         }
     }
 }

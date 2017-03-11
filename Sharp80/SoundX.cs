@@ -164,23 +164,21 @@ namespace Sharp80
                 frameBuffer.Sample(outputLevel);
             }
         }
-
+        private void SourceVoice_BufferEnd(IntPtr obj)
+        {
+            bufferEndEvent.Set();
+        }
         public void Dispose()
         {
             if (!isDisposed)
             {
                 isDisposed = true;
-
                 sourceVoice.DestroyVoice();
                 sourceVoice.Dispose();
                 bufferEndEvent.Dispose();
                 masteringVoice.Dispose();
                 xaudio.Dispose();
             }
-        }
-        private void SourceVoice_BufferEnd(IntPtr obj)
-        {
-            bufferEndEvent.Set();
         }
     }
 }

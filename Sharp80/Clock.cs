@@ -130,7 +130,7 @@ namespace Sharp80
 
         // PUBLIC METHODS
 
-        public void SingleStep()
+        public void Step()
         {
             if (!IsRunning)
                 ExecOne();

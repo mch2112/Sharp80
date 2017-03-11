@@ -7,7 +7,7 @@ using System.IO;
 
 namespace Sharp80
 {
-    internal partial class FloppyController : ISerializable, IFloppyControllerStatus
+    internal partial class FloppyController : ISerializable, IFloppyControllerStatus, IDisposable
     {
         public const int NUM_DRIVES = 4;
 
@@ -50,6 +50,7 @@ namespace Sharp80
         private const int ADDRESS_DATA_CRC_LOW_BYTE = 0x05;
         private const int ADDRESS_DATA_BYTES = 0x06;
 
+        public bool Enabled { get; private set; }
         public bool MotorOn { get; private set; }
         private ulong stepRateInUsec;
         private readonly ulong[] stepRates;
@@ -124,13 +125,14 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public FloppyController(Computer Computer, PortSet Ports, Clock Clock, InterruptManager InterruptManager, ISound Sound)
+        public FloppyController(Computer Computer, PortSet Ports, Clock Clock, InterruptManager InterruptManager, ISound Sound, bool Enabled)
         {
             computer = Computer;
             ports = Ports;
             IntMgr = InterruptManager;
             clock = Clock;
             sound = Sound;
+            this.Enabled = Enabled;
 
             TicksPerDiskRev = clock.TicksPerSec / 5;
 
@@ -219,12 +221,9 @@ namespace Sharp80
             sideSelectVerify = false;
             DoubleDensitySelected = false;
 
-            if (motorOffPulseReq != null)
-                motorOffPulseReq.Expire();
-            if (motorOnPulseReq != null)
-                motorOnPulseReq.Expire();
-            if (commandPulseReq != null)
-                commandPulseReq.Expire();
+            motorOffPulseReq?.Expire();
+            motorOnPulseReq?.Expire();
+            commandPulseReq?.Expire();
 
             motorOnPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_ON_DELAY_IN_USEC, MotorOnCallback, true);
             motorOffPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_OFF_DELAY_IN_USEC, MotorOffCallback, true);
@@ -314,6 +313,14 @@ namespace Sharp80
         public bool AnyDriveLoaded
         {
             get { return drives.Any(d => !d.IsUnloaded); }
+        }
+        public bool Available
+        {
+            get { return Enabled && !DriveIsUnloaded(0); }
+        }
+        public void Disable()
+        {
+            Enabled = false;
         }
         public bool DriveIsUnloaded(byte DriveNum)
         {
@@ -1330,7 +1337,8 @@ namespace Sharp80
                         SetDataRegister(value);
                         break;
                     case 0xF4:
-                        FdcDiskSelect(value);
+                        if (Enabled)
+                            FdcDiskSelect(value);
                         break;
                     default:
                         break;
@@ -1364,25 +1372,28 @@ namespace Sharp80
 
             Log.LogDebug(string.Format("Get status register: {0}", statusRegister.ToHexString()));
 
-            ports.SetPortDirect(statusRegister, 0xF0);
+            if (Enabled)
+                ports.SetPortDirect(statusRegister, 0xF0);
+            else
+                ports.SetPortDirect(0xFF, 0xF0);
 
             IntMgr.FdcNmiLatch.Unlatch();
             IntMgr.FdcMotorOffNmiLatch.Unlatch();
         }
         private void GetTrackRegister()
         {
-            ports.SetPortDirect(TrackRegister, 0xF1);
+            ports.SetPortDirect(Enabled ? TrackRegister : (byte)0xFF, 0xF1);
             Log.LogDebug(string.Format("Get track register: {0}", TrackRegister.ToHexString()));
         }
         private void GetSectorRegister()
         {
-            ports.SetPortDirect(SectorRegister, 0xF2);
+            ports.SetPortDirect(Enabled ? SectorRegister : (byte)0xFF, 0xF2);
             Log.LogDebug(string.Format("Get sector register: {0}", SectorRegister.ToHexString()));
         }
         private void GetDataRegister()
         {
             Log.LogDebug(string.Format("Read data register: {0}", DataRegister.ToHexString()));
-            ports.SetPortDirect(DataRegister, 0xF3);
+            ports.SetPortDirect(Enabled ? DataRegister : (byte)0xFF, 0xF3);
             drq = DrqStatus = false;
         }
         private void SetCommandRegister(byte value)
@@ -1785,6 +1796,12 @@ namespace Sharp80
                 indexesFound++;
 
             indexFoundLastCheck = indexDetected;
+        }
+        public void Dispose()
+        {
+            motorOffPulseReq?.Expire();
+            motorOnPulseReq?.Expire();
+            commandPulseReq?.Expire();
         }
     }
 }

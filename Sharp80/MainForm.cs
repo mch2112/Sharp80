@@ -22,7 +22,7 @@ namespace Sharp80
         private const int SCREEN_REFRESH_SLEEP = (int)(1000 / SCREEN_REFRESH_RATE);
 
         private const uint REPEAT_THRESHOLD = SCREEN_REFRESH_RATE / 2;                    // Half-second (30 cycles)
-        private const uint DISPLAY_MESSAGE_CYCLE_DURATION = SCREEN_REFRESH_RATE * 3 / 2;  // 1.5 seconds
+        private const uint DISPLAY_MESSAGE_CYCLE_DURATION = SCREEN_REFRESH_RATE;  // 1 seconds
 
         private bool IsActive { get; set; }
 
@@ -373,13 +373,13 @@ namespace Sharp80
         {
             if (computer != null)
             {
-                if (!Storage.SaveFloppies(computer))
+                if (!Storage.SaveFloppies(computer) || !Storage.SaveTapeIfRequired(computer))
                     return;
+
                 computer.Dispose();
             }
-            computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.NormalSpeed)
+            computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.DiskEnabled, Settings.NormalSpeed, Settings.SoundOn)
             {
-                SoundOn =      Settings.SoundOn,
                 DriveNoise =   Settings.DriveNoise,
                 BreakPoint =   Settings.Breakpoint,
                 BreakPointOn = Settings.BreakpointOn
@@ -387,6 +387,7 @@ namespace Sharp80
 
             computer.StartupLoadFloppies();
             screen.Reinitialize(computer);
+
             Log.Initalize(computer.GetElapsedTStates);
 
             View.Initialize(computer, (msg) => screen.StatusMessage = msg);

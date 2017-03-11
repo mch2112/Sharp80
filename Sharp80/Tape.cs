@@ -25,7 +25,7 @@ namespace Sharp80
         private const ulong HIGH_SPEED_ONE_DELTA_RANGE_MAX = 797000;
         private const ulong HIGH_SPEED_THRESHOLD = 1200000;
         private const ulong HIGH_SPEED_ZERO_DELTA_RANGE_MIN = 1459000;
-        private const ulong HIGH_SPEED_ZERO_DELTA_RANGE_MAX = 1861000;
+        private const ulong HIGH_SPEED_ZERO_DELTA_RANGE_MAX = 1860000;
 
         private const ulong LOW_SPEED_PULSE_NEGATIVE = 203000;
         private const ulong LOW_SPEED_PULSE_POSITIVE = 189000;
@@ -293,16 +293,18 @@ namespace Sharp80
                     case 0x55:
                     case 0xAA:
                         consecutiveFiftyFives++;
+                        consecutiveZeros = 0;
                         break;
                     case 0x00:
                         consecutiveZeros++;
+                        consecutiveFiftyFives = 0;
                         break;
                     default:
                         consecutiveFiftyFives = 0;
                         consecutiveZeros = 0;
                         break;
                 }
-                if (consecutiveFiftyFives > 20)
+                if (consecutiveFiftyFives > 10)
                     Speed = Baud.High;
                 else if (consecutiveZeros > 20)
                     Speed = Baud.Low;
@@ -366,25 +368,28 @@ namespace Sharp80
                             posDelta.IsBetween(HIGH_SPEED_ZERO_DELTA_RANGE_MIN, HIGH_SPEED_ZERO_DELTA_RANGE_MAX))
                         {
                             // This is a high speed pulse
-                            highSpeedWriteEvidence++;
-                            if (highSpeedWriteEvidence > 8)
+                            if (++highSpeedWriteEvidence > 8)
                             {
                                 Speed = Baud.High;
                                 highSpeedWriteEvidence = Math.Min(highSpeedWriteEvidence, 16);
-                                // short means a one, long means zero
-                                Write(posDelta < HIGH_SPEED_THRESHOLD);
                             }
                         }
                         else if ((posDelta.IsBetween(LOW_SPEED_ONE_DELTA_RANGE_MIN, LOW_SPEED_ONE_DELTA_RANGE_MAX)) ||
                                  (posDelta.IsBetween(LOW_SPEED_ZERO_DELTA_RANGE_MIN, LOW_SPEED_ZERO_DELTA_RANGE_MAX)))
                         {
                             // This is a low speed pulse
-                            highSpeedWriteEvidence--;
-                            if (highSpeedWriteEvidence < -8)
+                            if (--highSpeedWriteEvidence < -8)
                             {
                                 Speed = Baud.Low;
                                 highSpeedWriteEvidence = Math.Max(highSpeedWriteEvidence, -16);
-
+                            }
+                        }
+                        switch (Speed)
+                        {
+                            case Baud.High:
+                                Write(posDelta < HIGH_SPEED_THRESHOLD);
+                                break;
+                            case Baud.Low:
                                 if (posDelta > LOW_SPEED_THRESHOLD)
                                 {
                                     if (skippedLast)
@@ -412,7 +417,7 @@ namespace Sharp80
                                     // this is the clock pulse, skip it
                                     skippedLast = true;
                                 }
-                            }
+                                break;
                         }
                     }
                 }

@@ -18,7 +18,5 @@ namespace Sharp80
         System.Drawing.Size ClientSize { get; set; }
         System.Drawing.Color BackColor { get; set; }
         System.Windows.Forms.Cursor Cursor { get; set; }
-
-        void Dispose();
     }
 }

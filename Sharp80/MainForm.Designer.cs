@@ -18,25 +18,16 @@ namespace Sharp80
             if (!isDisposing && !IsDisposed)
             {
                 isDisposing = true;
-                if (disposing && (components != null))
-                {
-                    components.Dispose();
-                }
+
+                if (disposing)
+                    components?.Dispose();
 
                 base.Dispose(disposing);
 
-                if (!screen.IsDisposed)
-                {
-                    screen.Dispose();
-                }
-                if (!computer.IsDisposed)
-                {
-                    computer.Dispose();
-                }
-                if (!keyboard.IsDisposed)
-                {
-                    keyboard.Dispose();
-                }
+                screen.Dispose();
+                computer.Dispose();
+                keyboard.Dispose();
+
                 isDisposing = false;
             }
         }

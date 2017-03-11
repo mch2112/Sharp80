@@ -14,7 +14,6 @@ namespace Sharp80
         protected override void Activate()
         {
             Computer.Stop(true);
-            MessageCallback("Jump View On");
         }
 
         protected override bool processKey(KeyState Key)

@@ -4,7 +4,7 @@
 //#define NOROM
 
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Sharp80
@@ -18,8 +18,6 @@ namespace Sharp80
         private byte[] mem;            // The entire memory space of the TRS80
         public ushort firstRAMByte;    // 1 + the last ROM byte
         
-        public bool ScreenWritten { get; set; }     // True if the screen needs to be updated (i.e. write to memory location 0x3C00 to 0x3FFF)
-                                                    // This can be set to true to force a screen refresh
         public Memory()
         {
             mem = new byte[0x10000];
@@ -81,8 +79,6 @@ namespace Sharp80
                 {
                     if (Location >= firstRAMByte)
                     {
-                        if ((Location & 0xFC00) == VIDEO_MEMORY_BLOCK)
-                            ScreenWritten |= (mem[Location] != value);
                         mem[Location] = value;
                     }
                     else
@@ -90,6 +86,15 @@ namespace Sharp80
                         Log.LogDebug(string.Format("Write attempt {0:X2} to ROM Location {1:X4}", Location, value));
                     }
                 }
+            }
+        }
+
+        public IEnumerable<byte> VideoMemory
+        {
+            get
+            {
+                for (int i = VIDEO_MEMORY_BLOCK; i < VIDEO_MEMORY_BLOCK + 0x400; i++)
+                    yield return mem[i];
             }
         }
 
@@ -118,13 +123,11 @@ namespace Sharp80
         {
             Writer.Write(mem);
             Writer.Write(firstRAMByte);
-            Writer.Write(ScreenWritten);
         }
         public void Deserialize(BinaryReader Reader)
         {
             Array.Copy(Reader.ReadBytes(0x10000), mem, 0x10000);
             firstRAMByte = Reader.ReadUInt16();
-            ScreenWritten = Reader.ReadBoolean();
         }
         private void LoadRom()
         {

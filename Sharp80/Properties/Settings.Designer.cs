@@ -301,7 +301,7 @@ namespace Sharp80.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool disk_enabled {
             get {
                 return ((bool)(this["disk_enabled"]));

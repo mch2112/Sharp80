@@ -25,10 +25,12 @@ namespace Sharp80
                 switch (Key.Key)
                 {
                     case KeyCode.F:
-                        LoadFloppy(false);
+                        if (Settings.DiskEnabled)
+                            LoadFloppy(false);  
                         break;
                     case KeyCode.L:
-                        LoadFloppy(true);
+                        if (Settings.DiskEnabled)
+                            LoadFloppy(true);
                         break;
                     default:
                         return base.processKey(Key);
@@ -36,55 +38,78 @@ namespace Sharp80
             }
             else
             {
-                switch (Key.Key)
+                if (Settings.DiskEnabled)
                 {
-                    case KeyCode.D0:
-                        DriveNumber = DriveNumber ?? 0;
-                        break;
-                    case KeyCode.D1:
-                        DriveNumber = DriveNumber ?? 1;
-                        break;
-                    case KeyCode.D2:
-                        DriveNumber = DriveNumber ?? 2;
-                        break;
-                    case KeyCode.D3:
-                        DriveNumber = DriveNumber ?? 3;
-                        break;
-                    case KeyCode.B:
-                        MakeAndLoadBlankFloppy(Formatted: true);
-                        break;
-                    case KeyCode.E:
-                        EjectFloppy();
-                        break;
-                    case KeyCode.T:
-                        if (DriveNumber.HasValue)
-                            Computer.LoadTrsDosFloppy(DriveNumber.Value);
-                        break;
-                    case KeyCode.U:
-                        MakeAndLoadBlankFloppy(Formatted: false);
-                        break;
-                    case KeyCode.W:
-                        ToggleWriteProtection();
-                        break;
-                    case KeyCode.Z:
-                        if (DriveNumber.HasValue)
-                            CurrentMode = ViewMode.Zap;
-                        break;
-                    case KeyCode.Return:
-                        if (DriveNumber.HasValue)
-                            DriveNumber = null;
-                        break;
-                    case KeyCode.Escape:
-                        if (DriveNumber.HasValue)
-                            DriveNumber = null;
-                        else
+                    switch (Key.Key)
+                    {
+                        case KeyCode.D0:
+                            DriveNumber = DriveNumber ?? 0;
+                            break;
+                        case KeyCode.D1:
+                            DriveNumber = DriveNumber ?? 1;
+                            break;
+                        case KeyCode.D2:
+                            DriveNumber = DriveNumber ?? 2;
+                            break;
+                        case KeyCode.D3:
+                            DriveNumber = DriveNumber ?? 3;
+                            break;
+                        case KeyCode.B:
+                            MakeAndLoadBlankFloppy(Formatted: true);
+                            break;
+                        case KeyCode.D:
+                            ToggleFloppyEnable();
+                            break;
+                        case KeyCode.E:
+                            EjectFloppy();
+                            break;
+                        case KeyCode.T:
+                            if (DriveNumber.HasValue)
+                                Computer.LoadTrsDosFloppy(DriveNumber.Value);
+                            break;
+                        case KeyCode.U:
+                            MakeAndLoadBlankFloppy(Formatted: false);
+                            break;
+                        case KeyCode.W:
+                            ToggleWriteProtection();
+                            break;
+                        case KeyCode.Z:
+                            if (DriveNumber.HasValue)
+                                CurrentMode = ViewMode.Zap;
+                            break;
+                        case KeyCode.Return:
+                            if (DriveNumber.HasValue)
+                                DriveNumber = null;
+                            break;
+                        case KeyCode.Escape:
+                            if (DriveNumber.HasValue)
+                                DriveNumber = null;
+                            else
+                                RevertMode();
+                            break;
+                        case KeyCode.F8:
+                            CurrentMode = ViewMode.Normal;
+                            return base.processKey(Key);
+                        default:
+                            return base.processKey(Key);
+                    }
+                }
+                else
+                {
+                    switch (Key.Key)
+                    {
+                        case KeyCode.D:
+                            ToggleFloppyEnable();
+                            break;
+                        case KeyCode.Escape:
                             RevertMode();
-                        break;
-                    case KeyCode.F8:
-                        CurrentMode = ViewMode.Normal;
-                        return base.processKey(Key);
-                    default:
-                        return base.processKey(Key);
+                            break;
+                        case KeyCode.F8:
+                            CurrentMode = ViewMode.Normal;
+                            return base.processKey(Key);
+                        default:
+                            return base.processKey(Key);
+                    }
                 }
             }
             Invalidate();
@@ -93,49 +118,60 @@ namespace Sharp80
         protected override byte[] GetViewBytes()
         {
             string s = Header("Sharp 80 Floppy Disk Manager");
-            if (DriveNumber.HasValue)
-            {
-                bool diskLoaded = !Computer.DriveIsUnloaded(DriveNumber.Value);
-                s += DrawDisk(DriveNumber.Value) +
-                        Format() +
-                        Separator('-') +
-                        Format() +
-                        Format();
-                        
 
-                if (diskLoaded)
+            if (Settings.DiskEnabled)
+            {
+                if (DriveNumber.HasValue)
                 {
-                    s += Format("[E] Eject floppy") +
-                         Format(string.Format("[W] Toggle write protection {0}", (Computer.GetFloppy(DriveNumber.Value)?.WriteProtected ?? false) ? "[ON] /  OFF " : " ON  / [OFF]")) +
-                         Format("[Z] Disk zap (view sectors)") +
+                    bool diskLoaded = !Computer.DriveIsUnloaded(DriveNumber.Value);
+                    s += DrawDisk(DriveNumber.Value) +
+                            Format() +
+                            Separator('-') +
+                            Format() +
+                            Format();
+
+                    if (diskLoaded)
+                    {
+                        s += Format("[E] Eject floppy") +
+                             Format(string.Format("[W] Toggle write protection {0}", (Computer.GetFloppy(DriveNumber.Value)?.WriteProtected ?? false) ? "[ON] /  OFF " : " ON  / [OFF]")) +
+                             Format("[Z] Disk zap (view sectors)") +
+                             Format() +
+                             Format();
+                    }
+                    else
+                    {
+                        s += Format("[F] Load floppy from file") +
+                             Format("[L] Load floppy from included library") +
+                             Format("[T] Load TRSDOS floppy") +
+                             Format("[B] Insert blank formatted floppy") +
+                             Format("[U] Insert unformatted floppy");
+                    }
+                    s += Format() +
                          Format() +
-                         Format();
+                         Format("[Escape] Back to all drives");
                 }
                 else
                 {
-                    s += Format("[F] Load floppy from file") +
-                         Format("[L] Load floppy from included library") +
-                         Format("[T] Load TRSDOS floppy") +
-                         Format("[B] Insert blank formatted floppy") +
-                         Format("[U] Insert unformatted floppy");
+                    for (byte i = 0; i < FloppyController.NUM_DRIVES; i++)
+                    {
+                        s += DrawDisk(i);
+                        if (i < FloppyController.NUM_DRIVES - 1)
+                            s += Format();
+                    }
+                    s += Separator() +
+                         Format("Choose a floppy drive [0] to [3].") +
+                         Format("[D] to disable drives and operate in Basic only.");
                 }
-                s += Format() +
-                     Format() +
-                     Format("[Escape] Back to all drives");
             }
             else
             {
-                for (byte i = 0; i < FloppyController.NUM_DRIVES; i++)
-                {
-                    s += DrawDisk(i);
-                    if (i < FloppyController.NUM_DRIVES - 1)
-                        s += Format();
-                }
-                s += Separator() +
-                     Format("Choose a floppy drive [0] to [3].") +
-                     Format("[Escape] to cancel.");
+                s += Format() +
+                     Format() +
+                     Center("FLOPPY DRIVES DISABLED") +
+                     Format() +
+                     Format() +
+                     Indent("[D] to enable drives.");
             }
-
             return PadScreen(Encoding.ASCII.GetBytes(s));
         }
         private static string DrawDisk(byte DiskNum)
@@ -297,6 +333,19 @@ namespace Sharp80
                     {
                         Computer.LoadFloppy(DriveNumber.Value, path);
                         Settings.DefaultFloppyDirectory = Path.GetDirectoryName(path);
+
+                        if (DriveNumber == 0 && !Computer.DiskEnabled && Computer.HasRunYet)
+                        {
+                            if (Dialogs.AskYesNo("You have inserted a disk but the computer is in tape only mode. Restart it?"))
+                            {
+                                bool running = Computer.IsRunning;
+                                if (running)
+                                    Computer.Stop(true);
+                                InvokeUserCommand(UserCommand.HardReset);
+                                if (running)
+                                    Computer.Start();
+                            }
+                        }
                         Invalidate();
                     }
                 }
@@ -322,6 +371,30 @@ namespace Sharp80
                     Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted));
                     Storage.SaveDefaultDriveFileName(DriveNumber.Value, Formatted ? Storage.FILE_NAME_NEW : Storage.FILE_NAME_UNFORMATTED);
                 }
+            }
+        }
+        private void ToggleFloppyEnable()
+        {
+            bool restart = false;
+            if (Computer.HasRunYet)
+            {
+                string caption = (Settings.DiskEnabled ? "Disabling" : "Enabling") + " the floppy controller requires a restart. Continue?";
+                if (!Dialogs.AskYesNo(caption))
+                    return;
+                if (Computer.IsRunning)
+                    restart = true;
+                Settings.DiskEnabled = !Settings.DiskEnabled;
+                InvokeUserCommand(UserCommand.HardReset);
+            }
+            else
+            {
+                Settings.DiskEnabled = !Settings.DiskEnabled;
+            }
+            MessageCallback("Floppy Controller " + (Settings.DiskEnabled ? "Enabled" : "Disabled"));
+            if (restart)
+            {
+                Computer.Start();
+                RevertMode();
             }
         }
         private void ToggleWriteProtection()

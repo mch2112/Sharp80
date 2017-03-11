@@ -17,8 +17,6 @@ namespace Sharp80
         bool IsControlPressed { get; }
         bool IsAltPressed { get; }
 
-        bool IsDisposed { get; }
-             
         void Refresh();
     }
 }

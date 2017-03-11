@@ -14,25 +14,22 @@ namespace Sharp80
 
     internal abstract class View
     {
+        private const int STANDARD_INDENT = 3;
+
         public delegate void MessageDelegate(string Message);
         public delegate void UserCommandHandler(UserCommand Command);
 
         public static event UserCommandHandler OnUserCommand;
 
+        private static bool initialized = false;
         private static bool invalid = false;
-        public static void Validate() { invalid = false; }
-        public static bool Invalid
+        private static ViewMode currentMode = ViewMode.Splash;
+        private static Dictionary<ViewMode, View> views = new Dictionary<ViewMode, View>();
+
+        public View()
         {
-            get
-            {
-                return invalid || views[CurrentMode].ForceRedraw;
-            }
-            private set
-            {
-                invalid = value;
-            }
+            views.Add(Mode, this);
         }
-        protected static void Invalidate() { invalid = true; }
 
         public static ViewMode CurrentMode
         {
@@ -47,26 +44,26 @@ namespace Sharp80
                 }
             }
         }
-        protected static void RevertMode()
+        public static bool ProcessKey(KeyState Key)
         {
-            if (Computer.HasRunYet)
-                CurrentMode = ViewMode.Normal;
-            else
-                CurrentMode = ViewMode.Splash;
+            return views[CurrentMode].processKey(Key);
         }
-        public static View GetView(ViewMode Mode) { return views[Mode]; }
-
-        protected static Dictionary<ViewMode, View> views = new Dictionary<ViewMode, View>();
-        protected abstract ViewMode Mode { get; }
-        protected abstract bool ForceRedraw { get; }
-        protected static Computer Computer { get; private set; }
-        protected static byte? DriveNumber { get; set; } = null;
-        protected static MessageDelegate MessageCallback { get; private set; }
-
-        private static ViewMode currentMode = ViewMode.Splash;
-        private static bool initialized = false;
-        private const int STANDARD_INDENT = 3;
-
+        public static byte[] GetViewData()
+        {
+            return views[CurrentMode].GetViewBytes();
+        }
+        public static bool Invalid
+        {
+            get
+            {
+                return invalid || views[CurrentMode].ForceRedraw;
+            }
+            private set
+            {
+                invalid = value;
+            }
+        }
+        public static void Validate() { invalid = false; }
         public static void Initialize(Computer Computer, MessageDelegate MessageCallback)
         {
             View.Computer = Computer;
@@ -91,17 +88,24 @@ namespace Sharp80
             }
         }
 
-        public View()
+        protected static Computer Computer { get; private set; }
+        protected static byte? DriveNumber { get; set; } = null;
+        protected static void Invalidate() { invalid = true; }
+        protected static void RevertMode()
         {
-            views.Add(Mode, this);
+            if (Computer.HasRunYet)
+                CurrentMode = ViewMode.Normal;
+            else
+                CurrentMode = ViewMode.Splash;
         }
+        protected static void InvokeUserCommand(UserCommand Command) { OnUserCommand?.Invoke(Command); }
+        protected static MessageDelegate MessageCallback { get; private set; }
+
+        protected abstract ViewMode Mode { get; }
+        protected abstract bool ForceRedraw { get; }
+        protected abstract byte[] GetViewBytes();
 
         protected virtual void Activate() { }
-        
-        public static bool ProcessKey(KeyState Key)
-        {
-            return views[CurrentMode].processKey(Key);
-        }
         protected virtual bool processKey(KeyState Key)
         {
             if (Key.IsUnmodified)
@@ -126,22 +130,23 @@ namespace Sharp80
                             CurrentMode = ViewMode.Tape;
                             return true;
                         case KeyCode.F5:
-                            OnUserCommand?.Invoke(UserCommand.ToggleAdvancedView);
+                            InvokeUserCommand(UserCommand.ToggleAdvancedView);
                             MessageCallback(Settings.AdvancedView ? "Advanced View" : "Normal View");
                             return true;
                         case KeyCode.F6:
-                            OnUserCommand?.Invoke(UserCommand.ShowAdvancedView);
+                            InvokeUserCommand(UserCommand.ShowAdvancedView);
                             CurrentMode = ViewMode.Jump;
                             return true;
                         case KeyCode.F7:
-                            OnUserCommand?.Invoke(UserCommand.ShowAdvancedView);
+                            InvokeUserCommand(UserCommand.ShowAdvancedView);
                             CurrentMode = ViewMode.Breakpoint;
                             return true;
                         case KeyCode.F8:
                             if (Computer.IsRunning)
                             {
                                 Computer.Stop(true);
-                                MessageCallback("Paused");
+                                if (Settings.AdvancedView)
+                                    MessageCallback("Paused");
                             }
                             else
                             {
@@ -151,7 +156,7 @@ namespace Sharp80
                             Invalidate();
                             return true;
                         case KeyCode.F9:
-                            Computer.SingleStep();
+                            Computer.Step();
                             Invalidate();
                             return true;
                         case KeyCode.F10:
@@ -185,7 +190,7 @@ namespace Sharp80
                     // SHIFT-ALT
                     switch (Key.Key)
                     {
-                        case KeyCode.B:
+                        case KeyCode.E:
                             // start the disassembly at the current PC location
                             Disassemble(true);
                             return true;
@@ -209,10 +214,10 @@ namespace Sharp80
                             MessageCallback(Settings.DriveNoise ? "Drive noise on" : "Drive noise off");
                             return true;
                         case KeyCode.X:
-                            OnUserCommand?.Invoke(UserCommand.Exit);
+                            InvokeUserCommand(UserCommand.Exit);
                             return true;
                         case KeyCode.End:
-                            OnUserCommand?.Invoke(UserCommand.HardReset);
+                            InvokeUserCommand(UserCommand.HardReset);
                             // don't just leave a blank screen
                             if (!Computer.IsRunning)
                                 CurrentMode = ViewMode.Splash;
@@ -225,7 +230,7 @@ namespace Sharp80
                     switch (Key.Key)
                     {
                         case KeyCode.Return:
-                            OnUserCommand?.Invoke(UserCommand.ToggleFullScreen);
+                            InvokeUserCommand(UserCommand.ToggleFullScreen);
                             return true;
                            case KeyCode.End:
                             Computer.Reset();
@@ -235,7 +240,7 @@ namespace Sharp80
                             MessageCallback("Auto Start on Reset " + (Settings.AutoStartOnReset ? "On" : "Off"));
                             return true;
                         case KeyCode.B:
-                            Disassemble(false);
+                            MakeAndSaveBlankFloppy(true);
                             return true;
                         case KeyCode.C:
                             LoadCMDFile();
@@ -244,11 +249,11 @@ namespace Sharp80
                         case KeyCode.D:
                             CurrentMode = ViewMode.FloppyController;
                             return true;
-                        case KeyCode.F:
-                            MakeAndSaveBlankFloppy(true);
+                        case KeyCode.E:
+                            Disassemble(false);
                             return true;
                         case KeyCode.G:
-                            OnUserCommand?.Invoke(UserCommand.GreenScreen);
+                            InvokeUserCommand(UserCommand.GreenScreen);
                             MessageCallback("Screen color changed.");
                             return true;
                         case KeyCode.H:
@@ -258,7 +263,7 @@ namespace Sharp80
                         case KeyCode.I:
                             string iPath = System.IO.Path.Combine(Storage.AppDataPath, "Z80 Instruction Set.txt");
                             Storage.SaveTextFile(iPath, Computer.GetInstructionSetReport());
-                            OnUserCommand?.Invoke(UserCommand.Window);
+                            InvokeUserCommand(UserCommand.Window);
                             Dialogs.ShowTextFile(iPath);
                             return true;
                         case KeyCode.K:
@@ -328,46 +333,18 @@ namespace Sharp80
                 switch (Key.Key)
                 {
                     case KeyCode.Equals:
-                        OnUserCommand?.Invoke(UserCommand.ZoomIn);
+                        InvokeUserCommand(UserCommand.ZoomIn);
                         return true;
                     case KeyCode.Minus:
-                        OnUserCommand?.Invoke(UserCommand.ZoomOut);
+                        InvokeUserCommand(UserCommand.ZoomOut);
                         return true;
                 }
             }
             return false;
         }
-
-        private static bool SaveLog(bool Flush)
-        {
-            bool isRunning = Computer.IsRunning;
-            bool ret;
-            Computer.Stop(true);
-
-            if (ret = Log.Save(Flush, out string path))
-                Dialogs.ShowTextFile(path);
-            else
-                Dialogs.InformUser("No log information collected yet.");
-
-            if (isRunning)
-                Computer.Start();
-
-            return ret;
-        }
-
-        private static void Disassemble(bool FromPc)
-        {
-            string path = System.IO.Path.Combine(Storage.AppDataPath, "Disassembly.txt");
-            Storage.SaveTextFile(path, Computer.Disassemble(true, FromPc));
-            OnUserCommand?.Invoke(UserCommand.Window);
-            Dialogs.ShowTextFile(path);
-        }
-        public static byte[] GetViewData()
-        {
-            return views[CurrentMode].GetViewBytes();
-        }
-        protected abstract byte[] GetViewBytes();
         
+        // SCREEN FORMATTING HELPERS
+
         protected static byte[] PadScreen(byte[] Screen)
         {
             if (Screen.Length == ScreenMetrics.NUM_SCREEN_CHARS)
@@ -485,6 +462,33 @@ namespace Sharp80
                 return FilePath.Substring(0, 20) + "..." +
                        FilePath.Substring(FilePath.Length - Size + 23);
         }
+
+        // MISC
+
+        private static void Disassemble(bool FromPc)
+        {
+            string path = System.IO.Path.Combine(Storage.AppDataPath, "Disassembly.txt");
+            Storage.SaveTextFile(path, Computer.Disassemble(true, FromPc));
+            InvokeUserCommand(UserCommand.Window);
+            Dialogs.ShowTextFile(path);
+        }
+        private static bool SaveLog(bool Flush)
+        {
+            bool isRunning = Computer.IsRunning;
+            bool ret;
+            Computer.Stop(true);
+
+            if (ret = Log.Save(Flush, out string path))
+                Dialogs.ShowTextFile(path);
+            else
+                Dialogs.InformUser("No log information collected yet.");
+
+            if (isRunning)
+                Computer.Start();
+
+            return ret;
+        }
+
         private void LoadCMDFile(string Path = "", bool SuppressNormalInform = false)
         {
             if (String.IsNullOrWhiteSpace(Path))
