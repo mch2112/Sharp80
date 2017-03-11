@@ -22,6 +22,8 @@ namespace Sharp80
         private static GetTickDelegate tickFn = () => 0;
         public static bool TraceOn { get; set; } = false;
 
+        private static bool terminating = false;
+
         public static void Initalize(GetTickDelegate Callback)
         {
             tickFn = Callback;
@@ -39,9 +41,24 @@ namespace Sharp80
         {
             LogItem(Message);
         }
-        public static void LogException(Exception ex)
+        public static void LogException(Exception ex, bool AllowContinue = false)
         {
-            LogDebug(ex.ToString());
+            LogDebug(ex.ToReport());
+            if (!terminating)
+            {
+                if (Dialogs.AskYesNo("An error has been detected in your application. Please click Yes to copy the details to your Windows clipboard." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "Please copy and email these results to mchamilton2112@gmail.com for followup."))
+                {
+                    System.Windows.Forms.Clipboard.SetText(ex.ToReport());
+                    if (!AllowContinue)
+                    {
+                        terminating = true;
+                        System.Windows.Forms.Application.Exit();
+                    }
+                }
+            }
         }
         public static bool Save(bool Flush, out string Path)
         {

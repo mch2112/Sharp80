@@ -151,6 +151,7 @@ namespace Sharp80
             Size = DesiredLogicalSize;
 
             InitializeDX();
+
             LoadCharGen();
 
             SetVideoMode(false, false);
@@ -483,7 +484,8 @@ namespace Sharp80
                 }
                 catch (Exception ex)
                 {
-                    Log.LogDebug("Exception in D3D Render Loop: " + ex.ToString());
+                    ex.Data.Add("Message", "Exception in D3D Render Loop");
+                    Log.LogException(ex);
                 }
                 finally
                 {

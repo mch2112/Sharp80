@@ -84,25 +84,32 @@ namespace Sharp80
 
         private void Form_Load(object sender, EventArgs e)
         {
-            ResizeBegin += (o, ee) => { resizing++; }; 
-            ResizeEnd   += (o, ee) => { resizing--; }; 
-
-            keyboard = new KeyboardDX();
-            View.OnUserCommand += OnUserCommand;
-            screen.Initialize(this);
-            HardReset();
-
-            if (Settings.AutoStartOnReset)
+            try
             {
-                var startTimer = new Timer() { Interval = 500 };
-                startTimer.Tick += (s, ee) => { startTimer.Stop(); startTimer.Dispose(); computer.Start(); };
-                startTimer.Start();
-            }
-            
-            uiTimer.Start();
+                ResizeBegin += (o, ee) => { resizing++; };
+                ResizeEnd += (o, ee) => { resizing--; };
 
-            if (Settings.FullScreen)
-                ToggleFullScreen();
+                keyboard = new KeyboardDX();
+                View.OnUserCommand += OnUserCommand;
+                screen.Initialize(this);
+                HardReset();
+
+                if (Settings.AutoStartOnReset)
+                {
+                    var startTimer = new Timer() { Interval = 500 };
+                    startTimer.Tick += (s, ee) => { startTimer.Stop(); startTimer.Dispose(); computer.Start(); };
+                    startTimer.Start();
+                }
+
+                uiTimer.Start();
+
+                if (Settings.FullScreen)
+                    ToggleFullScreen();
+            }
+            catch (Exception ex)
+            {
+                Log.LogException(ex);
+            }
         }
         
         private void OnUserCommand(UserCommand Command)
@@ -155,27 +162,36 @@ namespace Sharp80
 
         private void UiTimerTick(object Sender, EventArgs e)
         {
-            if (!Disposing)
+            try
             {
-                if (!IsMinimized && resizing == 0)
-                    screen.Render();
-
-                // Handle Keyboard Events
-                foreach (var ks in keyboard)
+                if (!Disposing)
                 {
+                    if (!IsMinimized && resizing == 0)
+                        screen.Render();
+
+                    // Handle Keyboard Events
+                    foreach (var ks in keyboard)
+                    {
+                        if (IsActive)
+                        {
+                            ProcessKey(ks);
+                        }
+                    }
                     if (IsActive)
                     {
-                        ProcessKey(ks);
+                        if (repeatKey != KeyCode.None)
+                        {
+                            if (++repeatKeyCount > REPEAT_THRESHOLD)
+                                ProcessRepeatKey(repeatKey);
+                        }
                     }
                 }
-                if (IsActive)
-                {
-                    if (repeatKey != KeyCode.None)
-                    {
-                        if (++repeatKeyCount > REPEAT_THRESHOLD)
-                            ProcessRepeatKey(repeatKey);
-                    }
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.LogException(ex, true);
+                Dispose();
+                Application.Exit();
             }
         }
         private void ProcessRepeatKey(KeyCode Key)
@@ -371,31 +387,38 @@ namespace Sharp80
         }
         private void HardReset()
         {
-            if (computer != null)
+            try
             {
-                if (!Storage.SaveFloppies(computer) || !Storage.SaveTapeIfRequired(computer))
-                    return;
+                if (computer != null)
+                {
+                    if (!Storage.SaveFloppies(computer) || !Storage.SaveTapeIfRequired(computer))
+                        return;
 
-                computer.Dispose();
+                    computer.Dispose();
+                }
+                computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.DiskEnabled, Settings.NormalSpeed, Settings.SoundOn)
+                {
+                    DriveNoise = Settings.DriveNoise,
+                    BreakPoint = Settings.Breakpoint,
+                    BreakPointOn = Settings.BreakpointOn
+                };
+
+                computer.StartupLoadFloppies();
+                screen.Reinitialize(computer);
+
+                Log.Initalize(computer.GetElapsedTStates);
+
+                View.Initialize(computer, (msg) => screen.StatusMessage = msg);
+
+                if (Settings.AutoStartOnReset)
+                {
+                    computer.Start();
+                    View.CurrentMode = ViewMode.Normal;
+                }
             }
-            computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.DiskEnabled, Settings.NormalSpeed, Settings.SoundOn)
+            catch (Exception ex)
             {
-                DriveNoise =   Settings.DriveNoise,
-                BreakPoint =   Settings.Breakpoint,
-                BreakPointOn = Settings.BreakpointOn
-            };
-
-            computer.StartupLoadFloppies();
-            screen.Reinitialize(computer);
-
-            Log.Initalize(computer.GetElapsedTStates);
-
-            View.Initialize(computer, (msg) => screen.StatusMessage = msg);
-
-            if (Settings.AutoStartOnReset)
-            {
-                computer.Start();
-                View.CurrentMode = ViewMode.Normal;
+                Log.LogException(ex);
             }
         }
     }

@@ -146,6 +146,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
+                Mute = true;
                 Log.LogException(ex);
             }
         }

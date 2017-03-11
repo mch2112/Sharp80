@@ -34,6 +34,7 @@ namespace Sharp80
             keyboard.Properties.BufferSize = 128;
             keyboard.Acquire();
         }
+
         // required explicit interface implementation
         IEnumerator IEnumerable.GetEnumerator()
         {

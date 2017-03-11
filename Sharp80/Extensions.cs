@@ -281,5 +281,37 @@ namespace Sharp80
         {
             return Value >= Min && Value <= Max;
         }
+        public static string ToReport(this Exception Ex)
+        {
+            string msg;
+            if (Ex.Data.Contains("Message"))
+                msg = Ex.Data["Message"] + Environment.NewLine;
+            else
+                msg = String.Empty;
+
+            return string.Format("{0} Exception" + Environment.NewLine +
+                                 "{1}" +
+                                 "Source: {2}" + Environment.NewLine +
+                                 "H_RESULT: {3:X8}" + Environment.NewLine +
+                                 "Target Site: {4}" + Environment.NewLine +
+                                 "Stack Trace:" + Environment.NewLine +
+                                 "{5}",
+                                 Ex.GetType(),
+                                 msg,
+                                 Ex.Source,
+                                 Ex.HResult,
+                                 Ex.TargetSite,
+                                 string.Join(Environment.NewLine, new System.Diagnostics.StackTrace(Ex).GetFrames().Select(f => f.ToReport())));
+        }
+        public static string ToReport(this System.Diagnostics.StackFrame Frame)
+        {
+            var method = Frame.GetMethod();
+            if (method.Name.Equals("LogStack"))
+                return String.Empty;
+
+            return string.Format("{0}::{1}({2})",
+                        method.ReflectedType?.Name ?? String.Empty, method.Name,
+                        String.Join(", ", method.GetParameters().Select(p => p.Name)));
+        }
     }
 }

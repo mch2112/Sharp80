@@ -66,7 +66,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogException(ex);
+                Log.LogException(ex, true);
                 Bytes = null;
                 return false;
             }
@@ -84,7 +84,8 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogDebug(string.Format("Exception saving file {0}: {1}", FilePath, ex));
+                ex.Data["Message"] = string.Format("Exception saving file {0}", FilePath);
+                Log.LogException(ex, true);
                 return false;
             }
         }
@@ -328,7 +329,8 @@ namespace Sharp80
                 }
                 catch (Exception ex)
                 {
-                    Log.LogException(ex);
+                    ex.Data["Message"] = "Error loading CMD File " + FilePath;
+                    Log.LogException(ex, true);
                     return null;
                 }
             }

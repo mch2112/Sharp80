@@ -1,6 +1,8 @@
 ﻿/// Sharp 80 (c) Matthew Hamilton
 /// Licensed Under GPL v3. See license.txt for details.
 
+using System;
+
 namespace Sharp80
 {
     partial class MainForm
@@ -17,18 +19,25 @@ namespace Sharp80
         {
             if (!isDisposing && !IsDisposed)
             {
-                isDisposing = true;
+                try
+                {
+                    isDisposing = true;
 
-                if (disposing)
-                    components?.Dispose();
+                    if (disposing)
+                        components?.Dispose();
 
-                base.Dispose(disposing);
+                    base.Dispose(disposing);
 
-                screen.Dispose();
-                computer.Dispose();
-                keyboard.Dispose();
+                    screen.Dispose();
+                    computer.Dispose();
+                    keyboard.Dispose();
 
-                isDisposing = false;
+                    isDisposing = false;
+                }
+                catch (Exception ex)
+                {
+                    Log.LogException(ex);
+                }
             }
         }
 

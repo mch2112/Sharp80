@@ -66,31 +66,25 @@ namespace Sharp80.Assembler
                     else
                         Dialogs.AlertUser(string.Format("{0} errors, see {1}.int for details.", errs, Path.GetFileNameWithoutExtension(originalFilePath)));
                 }
-                catch
+                catch (Exception ex)
                 {
-                    Dialogs.AlertUser(string.Format("Failed to assemble {0}.", Path.GetFileName(originalFilePath)));
+                    ex.Data["Message"] = string.Format("Failed to assemble {0}.", Path.GetFileName(originalFilePath));
+                    Log.LogException(ex, true);
                 }
             }
             return cmdFilePath;
         }
         private string Assemble(out int ErrCount)
         {
-            try
-            {
-                Log.LogDebug("Assembling " + originalFilePath + "...");
+            Log.LogDebug("Assembling " + originalFilePath + "...");
 
-                LoadAssemblyFile(originalFilePath);
+            LoadAssemblyFile(originalFilePath);
 
-                DetermineOpcodes();
-                CalcAddresses();
-                ResolveSymbols();
-                DetermineData();
-                SaveIntermediateFile();
-            }
-            catch (Exception ex)
-            {
-                Log.LogException(ex);
-            }
+            DetermineOpcodes();
+            CalcAddresses();
+            ResolveSymbols();
+            DetermineData();
+            SaveIntermediateFile();
 
             ErrCount = unit.Count(l => l.HasError);
 
@@ -904,6 +898,7 @@ namespace Sharp80.Assembler
             }
             catch (Exception ex)
             {
+                ex.Data["Message"] = "Failed to save CMD file from assembler.";
                 Log.LogException(ex);
             }
             return cmdFilePath;
