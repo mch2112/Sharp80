@@ -12,11 +12,9 @@ using SharpDX.Direct3D10;
 using SharpDX.DirectWrite;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
+
 using Color = SharpDX.Color;
 using DXBitmap = SharpDX.Direct2D1.Bitmap;
-
-using Device3D = SharpDX.Direct3D10.Device1;
-using DriverType = SharpDX.Direct3D10.DriverType;
 
 namespace Sharp80
 {
@@ -33,7 +31,7 @@ namespace Sharp80
         private SwapChainDescription swapChainDescription;
         private RenderTargetView backBufferView;
         private Texture2D backBuffer;
-        private Device3D device3D;
+        private SharpDX.Direct3D10.Device1 device3D;
         private SharpDX.Direct2D1.Factory d2DFactory = null;
 
         private bool advancedView =       false;
@@ -220,12 +218,89 @@ namespace Sharp80
                 }
             }
         }
-        
+
+        // DX INTEROP
+
+        private void InitializeDX()
+        {
+            swapChainDescription = new SwapChainDescription()
+            {
+                BufferCount = 1,
+                ModeDescription = new ModeDescription((int)Size.Width,
+                                                      (int)Size.Height,
+                                                      new Rational(60, 1),
+                                                      Format.B8G8R8A8_UNorm),
+                IsWindowed = true,
+                OutputHandle = parent.Handle,
+                SampleDescription = new SampleDescription(1, 0),
+                SwapEffect = SwapEffect.Discard,
+                Usage = Usage.RenderTargetOutput,
+                Flags = SwapChainFlags.AllowModeSwitch //?
+            };
+
+            // Create Device and SwapChain
+            SharpDX.Direct3D10.Device1.CreateWithSwapChain(DriverType.Hardware,
+                                                           DeviceCreationFlags.BgraSupport,
+                                                           swapChainDescription,
+                                                           SharpDX.Direct3D10.FeatureLevel.Level_10_0,
+                                                           out device3D,
+                                                           out swapChain);
+
+            // Ignore all windows events
+            swapChain.GetParent<SharpDX.DXGI.Factory>().MakeWindowAssociation(parent.Handle,
+                                                                              WindowAssociationFlags.IgnoreAll);
+
+            CreateBackBuffer();
+            CreateRenderTarget(Format.Unknown);
+
+            var directWriteFactory = new SharpDX.DirectWrite.Factory();
+
+            foregroundBrushWhite = new SolidColorBrush(renderTarget, Color.White);
+            foregroundBrushGreen = new SolidColorBrush(renderTarget, new RawColor4(0.3f, 1.0f, 0.3f, 1f));
+            backgroundBrush = new SolidColorBrush(renderTarget, Color4.Black);
+            driveOnBrush = new SolidColorBrush(renderTarget, new RawColor4(0.4f, 0.4f, 0.4f, 0.3f));
+            driveActiveBrush = new SolidColorBrush(renderTarget, new RawColor4(1f, 0, 0, 0.3f));
+
+            foregroundBrush = GreenScreen ? foregroundBrushGreen : foregroundBrushWhite;
+
+            textFormat = new TextFormat(directWriteFactory, "Consolas", 12)
+            {
+                WordWrapping = WordWrapping.NoWrap,
+                TextAlignment = TextAlignment.Leading
+            };
+            statusTextFormat = new TextFormat(directWriteFactory, "Calibri", 18)
+            {
+                WordWrapping = WordWrapping.NoWrap,
+                TextAlignment = TextAlignment.Trailing
+            };
+
+            renderTarget.TextAntialiasMode = SharpDX.Direct2D1.TextAntialiasMode.Cleartype;
+
+            DoLayout();
+        }
+        private void CreateRenderTarget(Format Format)
+        {
+            d2DFactory = d2DFactory ?? new SharpDX.Direct2D1.Factory();
+
+            using (var surface = backBuffer.QueryInterface<Surface>())
+            {
+                var rtp = new RenderTargetProperties(new PixelFormat(Format, SharpDX.Direct2D1.AlphaMode.Premultiplied));
+                renderTarget = new RenderTarget(d2DFactory, surface, rtp);
+            }
+        }
+        private void CreateBackBuffer()
+        {
+            // Get the backbuffer from the swapchain
+            backBuffer = Texture2D.FromSwapChain<Texture2D>(swapChain, 0);
+
+            // Renderview on the backbuffer
+            backBufferView = new RenderTargetView(device3D, backBuffer);
+        }
+
         // SPRITE SETUP
 
         private void LoadCharGen()
         {
-
             charGenNormal = charGenNormal ?? new DXBitmap[0x100];
             charGenWide = charGenWide ?? new DXBitmap[0x100];
             charGenKanji = charGenKanji ?? new DXBitmap[0x100];
@@ -634,85 +709,7 @@ namespace Sharp80
             renderTarget.EndDraw();
             swapChain.Present(0, PresentFlags.None);
         }
-
-        // DX INTEROP
-
-        private void InitializeDX()
-        {
-            swapChainDescription = new SwapChainDescription()
-            {
-                BufferCount = 1,
-                ModeDescription = new ModeDescription((int)Size.Width,
-                                                      (int)Size.Height,
-                                                      new Rational(60, 1),
-                                                      Format.B8G8R8A8_UNorm),
-                IsWindowed = true,
-                OutputHandle = parent.Handle,
-                SampleDescription = new SampleDescription(1, 0),
-                SwapEffect = SwapEffect.Discard,
-                Usage = Usage.RenderTargetOutput,
-                Flags = SwapChainFlags.AllowModeSwitch
-            };
-
-            // Create Device and SwapChain
-            Device3D.CreateWithSwapChain(DriverType.Hardware,
-                                         DeviceCreationFlags.BgraSupport,
-                                         swapChainDescription,
-                                         SharpDX.Direct3D10.FeatureLevel.Level_10_1,
-                                         out device3D,
-                                         out swapChain);
-
-            // Ignore all windows events
-            swapChain.GetParent<SharpDX.DXGI.Factory>().MakeWindowAssociation(parent.Handle,
-                                                                              WindowAssociationFlags.IgnoreAll);
-
-            CreateBackBuffer();
-            CreateRenderTarget(Format.Unknown);
-
-            var directWriteFactory = new SharpDX.DirectWrite.Factory();
-
-            foregroundBrushWhite = new SolidColorBrush(renderTarget, Color.White);
-            foregroundBrushGreen = new SolidColorBrush(renderTarget, new RawColor4(0.3f, 1.0f, 0.3f, 1f));
-            backgroundBrush = new SolidColorBrush(renderTarget, Color4.Black);
-            driveOnBrush = new SolidColorBrush(renderTarget, new RawColor4(0.4f, 0.4f, 0.4f, 0.3f));
-            driveActiveBrush = new SolidColorBrush(renderTarget, new RawColor4(1f, 0, 0, 0.3f));
-
-            foregroundBrush = GreenScreen ? foregroundBrushGreen : foregroundBrushWhite;
-
-            textFormat = new TextFormat(directWriteFactory, "Consolas", 12)
-            {
-                WordWrapping = WordWrapping.NoWrap,
-                TextAlignment = TextAlignment.Leading
-            };
-            statusTextFormat = new TextFormat(directWriteFactory, "Calibri", 18)
-            {
-                WordWrapping = WordWrapping.NoWrap,
-                TextAlignment = TextAlignment.Trailing
-            };
-
-            renderTarget.TextAntialiasMode = SharpDX.Direct2D1.TextAntialiasMode.Cleartype;
-
-            DoLayout();
-        }
-        private void CreateRenderTarget(Format Format)
-        {
-            d2DFactory = d2DFactory ?? new SharpDX.Direct2D1.Factory();
-
-            using (var surface = backBuffer.QueryInterface<Surface>())
-            {
-                var rtp = new RenderTargetProperties(new PixelFormat(Format, SharpDX.Direct2D1.AlphaMode.Premultiplied));
-                renderTarget = new RenderTarget(d2DFactory, surface, rtp);
-            }
-        }
-        private void CreateBackBuffer()
-        {
-            // Get the backbuffer from the swapchain
-            backBuffer = Texture2D.FromSwapChain<Texture2D>(swapChain, 0);
-
-            // Renderview on the backbuffer
-            backBufferView = new RenderTargetView(device3D, backBuffer);
-        }
-
+        
         // SNAPSHOTS
 
         public void Serialize(System.IO.BinaryWriter Writer)
