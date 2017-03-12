@@ -189,6 +189,7 @@ namespace Sharp80
                                 ProcessRepeatKey(repeatKey);
                         }
                     }
+                    HandleExceptions();
                 }
             }
             catch (Exception ex)
@@ -235,7 +236,7 @@ namespace Sharp80
 
             keyboard.Refresh();
 
-            computer.ResetKeyboard();
+            computer?.ResetKeyboard();
 
             if (View.CurrentMode == ViewMode.Normal)
             {
@@ -425,7 +426,23 @@ namespace Sharp80
                 Log.LogException(ex);
             }
         }
+        private void HandleExceptions()
+        {
+            while (Log.ExceptionQueue.Count > 0)
+            {
+                var q = Log.ExceptionQueue.Dequeue();
 
+                if (Dialogs.AskYesNo("An error has been detected in your application. Please click Yes to copy the details to your Windows clipboard." +
+                    Environment.NewLine +
+                    Environment.NewLine +
+                    "Please copy and email these results to mchamilton2112@gmail.com for followup."))
+                {
+                    Clipboard.SetText(q.Item1.ToReport());
+                    if (q.Item2 == ExceptionHandlingOptions.Terminate)
+                        Application.Exit();
+                }
+            }
+        }
         // CURSOR & DIALOG MANAGEMENT
 
         private static bool suppressCursor = false;

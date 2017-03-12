@@ -275,7 +275,7 @@ namespace Sharp80
             catch (Exception ex)
             {
                 ex.Data["ExtraMessage"] = string.Format("Error saving drive number {0}:", DriveNum);
-                Log.LogException(ex, true);
+                Log.LogException(ex, ExceptionHandlingOptions.InformUser);
             }
         }
         private void LoadDrive(byte DriveNum, Floppy Floppy)
@@ -1498,7 +1498,7 @@ namespace Sharp80
             catch (Exception ex)
             {
                 ex.Data["ExtraMessage"] = string.Format("Error setting command register: FDC Command: Drv {0} - {1} [{2}]", CurrentDriveNumber, command, value.ToHexString());
-                Log.LogException(ex, true);
+                Log.LogException(ex, ExceptionHandlingOptions.InformUser);
             }
         }
         private void SetTrackRegister(byte value)

@@ -38,9 +38,10 @@ namespace Sharp80
 
         private Noise noise;
 
+        private static bool isOk = true; // when this goes false it basically nulls sound outputand can't be made true again
+
         private bool on = false;
         private bool mute = false;
-        private bool isOk = true;
         private bool enabled = true;
         private bool isDisposed = false;
 
@@ -53,7 +54,7 @@ namespace Sharp80
                 {
                     on = value;
                     UpdateEnabled();
-                 }
+                }
             }
         }
         public bool Mute
@@ -77,7 +78,6 @@ namespace Sharp80
         private AudioBuffer[] audioBuffersRing = new AudioBuffer[RING_SIZE];
         private DataPointer[] memBuffers = new DataPointer[RING_SIZE];
         private FrameBuffer<short> frameBuffer;
-        private Random r = new Random();
 
         private GetSampleCallback getSampleCallback;
 
@@ -85,35 +85,38 @@ namespace Sharp80
         {
             try
             {
-                xaudio = new XAudio2();
-                masteringVoice = new MasteringVoice(xaudio, CHANNELS, SAMPLE_RATE);
-                bufferEndEvent = new AutoResetEvent(false);
-
                 frameBuffer = new FrameBuffer<short>(FRAME_SIZE_SAMPLES, FRAMES_PER_SECOND / 10);
                 noise = new Noise(SAMPLE_RATE);
-
-                for (int i = 0; i < RING_SIZE; i++)
-                {
-                    audioBuffersRing[i] = new AudioBuffer()
-                    {
-                        AudioBytes = FRAME_SIZE_BYTES,
-                        LoopCount = 0,
-                        Flags = BufferFlags.None,
-                    };
-                    memBuffers[i].Size = FRAME_SIZE_BYTES;
-                    memBuffers[i].Pointer = Utilities.AllocateMemory(memBuffers[i].Size);
-                }
-
                 getSampleCallback = GetSampleCallback;
 
-                sourceVoice = new SourceVoice(xaudio, new WaveFormat(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS), true);
+                if (isOk)
+                {
+                    xaudio = new XAudio2();
 
-                xaudio.StartEngine();
+                    masteringVoice = new MasteringVoice(xaudio, CHANNELS, SAMPLE_RATE);
+                    bufferEndEvent = new AutoResetEvent(false);
 
-                sourceVoice.BufferEnd += SourceVoice_BufferEnd;
-                sourceVoice.Start();
+                    for (int i = 0; i < RING_SIZE; i++)
+                    {
+                        audioBuffersRing[i] = new AudioBuffer()
+                        {
+                            AudioBytes = FRAME_SIZE_BYTES,
+                            LoopCount = 0,
+                            Flags = BufferFlags.None,
+                        };
+                        memBuffers[i].Size = FRAME_SIZE_BYTES;
+                        memBuffers[i].Pointer = Utilities.AllocateMemory(memBuffers[i].Size);
+                    }
 
-                playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
+                    sourceVoice = new SourceVoice(xaudio, new WaveFormat(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS), true);
+
+                    xaudio.StartEngine();
+
+                    sourceVoice.BufferEnd += SourceVoice_BufferEnd;
+                    sourceVoice.Start();
+
+                    playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
+                }
             }
             catch (Exception Ex)
             {
@@ -141,7 +144,6 @@ namespace Sharp80
         
         public void Dispose()
         {
-
             if (!isDisposed)
             {
                 isDisposed = true;
@@ -153,9 +155,9 @@ namespace Sharp80
 
         private void UpdateEnabled()
         {
-            if (enabled != (On && !Mute))
+            if (enabled != (On && !Mute && isOk))
             {
-                enabled = On && !Mute;
+                enabled = On && !Mute && isOk;
                 if (enabled)
                 {
                     frameBuffer.Reset();
@@ -167,7 +169,7 @@ namespace Sharp80
         {
             try
             {
-                while (!isDisposed)
+                while (isOk)
                 {
                     if (sourceVoice.State.BuffersQueued >= RING_SIZE)
                     {
@@ -175,7 +177,7 @@ namespace Sharp80
                     }
                     else
                     {
-                        if (On && !Mute)
+                        if (enabled)
                             frameBuffer.ReadFrame(memBuffers[ringCursor]);
                         else
                             frameBuffer.ReadSilentFrame(memBuffers[ringCursor]);
@@ -196,7 +198,7 @@ namespace Sharp80
         }
         private void SourceVoice_BufferEnd(IntPtr obj)
         {
-            bufferEndEvent.Set();
+            bufferEndEvent?.Set();
         }
         private void DisposeXAudio()
         {

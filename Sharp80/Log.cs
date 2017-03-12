@@ -19,7 +19,7 @@ namespace Sharp80
         private const int MAX_LOG_ITEMS = 1000000;
 
         private static List<Tuple<ulong, string>> log = new List<Tuple<ulong, string>>();
-
+        public static Queue<Tuple<Exception, ExceptionHandlingOptions>> ExceptionQueue = new Queue<Tuple<Exception, ExceptionHandlingOptions>>();
         private static GetTickDelegate tickFn = () => 0;
         public static bool TraceOn { get; set; } = false;
 
@@ -42,26 +42,14 @@ namespace Sharp80
         {
             LogItem(Message);
         }
-        public static void LogException(Exception ex, ExceptionHandlingOptions Option = ExceptionHandlingOptions.Terminate)
+        public static void LogException(Exception Ex, ExceptionHandlingOptions Option = ExceptionHandlingOptions.Terminate)
         {
-            LogDebug(ex.ToReport());
-            if (Option != ExceptionHandlingOptions.LogOnly)
+            LogDebug(Ex.ToReport());
+            if (!terminating && Option != ExceptionHandlingOptions.LogOnly)
             {
-                if (!terminating)
-                {
-                    if (Dialogs.AskYesNo("An error has been detected in your application. Please click Yes to copy the details to your Windows clipboard." +
-                        Environment.NewLine +
-                        Environment.NewLine +
-                        "Please copy and email these results to mchamilton2112@gmail.com for followup."))
-                    {
-                        System.Windows.Forms.Clipboard.SetText(ex.ToReport());
-                        if (!AllowContinue)
-                        {
-                            terminating = true;
-                            System.Windows.Forms.Application.Exit();
-                        }
-                    }
-                }
+                ExceptionQueue.Enqueue(new Tuple<Exception, ExceptionHandlingOptions>(Ex, Option));
+                if (Option == ExceptionHandlingOptions.Terminate)
+                    terminating = true;
             }
         }
         public static bool Save(bool Flush, out string Path)

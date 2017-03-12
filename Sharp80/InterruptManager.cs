@@ -219,7 +219,7 @@ namespace Sharp80
         {
             casMotorOnLatch.LatchIf(b.IsBitSet(1));
             vidWideCharLatch.LatchIf(b.IsBitSet(2));
-            vidAltCharLatch.LatchIf(b.IsBitSet(3));
+            vidAltCharLatch.LatchIf(!b.IsBitSet(3)); // seems to be an error in the Tech Ref manual that says 1=enable alt set
             extIoIntLatch.LatchIf(b.IsBitSet(4));
         }
         public void FFout(byte b)

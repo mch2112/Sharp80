@@ -55,7 +55,7 @@ namespace Sharp80
                             DriveNumber = DriveNumber ?? 3;
                             break;
                         case KeyCode.B:
-                            MakeAndLoadBlankFloppy(Formatted: true);
+                            LoadFloppy(false, Storage.FILE_NAME_NEW);
                             break;
                         case KeyCode.D:
                             ToggleFloppyEnable();
@@ -64,11 +64,10 @@ namespace Sharp80
                             EjectFloppy();
                             break;
                         case KeyCode.T:
-                            if (DriveNumber.HasValue)
-                                Computer.LoadTrsDosFloppy(DriveNumber.Value);
+                            LoadFloppy(false, Storage.FILE_NAME_TRSDOS);
                             break;
                         case KeyCode.U:
-                            MakeAndLoadBlankFloppy(Formatted: false);
+                            LoadFloppy(false, Storage.FILE_NAME_UNFORMATTED);
                             break;
                         case KeyCode.W:
                             ToggleWriteProtection();
@@ -296,44 +295,59 @@ namespace Sharp80
             }
             return cells;
         }
-        private void LoadFloppy(bool FromLibrary)
+        private void LoadFloppy(bool FromLibrary, string Path = null)
         {
             if (DriveNumber.HasValue)
             {
-                string path = FromLibrary ? Path.Combine(Storage.AppDataPath, "Disks") + "\\"
-                                          : Storage.GetDefaultDriveFileName(DriveNumber.Value);
+                string path = Path ?? (FromLibrary ? System.IO.Path.Combine(Storage.AppDataPath, "Disks") + "\\"
+                                                   : Storage.GetDefaultDriveFileName(DriveNumber.Value));
 
-                if (Storage.IsFileNameToken(path))
-                    path = String.Empty;
-
-                bool selectFile = true;
-
-                if (String.IsNullOrWhiteSpace(path))
+                if (!Storage.IsFileNameToken(path))
                 {
-                    path = Settings.DefaultFloppyDirectory;
-                    selectFile = false;
+                    bool selectFile = true;
+
                     if (String.IsNullOrWhiteSpace(path))
                     {
-                        path = Storage.AppDataPath;
-                        var p = Path.Combine(path, "Disks");
-                        if (Directory.Exists(p))
-                            path = p;
+                        path = Settings.DefaultFloppyDirectory;
+                        selectFile = false;
+                        if (String.IsNullOrWhiteSpace(path))
+                        {
+                            path = Storage.AppDataPath;
+                            var p = System.IO.Path.Combine(path, "Disks");
+                            if (Directory.Exists(p))
+                                path = p;
+                        }
                     }
+
+                    path = Storage.GetFloppyFilePath(Prompt: string.Format("Select floppy file to load in drive {0}", DriveNumber.Value),
+                                             DefaultPath: path,
+                                             Save: false,
+                                             SelectFileInDialog: selectFile,
+                                             DskOnly: false);
                 }
-
-                path = Storage.GetFloppyFilePath(Prompt: string.Format("Select floppy file to load in drive {0}", DriveNumber.Value),
-                                         DefaultPath: path,
-                                         Save: false,
-                                         SelectFileInDialog: selectFile,
-                                         DskOnly: false);
-
-                if (path.Length > 0)
+                if (path.Length > 0 && (Storage.IsFileNameToken(path) || File.Exists(path)))
                 {
                     if (Storage.SaveFloppyIfRequired(Computer, DriveNumber.Value))
                     {
-                        Computer.LoadFloppy(DriveNumber.Value, path);
-                        Settings.DefaultFloppyDirectory = Path.GetDirectoryName(path);
+                        switch (path)
+                        {
+                            case Storage.FILE_NAME_NEW:
+                                Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted: true));
+                                break;
+                            case Storage.FILE_NAME_UNFORMATTED:
+                                Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted: false));
+                                break;
+                            case Storage.FILE_NAME_TRSDOS:
+                                Computer.LoadTrsDosFloppy(DriveNumber.Value);
+                                break;
+                            default:
+                                Computer.LoadFloppy(DriveNumber.Value, path);
+                                Settings.DefaultFloppyDirectory = System.IO.Path.GetDirectoryName(path);
+                                break;
+                        }
 
+                        Storage.SaveDefaultDriveFileName(DriveNumber.Value, path);
+                        
                         if (DriveNumber == 0 && !Computer.DiskEnabled && Computer.HasRunYet)
                         {
                             if (Dialogs.AskYesNo("You have inserted a disk but the computer is in tape only mode. Restart it?"))
@@ -359,17 +373,6 @@ namespace Sharp80
                 {
                     Computer.EjectFloppy(DriveNumber.Value);
                     Invalidate();
-                }
-            }
-        }
-        private void MakeAndLoadBlankFloppy(bool Formatted)
-        {
-            if (DriveNumber.HasValue)
-            {
-                if (Storage.SaveFloppyIfRequired(Computer, DriveNumber.Value))
-                {
-                    Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted));
-                    Storage.SaveDefaultDriveFileName(DriveNumber.Value, Formatted ? Storage.FILE_NAME_NEW : Storage.FILE_NAME_UNFORMATTED);
                 }
             }
         }

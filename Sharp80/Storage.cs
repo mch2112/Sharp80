@@ -66,7 +66,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogException(ex, true);
+                Log.LogException(ex, ExceptionHandlingOptions.InformUser);
                 Bytes = null;
                 return false;
             }
@@ -85,7 +85,7 @@ namespace Sharp80
             catch (Exception ex)
             {
                 ex.Data["ExtraMessage"] = string.Format("Exception saving file {0}", FilePath);
-                Log.LogException(ex, true);
+                Log.LogException(ex, ExceptionHandlingOptions.InformUser);
                 return false;
             }
         }

@@ -69,7 +69,7 @@ namespace Sharp80.Assembler
                 catch (Exception ex)
                 {
                     ex.Data["ExtraMessage"] = string.Format("Failed to assemble {0}.", Path.GetFileName(originalFilePath));
-                    Log.LogException(ex, true);
+                    Log.LogException(ex, ExceptionHandlingOptions.InformUser);
                 }
             }
             return cmdFilePath;
