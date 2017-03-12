@@ -15,6 +15,7 @@ namespace Sharp80
         void TrackStep();
         void Dispose();
 
+        bool Initialized { get; }
         bool UseDriveNoise { get; set; }
         bool DriveMotorRunning { set; }
         bool On { get; set; }

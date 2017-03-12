@@ -9,6 +9,7 @@ namespace Sharp80
     {
         public const int SAMPLE_RATE = 16000;
 
+        public bool Initialized { get { return true; } }
         public bool On { get; set; } = false;
         public bool Mute { get; set; } = true;
         public bool UseDriveNoise { get; set; } = false;

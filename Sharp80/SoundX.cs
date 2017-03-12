@@ -15,6 +15,9 @@ namespace Sharp80
     {
         public const int SAMPLE_RATE = 16000;
 
+        private static bool AnyInitFail { get; set; } = false;
+        public bool Initialized { get; private set; }
+        
         private XAudio2 xaudio;
         private MasteringVoice masteringVoice;
         private SourceVoice sourceVoice;
@@ -34,11 +37,9 @@ namespace Sharp80
         private const short MIN_SOUND_LEVEL = NULL_SOUND_LEVEL - MAX_SOUND_AMPLITUDE;
         private const short MAX_SOUND_LEVEL = NULL_SOUND_LEVEL + MAX_SOUND_AMPLITUDE;
 
-        private short[] outTable = new short[] { NULL_SOUND_LEVEL, MAX_SOUND_LEVEL, MIN_SOUND_LEVEL, NULL_SOUND_LEVEL };
+        private readonly short[] outTable = new short[] { NULL_SOUND_LEVEL, MAX_SOUND_LEVEL, MIN_SOUND_LEVEL, NULL_SOUND_LEVEL };
 
         private Noise noise;
-
-        private static bool isOk = true; // when this goes false it basically nulls sound outputand can't be made true again
 
         private bool on = false;
         private bool mute = false;
@@ -83,44 +84,50 @@ namespace Sharp80
 
         public SoundX(GetSampleCallback GetSampleCallback)
         {
+            if (AnyInitFail)
+            {
+                Initialized = false;
+                return;
+            }
             try
             {
                 frameBuffer = new FrameBuffer<short>(FRAME_SIZE_SAMPLES, FRAMES_PER_SECOND / 10);
                 noise = new Noise(SAMPLE_RATE);
                 getSampleCallback = GetSampleCallback;
 
-                if (isOk)
+                xaudio = new XAudio2();
+
+                masteringVoice = new MasteringVoice(xaudio, CHANNELS, SAMPLE_RATE);
+                
+                bufferEndEvent = new AutoResetEvent(false);
+                
+                for (int i = 0; i < RING_SIZE; i++)
                 {
-                    xaudio = new XAudio2();
-
-                    masteringVoice = new MasteringVoice(xaudio, CHANNELS, SAMPLE_RATE);
-                    bufferEndEvent = new AutoResetEvent(false);
-
-                    for (int i = 0; i < RING_SIZE; i++)
+                    audioBuffersRing[i] = new AudioBuffer()
                     {
-                        audioBuffersRing[i] = new AudioBuffer()
-                        {
-                            AudioBytes = FRAME_SIZE_BYTES,
-                            LoopCount = 0,
-                            Flags = BufferFlags.None,
-                        };
-                        memBuffers[i].Size = FRAME_SIZE_BYTES;
-                        memBuffers[i].Pointer = Utilities.AllocateMemory(memBuffers[i].Size);
-                    }
-
-                    sourceVoice = new SourceVoice(xaudio, new WaveFormat(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS), true);
-
-                    xaudio.StartEngine();
-
-                    sourceVoice.BufferEnd += SourceVoice_BufferEnd;
-                    sourceVoice.Start();
-
-                    playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
+                        AudioBytes = FRAME_SIZE_BYTES,
+                        LoopCount = 0,
+                        Flags = BufferFlags.None,
+                    };
+                    memBuffers[i].Size = FRAME_SIZE_BYTES;
+                    memBuffers[i].Pointer = Utilities.AllocateMemory(memBuffers[i].Size);
                 }
+
+                sourceVoice = new SourceVoice(xaudio, new WaveFormat(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS), true);
+
+                xaudio.StartEngine();
+                
+                sourceVoice.BufferEnd += SourceVoice_BufferEnd;
+                sourceVoice.Start();
+                
+                playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
+
+                Initialized = enabled = true;
             }
             catch (Exception Ex)
             {
-                isOk = enabled = false;
+                AnyInitFail = true;
+                Initialized = enabled = false;
                 Log.LogException(Ex, ExceptionHandlingOptions.LogOnly);
                 Dialogs.AlertUser("Failed to start XAudio2. Please update your DirectX drivers from Microsoft. Sharp 80 will continue without sound.");
             }
@@ -148,16 +155,16 @@ namespace Sharp80
             {
                 isDisposed = true;
                 enabled = false;
-                isOk = false;
+                Initialized = false;
                 DisposeXAudio();
             }
         }
 
         private void UpdateEnabled()
         {
-            if (enabled != (On && !Mute && isOk))
+            if (enabled != (On && !Mute && Initialized))
             {
-                enabled = On && !Mute && isOk;
+                enabled = On && !Mute && Initialized;
                 if (enabled)
                 {
                     frameBuffer.Reset();
@@ -169,7 +176,7 @@ namespace Sharp80
         {
             try
             {
-                while (isOk)
+                while (Initialized)
                 {
                     if (sourceVoice.State.BuffersQueued >= RING_SIZE)
                     {

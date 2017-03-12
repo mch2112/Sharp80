@@ -44,11 +44,14 @@ namespace Sharp80
             Processor = new Processor.Z80(this, Ports);
             Printer = new Printer();
 
-            //Sound = new SoundNull();
-            Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut))
+            Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut));
+            if (!Sound.Initialized)
             {
-                On = SoundOn
-            };
+                Sound.Dispose();
+                Sound = new SoundNull();
+            }
+            Sound.On = SoundOn;
+
             Clock = new Clock(this,
                               Processor,
                               IntMgr,
@@ -230,6 +233,7 @@ namespace Sharp80
         {
             Screen.SetVideoMode(Wide, Kanji);
         }
+
         /// <summary>
         /// Adds a pulse req and also sets the trigger based on the 
         /// trigger's delay
