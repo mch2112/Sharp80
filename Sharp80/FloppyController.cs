@@ -248,7 +248,7 @@ namespace Sharp80
                 }
                 catch (Exception ex)
                 {
-                    ex.Data["Message"] = "Failed to load flopy from " + FilePath;
+                    ex.Data["ExtraMessage"] = "Failed to load flopy from " + FilePath;
                     Log.LogException(ex);
                 }
                 if (f == null)
@@ -274,7 +274,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                ex.Data["Message"] = string.Format("Error saving drive number {0}:", DriveNum);
+                ex.Data["ExtraMessage"] = string.Format("Error saving drive number {0}:", DriveNum);
                 Log.LogException(ex, true);
             }
         }
@@ -1497,7 +1497,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                ex.Data["Message"] = string.Format("Error setting command register: FDC Command: Drv {0} - {1} [{2}]", CurrentDriveNumber, command, value.ToHexString());
+                ex.Data["ExtraMessage"] = string.Format("Error setting command register: FDC Command: Drv {0} - {1} [{2}]", CurrentDriveNumber, command, value.ToHexString());
                 Log.LogException(ex, true);
             }
         }

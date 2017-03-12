@@ -107,6 +107,7 @@ namespace Sharp80
                 memBuffers[i].Size = FRAME_SIZE_BYTES;
                 memBuffers[i].Pointer = Utilities.AllocateMemory(memBuffers[i].Size);
             }
+
             getSampleCallback = GetSampleCallback;
 
             sourceVoice = new SourceVoice(xaudio, new WaveFormat(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS), true);

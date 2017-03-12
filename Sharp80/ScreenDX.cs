@@ -482,7 +482,7 @@ namespace Sharp80
                 }
                 catch (Exception ex)
                 {
-                    ex.Data.Add("Message", "Exception in D3D Render Loop");
+                    ex.Data.Add("ExtraMessage", "Exception in D3D Render Loop");
                     Log.LogException(ex);
                 }
                 finally

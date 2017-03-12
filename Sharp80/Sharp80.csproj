@@ -75,36 +75,31 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="SharpDX">
-      <HintPath>bin\Debug\SharpDX\SharpDX.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>bin\Release\SharpDX\SharpDX.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.Desktop">
-      <HintPath>bin\Debug\SharpDX\SharpDX.Desktop.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>bin\Release\SharpDX\SharpDX.Desktop.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.Direct2D1">
-      <HintPath>bin\Debug\SharpDX\SharpDX.Direct2D1.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>bin\Release\SharpDX\SharpDX.Direct2D1.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.Direct3D10">
-      <HintPath>bin\Debug\SharpDX\SharpDX.Direct3D10.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>bin\Release\SharpDX\SharpDX.Direct3D10.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.DirectInput">
-      <HintPath>bin\Debug\SharpDX\SharpDX.DirectInput.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>bin\Release\SharpDX\SharpDX.DirectInput.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpDX.DirectSound">
+      <HintPath>bin\Release\SharpDX\SharpDX.DirectSound.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.DXGI">
-      <HintPath>bin\Debug\SharpDX\SharpDX.DXGI.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>bin\Release\SharpDX\SharpDX.DXGI.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.Mathematics">
-      <HintPath>bin\Debug\SharpDX\SharpDX.Mathematics.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>bin\Release\SharpDX\SharpDX.Mathematics.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.XAudio2">
-      <HintPath>bin\Debug\SharpDX\SharpDX.XAudio2.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>bin\Release\SharpDX\SharpDX.XAudio2.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />

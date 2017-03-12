@@ -283,21 +283,23 @@ namespace Sharp80
         }
         public static string ToReport(this Exception Ex)
         {
-            string msg;
-            if (Ex.Data.Contains("Message"))
-                msg = Ex.Data["Message"] + Environment.NewLine;
+            string exMsg;
+            if (Ex.Data.Contains("ExtraMessage"))
+                exMsg = Ex.Data["ExtraMessage"] + Environment.NewLine;
             else
-                msg = String.Empty;
+                exMsg = String.Empty;
 
             return string.Format("{0} Exception" + Environment.NewLine +
                                  "{1}" +
-                                 "Source: {2}" + Environment.NewLine +
-                                 "H_RESULT: {3:X8}" + Environment.NewLine +
-                                 "Target Site: {4}" + Environment.NewLine +
+                                 "{2}" +
+                                 "Source: {3}" + Environment.NewLine +
+                                 "H_RESULT: 0x{4:X8}" + Environment.NewLine +
+                                 "Target Site: {5}" + Environment.NewLine +
                                  "Stack Trace:" + Environment.NewLine +
-                                 "{5}",
+                                 "{6}",
                                  Ex.GetType(),
-                                 msg,
+                                 Ex.Message,
+                                 exMsg,
                                  Ex.Source,
                                  Ex.HResult,
                                  Ex.TargetSite,
