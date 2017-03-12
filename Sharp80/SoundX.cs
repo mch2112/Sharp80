@@ -40,6 +40,8 @@ namespace Sharp80
 
         private bool on = false;
         private bool mute = false;
+        private bool isOk = true;
+        private bool enabled = true;
         private bool isDisposed = false;
 
         public bool On
@@ -50,12 +52,8 @@ namespace Sharp80
                 if (on != value)
                 {
                     on = value;
-                    if (on)
-                    {
-                        frameBuffer.Reset();
-                        noise.Reset();
-                    }
-                }
+                    UpdateEnabled();
+                 }
             }
         }
         public bool Mute
@@ -66,11 +64,7 @@ namespace Sharp80
                 if (mute != value)
                 {
                     mute = value;
-                    if (!mute)
-                    {
-                        frameBuffer.Reset();
-                        noise.Reset();
-                    }
+                    UpdateEnabled();
                 }
             }
         }
@@ -89,37 +83,86 @@ namespace Sharp80
 
         public SoundX(GetSampleCallback GetSampleCallback)
         {
-            xaudio = new XAudio2();
-            masteringVoice = new MasteringVoice(xaudio, CHANNELS, SAMPLE_RATE);
-            bufferEndEvent = new AutoResetEvent(false);
-
-            frameBuffer = new FrameBuffer<short>(FRAME_SIZE_SAMPLES, FRAMES_PER_SECOND / 10);
-            noise = new Noise(SAMPLE_RATE);
-
-            for (int i = 0; i < RING_SIZE; i++)
+            try
             {
-                audioBuffersRing[i] = new AudioBuffer()
+                xaudio = new XAudio2();
+                masteringVoice = new MasteringVoice(xaudio, CHANNELS, SAMPLE_RATE);
+                bufferEndEvent = new AutoResetEvent(false);
+
+                frameBuffer = new FrameBuffer<short>(FRAME_SIZE_SAMPLES, FRAMES_PER_SECOND / 10);
+                noise = new Noise(SAMPLE_RATE);
+
+                for (int i = 0; i < RING_SIZE; i++)
                 {
-                    AudioBytes = FRAME_SIZE_BYTES,
-                    LoopCount = 0,
-                    Flags = BufferFlags.None,
-                };
-                memBuffers[i].Size = FRAME_SIZE_BYTES;
-                memBuffers[i].Pointer = Utilities.AllocateMemory(memBuffers[i].Size);
+                    audioBuffersRing[i] = new AudioBuffer()
+                    {
+                        AudioBytes = FRAME_SIZE_BYTES,
+                        LoopCount = 0,
+                        Flags = BufferFlags.None,
+                    };
+                    memBuffers[i].Size = FRAME_SIZE_BYTES;
+                    memBuffers[i].Pointer = Utilities.AllocateMemory(memBuffers[i].Size);
+                }
+
+                getSampleCallback = GetSampleCallback;
+
+                sourceVoice = new SourceVoice(xaudio, new WaveFormat(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS), true);
+
+                xaudio.StartEngine();
+
+                sourceVoice.BufferEnd += SourceVoice_BufferEnd;
+                sourceVoice.Start();
+
+                playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
             }
+            catch (Exception Ex)
+            {
+                isOk = enabled = false;
+                Log.LogException(Ex, ExceptionHandlingOptions.LogOnly);
+                Dialogs.AlertUser("Failed to start XAudio2. Please update your DirectX drivers from Microsoft. Sharp 80 will continue without sound.");
+            }
+        }
+        
+        public void Sample()
+        {
+            if (enabled)
+            {
+                // Get the z80 sound output port current value
+                short outputLevel;
 
-            getSampleCallback = GetSampleCallback;
+                outputLevel = outTable[getSampleCallback() & 0x03];
 
-            sourceVoice = new SourceVoice(xaudio, new WaveFormat(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS), true);
+                if (UseDriveNoise && DriveMotorRunning)
+                    outputLevel += noise.GetNoiseSample();
 
-            xaudio.StartEngine();
+                frameBuffer.Sample(outputLevel);
+            }
+        }
+        
+        public void Dispose()
+        {
 
-            sourceVoice.BufferEnd += SourceVoice_BufferEnd;
-            sourceVoice.Start();
-
-            playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
+            if (!isDisposed)
+            {
+                isDisposed = true;
+                enabled = false;
+                isOk = false;
+                DisposeXAudio();
+            }
         }
 
+        private void UpdateEnabled()
+        {
+            if (enabled != (On && !Mute))
+            {
+                enabled = On && !Mute;
+                if (enabled)
+                {
+                    frameBuffer.Reset();
+                    noise.Reset();
+                }
+            }
+        }
         private void Loop()
         {
             try
@@ -151,36 +194,22 @@ namespace Sharp80
                 Log.LogException(ex);
             }
         }
-        public void Sample()
-        {
-            if (On && !Mute)
-            {
-                // Get the z80 sound output port current value
-                short outputLevel;
-
-                outputLevel = outTable[getSampleCallback() & 0x03];
-
-                if (UseDriveNoise && DriveMotorRunning)
-                    outputLevel += noise.GetNoiseSample();
-
-                frameBuffer.Sample(outputLevel);
-            }
-        }
         private void SourceVoice_BufferEnd(IntPtr obj)
         {
             bufferEndEvent.Set();
         }
-        public void Dispose()
+        private void DisposeXAudio()
         {
-            if (!isDisposed)
-            {
-                isDisposed = true;
-                sourceVoice.DestroyVoice();
-                sourceVoice.Dispose();
-                bufferEndEvent.Dispose();
-                masteringVoice.Dispose();
-                xaudio.Dispose();
-            }
+            sourceVoice?.DestroyVoice();
+            sourceVoice?.Dispose();
+            bufferEndEvent?.Dispose();
+            masteringVoice?.Dispose();
+            xaudio?.Dispose();
+
+            sourceVoice = null;
+            bufferEndEvent = null;
+            masteringVoice = null;
+            xaudio = null;
         }
     }
 }

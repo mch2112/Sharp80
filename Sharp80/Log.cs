@@ -11,6 +11,7 @@ using System.Linq;
 
 namespace Sharp80
 {
+    internal enum ExceptionHandlingOptions { LogOnly, InformUser, Terminate }
     internal static class Log
     {
         public delegate ulong GetTickDelegate();
@@ -41,21 +42,24 @@ namespace Sharp80
         {
             LogItem(Message);
         }
-        public static void LogException(Exception ex, bool AllowContinue = false)
+        public static void LogException(Exception ex, ExceptionHandlingOptions Option = ExceptionHandlingOptions.Terminate)
         {
             LogDebug(ex.ToReport());
-            if (!terminating)
+            if (Option != ExceptionHandlingOptions.LogOnly)
             {
-                if (Dialogs.AskYesNo("An error has been detected in your application. Please click Yes to copy the details to your Windows clipboard." +
-                    Environment.NewLine +
-                    Environment.NewLine +
-                    "Please copy and email these results to mchamilton2112@gmail.com for followup."))
+                if (!terminating)
                 {
-                    System.Windows.Forms.Clipboard.SetText(ex.ToReport());
-                    if (!AllowContinue)
+                    if (Dialogs.AskYesNo("An error has been detected in your application. Please click Yes to copy the details to your Windows clipboard." +
+                        Environment.NewLine +
+                        Environment.NewLine +
+                        "Please copy and email these results to mchamilton2112@gmail.com for followup."))
                     {
-                        terminating = true;
-                        System.Windows.Forms.Application.Exit();
+                        System.Windows.Forms.Clipboard.SetText(ex.ToReport());
+                        if (!AllowContinue)
+                        {
+                            terminating = true;
+                            System.Windows.Forms.Application.Exit();
+                        }
                     }
                 }
             }

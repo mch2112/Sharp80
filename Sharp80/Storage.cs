@@ -330,7 +330,7 @@ namespace Sharp80
                 catch (Exception ex)
                 {
                     ex.Data["ExtraMessage"] = "Error loading CMD File " + FilePath;
-                    Log.LogException(ex, true);
+                    Log.LogException(ex, ExceptionHandlingOptions.InformUser);
                     return null;
                 }
             }

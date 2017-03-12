@@ -193,7 +193,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogException(ex, true);
+                Log.LogException(ex, ExceptionHandlingOptions.InformUser);
                 Dispose();
                 Application.Exit();
             }
