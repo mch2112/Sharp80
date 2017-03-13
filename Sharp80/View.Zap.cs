@@ -63,8 +63,8 @@ namespace Sharp80
                 case KeyCode.PageUp:
                 case KeyCode.Up:
                     if (Key.Shift)
-                        if (trackNum > 10)
-                            trackNum -= 10;
+                        if (trackNum > 0x10)
+                            trackNum -= 0x10;
                         else
                             trackNum = 0;
                     else
@@ -75,7 +75,7 @@ namespace Sharp80
                 case KeyCode.PageDown:
                 case KeyCode.Down:
                     if (Key.Shift)
-                        trackNum += 10;
+                        trackNum += 0x10;
                     else
                         trackNum++;
                     VerifyZapParamsOK();

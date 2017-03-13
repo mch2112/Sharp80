@@ -36,8 +36,8 @@ namespace Sharp80
                 Indent(string.Format("State:          {0} {1}", status.Busy ? "BUSY" : "    ", status.DrqStatus ? "DRQ" : "   ")) +
                 Indent("Command Status: " + status.CommandStatus) +
                 Format() +
-                Indent(string.Format("Track / Sector Register:   {0:X2}  / {1:X2}", status.TrackRegister, status.SectorRegister)) +
-                Indent(string.Format("Command / Data Register:   {0:X2}  / {1:X2}", status.CommandRegister, status.DataRegister)) +
+                Indent(string.Format("Track / Sector Register:   {0:X2} / {1:X2}", status.TrackRegister, status.SectorRegister)) +
+                Indent(string.Format("Command / Data Register:   {0:X2} / {1:X2}", status.CommandRegister, status.DataRegister)) +
                 Indent(string.Format("Density Mode:              {0}", status.DoubleDensitySelected ? "Double" : "Single")) +
                 Format() +
                 physicalData +

@@ -347,14 +347,16 @@ namespace Sharp80
                 curX = Location.X;
                 curY = Location.Y;
             }
+            
             float zoom = In ? 1.2f : 1f/1.2f;
 
             int newH = (int)(curH * zoom);
 
-            if (newH > ScreenMetrics.WINDOWED_HEIGHT * 0.88f && newH < ScreenMetrics.WINDOWED_HEIGHT * 1.102f)
+            if (newH < ScreenMetrics.WINDOWED_HEIGHT / 2)
+                newH = (int)ScreenMetrics.WINDOWED_HEIGHT / 2;
+            else if (newH > ScreenMetrics.WINDOWED_HEIGHT * 0.88f && newH < ScreenMetrics.WINDOWED_HEIGHT * 1.102f)
                 newH = (int)ScreenMetrics.WINDOWED_HEIGHT;
-
-            if (newH > 2 * ScreenMetrics.WINDOWED_HEIGHT * 0.88f && newH < 2 * ScreenMetrics.WINDOWED_HEIGHT * 1.102f)
+            else if (newH > 2 * ScreenMetrics.WINDOWED_HEIGHT * 0.88f && newH < 2 * ScreenMetrics.WINDOWED_HEIGHT * 1.102f)
                 newH = 2 * (int)ScreenMetrics.WINDOWED_HEIGHT;
 
             int newW = (int)(newH * aspectRatio);

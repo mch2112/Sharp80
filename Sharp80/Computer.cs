@@ -133,6 +133,7 @@ namespace Sharp80
             // Safe to send this out in interface form
             get { return Processor; }
         }
+
         public IFloppy GetFloppy(byte DriveNum) { return FloppyController.GetFloppy(DriveNum); }
 
         public bool DriveIsUnloaded(byte DriveNum) { return FloppyController.DriveIsUnloaded(DriveNum); }
@@ -233,6 +234,8 @@ namespace Sharp80
         {
             Screen.SetVideoMode(Wide, Kanji);
         }
+
+        // CALLBACK MANAGEMENT
 
         /// <summary>
         /// Adds a pulse req and also sets the trigger based on the 

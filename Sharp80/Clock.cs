@@ -303,7 +303,9 @@ namespace Sharp80
         {
             NativeMethods.QueryPerformanceCounter(ref realTimeElapsedTicks);
             long equivalentTicks = (long)(tickCount / z80TicksPerRealtimeTick);
-            realTimeElapsedTicksOffset = realTimeElapsedTicks - equivalentTicks;
+            var newRealTimeElapsedTicksOffset = realTimeElapsedTicks - equivalentTicks;
+            if (Math.Abs(newRealTimeElapsedTicksOffset - realTimeElapsedTicksOffset) > 10000)
+                realTimeElapsedTicksOffset = newRealTimeElapsedTicksOffset;
         }
         private void SetNextPulseReqTick()
         {

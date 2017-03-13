@@ -32,7 +32,7 @@ namespace Sharp80
         private RenderTargetView backBufferView;
         private Texture2D backBuffer;
         private SharpDX.Direct3D10.Device1 device3D;
-        private SharpDX.Direct2D1.Factory d2DFactory = null;
+        private SharpDX.Direct2D1.Factory d2DFactory;
 
         private bool advancedView =       false;
         private bool initialized =        false;
@@ -338,7 +338,6 @@ namespace Sharp80
             for (int i = 0xC0; i < 0x100; i++)
                 charGenKanjiWide[i] = CreateBitmap(renderTarget, ms, filterABGR, true, properties);
         }
-
         private static DXBitmap CreateBitmap(RenderTarget renderTarget, System.IO.MemoryStream MS, uint FilterABGR, bool Wide, BitmapProperties Properties)
         {
             var width = Wide ? ScreenMetrics.CHAR_PIXELS_X * 2 : ScreenMetrics.CHAR_PIXELS_X;
@@ -566,11 +565,7 @@ namespace Sharp80
                 }
             }
         }
-        public void Invalidate()
-        {
-            invalid = true;
-        }
-
+        public void Invalidate() { invalid = true; }
         private bool DrawOK { get { return isResizing == 0 && !isDrawing && !parent.IsMinimized; } }
         private void Draw()
         {
@@ -709,7 +704,7 @@ namespace Sharp80
             renderTarget.EndDraw();
             swapChain.Present(0, PresentFlags.None);
         }
-        
+
         // SNAPSHOTS
 
         public void Serialize(System.IO.BinaryWriter Writer)
