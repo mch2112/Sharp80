@@ -400,7 +400,7 @@ namespace Sharp80
                 }
             }
 
-            driveLightEllipse = new Ellipse(new RawVector2(10, 10), 5, 5);
+            driveLightEllipse = new Ellipse(new RawVector2(6, 6), 5, 5);
 
             xOrigin += ScreenMetrics.NUM_SCREEN_CHARS_X * ScreenMetrics.CHAR_PIXELS_X + ScreenMetrics.SPACING;
 

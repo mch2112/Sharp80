@@ -79,6 +79,8 @@ namespace Sharp80
                         case KeyCode.Return:
                             if (DriveNumber.HasValue)
                                 DriveNumber = null;
+                            else
+                                return base.processKey(Key);
                             break;
                         case KeyCode.Escape:
                             if (DriveNumber.HasValue)
@@ -350,7 +352,7 @@ namespace Sharp80
                         
                         if (DriveNumber == 0 && !Computer.DiskEnabled && Computer.HasRunYet)
                         {
-                            if (Dialogs.AskYesNo("You have inserted a disk but the computer is in tape only mode. Restart it?"))
+                            if (Dialogs.AskYesNo("You have inserted a disk but the computer is in tape only mode. Restart in disk mode?"))
                             {
                                 bool running = Computer.IsRunning;
                                 if (running)

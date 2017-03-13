@@ -44,6 +44,7 @@ namespace Sharp80.Assembler
                                                               "RRD", "RST", "SBC", "SCF", "SET", "SLA", "SRA", "SRL", "SUB", "XOR" };
 
         private string originalFilePath;
+        private string intermediateFile = String.Empty;
 
         private List<Macro> macros = new List<Macro>();
         
@@ -63,8 +64,10 @@ namespace Sharp80.Assembler
                     cmdFilePath = Assemble(out int errs);
                     if (errs == 0)
                         Dialogs.InformUser(string.Format("Assembled {0} to {1}.", Path.GetFileName(originalFilePath), cmdFilePath));
-                    else
-                        Dialogs.AlertUser(string.Format("{0} errors, see {1}.int for details.", errs, Path.GetFileNameWithoutExtension(originalFilePath)));
+                    else if (Dialogs.AskYesNo(string.Format("{0} error{1} found during assembly. Open intermediate file?",
+                                                            errs,
+                                                            errs == 1 ? String.Empty : "s")))
+                            Dialogs.ShowTextFile(intermediateFile);
                 }
                 catch (Exception ex)
                 {
@@ -294,7 +297,6 @@ namespace Sharp80.Assembler
                 {
                     if (symbolTable.ContainsKey(l.Label))
                     {
-                        //if (symbolTable[lp.Label].SourceFileLine != lp.SourceFileLine)
                         l.Error = "Label already defined: " + l.Label;
                     }
                     else
@@ -524,7 +526,11 @@ namespace Sharp80.Assembler
                         switch (lp.DataSize)
                         {
                             case 1: // relative address only: 8 bit
-                                lp.Byte1 = Lib.TwosCompInv((sbyte)(operand.NumericValue - lp.Address - 2));
+                                int delta = operand.NumericValue.Value - lp.Address - 2;
+                                if (delta > 0x7F || delta < -0x80)
+                                    lp.Error = "Relative address too far.";
+                                else
+                                    lp.Byte1 = Lib.TwosCompInv((sbyte)(operand.NumericValue - lp.Address - 2));
                                 break;
                             case 2:
                                 operand.GetDataBytes(out lp.Byte1, out lp.Byte2);
@@ -820,18 +826,24 @@ namespace Sharp80.Assembler
 
         private void SaveIntermediateFile()
         {
-                Storage.SaveTextFile(Path.Combine(Path.GetDirectoryName(originalFilePath),
-                                                  Path.GetFileNameWithoutExtension(originalFilePath)) + ".int",
-                                     string.Join(Environment.NewLine,
-                                     unit.Select(lp => lp.FullNameWithOriginalLineAsCommentWithErrorIfAny)) +
-                                     SymbolTableToString());
+            intermediateFile = Path.Combine(Path.GetDirectoryName(originalFilePath),
+                                            Path.GetFileNameWithoutExtension(originalFilePath)) + ".int.txt";
+            Storage.SaveTextFile(intermediateFile,
+                                 string.Join(Environment.NewLine,
+                                             unit.Select(lp => lp.FullNameWithOriginalLineAsCommentWithErrorIfAny)) +
+                                 Environment.NewLine +
+                                 Environment.NewLine +
+                                 SymbolTableToString());
         }
         private string SymbolTableToString()
         {
             return "SYMBOL TABLE" + Environment.NewLine +
                    "==================================" + Environment.NewLine +
                    String.Join(Environment.NewLine,
-                    symbolTable.Select(kv => kv.Key.PadRight(15) + kv.Value.Address.ToHexString() + " (Line " + kv.Value.SourceFileLine + ", " + kv.Value.Mnemonic + ")"));
+                               symbolTable.OrderBy(kv => kv.Key)
+                                          .Select(kv => kv.Key.PadRight(15) +
+                                                        kv.Value.Address.ToHexString() +
+                                                        string.Format(" (Line {0}, {1})", kv.Value.SourceFileLine, kv.Value.Mnemonic)));
         }
         private void LoadProgramToBuffer(byte[] Buffer, out ushort lowAddress, out ushort highAddress)
         {

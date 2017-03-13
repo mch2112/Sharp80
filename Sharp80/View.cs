@@ -318,7 +318,9 @@ namespace Sharp80
                             }
                             return true;
                         case KeyCode.Y:
-                            LoadCMDFile(Computer.Assemble(), true);
+                            var cmdFile = Computer.Assemble();
+                            if (!String.IsNullOrWhiteSpace(cmdFile) && System.IO.File.Exists(cmdFile))
+                                LoadCMDFile(cmdFile, true);
                             return true;
                         case KeyCode.Z:
                             if (Computer.AnyDriveLoaded)
