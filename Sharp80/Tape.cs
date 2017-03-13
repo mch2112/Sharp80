@@ -252,11 +252,13 @@ namespace Sharp80
                 FilePath = Storage.FILE_NAME_NEW;
                 data = new byte[DEFAULT_BLANK_TAPE_LENGTH];
                 isBlank = true;
+                Speed = computer.TapeUserSelectedSpeed; // if we write, this is what we'll write at
             }
             else
             {
                 data = Bytes;
                 isBlank = data.All(b => b == 0x00);
+                GuessSpeed();
             }
             Rewind();
             lastWritePositive = 1;
@@ -322,10 +324,42 @@ namespace Sharp80
             return true;
         }
 
+        private void GuessSpeed()
+        {
+            if (IsBlank)
+            {
+                Speed = computer.TapeUserSelectedSpeed;
+            }
+            else
+            {
+                int consecutiveFiftyFives = 0;
+
+                for (int i = 0; i < data.Length; i++)
+                    switch (data[i])
+                    {
+                        case 0x00:
+                            break;
+                        case 0x55:
+                        case 0xAA:
+                            if (++consecutiveFiftyFives > 20)
+                            {
+                                Speed = Baud.High;
+                                return;
+                            }
+                            break;
+                        default:
+                            Speed = Baud.Low;
+                            return;
+                    }
+                Speed = Baud.Low;
+            }
+        }
+
         // READ OPERATIONS
 
         /// <summary>
-        /// Keep checking the transitions when reading
+        /// Keep checking the transitions when reading and raise appropriate
+        /// interrupts.
         /// </summary>
         private void Update()
         {
@@ -351,10 +385,10 @@ namespace Sharp80
             if (AdvanceCursor()) { return data[byteCursor].IsBitSet(bitCursor); }
             else { return false; }
         }
-
+        
         // WRITE OPERATIONS
 
-        public void HandleCasPort(byte b)
+        public void WriteToCasPort(byte b)
         {
             if (MotorOn)
             {
@@ -364,6 +398,8 @@ namespace Sharp80
                     return;
                 lastWritePolarity = polarity;
 
+                // Write values are based on the time difference between consecutive
+                // rising pulses
                 if (polarity == PulsePolarity.Positive)
                 {
                     nextLastWritePositive = lastWritePositive;

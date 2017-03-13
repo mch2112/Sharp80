@@ -210,7 +210,7 @@
     <Compile Include="PulseReq.cs" />
     <Compile Include="Register.cs" />
     <Compile Include="SectorDescriptor.cs" />
-    <Compile Include="Propertie._Settings.cs" />
+    <Compile Include="Properties.Settings.cs" />
     <Compile Include="Storage.cs" />
     <Compile Include="Track.cs" />
     <Compile Include="Z80.cs" />

@@ -66,7 +66,7 @@ namespace Sharp80
         private bool isGreenScreen = false;
         private bool isWideCharMode = false;
         private bool isKanjiCharMode = false;
-        
+
         // CONSTRUCTOR
 
         public ScreenDX(bool AdvancedView, uint MessageDisplayDuration, bool GreenScreen)
@@ -75,8 +75,8 @@ namespace Sharp80
             messageDisplayDuration = MessageDisplayDuration;
             isGreenScreen = GreenScreen;
 
-            cellsNormal =  new RawRectangleF[ScreenMetrics.NUM_SCREEN_CHARS];
-            cellsWide =    new RawRectangleF[ScreenMetrics.NUM_SCREEN_CHARS];
+            cellsNormal = new RawRectangleF[ScreenMetrics.NUM_SCREEN_CHARS];
+            cellsWide =   new RawRectangleF[ScreenMetrics.NUM_SCREEN_CHARS];
             shadowScreen = new byte[ScreenMetrics.NUM_SCREEN_CHARS];
 
             View.OnUserCommand += UserCommandHandler;

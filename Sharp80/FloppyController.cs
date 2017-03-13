@@ -23,7 +23,7 @@ namespace Sharp80
         private ISound sound;
 
         private const int MAX_TRACKS = 80;                                  // Really should be 76 for 1793
-        private const ulong DISK_ANGLE_DIVISIONS = 1000000ul;            // measure billionths of a rotation
+        private const ulong DISK_ANGLE_DIVISIONS = 1000000ul;               // measure millionths of a rotation
         private const ulong SECONDS_TO_MICROSECONDS = 1000000ul;
         private const ulong MILLISECONDS_TO_MICROSECONDS = 1000ul;
         private const ulong DISK_REV_PER_SEC = 300 / 60; // 300 rpm
@@ -140,8 +140,6 @@ namespace Sharp80
                                        12 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ,
                                        20 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ,
                                        30 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ };
-
-
 
             drives = new DriveState[NUM_DRIVES];
             for (int i = 0; i < NUM_DRIVES; i++)
@@ -1375,27 +1373,27 @@ namespace Sharp80
             Log.LogDebug(string.Format("Get status register: {0}", statusRegister.ToHexString()));
 
             if (Enabled)
-                ports.SetPortDirect(statusRegister, 0xF0);
+                ports.SetPortDirect(0xF0, statusRegister);
             else
-                ports.SetPortDirect(0xFF, 0xF0);
+                ports.SetPortDirect(0xF0, 0xFF);
 
             IntMgr.FdcNmiLatch.Unlatch();
             IntMgr.FdcMotorOffNmiLatch.Unlatch();
         }
         private void GetTrackRegister()
         {
-            ports.SetPortDirect(Enabled ? TrackRegister : (byte)0xFF, 0xF1);
+            ports.SetPortDirect(0xF1, Enabled ? TrackRegister : (byte)0xFF);
             Log.LogDebug(string.Format("Get track register: {0}", TrackRegister.ToHexString()));
         }
         private void GetSectorRegister()
         {
-            ports.SetPortDirect(Enabled ? SectorRegister : (byte)0xFF, 0xF2);
+            ports.SetPortDirect(0xF2, Enabled ? SectorRegister : (byte)0xFF);
             Log.LogDebug(string.Format("Get sector register: {0}", SectorRegister.ToHexString()));
         }
         private void GetDataRegister()
         {
             Log.LogDebug(string.Format("Read data register: {0}", DataRegister.ToHexString()));
-            ports.SetPortDirect(Enabled ? DataRegister : (byte)0xFF, 0xF3);
+            ports.SetPortDirect(0xF3, Enabled ? DataRegister : (byte)0xFF);
             drq = DrqStatus = false;
         }
         private void SetCommandRegister(byte value)

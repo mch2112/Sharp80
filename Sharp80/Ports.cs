@@ -157,7 +157,7 @@ namespace Sharp80
         /// <summary>
         /// Used to avoid side effects
         /// </summary>
-        public void SetPortDirect(byte B, byte PortNum)
+        public void SetPortDirect(byte PortNum, byte B)
         {
             ports[PortNum] = B;
         }

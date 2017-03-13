@@ -7,9 +7,9 @@ namespace Sharp80
 {
     /// <summary>
     /// Triggers are used to fire events. The main ones are used for the floppy
-    /// drive events (motor on and non maskable interrupt request, and the
-    /// reset button. Triggers exist for other devices that aren't currently
-    /// used.
+    /// drive events (motor on and non maskable interrupt request), cassette
+    /// port events, and the reset button. Triggers exist for other devices that
+    /// aren't currently used.
     /// </summary>
     internal class Trigger : ISerializable
     {
@@ -33,33 +33,17 @@ namespace Sharp80
             triggerLock = TriggerLock;
             canLatchBeforeEnabled = CanLatchBeforeEnabled;
         }
-
-        public void ResetTrigger() { Triggered = false; }
-
         public bool Enabled
         {
             get { return enabled; }
-            set
-            {
-                Update(Enabled: value, Latched: null);
-            }
+            set { Update(Enabled: value, Latched: null); }
         }
-        public bool Latched
-        {
-            get { return latched; }
-        }
-        public void LatchIf(bool Latch)
-        {
-            Update(Enabled: null, Latched: Latch);
-        }
-        public void Latch()
-        {
-            Update(Enabled: null, Latched: true);
-        }
-        public void Unlatch()
-        {
-            Update(Enabled: null, Latched: false);
-        }
+        public bool Latched { get { return latched; } }
+        public void LatchIf(bool Latch) { Update(Enabled: null, Latched: Latch); }
+        public void Latch() { LatchIf(true); }
+        public void Unlatch() { LatchIf(false); }
+        public void ResetTrigger() { Triggered = false; }
+
         public void Serialize(System.IO.BinaryWriter Writer)
         {
             Writer.Write(enabled);

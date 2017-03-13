@@ -43,10 +43,6 @@ namespace Sharp80
             }
 
             public ulong TicksUntilNext { get { return TimeStamp + Duration - Clock.TickCount; } }
-
-            private bool Expired { get { return Clock.TickCount > Expiration; } }
-            private ulong Expiration { get { return TimeStamp + Duration; } }
-
             public bool IsRising
             {
                 get
@@ -143,6 +139,8 @@ namespace Sharp80
                 FlipFlop = false;
             }
 
+            private bool Expired { get { return Clock.TickCount > Expiration; } }
+            private ulong Expiration { get { return TimeStamp + Duration; } }
             private PulsePolarity GetPolarity(PulseState State)
             {
                 switch (State)

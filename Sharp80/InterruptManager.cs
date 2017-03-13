@@ -58,12 +58,10 @@ namespace Sharp80
             {
                 Enabled = true
             };
-            //casRisingEdgeIntLatch = new Trigger(() => { casFallingEdgeIntLatch.Unlatch(); }, null, false, true)
             casRisingEdgeIntLatch = new Trigger(null, null, false, false)
             {
                 Enabled = false
             };
-            //casFallingEdgeIntLatch = new Trigger(()=> { casRisingEdgeIntLatch.Unlatch(); }, null, false, true)
             casFallingEdgeIntLatch = new Trigger(null, null, false, false)
             {
                 Enabled = false
@@ -75,7 +73,7 @@ namespace Sharp80
                 Enabled = true
             };
             vidWideCharLatch = new Trigger(() => { computer.SetVideoMode(true, null); },
-                                          () => { computer.SetVideoMode(false, null); })
+                                           () => { computer.SetVideoMode(false, null); })
             {
                 Enabled = true
             };
@@ -116,10 +114,10 @@ namespace Sharp80
         {
             set
             {
-                bool oldNmiEnabled = fdcNmiLatch.Enabled;
+                bool oldNmiEnabled =           fdcNmiLatch.Enabled;
                 bool oldMotorOrDrqNmiEnabled = fdcMotorOffNmiLatch.Enabled;
 
-                fdcNmiLatch.Enabled = value.IsBitSet(7);
+                fdcNmiLatch.Enabled =         value.IsBitSet(7);
                 fdcMotorOffNmiLatch.Enabled = value.IsBitSet(6);
 
                 Log.LogDebug(string.Format("FDC NMI Enable: {0} -> {1}", oldNmiEnabled, fdcNmiLatch.Enabled));
@@ -224,7 +222,7 @@ namespace Sharp80
         }
         public void FFout(byte b)
         {
-            tape.HandleCasPort(b);
+            tape.WriteToCasPort(b);
         }
 
         public void Serialize(System.IO.BinaryWriter Writer)

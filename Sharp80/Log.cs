@@ -16,13 +16,19 @@ namespace Sharp80
     {
         public delegate ulong GetTickDelegate();
 
+        /// <summary>
+        /// We save exception events in a queue that can be processed by the main form's ui thread,
+        /// because showing dialogs can only be done in that thread.
+        /// </summary>
+        public static Queue<Tuple<Exception, ExceptionHandlingOptions>> ExceptionQueue = new Queue<Tuple<Exception, ExceptionHandlingOptions>>();
+
+
+        public static bool TraceOn { get; set; } = false;
+
         private const int MAX_LOG_ITEMS = 1000000;
 
         private static List<Tuple<ulong, string>> log = new List<Tuple<ulong, string>>();
-        public static Queue<Tuple<Exception, ExceptionHandlingOptions>> ExceptionQueue = new Queue<Tuple<Exception, ExceptionHandlingOptions>>();
         private static GetTickDelegate tickFn = () => 0;
-        public static bool TraceOn { get; set; } = false;
-
         private static bool terminating = false;
 
         public static void Initalize(GetTickDelegate Callback)

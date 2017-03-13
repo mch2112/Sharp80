@@ -16,15 +16,8 @@ namespace Sharp80
         public bool DriveMotorRunning { get; set; } = false;
         public void TrackStep() { }
 
-        public SoundNull()
-        {
-        }
-        public void Sample()
-        {
-        }
-
-        public void Dispose()
-        {
-        }
+        public SoundNull() { }
+        public void Sample() { }
+        public void Dispose() { }
     }
 }

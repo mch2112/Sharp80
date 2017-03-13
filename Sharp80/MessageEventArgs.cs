@@ -1,9 +1,15 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3. See license.txt for details.
+
+using System;
 using System.Windows.Forms;
 
 namespace Sharp80
 {
+    /// <summary>
+    /// Helper class to help process user initiated window sizing
+    /// events and maintain the proper aspect ratio.
+    /// </summary>
     public class MessageEventArgs : EventArgs
     {
         public const int WM_SIZING   = 0x214;
@@ -21,10 +27,10 @@ namespace Sharp80
         }
 
         public Message Message { get; private set; }
-        public MessageEventArgs(Message M)
+        public MessageEventArgs(Message Message)
         {
-            System.Diagnostics.Debug.Assert(M.Msg == WM_SIZING);
-            this.Message = M;
+            System.Diagnostics.Debug.Assert(Message.Msg == WM_SIZING);
+            this.Message = Message;
         }
     }
 }
