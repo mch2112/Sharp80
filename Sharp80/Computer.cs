@@ -12,6 +12,7 @@ namespace Sharp80
 
         private const int SERIALIZATION_VERSION = 6;
 
+        public bool Ready { get; private set; }
         public bool HasRunYet { get; private set; }
 
         private Processor.Z80 Processor { get; set; }
@@ -23,8 +24,6 @@ namespace Sharp80
         private ISound Sound { get; set; }
         private Tape Tape { get; set; }
         private Printer Printer { get; set; }
-
-        private bool ready;
         private bool isDisposed = false;
 
         // CONSTRUCTOR
@@ -44,6 +43,8 @@ namespace Sharp80
             Processor = new Processor.Z80(this, Ports);
             Printer = new Printer();
 
+            // If sound fails to initialize there might be a driver issue,
+            // but it's not fatal: we can continue without sound
             Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut));
             if (!Sound.Initialized)
             {
@@ -69,15 +70,10 @@ namespace Sharp80
             Tape.Initialize(Clock, IntMgr);
             Ports.Initialize(FloppyController, IntMgr, Tape, Printer);
 
-            ready = true;
+            Ready = true;
         }
 
         // PROPERTIES
-
-        public bool Ready
-        {
-            get { return ready; }
-        }
 
         /// <summary>
         /// This may vary from Settings.DiskEnabled because we'll disable
@@ -305,6 +301,8 @@ namespace Sharp80
         public void LoadTrsDosFloppy(byte DriveNum)
         {
             LoadFloppy(DriveNum, new DMK(Resources.TRSDOS) { FilePath = Storage.FILE_NAME_TRSDOS });
+            //FloppyController.SetWriteProtection(DriveNum, false);
+            //var b = FloppyController.GetFloppy(DriveNum).Serialize(true).Compress().ToArrayDeclaration();
             Storage.SaveDefaultDriveFileName(DriveNum, Storage.FILE_NAME_TRSDOS);
         }
         public void EjectFloppy(byte DriveNum)
@@ -495,7 +493,7 @@ namespace Sharp80
                 if (Ready)
                 {
                     Stop(true);
-                    ready = false;
+                    Ready = false;
                 }
                 FloppyController.Dispose();
                 Sound.Dispose();

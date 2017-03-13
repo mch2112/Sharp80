@@ -253,7 +253,7 @@ namespace Sharp80
         }
         public static string ToArrayDeclaration(this byte[] Input)
         {
-            return "byte[] b = {" + String.Join(",", Input.Select(b => "0x" + b.ToHexString())) + "}";
+            return "var foo = {" + String.Join(",", Input.Select(b => "0x" + b.ToHexString())) + "}";
         }
         public static byte[] Compress(this byte[] data)
         {

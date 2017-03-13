@@ -45,29 +45,31 @@ namespace Sharp80
 
         private Trigger waitTrigger;
 
+        private long cyclesUntilNextSyncCheck = 0;
+        private long cyclesUntilNextThrottleSleep = 0;
+
         // CONSTRUCTOR
 
-        public Clock(Computer Computer, Processor.Z80 Processor, InterruptManager InterruptManager, ulong FrequencyInHz, ulong MilliTStatesPerIRQ, ulong MilliTStatesPerSoundSample, SoundEventCallback SoundCallback, bool NormalSpeed)
+        public Clock(Computer Computer, Processor.Z80 Processor, InterruptManager InterruptManager, ulong FrequencyInHz, ulong TicksPerIrq, ulong TicksPerSoundSample, SoundEventCallback SoundCallback, bool NormalSpeed)
         {
             ticksPerSec = FrequencyInHz * TICKS_PER_TSTATE;
-            ticksPerIRQ = MilliTStatesPerIRQ;
+            ticksPerIRQ = TicksPerIrq;
 
             CalRealTimeClock();
+
+            tickCount = 0;
 
             computer = Computer;
             z80 = Processor;
             IntMgr = InterruptManager;
             
-            ticksPerSoundSample = MilliTStatesPerSoundSample;
-
-            tickCount = 0;
-
+            ticksPerSoundSample = TicksPerSoundSample;            
             soundCallback = SoundCallback;
             normalSpeed = NormalSpeed;
+            nextRtcIrqTick = ticksPerIRQ;
 
             PulseReq.SetTicksPerSec(ticksPerSec);
 
-            nextRtcIrqTick = ticksPerIRQ;
             ResetTriggers();
 
             waitTrigger = new Trigger(() => { Log.LogDebug(string.Format("CPU Wait ON")); },
@@ -106,9 +108,9 @@ namespace Sharp80
                 if (normalSpeed != value)
                 {
                     ResetTriggers();
-                    SyncRealTimeOffset();
                     normalSpeed = value;
                     SpeedChanged?.Invoke(this, EventArgs.Empty);
+                    SyncRealTimeOffset();
                 }
             }
         }
@@ -116,9 +118,9 @@ namespace Sharp80
         {
             if (!IsRunning)
             {
-                SyncRealTimeOffset();
                 ResetTriggers();
                 LaunchOnSeparateThread(Exec);
+                SyncRealTimeOffset();
             }
         }
         public void Stop()
@@ -195,7 +197,8 @@ namespace Sharp80
             nextEmuSpeedMeasureTicks = tickCount;
             nextSoundSampleTick = tickCount;
             z80TicksOnLastMeasure = tickCount;
-            realTimeTicksOnLastMeasure = RealTimeTicks;
+            realTimeElapsedTicksOffset = realTimeTicksOnLastMeasure = RealTimeTicks;
+            
             emuSpeedInHz = 0;
         }
         private void Exec()
@@ -273,38 +276,39 @@ namespace Sharp80
                 pulseReqs.RemoveAll(r => r.Inactive);
                 SetNextPulseReqTick();
             }
-            if (normalSpeed)
+            if (NormalSpeed)
             {
                 if (tickCount > nextSoundSampleTick)
                 {
                     soundCallback();
                     nextSoundSampleTick += ticksPerSoundSample;
                 }
-                if (++skipSync > 250000)  // couple times a second
+                if (--cyclesUntilNextSyncCheck <= 0)
                 {
                     SyncRealTimeOffset();
-                    skipSync = 0;
+                    cyclesUntilNextSyncCheck = 250000;   // couple times a second
                 }
-                else if (++skip > 10)
+                else if (--cyclesUntilNextThrottleSleep <= 0)
                 {
-                    NativeMethods.QueryPerformanceCounter(ref realTimeElapsedTicks);
-                    var realTimeTicks = realTimeElapsedTicks - realTimeElapsedTicksOffset;
+                    long ticks = 0;
+                    NativeMethods.QueryPerformanceCounter(ref ticks);
+                    var realTimeTicks = ticks - realTimeElapsedTicksOffset;
                     var virtualTicksReal = realTimeTicks * z80TicksPerRealtimeTick;
                     if (virtualTicksReal < tickCount)
                         System.Threading.Thread.Sleep(MSEC_PER_SLEEP);
-                    skip = 0;
+                    cyclesUntilNextThrottleSleep = 10;
                 }
             }
         }
 
-        private long skipSync = 0;
-        private long skip = 0;
         private void SyncRealTimeOffset()
         {
-            NativeMethods.QueryPerformanceCounter(ref realTimeElapsedTicks);
-            long equivalentTicks = (long)(tickCount / z80TicksPerRealtimeTick);
-            var newRealTimeElapsedTicksOffset = realTimeElapsedTicks - equivalentTicks;
-            if (Math.Abs(newRealTimeElapsedTicksOffset - realTimeElapsedTicksOffset) > 10000)
+            long realTicks = RealTimeTicks;
+            long z80EquivalentTicks = (long)(tickCount / z80TicksPerRealtimeTick);
+            long newRealTimeElapsedTicksOffset = realTicks - z80EquivalentTicks;
+
+            // if we're already synced to within 100 microseconds don't bother
+            if (Math.Abs(newRealTimeElapsedTicksOffset - realTimeElapsedTicksOffset) > 100000)
                 realTimeElapsedTicksOffset = newRealTimeElapsedTicksOffset;
         }
         private void SetNextPulseReqTick()
@@ -341,7 +345,6 @@ namespace Sharp80
         }
         
         private static double realTimeTicksPerSec;
-        private static long realTimeElapsedTicks;
         private static long realTimeElapsedTicksOffset;
         private static double z80TicksPerRealtimeTick;
         
@@ -356,19 +359,11 @@ namespace Sharp80
         {
             get
             {
-                NativeMethods.QueryPerformanceCounter(ref realTimeElapsedTicks);
-                return realTimeElapsedTicks;
+                long ticks = 0;
+                NativeMethods.QueryPerformanceCounter(ref ticks);
+                return ticks;
             }
         }
-        private static double RealTimeSeconds
-        {
-            get
-            {
-                NativeMethods.QueryPerformanceCounter(ref realTimeElapsedTicks);
-                return ((double)(realTimeElapsedTicks)) / realTimeTicksPerSec;
-            }
-        }
-        
         private void LaunchOnSeparateThread(VoidDelegate Delegate)
         {
             new System.Threading.Thread(new System.Threading.ThreadStart(() => Delegate())).Start();
