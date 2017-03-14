@@ -10,8 +10,6 @@ namespace Sharp80.Processor
     {
         public delegate void InstDelegate();
 
-        private readonly string name;
-        private readonly string mnemonic;
         private readonly byte size;
         private readonly byte opSize;
         private readonly byte opInitSize;
@@ -81,8 +79,8 @@ namespace Sharp80.Processor
         }
         private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstDelegate exec, byte TStatesAlt)
         {
-            name = Name;            
-            mnemonic = Lib.FirstText(Name);
+            this.Name = Name;            
+            this.Mnemonic = Lib.FirstText(Name);
             
             op[0] = Op0;
             op[1] = Op1 ?? 0x00;
@@ -170,16 +168,16 @@ namespace Sharp80.Processor
             get { return op; }
         }
 
-        public string Name(IMemory Memory, ushort PC)
+        public string FullName(IMemory Memory, ushort PC)
         {
             if (hasReplaceableTokens)
-                return mnemonic + LiteralSub(Memory, PC, name.Substring(mnemonic.Length));
+                return Mnemonic + LiteralSub(Memory, PC, Name.Substring(Mnemonic.Length));
             else
-                return name;
+                return Name;
         }
         public string NameWithRelativeAddressesAsComments(IMemory Memory, ushort PC)
         {
-            string s = Name(Memory, PC);
+            string s = FullName(Memory, PC);
 
             int i = s.IndexOf(" {");
 
@@ -189,8 +187,8 @@ namespace Sharp80.Processor
             return s;
         }
 
-        public string Name() { return name; }
-        public string Mnemonic { get { return mnemonic; } }
+        public string Name { get; private set; }
+        public string Mnemonic { get; private set; }
 
         public int NumOperands
         {
@@ -211,14 +209,24 @@ namespace Sharp80.Processor
             }
         }
 
-        public string Operand0
+        public string GetOperand(int Index)
+        {
+            switch (Index)
+            {
+                case 0: return Operand0;
+                case 1: return Operand1;
+                case 2: return Operand2;
+                default: return String.Empty;
+            }
+        }
+        private string Operand0
         {
             get
             {
                 if (operand0 != null)
                     return operand0;
 
-                var s = name.Substring(mnemonic.Length);
+                var s = Name.Substring(Mnemonic.Length);
                 var commaLoc = s.IndexOf(',');
 
                 if (commaLoc < 0)
@@ -227,15 +235,14 @@ namespace Sharp80.Processor
                     return operand0 = s.Substring(0, commaLoc).Trim();
             }
         }
-
-        public string Operand1
+        private string Operand1
         {
             get
             {
                 if (operand1 != null)
                     return operand1;
 
-                var s = name.Substring(mnemonic.Length);
+                var s = Name.Substring(Mnemonic.Length);
                 var commaLoc = s.IndexOf(',');
 
                 if (commaLoc < 0)
@@ -244,7 +251,7 @@ namespace Sharp80.Processor
                     return operand1 = s.Substring(commaLoc + 1).Trim();
             }
         }
-        public string Operand2
+        private string Operand2
         {
             get
             {
@@ -252,7 +259,7 @@ namespace Sharp80.Processor
                 if (operand2 != null)
                     return operand2;
 
-                var s = name.Substring(mnemonic.Length);
+                var s = Name.Substring(Mnemonic.Length);
                 var commaLoc = s.IndexOf(',');
 
                 if (commaLoc < 0)
@@ -267,6 +274,7 @@ namespace Sharp80.Processor
                 }
             }
         }
+        
         private string LiteralSub(IMemory Memory, ushort PC, string s)
         {
             if (s.Contains("NN"))
@@ -299,7 +307,7 @@ namespace Sharp80.Processor
         
         public override string ToString()
         {
-            return name;
+            return Name;
         }
     }
 }

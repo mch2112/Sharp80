@@ -194,9 +194,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogException(ex, ExceptionHandlingOptions.InformUser);
-                Dispose();
-                Application.Exit();
+                Log.LogException(ex, ExceptionHandlingOptions.Terminate);
             }
         }
         private void ProcessRepeatKey(KeyCode Key)

@@ -11,6 +11,7 @@ namespace Sharp80
     {
         protected override ViewMode Mode => ViewMode.Disk;
         protected override bool ForceRedraw => false;
+        protected override bool CanSendKeysToEmulation => false;
 
         protected override void Activate()
         {
@@ -26,7 +27,7 @@ namespace Sharp80
                 {
                     case KeyCode.F:
                         if (Settings.DiskEnabled)
-                            LoadFloppy(false);  
+                            LoadFloppy(false);
                         break;
                     case KeyCode.L:
                         if (Settings.DiskEnabled)

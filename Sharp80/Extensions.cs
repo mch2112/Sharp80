@@ -187,7 +187,12 @@ namespace Sharp80
         }
         public static void Split(this ushort NNNN, out byte lowOrderResult, out byte highOrderResult)
         {
-            lowOrderResult = (byte)(NNNN & 0xFF);
+            lowOrderResult =  (byte)( NNNN & 0x00FF);
+            highOrderResult = (byte)((NNNN & 0xFF00) >> 8);
+        }
+        public static void Split(this ushort NNNN, out byte? lowOrderResult, out byte? highOrderResult)
+        {
+            lowOrderResult =  (byte)( NNNN & 0x00FF);
             highOrderResult = (byte)((NNNN & 0xFF00) >> 8);
         }
         public static sbyte TwosComp(this byte input)

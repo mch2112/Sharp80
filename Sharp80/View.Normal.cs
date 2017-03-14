@@ -9,6 +9,7 @@ namespace Sharp80
     {
         protected override bool ForceRedraw => false;
         protected override ViewMode Mode => ViewMode.Normal;
+        protected override bool CanSendKeysToEmulation => true;
 
         protected override bool processKey(KeyState Key)
         {

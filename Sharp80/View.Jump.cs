@@ -10,6 +10,7 @@ namespace Sharp80
     {
         protected override bool ForceRedraw => false;
         protected override ViewMode Mode => ViewMode.Jump;
+        protected override bool CanSendKeysToEmulation => false;
 
         protected override void Activate()
         {

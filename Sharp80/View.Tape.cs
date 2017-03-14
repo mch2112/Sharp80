@@ -7,6 +7,7 @@ namespace Sharp80
     {
         protected override ViewMode Mode => ViewMode.Tape;
         protected override bool ForceRedraw => Computer.TapeStatus == TapeStatus.Reading || Computer.TapeStatus == TapeStatus.Writing;
+        protected override bool CanSendKeysToEmulation => false;
 
         protected override bool processKey(KeyState Key)
         {

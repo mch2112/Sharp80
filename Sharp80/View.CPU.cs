@@ -10,6 +10,7 @@ namespace Sharp80
     {
         protected override ViewMode Mode => ViewMode.Cpu;
         protected override bool ForceRedraw => Computer.IsRunning;
+        protected override bool CanSendKeysToEmulation => false;
         protected override byte[] GetViewBytes()
         {
             var Status = Computer.CpuStatus;

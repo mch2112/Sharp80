@@ -10,6 +10,8 @@ namespace Sharp80
     {
         protected override ViewMode Mode => ViewMode.FloppyController;
         protected override bool ForceRedraw => Computer.IsRunning;
+        protected override bool CanSendKeysToEmulation => false;
+
         protected override byte[] GetViewBytes()
         {
             var status = Computer.FloppyControllerStatus;

@@ -432,15 +432,14 @@ namespace Sharp80
 
         // MISC
 
-        public bool LoadCMDFile(string filePath)
+        public bool LoadCMDFile(CmdFile File)
         {
             Stop(WaitForStop: true);
 
-            var pc = Storage.LoadCMDFile(filePath, Processor.Memory);
-
-            if (pc.HasValue)
+            if (File.Valid && File.Load(Memory))
             {
-                Processor.Jump(pc.Value);
+                if (File.ExecAddress.HasValue)
+                    Processor.Jump(File.ExecAddress.Value);
                 return true;
             }
             else

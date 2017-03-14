@@ -9,6 +9,7 @@ namespace Sharp80
     {
         protected override ViewMode Mode => ViewMode.Memory;
         protected override bool ForceRedraw => true;
+        protected override bool CanSendKeysToEmulation => baseAddress == 0x3800;
 
         private ushort baseAddress = 0;
 

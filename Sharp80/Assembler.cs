@@ -37,11 +37,11 @@ namespace Sharp80.Assembler
         private static string[] sixteenBitRegisters = new string[] { "AF", "BC", "DE", "HL", "IX", "IY", "SP" };
         private static string[] metaInstructions = new string[] { "ORG", "EQU", "DEFB", "DB", "DEFW", "DW", "DEFM", "DM", "DEFS", "DS" };
         private static string[] flagStates = new string[] { "C", "NC", "Z", "NZ", "PO", "PE", "P", "M" };
-        private static string[] instructions = new string[] { "ADC", "ADD", "AND", "BIT", "CALL", "CCF", "CP", "CPD", "CPDR", "CPI", "CPIR", "CPL", "DAA",
-                                                              "DEC", "DI", "DJNZ", "EI", "EX", "EXX", "HALT", "IM", "IN", "INC", "IND", "INDR", "JP", "JR",
-                                                              "LD", "LDD", "LDDR", "LDI", "LDIR", "NEG", "NOP", "OR", "OTDR", "OTIR", "OUT", "OUTD", "OUTR",
-                                                              "POP", "PUSH", "RES", "RET", "RETI", "RETN", "RL", "RLA", "RLC", "RLCA", "RLD", "RR", "RRC", "RRCA",
-                                                              "RRD", "RST", "SBC", "SCF", "SET", "SLA", "SRA", "SRL", "SUB", "XOR" };
+        private static string[] instructionNames = new string[] { "ADC", "ADD", "AND", "BIT", "CALL", "CCF", "CP", "CPD", "CPDR", "CPI", "CPIR", "CPL", "DAA",
+                                                                  "DEC", "DI", "DJNZ", "EI", "EX", "EXX", "HALT", "IM", "IN", "INC", "IND", "INDR", "JP", "JR",
+                                                                  "LD", "LDD", "LDDR", "LDI", "LDIR", "NEG", "NOP", "OR", "OTDR", "OTIR", "OUT", "OUTD", "OUTR",
+                                                                  "POP", "PUSH", "RES", "RET", "RETI", "RETN", "RL", "RLA", "RLC", "RLCA", "RLD", "RR", "RRC", "RRCA",
+                                                                  "RRD", "RST", "SBC", "SCF", "SET", "SLA", "SRA", "SRL", "SUB", "XOR" };
 
         private string originalFilePath;
         private string intermediateFile = String.Empty;
@@ -133,42 +133,39 @@ namespace Sharp80.Assembler
             {
                 sourceFileLine++;
 
-                string rawline = ValidateRawLine(lines[i]);
+                string line = PreprocessLine(lines[i]);
 
-                if (!string.IsNullOrWhiteSpace(rawline))
+                if (!string.IsNullOrWhiteSpace(line))
                 {
-                    string mn = GetCol(rawline, 1);
+                    string mn = GetCol(line, 1);
 
-                    if (m != null) // are we loading a macro?
+                    if (m != null) // are we currently loading a macro?
                     {
                         if (mn == "ENDM")
                             m = null;
-                        else if (!String.IsNullOrWhiteSpace(rawline))
-                            m.AddLine(rawline);
+                        else if (!String.IsNullOrWhiteSpace(line))
+                            m.AddLine(line);
                     }
                     else if (mn == "MACRO") // is this a new macro?
                     {
-                        macros.Add(m = new Macro(rawline));
+                        macros.Add(m = new Macro(line));
                         AddLine("; Macro " + m.Name, sourceFileLine);
                     }
                     else if ((m = GetMacro(mn)) != null)
                     {
-                        foreach (string l in m.Expand(GetCol(rawline, 2), sourceFileLine))
+                        // macros convert a delimited set of tokens each to an instruction
+                        foreach (string l in m.Expand(GetCol(line, 2), sourceFileLine))
                             AddLine(l, sourceFileLine);
-
                         m = null;
                     }
                     else
                     {
-                        AddLine(rawline, sourceFileLine);
+                        AddLine(line, sourceFileLine);
                     }
                 }
             }
         }
-        private static string RemoveSpaces(string Input)
-        {
-            return Input.Trim(new char[] { ' ' });
-        }
+        private static string RemoveSpaces(string Input) { return Input.Trim(new char[] { ' ' }); }
 
         private static string GetCol(string Line, int ColNum)
         {
@@ -229,7 +226,8 @@ namespace Sharp80.Assembler
                 return;
 
             // Expand multivalue meta instructions
-            bool first;
+            string label = lp.Label;
+            string comment = String.IsNullOrWhiteSpace(lp.Comment) ? String.Empty : ("\t; " + lp.Comment);
             switch (lp.Mnemonic)
             {
                 case "END":
@@ -239,30 +237,34 @@ namespace Sharp80.Assembler
                 case "DEFW":
                     if (lp.IsMultiline)
                     {
-                        first = true;
                         foreach (var o in lp.Operands)
                         {
-                            if (first)
-                                AddLine(lp.Label + "\t" + lp.Mnemonic + "\t" + o.RawText + " ;" + lp.Comment, SourceFileLine, linesToAdd);
-                            else
-                                AddLine("\t" + lp.Mnemonic + "\t" + o.RawText, SourceFileLine, linesToAdd);
-                            first = false;
+                            AddLine(string.Format("{0}\t{1}\t{2}\t;{3}",
+                                                  label,
+                                                  lp.Mnemonic,
+                                                  o.RawText,
+                                                  comment),
+                                    SourceFileLine, 
+                                    linesToAdd);
+                            label = comment = String.Empty;
                         }
                         suppressLine = true;
                     }
+
                     break;
                 case "DEFM":
                     string msg = lp.Operand0.RawText;
                     if (IsInSingleQuotes(msg))
                         msg = Unquote(msg);
-                    first = true;
                     foreach (char c in msg)
                     {
-                        if (first)
-                            AddLine(lp.Label + "\tDEFB\t" + c.ToHexString() + "H ;" + lp.Comment, SourceFileLine, linesToAdd);
-                        else
-                            AddLine(           "\tDEFB\t" + c.ToHexString() + "H",                SourceFileLine, linesToAdd);
-                        first = false;
+                        AddLine(string.Format("{0}\tDEFB\t{1}H{2}",
+                                               label,
+                                               c.ToHexString(),
+                                               comment),
+                                SourceFileLine,
+                                linesToAdd);
+                        label = comment = String.Empty;
                     }
                     suppressLine = true;
                     break;
@@ -271,19 +273,21 @@ namespace Sharp80.Assembler
                     if (lp.Operand0.NumericValue.HasValue)
                     {
                         int bytes = lp.Operand0.NumericValue.Value;
-                        first = true;
                         for (int i = 0; i < bytes; i++)
                         {
-                            if (first)
-                                AddLine(lp.Label + "\tDEFB\t00H\t;" + lp.RawLine, SourceFileLine, linesToAdd);
-                            else
-                                AddLine("\tDEFB\t00H", SourceFileLine, linesToAdd);
-                            first = false;
+                            AddLine(string.Format("{0}\tDEFB\t00H\t{1}",
+                                                label,
+                                                comment),
+                                    SourceFileLine,
+                                    linesToAdd);
+                            label = comment = String.Empty;
                         }
                         suppressLine = true;
                     }
                     else
-                        throw new Exception();
+                    {
+                        lp.Error = "DEFS requires a numeric argument.";
+                    }
                     break;
             }
 
@@ -309,23 +313,24 @@ namespace Sharp80.Assembler
 
         private bool CalcAddresses()
         {
-            ushort i = 0;
+            ushort address = 0;
 
             foreach (LineInfo lp in unit.Where(l => !l.HasError))
             {
                 if (lp.Mnemonic == "ORG")
                 {
+                    lp.IsOrg = true;
                     lp.Address = lp.Operand0.NumericValue.Value;
-                    i = lp.Address;
+                    address = lp.Address;
                 }
                 else if (lp.Mnemonic == "EQU")
                 {
-                    lp.Address = i;
+                    lp.Address = address;
                 }
                 else
                 {
-                    lp.Address = i;
-                    i += (ushort)lp.Size;
+                    lp.Address = address;
+                    address += (ushort)lp.Size;
                 }
             }
             return true;
@@ -336,14 +341,14 @@ namespace Sharp80.Assembler
             if (!lp.IsMetaInstruction)
             {
                 if (lp.Mnemonic.Length == 0)
-                    return false;               // Don't bother trying
+                    return false;               // Not an instruction
 
                 foreach (var i in instructionSet.Where(ii => ii.Mnemonic == lp.Mnemonic && ii.NumOperands == lp.NumOperands))
                 {
                     bool ok = true;
                     for (int j = 0; j < lp.NumOperands; j++)
                     {
-                        if (!IsSameOperand(lp, i, j))
+                        if (!DoOperandsMatch(lp, i, j))
                         {
                             ok = false;
                             break;
@@ -356,9 +361,7 @@ namespace Sharp80.Assembler
                     }
                 }
 
-                string err = string.Format("Instruction not found: Line {0} {1}", lp.SourceFileLine, lp.FullNameWithOriginalLineAsCommentWithErrorIfAny);
-                lp.Error = err;
-                Log.LogDebug(err);
+                lp.Error = string.Format("Instruction not found: Line {0} {1}", lp.SourceFileLine, lp.FullNameWithOriginalLineAsCommentWithErrorIfAny);
             }
             return false;
         }
@@ -373,27 +376,12 @@ namespace Sharp80.Assembler
             return GetCol(s, 0).Replace(":", String.Empty).Trim();
         }
 
-        private static bool IsRegister(string s)
-        {
-            return registers.Contains(s);
-        }
-        private static bool Is16BitRegister(string s)
-        {
-            return sixteenBitRegisters.Contains(s);
-        }
-        private static bool IsMetaInstruction(string inst)
-        {
-            return metaInstructions.Contains(inst);
-        }
-        private static bool IsInstruction(string inst)
-        {
-            return instructions.Contains(inst);
-        }
-        private static bool IsFlagState(string s)
-        {
-            return flagStates.Contains(s);
-        }
-        private string ValidateRawLine(string Input)
+        private static bool IsRegister(string s)           { return registers.Contains(s); }
+        private static bool IsMetaInstruction(string inst) { return metaInstructions.Contains(inst); }
+        private static bool IsInstruction(string inst)     { return instructionNames.Contains(inst); }
+        private static bool IsFlagState(string s)          { return flagStates.Contains(s); }
+
+        private string PreprocessLine(string Input)
         {
             string line = RemoveSpaces(Input.Substring(0, Math.Min(256, Input.Length)));
 
@@ -432,6 +420,11 @@ namespace Sharp80.Assembler
         {
             return macros.FirstOrDefault(m => m.Name == Name);
         }
+        /// <summary>
+        /// These instructions have arguments but they are specified by
+        /// the opcode itself and don't need to be augmented with
+        /// additional bytes
+        /// </summary>
         private static bool ArgImpliedInOpcode(string Mnemonic)
         {
             switch (Mnemonic)
@@ -742,32 +735,18 @@ namespace Sharp80.Assembler
             // nonnumeric
             return null;
         }
-        private bool IsSameOperand(LineInfo Line, Processor.Instruction I, int OpNum)
+
+        private bool DoOperandsMatch(LineInfo Line, Processor.Instruction Inst, int OperandIndex)
         {
-            string opB;
+            string opB = Inst.GetOperand(OperandIndex);
 
-            switch (OpNum)
-            {
-                case 0:
-                    opB = I.Operand0;
-                    break;
-                case 1:
-                    opB = I.Operand1;
-                    break;
-                case 2:
-                    opB = I.Operand2;
-                    break;
-                default:
-                    throw new Exception();
-            }
-
-            if (opB.Length == 0 && Line.NumOperands > OpNum)
+            if (opB.Length == 0 && Line.NumOperands > OperandIndex)
                 return false;
 
-            if (Line.NumOperands <= OpNum)
+            if (Line.NumOperands <= OperandIndex)
                 return false;
 
-            Operand opA = Line.Operands[OpNum];
+            Operand opA = Line.Operands[OperandIndex];
             
             if (!opA.Exists)
                 return opB.Length == 0;
@@ -828,6 +807,7 @@ namespace Sharp80.Assembler
         {
             intermediateFile = Path.Combine(Path.GetDirectoryName(originalFilePath),
                                             Path.GetFileNameWithoutExtension(originalFilePath)) + ".int.txt";
+
             Storage.SaveTextFile(intermediateFile,
                                  string.Join(Environment.NewLine,
                                              unit.Select(lp => lp.FullNameWithOriginalLineAsCommentWithErrorIfAny)) +
@@ -845,15 +825,24 @@ namespace Sharp80.Assembler
                                                         kv.Value.Address.ToHexString() +
                                                         string.Format(" (Line {0}, {1})", kv.Value.SourceFileLine, kv.Value.Mnemonic)));
         }
-        private void LoadProgramToBuffer(byte[] Buffer, out ushort lowAddress, out ushort highAddress)
+        private bool LoadToBuffer(ref int LineNumber, byte[] Buffer, out ushort lowAddress, out ushort highAddress)
         {
             lowAddress  = 0xFFFF;
             highAddress = 0x0000;
+            bool any = false;
 
-            foreach (LineInfo lp in unit)
+            while (LineNumber < unit.Count)
             {
+                var lp = unit[LineNumber++];
+
+                if (lp.IsOrg && any)
+                {
+                    LineNumber--;
+                    break;
+                }
                 if (lp.Size > 0)
                 {
+                    any = true;
                     lowAddress = Math.Min(lowAddress, lp.Address);
                     highAddress = Math.Max(highAddress, lp.Address.Offset(lp.Size));
                 }
@@ -873,13 +862,12 @@ namespace Sharp80.Assembler
                 else
                     Debug.Assert(!lp.Byte3.HasValue);
 
-
                 if (lp.Byte0.HasValue) Buffer[lp.Address] = lp.Byte0.Value;
                 if (lp.Byte1.HasValue) Buffer[lp.Address + 1] = lp.Byte1.Value;
                 if (lp.Byte2.HasValue) Buffer[lp.Address + 2] = lp.Byte2.Value;
                 if (lp.Byte3.HasValue) Buffer[lp.Address + 3] = lp.Byte3.Value;
             }
-            Log.LogDebug("Program assembled.");
+            return any;
         }
         private string SaveAsCMD(List<LineInfo> Unit)
         {
@@ -887,26 +875,24 @@ namespace Sharp80.Assembler
             try
             {
                 byte[] buffer = new byte[0x10000];
-                
-                LoadProgramToBuffer(buffer, out ushort lowAddress, out ushort highAddress);
 
-                byte[][] segment = new byte[1][];
-                segment[0] = new byte[highAddress - lowAddress + 1];
-
-                int cursor = 0;
-
-                for (int i = lowAddress; i <= highAddress; i++)
-                    segment[0][cursor++] = buffer[i];
+                var data = new List<Tuple<ushort, byte[]>>();
+                int lineNum = 0;
+                ushort lowestAddress = 0xFFFF;
 
                 string title = Path.GetFileNameWithoutExtension(originalFilePath);
                 cmdFilePath = Path.Combine(Path.GetDirectoryName(originalFilePath), title + ".cmd");
 
-                ushort[] org = new ushort[1];
-                org[0] = lowAddress;
+                while (LoadToBuffer(ref lineNum, buffer, out ushort lowAddress, out ushort highAddress))
+                {
+                    var segment = new byte[highAddress - lowAddress + 1];
+                    Array.Copy(buffer, lowAddress, segment, 0, highAddress - lowAddress);
 
-                var startAddress = GetSymbolValue(unit[0], "ENTRY") ?? lowAddress;
-
-                Storage.SaveCMDFile(title, cmdFilePath, org, segment, startAddress);
+                    data.Add(new Tuple<ushort, byte[]>(lowAddress, segment));
+                    lowestAddress = Math.Min(lowAddress, lowestAddress);
+                }
+                var execAddress = GetSymbolValue(unit[0], "ENTRY") ?? lowestAddress;
+                SaveCMDFile(title, cmdFilePath, data, execAddress);
             }
             catch (Exception ex)
             {
@@ -914,6 +900,52 @@ namespace Sharp80.Assembler
                 Log.LogException(ex);
             }
             return cmdFilePath;
+        }
+        private static void SaveCMDFile(string Title, string FilePath, List<Tuple<ushort, byte[]>> Data, ushort TransferAddress)
+        {
+            var writer = new BinaryWriter(File.Open(FilePath, FileMode.Create));
+
+            ushort dest;
+            int cursor;
+            byte lowDest;
+            byte highDest;
+            int segmentSize;
+            int blockSize;
+
+            writer.Write((byte)0x05);
+            writer.Write((byte)Title.Length);
+            for (int i = 0; i < Title.Length; i++)
+                writer.Write((byte)Title[i]);
+
+            foreach (var d in Data)
+            {
+                dest = d.Item1;
+                cursor = 0;
+
+                segmentSize = d.Item2.Length;
+
+                while (cursor < segmentSize)
+                {
+                    blockSize = Math.Min(0x100, d.Item2.Length - cursor);
+                    writer.Write((byte)0x01);   // block marker
+                    writer.Write((byte)(blockSize + 2)); // 0x02 == 256 bytes
+                    dest.Split(out lowDest, out highDest);
+                    writer.Write(lowDest);
+                    writer.Write(highDest);
+                    while (blockSize-- > 0)
+                    {
+                        writer.Write(d.Item2[cursor++]);
+                        dest++;
+                    }
+                }
+            }
+            writer.Write((byte)0x02);  // transfer address marker
+            writer.Write((byte)0x02);  // transfer address length
+            TransferAddress.Split(out lowDest, out highDest);
+            writer.Write(lowDest);
+            writer.Write(highDest);
+
+            writer.Close();
         }
     }
 }

@@ -183,7 +183,7 @@ namespace Sharp80.Assembler
                 get
                 {
                     if (!IsNumeric)
-                        throw new Exception();
+                        throw new Exception(string.Format("Numeric Value Expected; found {0}", RawText));
 
                     return GetNumericValue(RawText) ?? GetSymbolValue(LineInfo, RawText);
                 }
@@ -205,9 +205,7 @@ namespace Sharp80.Assembler
             {
                 if (NumericValue.HasValue)
                 {
-                    var val = NumericValue;
-                    Low = (byte)(val & 0xFF);
-                    High = (byte)((val >> 8) & 0xFF);
+                    NumericValue.Value.Split(out Low, out High);
                     return true;
                 }
                 else

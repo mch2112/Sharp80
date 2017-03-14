@@ -14,9 +14,10 @@ namespace Sharp80
         private string footerText = "Left/Right Arrow: Show More Commands";
 
         protected override ViewMode Mode => ViewMode.Help;
-
+        protected override bool CanSendKeysToEmulation => false;
         protected override bool ForceRedraw => false;
-        protected sealed override byte[] GetViewBytes()
+
+        protected override byte[] GetViewBytes()
         {
             switch (ScreenNum)
             {

@@ -10,6 +10,8 @@ namespace Sharp80
     {
         protected override ViewMode Mode => ViewMode.Splash;
         protected override bool ForceRedraw => false;
+        protected override bool CanSendKeysToEmulation => false;
+
         protected override byte[] GetViewBytes()
         {
             return PadScreen(Encoding.ASCII.GetBytes(

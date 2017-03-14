@@ -123,7 +123,7 @@ namespace Sharp80.Processor
                                      i.Size < 2 ? "  " : i.OpcodeLength < 2 ? "XX" : i.Op1.ToHexString(),
                                      i.Size < 3 ? "  " : "XX",
                                      i.Size < 4 ? "  " : i.OpcodeLength < 3 ? "XX" : i.Op3.ToHexString(),
-                                     i.Name(),
+                                     i.Name,
                                      i.TStates,
                                      ((i.TStatesAlt > 0) ? (i.TStates + i.TStatesAlt).ToString("0#") : "  "));
                 }

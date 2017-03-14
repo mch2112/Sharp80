@@ -75,11 +75,11 @@ namespace Sharp80.Processor
         }
         public string GetLineInfo(string Prefix, ushort PC, Instruction inst)
         {
-            return string.Format("{0}{1}  {2,-11} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.Name(memory, PC));
+            return string.Format("{0}{1}  {2,-11} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(memory, PC));
         }
         public string GetLineInfo(string Prefix, ref ushort PC, Instruction inst)
         {
-            var s = string.Format("{0}{1}  {2,-11} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.Name(memory, PC));
+            var s = string.Format("{0}{1}  {2,-11} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(memory, PC));
             PC += inst.Size;
             return s;
         }
@@ -119,7 +119,7 @@ namespace Sharp80.Processor
                                                                                  i.Key.ToHexString(),
                                                                                  Lib.GetSpacedHex(Memory, i.Key, i.Value.Size),
                                                                                  AddressAsComment ? i.Value.NameWithRelativeAddressesAsComments(memory, i.Key)
-                                                                                                  : i.Value.Name(memory, i.Key)
+                                                                                                  : i.Value.FullName(memory, i.Key)
                                                                                  )));
         }
 
@@ -132,7 +132,7 @@ namespace Sharp80.Processor
                                                            (n.idx == History.Length - 1) ? ">" : " ",
                                                            n.addr.ToHexString(),
                                                            Lib.GetSpacedHex(Memory, n.addr, n.inst.Size),
-                                                           n.inst.Name(memory, n.addr))));
+                                                           n.inst.FullName(memory, n.addr))));
         }
         public ushort PcVal { get { return PC.val; } }
         public ushort SpVal { get { return SP.val; } }

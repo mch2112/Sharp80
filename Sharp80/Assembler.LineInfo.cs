@@ -23,10 +23,10 @@ namespace Sharp80.Assembler
             public Operand Operand1 { get { return Operands.Count > 1 ? Operands[1] : new Operand(); } }
 
             public bool IsMultiline { get { return IsMetaInstruction && NumOperands > 1; } }
+            public bool IsOrg { get; set; } = false;
             public int NumOperands { get { return Operands.Count(o => o.Exists); } }
 
             public ushort Address = 0x0000;
-
             public byte? Byte0 = null;
             public byte? Byte1 = null;
             public byte? Byte2 = null;
@@ -114,15 +114,15 @@ namespace Sharp80.Assembler
                     }
                 }
 
-                if (this.IsMultiline)
+                if (IsMultiline)
                 {
-                    switch (this.Mnemonic)
+                    switch (Mnemonic)
                     {
                         case "DEFB":
                         case "DEFW":
                             break;
                         default:
-                            this.Error = "Unexpected number of operands";
+                            Error = "Unexpected number of operands";
                             break;
                     }
                 }
@@ -159,7 +159,7 @@ namespace Sharp80.Assembler
             }
             public bool IsInstruction
             {
-                get { return instructions.Contains(Mnemonic); }
+                get { return instructionNames.Contains(Mnemonic); }
             }
             public string FullName
             {
@@ -215,7 +215,7 @@ namespace Sharp80.Assembler
                                  i.Size < 2 ? "  " : i.OpcodeLength < 2 ? "XX" : i.Op1.ToHexString(),
                                  i.Size < 3 ? "  " : "XX",
                                  i.Size < 4 ? "  " : i.OpcodeLength < 3 ? "XX" : i.Op3.ToHexString(),
-                                 i.Name()
+                                 i.Name
                                  );
                     }
 #endif
@@ -242,7 +242,7 @@ namespace Sharp80.Assembler
                                 if (Operand0.NumericValue.HasValue)
                                     return Operand0.NumericValue.Value;
                                 else
-                                    throw new Exception();
+                                    throw new Exception("DEFS requires a numeric value");
                             case "DEFM":
                                 return Operand0.RawText.Length;
                             default:

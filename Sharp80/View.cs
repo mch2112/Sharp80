@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Sharp80
 {
-    public enum ViewMode { Normal, Tape, Memory, Disk, Help, Zap, Breakpoint, Jump, Options, Cpu, FloppyController, Splash }
+    public enum ViewMode { Normal, Tape, Memory, Disk, Help, Zap, Breakpoint, Jump, Options, CmdFile, Cpu, FloppyController, Splash }
     public enum UserCommand { ToggleAdvancedView, ShowAdvancedView, ToggleFullScreen, Window, GreenScreen, ZoomIn, ZoomOut, HardReset, Exit }
 
     internal abstract class View
@@ -71,18 +71,19 @@ namespace Sharp80
 
             if (!initialized)
             {
-                new ViewNormal();
-                new ViewSplash();
-                new ViewHelp();
-                new ViewOptions();
-                new ViewDisk();
-                new ViewTape();
-                new ViewZap();
                 new ViewBreakpoint();
+                new ViewCmdFile();
+                new ViewCpu();
+                new ViewDisk();
+                new ViewFloppyController();
+                new ViewHelp();
                 new ViewJump();
                 new ViewMemory();
-                new ViewFloppyController();
-                new ViewCpu();
+                new ViewNormal();
+                new ViewOptions();
+                new ViewSplash();
+                new ViewTape();
+                new ViewZap();
                 CurrentMode = ViewMode.Splash;
                 initialized = true;
             }
@@ -90,6 +91,7 @@ namespace Sharp80
 
         protected static Computer Computer { get; private set; }
         protected static byte? DriveNumber { get; set; } = null;
+        protected static CmdFile CmdFile { get; set; } = null;
         protected static void Invalidate() { invalid = true; }
         protected static void RevertMode()
         {
@@ -103,6 +105,7 @@ namespace Sharp80
 
         protected abstract ViewMode Mode { get; }
         protected abstract bool ForceRedraw { get; }
+        protected abstract bool CanSendKeysToEmulation { get; }
         protected abstract byte[] GetViewBytes();
 
         protected virtual void Activate() { }
@@ -180,7 +183,7 @@ namespace Sharp80
                             return true;
                     }
                 }
-                if (!Key.Repeat)
+                if (!Key.Repeat && CanSendKeysToEmulation)
                     return Computer.NotifyKeyboardChange(Key);
             }
             else if (Key.Pressed && Key.Alt)
@@ -243,8 +246,7 @@ namespace Sharp80
                             MakeAndSaveBlankFloppy(true);
                             return true;
                         case KeyCode.C:
-                            LoadCMDFile();
-                            Invalidate();
+                            CurrentMode = ViewMode.CmdFile;
                             return true;
                         case KeyCode.D:
                             CurrentMode = ViewMode.FloppyController;
@@ -318,9 +320,12 @@ namespace Sharp80
                             }
                             return true;
                         case KeyCode.Y:
-                            var cmdFile = Computer.Assemble();
-                            if (!String.IsNullOrWhiteSpace(cmdFile) && System.IO.File.Exists(cmdFile))
-                                LoadCMDFile(cmdFile, true);
+                            var cmdFilePath = Computer.Assemble();
+                            if (!String.IsNullOrWhiteSpace(cmdFilePath) && System.IO.File.Exists(cmdFilePath))
+                            {
+                                CmdFile = new CmdFile(cmdFilePath);
+                                CurrentMode = ViewMode.CmdFile;
+                            }
                             return true;
                         case KeyCode.Z:
                             if (Computer.AnyDriveLoaded)
@@ -466,7 +471,7 @@ namespace Sharp80
         }
 
         // MISC
-
+        
         private static void Disassemble(bool FromPc)
         {
             string path = System.IO.Path.Combine(Storage.AppDataPath, "Disassembly.txt");
@@ -490,26 +495,7 @@ namespace Sharp80
 
             return ret;
         }
-
-        private void LoadCMDFile(string Path = "", bool SuppressNormalInform = false)
-        {
-            if (String.IsNullOrWhiteSpace(Path))
-                Path = Dialogs.GetCommandFile(Settings.LastCmdFile);
-
-            if (Path.Length > 0)
-            {
-                if (Computer.LoadCMDFile(Path))
-                {
-                    if (!SuppressNormalInform)
-                        Dialogs.InformUser("CMD File loaded.");
-                    Settings.LastCmdFile = Path;
-                }
-                else
-                {
-                    Dialogs.AlertUser("CMD File load failed.");
-                }
-            }
-        }
+        
         private void MakeFloppyFromFile()
         {
             string path = Dialogs.GetFilePath(Storage.DocsPath);

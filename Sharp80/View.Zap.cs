@@ -9,6 +9,7 @@ namespace Sharp80
     {
         protected override ViewMode Mode => ViewMode.Zap;
         protected override bool ForceRedraw => false;
+        protected override bool CanSendKeysToEmulation => false;
 
         private bool sideOne = false;
         private byte trackNum = 0;
