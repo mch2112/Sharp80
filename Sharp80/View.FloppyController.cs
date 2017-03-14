@@ -29,7 +29,7 @@ namespace Sharp80
                 Format();
 
             return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Floppy Controller Status") +
+                Header("Sharp 80 Floppy Controller Status") +
                 Format() +
                 Indent(string.Format("Drive Number:   {0}", status.CurrentDriveNumber)) +
                 Indent(string.Format("OpStatus:       {0}", status.OperationStatus)) +

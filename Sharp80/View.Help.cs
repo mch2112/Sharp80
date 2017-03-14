@@ -111,6 +111,7 @@ namespace Sharp80
                     ScreenNum %= NUM_SCREENS;
                     break;
                 case KeyCode.F8:
+                case KeyCode.F9:
                     // Note: doesn't consume key event
                     if (!Computer.IsRunning)
                         CurrentMode = ViewMode.Normal;

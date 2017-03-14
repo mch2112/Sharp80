@@ -16,6 +16,7 @@ namespace Sharp80
 
         protected override void Activate()
         {
+            MessageCallback("Disk Zap View");
             base.Activate();
         }
 

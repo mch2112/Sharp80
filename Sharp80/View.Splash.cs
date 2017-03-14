@@ -35,6 +35,7 @@ namespace Sharp80
                 switch (Key.Key)
                 {
                     case KeyCode.F8:
+                    case KeyCode.F9:
                         // Note: doesn't consume key event
                         if (!Computer.IsRunning)
                             CurrentMode = ViewMode.Normal;

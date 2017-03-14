@@ -21,7 +21,6 @@ namespace Sharp80
                             Computer.TapeLoadBlank();
                             Settings.LastTapeFile = Computer.TapeFilePath;
                             MessageCallback("Blank Tape Loaded");
-
                         }
                         break;
                     case KeyCode.E:
@@ -62,6 +61,10 @@ namespace Sharp80
                     case KeyCode.X:
                         Computer.TapeUserSelectedSpeed = Computer.TapeUserSelectedSpeed == Baud.High ? Baud.Low : Baud.High;
                         break;
+                    case KeyCode.F8:
+                        if (!Computer.IsRunning)
+                            CurrentMode = ViewMode.Normal;
+                        return base.processKey(Key);
                     default:
                         return base.processKey(Key);
                 }
@@ -74,7 +77,7 @@ namespace Sharp80
             string fileName = Computer.TapeFilePath;
 
             return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Tape Management") +
+                Header("Sharp 80 Tape Management") +
                 Format(string.Format("Speed Selected: {0} Baud", Computer.TapeUserSelectedSpeed == Baud.High ? "High 1500" : "Low 500")) +
                 Format("Tape File: " + FitFilePath(fileName, ScreenMetrics.NUM_SCREEN_CHARS_X - "Tape File: ".Length)) +
                 Format(string.Format(@"{0:0000.0} ({1:00.0%})", Computer.TapeCounter, Computer.TapePercent)) +

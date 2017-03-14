@@ -45,7 +45,7 @@ namespace Sharp80
         protected override byte[] GetViewBytes()
         {
             return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Set breakpoint location") +
+                Header("Set Breakpoint Location") +
                 Format() +
                 Indent("Breakpoint is currently " + (Computer.BreakPointOn ? "ON" : "OFF")) +
                 Indent("Breakpoint Value (Hexadecimal): " + Computer.BreakPoint.ToHexString()) +

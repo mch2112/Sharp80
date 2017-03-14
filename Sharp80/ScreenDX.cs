@@ -579,14 +579,12 @@ namespace Sharp80
                     invalid = true;
                 }
 
-                bool drawAdvanced = advancedView;// && (!computer.IsRunning || ++advancedViewDrawCount % 2 == 0);
-
                 if (erase)
                 {
                     invalid = true;
                     renderTarget.Clear(Color.Black);
                 }
-                else if (drawAdvanced)
+                else if (AdvancedView)
                 {
                     // Erase adv info regions...
                     renderTarget.FillRectangle(infoRect, backgroundBrush);
@@ -612,7 +610,7 @@ namespace Sharp80
                 //renderTarget.FillRectangle(cells[0], foregroundBrush);
                 //renderTarget.FillRectangle(cells[0x3ff], foregroundBrush);
 
-                if (drawAdvanced)
+                if (AdvancedView)
                 {
                     // And draw new text
                     renderTarget.DrawText(computer.GetInternalsReport(), textFormat, z80Rect, foregroundBrush);

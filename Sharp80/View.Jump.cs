@@ -50,7 +50,7 @@ namespace Sharp80
         protected override byte[] GetViewBytes()
         {
             return PadScreen(Encoding.ASCII.GetBytes(
-                                Header("Jump to Z80 memory location") +
+                                Header("Jump to Z80 Memory Location") +
                                 Format() +
                                 Indent("Jump to memory location (Hexadecimal): " + Computer.ProgramCounter.ToHexString()) +
                                 Format() +

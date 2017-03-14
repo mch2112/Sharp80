@@ -16,7 +16,7 @@ namespace Sharp80
 
             Invalidate();
             return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Z80 Register Status") +
+                Header("Sharp 80 Z80 Register Status") +
                 Format() +
                 Indent(string.Format("PC  {0}  SP  {1}", Status.PcVal.ToHexString(), Status.SpVal.ToHexString())) +
                 Format() +

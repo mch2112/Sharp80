@@ -12,6 +12,11 @@ namespace Sharp80
 
         private ushort baseAddress = 0;
 
+        protected override void Activate()
+        {
+            MessageCallback("Memory View");
+            base.Activate();
+        }
         protected override bool processKey(KeyState Key)
         {
             if (Key.Pressed)
