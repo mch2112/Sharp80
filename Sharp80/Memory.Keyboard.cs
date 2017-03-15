@@ -85,7 +85,7 @@ namespace Sharp80
             AddKey(VirtualKey.SLASH, 0x3820, 0x80, KeyCode.Slash);
 
             AddKey(VirtualKey.ENTER, 0x3840, 0x01, KeyCode.Return, KeyCode.NumberPadEnter);
-            AddKey(VirtualKey.CLEAR, 0x3840, 0x02, KeyCode.Home);
+            AddKey(VirtualKey.CLEAR, 0x3840, 0x02, KeyCode.Home, KeyCode.Grave);
             AddKey(VirtualKey.BREAK, 0x3840, 0x04, KeyCode.Escape);
             AddKey(VirtualKey.UPARROW, 0x3840, 0x08, KeyCode.Up);
             AddKey(VirtualKey.DOWNARROW, 0x3840, 0x10, KeyCode.Down);

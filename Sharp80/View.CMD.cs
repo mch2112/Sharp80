@@ -12,6 +12,12 @@ namespace Sharp80
         protected override bool ForceRedraw => false;
         protected override bool CanSendKeysToEmulation => false;
 
+        private bool loaded = false;
+
+        private string runWarning = Format("WARNING: The computer hasn't started yet.") +
+                                    Format("Some CMD files could fail. Hit [F8] to start.") +
+                                    Separator();
+
         protected override bool processKey(KeyState Key)
         {
             if (Key.Pressed)
@@ -19,17 +25,25 @@ namespace Sharp80
                 Invalidate();
                 switch (Key.Key)
                 {
+                    case KeyCode.C:
+                        Clear();
+                        return true;
+                    case KeyCode.F:
+                        if (CmdFile?.Valid ?? false)
+                            MakeFloppyFromFile(out string _, CmdFile.FilePath);
+                        return true;
                     case KeyCode.I:
-                        ImportCMDFile();
+                        Import();
                         return true;
                     case KeyCode.L:
-                        LoadCmdFile();
+                        Load();
                         break;
                     case KeyCode.R:
-                        RunCmdFile();
+                        Run();
                         return true;
                     case KeyCode.F8:
-                        CurrentMode = ViewMode.Normal;
+                        if (!Computer.HasRunYet)
+                            CurrentMode = ViewMode.Normal;
                         return base.processKey(Key);
                 }
             }
@@ -40,22 +54,32 @@ namespace Sharp80
         {
             string fileInfo;
             string options;
+            string warning = Format();
 
             if (CmdFile == null)
             {
-                fileInfo = Format() + Indent("No CMD File Imported.") + Format();
-                options = String.Empty;
+                fileInfo = Format() +
+                           Indent("No CMD File Imported.") +
+                           Format();
+
+                options = Format("[R] Run CMD file") +
+                          Format() +
+                          Format("[I] Import CMD file without running");
+
+                if (!Computer.HasRunYet)
+                    warning = runWarning;
             }
             else if (!CmdFile.Valid)
             {
                 fileInfo = Format("CMD File: " + FitFilePath(CmdFile.FilePath, ScreenMetrics.NUM_SCREEN_CHARS_X - "CMD File: ".Length)) +
-                           Format() + 
+                           Format() +
                            Format("Invalid CMD File");
-                options = String.Empty;
+
+                options = Format("[C] Clear this CMD File");
             }
             else
             {
-                fileInfo = Format("CMD File: " + FitFilePath(CmdFile.FilePath, ScreenMetrics.NUM_SCREEN_CHARS_X - "CMD File: ".Length)) +
+                fileInfo = Format(FitFilePath(CmdFile.FilePath, ScreenMetrics.NUM_SCREEN_CHARS_X)) +
                            Format(string.Format("{0} bytes in {1} block{2} spanning {3}:{4}", 
                                                 CmdFile.Size,
                                                 CmdFile.NumBlocks,
@@ -64,26 +88,37 @@ namespace Sharp80
                                                 CmdFile.HighAddress.ToHexString())) +
                            Format(CmdFile.ExecAddress.HasValue ? ("Execution Address: " + CmdFile.ExecAddress.Value.ToHexString()) : "NO EXECUTION ADDRESS!");
 
-                options = Format("[L] Load CMD File into memory without running") +
-                          Format();
+                if (!Computer.HasRunYet)
+                {
+                    warning = runWarning;
+                }
 
                 if (CmdFile.ExecAddress.HasValue)
-                    options += Format("[R] Run CMD file");
+                    options = Format("[R] Run CMD file") + 
+                              Format();
                 else
-                    options += Format();
+                    options = String.Empty;
+
+                if (loaded)
+                    options += Format("[L] Reload CMD file into memory without running");
+                else
+                    options += Format("[L] Load CMD file into memory without running");
+
+                options += Format() +
+                           Format("[C] Clear this CMD file") +
+                           Format() +
+                           Format("[F] Create a floppy and write this CMD file to it");
             }
 
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Sharp 80 CMD File Manager") + 
                 fileInfo +
                 Separator() +
-                Format() +
-                Format("[I] Import CMD file") +
-                Format() +
+                warning +
                 options
                 ));
         }
-        private void ImportCMDFile()
+        private void Import()
         {
             string Path = Dialogs.GetCommandFile(Settings.LastCmdFile);
 
@@ -94,22 +129,33 @@ namespace Sharp80
                 if (CmdFile.Valid)
                     Settings.LastCmdFile = Path;
                 else
-                    Dialogs.AlertUser("CMD File load failed.");
+                    Dialogs.AlertUser("CMD File import failed: file not valid");
             }
         }
-        private void LoadCmdFile()
+        private void Load()
         {
             if (CmdFile?.Valid ?? false)
+            {
+                loaded = true;
                 Computer.LoadCMDFile(CmdFile);
+            }
         }
-        private void RunCmdFile()
+        private void Run()
         {
+            if (CmdFile == null)
+                Import();
+
             if (CmdFile?.Valid ?? false)
             {
                 Computer.LoadCMDFile(CmdFile);
                 Computer.Start();
                 CurrentMode = ViewMode.Normal;
             }
+        }
+        private void Clear()
+        {
+            CmdFile = null;
+            loaded = false;
         }
     }
 }

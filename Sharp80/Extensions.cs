@@ -320,5 +320,27 @@ namespace Sharp80
                         method.ReflectedType?.Name ?? String.Empty, method.Name,
                         String.Join(", ", method.GetParameters().Select(p => p.Name)));
         }
+        public static string MakeUniquePath(this string Path)
+        {
+            var Dir = System.IO.Path.GetDirectoryName(Path);
+            var FileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(Path);
+            var Extension = System.IO.Path.GetExtension(Path);
+
+            int i = 0;
+            do
+            {
+                string name = i++ > 0 ? string.Format("{0} ({1})", FileNameWithoutExtension, i)
+                                      : FileNameWithoutExtension;
+
+                Path = System.IO.Path.Combine(Dir, name + "." + Extension);
+            }
+            while (File.Exists(Path));
+
+            return Path;
+        }
+        public static string ReplaceExtension(this string Path, string NewExtension)
+        {
+            return System.IO.Path.ChangeExtension(Path, NewExtension);
+        }
     }
 }

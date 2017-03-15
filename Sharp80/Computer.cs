@@ -313,6 +313,7 @@ namespace Sharp80
                 Stop(WaitForStop: true);
 
             FloppyController.UnloadDrive(DriveNum);
+
             Storage.SaveDefaultDriveFileName(DriveNum, String.Empty);
 
             if (running)

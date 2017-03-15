@@ -56,7 +56,7 @@ namespace Sharp80
         {
             if (hasUnsavedContent)
             {
-                FilePath = FilePath ?? Storage.GetUniquePath(Storage.AppDataPath, "Printer", "txt");
+                FilePath = FilePath ?? System.IO.Path.Combine(Storage.AppDataPath, "Printer.txt").MakeUniquePath();
                 Storage.SaveTextFile(FilePath,
                                      printBuffer.ToString());
                 hasUnsavedContent = false;

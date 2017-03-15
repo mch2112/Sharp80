@@ -36,9 +36,9 @@ namespace Sharp80
 
         static Settings()
         {
-            System.Diagnostics.Debug.Assert(lastAsmFile == null);
-            System.Diagnostics.Debug.Assert(lastCmdFile == null);
-            System.Diagnostics.Debug.Assert(lastSnapshotFile == null);
+#if DEBUG
+            Properties.Settings.Default.Reset();
+#endif
         }
 
         public static bool AdvancedView
@@ -91,6 +91,10 @@ namespace Sharp80
             get
             {
                 defaultFloppyDirectory = defaultFloppyDirectory ?? Properties.Settings.Default.default_floppy_directory;
+
+                if (String.IsNullOrWhiteSpace(defaultFloppyDirectory))
+                    defaultFloppyDirectory = System.IO.Path.Combine(Storage.AppDataPath, @"Disks\");
+
                 return defaultFloppyDirectory;
             }
             set { defaultFloppyDirectory = value; }
@@ -100,6 +104,10 @@ namespace Sharp80
             get
             {
                 disk0Filename = disk0Filename ?? Properties.Settings.Default.disk0;
+
+                if (String.IsNullOrWhiteSpace(disk0Filename))
+                    disk0Filename = System.IO.Path.Combine(Storage.AppDataPath, @"Disks\");
+
                 return disk0Filename;
             }
             set { disk0Filename = value; }
@@ -109,6 +117,10 @@ namespace Sharp80
             get
             {
                 disk1Filename = disk1Filename ?? Properties.Settings.Default.disk1;
+
+                if (String.IsNullOrWhiteSpace(disk1Filename))
+                    disk1Filename = System.IO.Path.Combine(Storage.AppDataPath, @"Disks\");
+
                 return disk1Filename;
             }
             set { disk1Filename = value; }
@@ -118,6 +130,10 @@ namespace Sharp80
             get
             {
                 disk2Filename = disk2Filename ?? Properties.Settings.Default.disk2;
+
+                if (String.IsNullOrWhiteSpace(disk2Filename))
+                    disk2Filename = System.IO.Path.Combine(Storage.AppDataPath, @"Disks\");
+
                 return disk2Filename;
             }
             set { disk2Filename = value; }
@@ -127,6 +143,10 @@ namespace Sharp80
             get
             {
                 disk3Filename = disk3Filename ?? Properties.Settings.Default.disk3;
+
+                if (String.IsNullOrWhiteSpace(disk3Filename))
+                    disk3Filename = System.IO.Path.Combine(Storage.AppDataPath, @"Disks\");
+
                 return disk3Filename;
             }
             set { disk3Filename = value; }
@@ -163,6 +183,10 @@ namespace Sharp80
             get
             {
                 lastAsmFile = lastAsmFile ?? Properties.Settings.Default.last_asm_file;
+
+                if (String.IsNullOrWhiteSpace(lastAsmFile))
+                    lastAsmFile = System.IO.Path.Combine(Storage.AppDataPath, @"ASM Files\");
+
                 return lastAsmFile;
             }
             set { lastAsmFile = value; }
@@ -172,6 +196,10 @@ namespace Sharp80
             get
             {
                 lastCmdFile = lastCmdFile ?? Properties.Settings.Default.last_cmd_file;
+
+                if (String.IsNullOrWhiteSpace(lastCmdFile))
+                    lastCmdFile = System.IO.Path.Combine(Storage.AppDataPath, @"CMD Files\");
+
                 return lastCmdFile;
             }
             set { lastCmdFile = value; }
@@ -190,6 +218,10 @@ namespace Sharp80
             get
             {
                 lastTapeFile = lastTapeFile ?? Properties.Settings.Default.last_tape_file;
+
+                if (String.IsNullOrWhiteSpace(lastTapeFile))
+                    lastTapeFile = System.IO.Path.Combine(Storage.AppDataPath, @"Disks\");
+
                 return lastTapeFile;
             }
             set { lastTapeFile = value; }

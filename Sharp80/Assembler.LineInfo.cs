@@ -196,29 +196,13 @@ namespace Sharp80.Assembler
                 get
                 {
                     if (HasError)
-                        return "ERROR: " + Error + Environment.NewLine + RawLine;
+                        return RawLine + Environment.NewLine + "ERROR: " + Error;
 
                     var s = new StringBuilder();
                     if (RawLine.Length > 0)
                         s.Append(FullName.PadRight(51) + "; " + RawLine);
                     else
                         s.Append(FullName);
-
-#if DEBUG
-                    // TEMP Extra info
-                    if (Instruction != null)
-                    {
-                        s.AppendLine();
-                        var i = Instruction;
-                        s.AppendFormat("       {0} {1} {2} {3}               {4,-18}\r\n",
-                                 i.Op0.ToHexString(),
-                                 i.Size < 2 ? "  " : i.OpcodeLength < 2 ? "XX" : i.Op1.ToHexString(),
-                                 i.Size < 3 ? "  " : "XX",
-                                 i.Size < 4 ? "  " : i.OpcodeLength < 3 ? "XX" : i.Op3.ToHexString(),
-                                 i.Name
-                                 );
-                    }
-#endif
                     return s.ToString();
                 }
             }
@@ -226,13 +210,16 @@ namespace Sharp80.Assembler
             {
                 get
                 {
-                    if (Instruction != null)
+                    if (this.HasError)
+                        return 0;
+                    else if (Instruction != null)
                         return Instruction.Size;
                     else switch (Mnemonic)
                         {
                             case "":
                             case "ORG":
                             case "EQU":
+                            case "END":
                                 return 0;
                             case "DEFB":
                                 return 1;
@@ -246,7 +233,7 @@ namespace Sharp80.Assembler
                             case "DEFM":
                                 return Operand0.RawText.Length;
                             default:
-                                throw new Exception();
+                                throw new Exception("Error in LineInfo Size calc");
                         }
                 }
             }

@@ -303,26 +303,13 @@ namespace Sharp80
         {
             if (DriveNumber.HasValue)
             {
-                string path = Path ?? (FromLibrary ? System.IO.Path.Combine(Storage.AppDataPath, "Disks") + "\\"
+                string path = Path ?? (FromLibrary ? System.IO.Path.Combine(Storage.AppDataPath, @"Disks\")
                                                    : Storage.GetDefaultDriveFileName(DriveNumber.Value));
 
                 if (!Storage.IsFileNameToken(path))
                 {
                     bool selectFile = true;
-
-                    if (String.IsNullOrWhiteSpace(path))
-                    {
-                        path = Settings.DefaultFloppyDirectory;
-                        selectFile = false;
-                        if (String.IsNullOrWhiteSpace(path))
-                        {
-                            path = Storage.AppDataPath;
-                            var p = System.IO.Path.Combine(path, "Disks");
-                            if (Directory.Exists(p))
-                                path = p;
-                        }
-                    }
-
+                    
                     path = Storage.GetFloppyFilePath(Prompt: string.Format("Select floppy file to load in drive {0}", DriveNumber.Value),
                                              DefaultPath: path,
                                              Save: false,

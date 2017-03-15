@@ -35,11 +35,11 @@ namespace Sharp80.Assembler
                                                        "(HL)", "(BC)", "(DE)", "(AF)" };
 
         private static string[] sixteenBitRegisters = new string[] { "AF", "BC", "DE", "HL", "IX", "IY", "SP" };
-        private static string[] metaInstructions = new string[] { "ORG", "EQU", "DEFB", "DB", "DEFW", "DW", "DEFM", "DM", "DEFS", "DS" };
+        private static string[] metaInstructions = new string[] { "ORG", "EQU", "DEFB", "DB", "DEFW", "DW", "DEFM", "DM", "DEFS", "DS", "END" };
         private static string[] flagStates = new string[] { "C", "NC", "Z", "NZ", "PO", "PE", "P", "M" };
         private static string[] instructionNames = new string[] { "ADC", "ADD", "AND", "BIT", "CALL", "CCF", "CP", "CPD", "CPDR", "CPI", "CPIR", "CPL", "DAA",
-                                                                  "DEC", "DI", "DJNZ", "EI", "EX", "EXX", "HALT", "IM", "IN", "INC", "IND", "INDR", "JP", "JR",
-                                                                  "LD", "LDD", "LDDR", "LDI", "LDIR", "NEG", "NOP", "OR", "OTDR", "OTIR", "OUT", "OUTD", "OUTR",
+                                                                  "DEC", "DI", "DJNZ", "EI", "EX", "EXX", "HALT", "IM", "IN", "INC", "IND", "INDR", "INI", "INIR", "JP", "JR",
+                                                                  "LD", "LDD", "LDDR", "LDI", "LDIR", "NEG", "NOP", "OR", "OTDR", "OTIR", "OUT", "OUTD", "OUTI", "OUTR",
                                                                   "POP", "PUSH", "RES", "RET", "RETI", "RETN", "RL", "RLA", "RLC", "RLCA", "RLD", "RR", "RRC", "RRCA",
                                                                   "RRD", "RST", "SBC", "SCF", "SET", "SLA", "SRA", "SRL", "SUB", "XOR" };
 
@@ -47,7 +47,8 @@ namespace Sharp80.Assembler
         private string intermediateFile = String.Empty;
 
         private List<Macro> macros = new List<Macro>();
-        
+        private ushort? execAddress = null;
+
         public Assembler(IEnumerable<Processor.Instruction> InstructionSet)
         {
             instructionSet = InstructionSet.ToList();
@@ -100,14 +101,6 @@ namespace Sharp80.Assembler
         private bool GetFilePath()
         {
             string path = Settings.LastAsmFile;
-
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
-            {
-                path = Storage.AppDataPath;
-                var p = Path.Combine(path, @"ASM Files\");
-                if (Directory.Exists(p))
-                    path = p;
-            }
 
             path = Dialogs.GetAssemblyFile(path, false);
 
@@ -230,9 +223,6 @@ namespace Sharp80.Assembler
             string comment = String.IsNullOrWhiteSpace(lp.Comment) ? String.Empty : ("\t; " + lp.Comment);
             switch (lp.Mnemonic)
             {
-                case "END":
-                    suppressLine = true;
-                    break;
                 case "DEFB":
                 case "DEFW":
                     if (lp.IsMultiline)
@@ -327,6 +317,12 @@ namespace Sharp80.Assembler
                 {
                     lp.Address = address;
                 }
+                else if (lp.Mnemonic == "END")
+                {
+                    lp.Address = address;
+                    if (lp.NumOperands > 0)
+                        execAddress = lp.Operand0.NumericValue.Value;
+                }
                 else
                 {
                     lp.Address = address;
@@ -361,7 +357,7 @@ namespace Sharp80.Assembler
                     }
                 }
 
-                lp.Error = string.Format("Instruction not found: Line {0} {1}", lp.SourceFileLine, lp.FullNameWithOriginalLineAsCommentWithErrorIfAny);
+                lp.Error = string.Format("Instruction not found: {0}", lp.RawLine);
             }
             return false;
         }
@@ -389,6 +385,13 @@ namespace Sharp80.Assembler
             bool commenting = false;
             bool quoting = false;
             bool escaping = false;
+
+            // keep quoting from messing these up
+            line = line.Replace("AF'", "{AFPRIME}")
+                       .Replace("BC'", "{BCPRIME}")
+                       .Replace("DE'", "{DCPRIME}")
+                       .Replace("HL'", "{HLPRIME}");
+
             foreach (char c in line)
             {
                 if (c == ';')
@@ -397,10 +400,10 @@ namespace Sharp80.Assembler
                     if (quoting)
                     {
                         quoting = false;
-                        sb.Append('\'');
+                        sb.Append(SINGLE_QUOTE);
                     }
                 }
-                if (!commenting && c == '\'' && !escaping)
+                if (!commenting && c == SINGLE_QUOTE && !escaping)
                     quoting = !quoting;
                 
                 if (quoting || commenting)
@@ -411,8 +414,13 @@ namespace Sharp80.Assembler
                 escaping = c == '\\';
             }
 
+            sb = sb.Replace("{AFPRIME}", "AF'")
+                   .Replace("{BCPRIME}", "BC'")
+                   .Replace("{DCPRIME}", "DE'")
+                   .Replace("{HLPRIME}", "HL'");
+
             if (quoting)
-                sb.Append('\'');
+                sb.Append(SINGLE_QUOTE);
 
             return sb.ToString();
         }
@@ -521,9 +529,14 @@ namespace Sharp80.Assembler
                             case 1: // relative address only: 8 bit
                                 int delta = operand.NumericValue.Value - lp.Address - 2;
                                 if (delta > 0x7F || delta < -0x80)
-                                    lp.Error = "Relative address too far.";
+                                {
+                                    if (!lp.HasError)
+                                        lp.Error = "Relative address too far.";
+                                }
                                 else
+                                {
                                     lp.Byte1 = Lib.TwosCompInv((sbyte)(operand.NumericValue - lp.Address - 2));
+                                }
                                 break;
                             case 2:
                                 operand.GetDataBytes(out lp.Byte1, out lp.Byte2);
@@ -649,6 +662,10 @@ namespace Sharp80.Assembler
                 {
                     ret = symbolLine.Operand0.NumericValue;
                     ret += Offset;
+                }
+                else if (symbolLine.HasError)
+                {
+                    currentLP.Error = string.Format("Symbol {0} defined on line {1} which has an error.", Symbol, currentLP.SourceFileLine);
                 }
                 else
                 {
@@ -810,7 +827,7 @@ namespace Sharp80.Assembler
 
             Storage.SaveTextFile(intermediateFile,
                                  string.Join(Environment.NewLine,
-                                             unit.Select(lp => lp.FullNameWithOriginalLineAsCommentWithErrorIfAny)) +
+                                             unit.Select(lp => string.Format("{0:00000} {1}", lp.SourceFileLine, lp.FullNameWithOriginalLineAsCommentWithErrorIfAny))) +
                                  Environment.NewLine +
                                  Environment.NewLine +
                                  SymbolTableToString());
@@ -891,8 +908,7 @@ namespace Sharp80.Assembler
                     data.Add(new Tuple<ushort, byte[]>(lowAddress, segment));
                     lowestAddress = Math.Min(lowAddress, lowestAddress);
                 }
-                var execAddress = GetSymbolValue(unit[0], "ENTRY") ?? lowestAddress;
-                SaveCMDFile(title, cmdFilePath, data, execAddress);
+                SaveCMDFile(title, cmdFilePath, data, GetSymbolValue(unit[0], "ENTRY") ?? execAddress ?? lowestAddress);
             }
             catch (Exception ex)
             {

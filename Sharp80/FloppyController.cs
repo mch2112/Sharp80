@@ -1420,7 +1420,7 @@ namespace Sharp80
                     sectorDeleted = false;
                     Busy = true;
                 }
-
+                /*
                 if (CurrentDrive.IsUnloaded && command != Command.Reset)
                 {
                     switch (command)
@@ -1432,7 +1432,7 @@ namespace Sharp80
                             return;
                     }
                 }
-
+                */
                 opStatus = OpStatus.Prepare;
                 idamBytesFound = 0;
 

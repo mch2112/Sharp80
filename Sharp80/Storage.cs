@@ -41,22 +41,6 @@ namespace Sharp80
                 return appDataPath;
             }
         }
-        public static string GetUniquePath(string Directory, string FileNameWithoutExtension, string Extension)
-        {
-            string path;
-            int i = 0;
-            do
-            {
-                string name = i++ > 0 ? string.Format("{0} ({1})", FileNameWithoutExtension, i)
-                                      : FileNameWithoutExtension;
-
-                path = Path.Combine(Directory,
-                                    name + "." + Extension);
-            }
-            while (File.Exists(path));
-
-            return path;
-        }
         public static bool LoadBinaryFile(string FilePath, out byte[] Bytes)
         {
             try
@@ -271,14 +255,15 @@ namespace Sharp80
             }
             return true;
         }
-        public static bool MakeFloppyFromFile(string FilePath)
+        public static bool MakeFloppyFromFile(string FilePath, out string NewPath)
         {
             if (LoadBinaryFile(FilePath, out byte[] bytes))
             {
                 byte[] diskImage = DMK.MakeFloppyFromFile(bytes, Path.GetFileName(FilePath)).Serialize(ForceDMK: true);
                 if (diskImage.Length > 0)
-                    return SaveBinaryFile(Path.ChangeExtension(FilePath, "dsk"), diskImage);
+                    return SaveBinaryFile(NewPath = FilePath.ReplaceExtension("dsk"), diskImage);
             }
+            NewPath = String.Empty;
             return false;
         }
     }

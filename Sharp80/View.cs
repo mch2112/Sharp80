@@ -294,7 +294,7 @@ namespace Sharp80
                             ShowPrinterOutput();
                             break;
                         case KeyCode.Q:
-                            MakeFloppyFromFile();
+                            MakeFloppyFromFile(out string _);
                             return true;
                         case KeyCode.R:
                             CurrentMode = ViewMode.Cpu;
@@ -496,23 +496,27 @@ namespace Sharp80
             return ret;
         }
         
-        private void MakeFloppyFromFile()
+        protected bool MakeFloppyFromFile(out string NewPath, string FilePath = null)
         {
-            string path = Dialogs.GetFilePath(Storage.DocsPath);
+            FilePath = FilePath ?? Dialogs.GetFilePath(Storage.DocsPath);
+            NewPath = String.Empty;
 
-            if (path.Length > 0)
+            if (FilePath.Length > 0)
             {
-                if (Storage.MakeFloppyFromFile(path))
+                if (Storage.MakeFloppyFromFile(FilePath, out NewPath))
                 {
-                    Dialogs.AlertUser("Floppy created.");
-                    if (path.ToUpper().EndsWith(".CMD"))
-                        Settings.LastCmdFile = path;
+                    if (Dialogs.AskYesNo("Floppy created and saved to:" + Environment.NewLine + NewPath + Environment.NewLine + "Load to floppy drive 1?"))
+                    {
+                        Computer.LoadFloppy(1, NewPath);
+                    }
+                    return true;
                 }
                 else
                 {
                     Dialogs.AlertUser("Failed to create floppy.");
                 }
             }
+            return false;
         }
         private void MakeAndSaveBlankFloppy(bool Formatted)
         {
