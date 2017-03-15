@@ -50,7 +50,8 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogException(ex, ExceptionHandlingOptions.InformUser);
+                Log.LogException(ex, ExceptionHandlingOptions.LogOnly);
+                Dialogs.InformUser("The file " + FilePath + " failed to load.");
                 Bytes = null;
                 return false;
             }

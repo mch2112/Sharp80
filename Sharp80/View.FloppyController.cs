@@ -9,7 +9,7 @@ namespace Sharp80
     class ViewFloppyController : View
     {
         protected override ViewMode Mode => ViewMode.FloppyController;
-        protected override bool ForceRedraw => Computer.IsRunning;
+        protected override bool ForceRedraw => FrameReqNum % 10 == 0;
         protected override bool CanSendKeysToEmulation => false;
 
         protected override byte[] GetViewBytes()

@@ -22,7 +22,6 @@ namespace Sharp80
         /// </summary>
         public static Queue<Tuple<Exception, ExceptionHandlingOptions>> ExceptionQueue = new Queue<Tuple<Exception, ExceptionHandlingOptions>>();
 
-
         public static bool TraceOn { get; set; } = false;
 
         private const int MAX_LOG_ITEMS = 1000000;
@@ -63,9 +62,21 @@ namespace Sharp80
             if (log.Count > 0)
             {
                 Path = System.IO.Path.Combine(Storage.AppDataPath, "trace.txt");
-                Storage.SaveTextFile(Path, log.Select(l => string.Format("{0:000,000,000,000}: {1}", l.Item1, l.Item2)));
-                if (Flush)
-                    log.Clear();
+
+                // create a new log so that we can save the old one without
+                // it being modified.
+                var oldLog = log;
+                log = new List<Tuple<ulong, string>>();
+
+                Storage.SaveTextFile(Path, oldLog.Select(l => string.Format("{0:000,000,000,000}: {1}", l.Item1, l.Item2)));
+
+                // and restore if not flushed
+                if (!Flush)
+                {
+                    var newLog = log;
+                    log = oldLog;
+                    log.AddRange(newLog);
+                }
                 return true;
             }   
             else

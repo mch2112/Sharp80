@@ -113,7 +113,7 @@ namespace Sharp80
                         break;
                     default:
                         // Probably a .dsk extension. Use heuristic to figure
-                        // out what kid of disk it is. Probably could be improved.
+                        // out what kind of disk it is. Probably could be improved.
                         if ((fileLength % 2560) == 0)
                             // JV1
                             f = DMK.FromJV1(diskData);

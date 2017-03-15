@@ -243,7 +243,7 @@ namespace Sharp80.Processor
         {
             ulong retVal;
 
-            if (BreakPointOn && (PC.val == BreakPoint))
+            if (BreakPointOn && (PC.val == BreakPoint) && computer.IsRunning)
             {
                 // skip breakpoint so we don't break before we get started again
                 if (skipOneBreakpoint)

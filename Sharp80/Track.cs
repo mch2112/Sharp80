@@ -232,6 +232,9 @@ namespace Sharp80
             if (DoubleDensity == false)
                 TrackIndex &= 0x7FFFFFFE;
 
+            if (TrackIndex >= Data.Length)
+                TrackIndex = 0;
+
             var b = Data[TrackIndex];
 #if DEBUG
             if (DoubleDensity.HasValue && !DoubleDensity.Value)
@@ -300,7 +303,7 @@ namespace Sharp80
                 byte dam = 0x00;
                 int dataStart = 0x00;
                 bool deleted = false;
-                for (int i = offset + 6 * byteMultiple; i < offset + (6 + (density ? 43 : 30)) * byteMultiple; i += byteMultiple)
+                for (int i = offset + 7 * byteMultiple; i < offset + (7 + (density ? 43 : 30)) * byteMultiple; i += byteMultiple)
                 {
                     if (FloppyController.IsDAM(Data[i], out deleted))
                     {

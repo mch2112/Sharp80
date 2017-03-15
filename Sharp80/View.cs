@@ -15,7 +15,7 @@ namespace Sharp80
     internal abstract class View
     {
         private const int STANDARD_INDENT = 3;
-
+        
         public delegate void MessageDelegate(string Message);
         public delegate void UserCommandHandler(UserCommand Command);
 
@@ -25,6 +25,8 @@ namespace Sharp80
         private static bool invalid = false;
         private static ViewMode currentMode = ViewMode.Splash;
         private static Dictionary<ViewMode, View> views = new Dictionary<ViewMode, View>();
+
+        protected static ulong FrameReqNum { get; private set; }
 
         public View()
         {
@@ -56,6 +58,7 @@ namespace Sharp80
         {
             get
             {
+                FrameReqNum++;
                 return invalid || views[CurrentMode].ForceRedraw;
             }
             private set

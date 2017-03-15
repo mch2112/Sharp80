@@ -167,9 +167,13 @@ namespace Sharp80
                 switch (OriginalFileType)
                 {
                     case FileType.JV1:
-                        return SerializeToJV1();
+                        FilePath = FilePath.ReplaceExtension(".dmk");
+                        return SerializeToDMK();
+                        //return SerializeToJV1();
                     case FileType.JV3:
-                        return SerializeToJV3();
+                        FilePath = FilePath.ReplaceExtension(".dmk");
+                        return SerializeToDMK();
+                        //return SerializeToJV3();
                     default:
                         return SerializeToDMK();
                 }
