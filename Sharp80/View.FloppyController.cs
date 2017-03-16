@@ -35,7 +35,7 @@ namespace Sharp80
                 Format() +
                 Indent(string.Format("Drive Number:   {0}", status.CurrentDriveNumber)) +
                 Indent(string.Format("OpStatus:       {0}", status.OperationStatus)) +
-                Indent(string.Format("State:          {0} {1}", status.Busy ? "BUSY" : "    ", status.DrqStatus ? "DRQ" : "   ")) +
+                Indent(string.Format("State:          {0} {1}", status.Busy ? "BUSY" : "    ", status.Drq ? "DRQ" : "   ")) +
                 Indent("Command Status: " + status.CommandStatus) +
                 Format() +
                 Indent(string.Format("Track / Sector Register:   {0:X2} / {1:X2}", status.TrackRegister, status.SectorRegister)) +

@@ -78,11 +78,10 @@ namespace Sharp80
         // FDC Flags, etc.
         public bool Busy { get; private set; }
         public bool DoubleDensitySelected { get; private set; }
-        public bool DrqStatus { get; private set; }
+        public bool Drq { get; private set; }
         public bool CrcError { get; private set; }
         public bool LostData { get; private set; }
         public bool SeekError { get; private set; }
-        private bool drq;
         private bool lastStepDirUp;
         private bool sectorDeleted;
         private bool writeProtected;
@@ -205,7 +204,7 @@ namespace Sharp80
             command = Command.Restore;
 
             Busy = false;
-            drq = DrqStatus = false;
+            Drq = false;
             SeekError = false;
             LostData = false;
             CrcError = false;
@@ -348,7 +347,6 @@ namespace Sharp80
             if (!DriveIsUnloaded(DriveNumber))
                 drives[DriveNumber].WriteProtected = WriteProtected;
         }
-        public bool DRQ { get { return drq; } }
 
         // CALLBACKS
 
@@ -494,7 +492,7 @@ namespace Sharp80
                     delayBytes = 1;
                     break;
                 case OpStatus.ReadingData:
-                    if (drq)
+                    if (Drq)
                     {
                         Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1} TrackRegister: {2} SectorRegister {3} Bytes Read: {4}",
                                                       command, opStatus, TrackRegister, SectorRegister, bytesRead));
@@ -607,7 +605,7 @@ namespace Sharp80
                     delayBytes = 8;
                     break;
                 case OpStatus.DrqCheck:
-                    if (drq)
+                    if (Drq)
                     {
                         Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1}", command, opStatus));
                         LostData = true;
@@ -648,7 +646,7 @@ namespace Sharp80
                     delayBytes = 1;
                     break;
                 case OpStatus.WritingData:
-                    if (drq)
+                    if (Drq)
                     {
                         Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1}", command, opStatus));
                         LostData = true;
@@ -793,7 +791,7 @@ namespace Sharp80
                     }
                     break;
                 case OpStatus.DrqCheck:
-                    if (drq)
+                    if (Drq)
                     {
                         Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1}", command, opStatus));
                         LostData = true;
@@ -814,7 +812,7 @@ namespace Sharp80
                     byte b = DataRegister;
                     bool doDrq = true;
                     bool allowCrcReset = true;
-                    if (drq)
+                    if (Drq)
                     {
                         Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1}", command, opStatus));
                         LostData = true;
@@ -922,7 +920,7 @@ namespace Sharp80
                     break;
                 case OpStatus.ReadingData:
                     DataRegister = b;
-                    if (drq)
+                    if (Drq)
                     {
                         Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1}", command, opStatus));
                         LostData = true;
@@ -1173,8 +1171,7 @@ namespace Sharp80
             Writer.Write(DoubleDensitySelected);
             Writer.Write(sectorDeleted);
             Writer.Write(Busy);
-            Writer.Write(drq);
-            Writer.Write(DrqStatus);
+            Writer.Write(Drq);
             Writer.Write(SeekError);
             Writer.Write(CrcError);
             Writer.Write(LostData);
@@ -1190,9 +1187,6 @@ namespace Sharp80
             Writer.Write(markSectorDeleted);
             Writer.Write(multipleRecords);
 
-            // remove at next schema change
-            Writer.Write(TrackDataIndex);
-            
             Writer.Write(readAddressData);
             Writer.Write(readAddressIndex);
             Writer.Write(idamBytesFound);
@@ -1232,8 +1226,7 @@ namespace Sharp80
             DoubleDensitySelected = Reader.ReadBoolean();
             sectorDeleted = Reader.ReadBoolean();
             Busy = Reader.ReadBoolean();
-            drq = Reader.ReadBoolean();
-            DrqStatus = Reader.ReadBoolean();
+            Drq = Reader.ReadBoolean();
             SeekError = Reader.ReadBoolean();
             CrcError = Reader.ReadBoolean();
             LostData = Reader.ReadBoolean();
@@ -1247,9 +1240,6 @@ namespace Sharp80
             sideOneExpected = Reader.ReadBoolean();
             markSectorDeleted = Reader.ReadBoolean();
             multipleRecords = Reader.ReadBoolean();
-
-            // Remove at next schema change
-            Reader.ReadInt32();
 
             Array.Copy(Reader.ReadBytes(ADDRESS_DATA_BYTES), readAddressData, ADDRESS_DATA_BYTES);
             readAddressIndex = Reader.ReadByte();
@@ -1431,7 +1421,7 @@ namespace Sharp80
         {
             Log.LogDebug(string.Format("Read data register: {0}", DataRegister.ToHexString()));
             ports.SetPortDirect(0xF3, Enabled ? DataRegister : (byte)0xFF);
-            drq = DrqStatus = false;
+            Drq = false;
         }
         private void SetCommandRegister(byte value)
         {
@@ -1449,7 +1439,7 @@ namespace Sharp80
 
                 if (!Busy || (command != Command.Reset))
                 {
-                    drq = DrqStatus = false;
+                    Drq = false;
                     LostData = false;
                     SeekError = false;
                     CrcError = false;
@@ -1549,7 +1539,7 @@ namespace Sharp80
         private void SetDataRegister(byte value)
         {
             DataRegister = value;
-            drq = DrqStatus = false;
+            Drq = false;
             Log.LogDebug(string.Format("Set data register: {0}", DataRegister.ToHexString()));
         }
         private void FdcDiskSelect(byte value)
@@ -1697,7 +1687,7 @@ namespace Sharp80
                         statusRegister |= 0x08; // Bit 3: CRC Error
                     if (LostData)
                         statusRegister |= 0x04; // Bit 2: Lost Data
-                    if (DrqStatus)
+                    if (Drq)
                         statusRegister |= 0x02; // Bit 1: DRQ
                     break;
                 case Command.ReadSector:
@@ -1709,13 +1699,13 @@ namespace Sharp80
                         statusRegister |= 0x08; // Bit 3: CRC Error
                     if (LostData)
                         statusRegister |= 0x04; // Bit 2: Lost Data
-                    if (DrqStatus)
+                    if (Drq)
                         statusRegister |= 0x02; // Bit 1: DRQ
                     break;
                 case Command.ReadTrack:
                     if (LostData)
                         statusRegister |= 0x04; // Bit 2: Lost Data
-                    if (DrqStatus)
+                    if (Drq)
                         statusRegister |= 0x02; // Bit 1: DRQ
                     break;
                 case Command.WriteSector:
@@ -1727,7 +1717,7 @@ namespace Sharp80
                         statusRegister |= 0x08; // Bit 3: CRC Error
                     if (LostData)
                         statusRegister |= 0x04; // Bit 2: Lost Data
-                    if (DrqStatus)
+                    if (Drq)
                         statusRegister |= 0x02; // Bit 1: DRQ
                     break;
                 case Command.WriteTrack:
@@ -1735,7 +1725,7 @@ namespace Sharp80
                         statusRegister |= 0x40; // Bit 6: Write Protect detect
                     if (LostData)
                         statusRegister |= 0x04; // Bit 2: Lost Data
-                    if (DrqStatus)
+                    if (Drq)
                         statusRegister |= 0x02; // Bit 1: DRQ
                     break;
             }
@@ -1748,13 +1738,13 @@ namespace Sharp80
         private void DoNmi()
         {
             Log.LogDebug(string.Format("NMI requested. Command: {0} Opstatus: {1}", command, opStatus));
-            drq = DrqStatus = false;
+            Drq = false;
             Busy = false;
             IntMgr.FdcNmiLatch.Latch();
         }
         private void SetDRQ()
         {
-            drq = DrqStatus = true;
+            Drq = true;
         }
 
         // SPIN SIMULATION

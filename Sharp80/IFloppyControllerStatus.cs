@@ -16,7 +16,7 @@ namespace Sharp80
         byte CommandRegister { get; }
         byte DataRegister { get; }
         bool DoubleDensitySelected { get; }
-        bool DrqStatus { get; }
+        bool Drq { get; }
         bool SeekError { get; }
         bool LostData { get; }
         bool CrcError { get;}

@@ -139,7 +139,7 @@ namespace Sharp80
         }
         public bool? DriveBusyStatus { get { return FloppyController.DriveBusyStatus; } }
         public bool AnyDriveLoaded { get { return FloppyController.AnyDriveLoaded; } }
-        public bool FloppyControllerDrq { get { return FloppyController.DRQ; } }
+        public bool FloppyControllerDrq { get { return FloppyController.Drq; } }
         public string GetFloppyFilePath(byte DriveNum) { return FloppyController.FloppyFilePath(DriveNum); }
         public void SetFloppyFilePath(byte DriveNum, string Path)
         {
