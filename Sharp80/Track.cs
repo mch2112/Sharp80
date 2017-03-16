@@ -395,7 +395,7 @@ namespace Sharp80
                 {
                     if (density)
                     {
-                        if (Data[i - 1] != 0xA1 /*|| Data[i - 2] != 0xA1 || Data[i - 3] != 0xA1*/)
+                        if (Data[i - 1] != 0xA1 || Data[i - 2] != 0xA1 || Data[i - 3] != 0xA1)
                         {
                             i++;
                             continue;

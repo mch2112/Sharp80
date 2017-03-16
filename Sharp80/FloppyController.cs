@@ -624,17 +624,27 @@ namespace Sharp80
                 case OpStatus.WriteFiller:
                     WriteByte(0x00, false);
                     if (--bytesToWrite == 0)
+                    {
                         opStatus = OpStatus.WriteDAM;
+                        bytesToWrite = 4;
+                        crc = Floppy.CRC_RESET;
+                    }
                     delayBytes = 1;
                     break;
                 case OpStatus.WriteDAM:
-                    opStatus = OpStatus.WritingData;
-                    ResetCRC();
-                    if (markSectorDeleted)
-                        WriteByte(Floppy.DAM_DELETED, true);
+                    if (--bytesToWrite > 0)
+                    {
+                        WriteByte(0xA1, false);
+                    }
                     else
-                        WriteByte(Floppy.DAM_NORMAL, true);
-                    bytesToWrite = sectorLength;
+                    {
+                        opStatus = OpStatus.WritingData;
+                        if (markSectorDeleted)
+                            WriteByte(Floppy.DAM_DELETED, true);
+                        else
+                            WriteByte(Floppy.DAM_NORMAL, true);
+                        bytesToWrite = sectorLength;
+                    }
                     delayBytes = 1;
                     break;
                 case OpStatus.WritingData:
@@ -679,7 +689,6 @@ namespace Sharp80
                     else
                     {
                         opStatus = OpStatus.NMI;
-                        //UpdateTrackData();
                         delayTime = NMI_DELAY_IN_USEC;
                     }
                     break;
@@ -1784,7 +1793,7 @@ namespace Sharp80
         {
             get
             {
-                return (int)(DiskAngle * (ulong)track.DataLength / DISK_ANGLE_DIVISIONS);
+                return (int)(DiskAngle * (ulong)(track?.DataLength ?? (DoubleDensitySelected ? Floppy.STANDARD_TRACK_LENGTH_DOUBLE_DENSITY : Floppy.STANDARD_TRACK_LENGTH_SINGLE_DENSITY)) / DISK_ANGLE_DIVISIONS);
             }
         }
         private byte ReadTrackByte()
