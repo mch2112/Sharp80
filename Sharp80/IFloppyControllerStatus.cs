@@ -23,7 +23,7 @@ namespace Sharp80
         byte CurrentDriveNumber { get; }
         byte PhysicalTrackNum { get; }
         string DiskAngleDegrees { get; }
-        int TrackIndex { get; }
+        int TrackDataIndex { get; }
         byte ValueAtTrackDataIndex { get; }
         bool IndexDetect { get; }
     }

@@ -18,7 +18,7 @@ namespace Sharp80
 
             string physicalData = status.MotorOn ?
                 Indent(string.Format("Physical Disk Data: Dsk {0} Trk {1:X2} {2} ", status.CurrentDriveNumber, status.PhysicalTrackNum, status.DiskAngleDegrees)) +
-                Indent(string.Format("Track Data Index:   {0:X4} [{1:X2}]", status.TrackIndex, status.ValueAtTrackDataIndex)) +
+                Indent(string.Format("Track Data Index:   {0:X4} [{1:X2}]", status.TrackDataIndex, status.ValueAtTrackDataIndex)) +
                 Indent(              "Index Hole:         " + (status.IndexDetect ? "DETECTED" : ""))
                 :
                 Indent(string.Format("Physical Disk Data: Dsk {0} Trk {1:X2}", status.CurrentDriveNumber, status.PhysicalTrackNum)) +

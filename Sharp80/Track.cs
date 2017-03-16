@@ -266,6 +266,7 @@ namespace Sharp80
                     SetDensity(TrackIndex + 1, false);
                 }
             }
+            sectorDescriptorCache = null;
         }
         public bool HasIdamAt(int TrackIndex, bool DoubleDensity)
         {
@@ -392,22 +393,22 @@ namespace Sharp80
 
                 if (Data[i] == Floppy.IDAM)
                 {
-                    //if (density)
-                    //{
-                    //    if (Data[i - 1] != 0xA1 || Data[i - 2] != 0xA1 || Data[i - 3] != 0xA1)
-                    //    {
-                    //        i++;
-                    //        continue;
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    if (Data[i - 2] != 0x00)
-                    //    {
-                    //        i += 2;
-                    //        continue;
-                    //    }
-                    //}
+                    if (density)
+                    {
+                        if (Data[i - 1] != 0xA1 /*|| Data[i - 2] != 0xA1 || Data[i - 3] != 0xA1*/)
+                        {
+                            i++;
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        if (Data[i - 2] != 0x00)
+                        {
+                            i += 2;
+                            continue;
+                        }
+                    }
 
                     // commit without checking address crc, since could be intensional error
                     header[headerCursor++] = (ushort)(i + HEADER_LENGTH_BYTES + (density ? DOUBLE_DENSITY_MASK : 0));

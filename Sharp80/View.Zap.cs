@@ -110,7 +110,7 @@ namespace Sharp80
             if (f.DoubleSided)
             {
                 WriteToByteArray(cells, 0x280, "Side");
-                cells[0x300] = (byte)(sideOne ? '1' : '0');
+                cells[0x2C0] = (byte)(sideOne ? '1' : '0');
             }
 
             if (sd != null)
