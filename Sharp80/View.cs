@@ -286,7 +286,7 @@ namespace Sharp80
                             return true;
                         case KeyCode.N:
                             string path = Dialogs.GetSnapshotFile(Settings.LastSnapshotFile, false);
-                            if (path.Length > 0)
+                            if (path.Length > 0 && Storage.SaveChangedStorage(Computer))
                             {
                                 Computer.LoadSnapshotFile(path);
                                 Settings.LastSnapshotFile = path;

@@ -41,7 +41,7 @@ namespace Sharp80
             fdcMotorOffNmiLatch = new Trigger(null, null, TriggerLock: false, CanLatchBeforeEnabled: true);
 
             resetButtonLatch = new Trigger(
-                                () => { computer.RegisterPulseReq(new PulseReq(PulseReq.DelayBasis.Microseconds, 200000, () => { resetButtonLatch.Unlatch(); }, false)); },
+                                () => { computer.Activate(new PulseReq(PulseReq.DelayBasis.Microseconds, 200000, () => { resetButtonLatch.Unlatch(); }, false)); },
                                 null,
                                 TriggerLock: true,
                                 CanLatchBeforeEnabled: false)

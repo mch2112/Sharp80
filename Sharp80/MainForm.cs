@@ -286,7 +286,7 @@ namespace Sharp80
         }
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (Storage.SaveFloppies(computer))
+            if (Storage.SaveChangedStorage(computer))
             {
                 Settings.WindowX = Location.X;
                 Settings.WindowY = Location.Y;
@@ -396,7 +396,7 @@ namespace Sharp80
             {
                 if (computer != null)
                 {
-                    if (!Storage.SaveFloppies(computer) || !Storage.SaveTapeIfRequired(computer))
+                    if (!Storage.SaveChangedStorage(computer) || !Storage.SaveTapeIfRequired(computer))
                         return;
 
                     computer.Dispose();

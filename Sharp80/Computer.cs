@@ -10,7 +10,7 @@ namespace Sharp80
     {
         public const ulong CLOCK_RATE = 2027520;
 
-        private const int SERIALIZATION_VERSION = 6;
+        private const int SERIALIZATION_VERSION = 7;
 
         public bool Ready { get; private set; }
         public bool HasRunYet { get; private set; }
@@ -238,9 +238,9 @@ namespace Sharp80
         /// trigger's delay
         /// </summary>
         /// <param name="Req"></param>
-        public void RegisterPulseReq(PulseReq Req)
+        public void Activate(PulseReq Req)
         {
-            Clock.RegisterPulseReq(Req);
+            Clock.ActivatePulseReq(Req);
         }
         /// <summary>
         /// Adds a pulse req without resetting the trigger

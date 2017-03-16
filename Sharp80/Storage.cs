@@ -183,7 +183,11 @@ namespace Sharp80
         }
 
         // returns false if the user cancelled a needed save
-        public static bool SaveFloppies(Computer Computer)
+        public static bool SaveChangedStorage(Computer Computer)
+        {
+            return SaveFloppies(Computer) && SaveTapeIfRequired(Computer);
+        }
+        private static bool SaveFloppies(Computer Computer)
         {
             // returns true on user cancel
             for (byte b = 0; b < 4; b++)

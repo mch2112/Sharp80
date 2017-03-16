@@ -120,6 +120,9 @@ namespace Sharp80
         private ushort crc;
         private ushort crcCalc;
         private byte crcHigh, crcLow;
+        private Clock.ClockCallback nextCallback;
+        private bool isPolling;
+        private int targetDataIndex;
         private ulong TicksPerDiskRev { get; }
 
         // CONSTRUCTOR
@@ -224,6 +227,8 @@ namespace Sharp80
             motorOnPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_ON_DELAY_IN_USEC, MotorOnCallback, true);
             motorOffPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_OFF_DELAY_IN_USEC, MotorOffCallback, true);
             commandPulseReq = new PulseReq();
+
+            isPolling = false;
         }
         public void LoadFloppy(byte DriveNum, string FilePath)
         {
@@ -949,7 +954,7 @@ namespace Sharp80
         {
             MotorOn = true;
             sound.DriveMotorRunning = true;
-            clock.RegisterPulseReq(motorOffPulseReq);
+            clock.ActivatePulseReq(motorOffPulseReq);
         }
         private void MotorOffCallback()
         {
@@ -1095,6 +1100,8 @@ namespace Sharp80
         private void SetCommandPulseReq(int Bytes, ulong DelayInUsec, Clock.ClockCallback Callback)
         {
             commandPulseReq.Expire();
+            nextCallback = null;
+            isPolling = false;
 
             if (Bytes == 0 && DelayInUsec == 0)
             {
@@ -1102,38 +1109,33 @@ namespace Sharp80
             }
             else if (Bytes > 0 && DelayInUsec > 0)
             {
-                throw new Exception();
+                throw new Exception("Can't have both Byte and Time based delays");
             }
             else if (DelayInUsec == 0 && track != null)
             {
-                if (Bytes == 0)
-                {
-                    Callback();
-                }
-                else
-                {
-                    if (!DoubleDensitySelected)
-                        Bytes *= 2;
+                // Byte based delay
 
-                    // we want to come back exactly as the target byte is under the drive head
-                    int targetIndex = (TrackDataIndex + Bytes) % track.DataLength;
+                if (!DoubleDensitySelected)
+                    Bytes *= 2;
 
-                    if (!DoubleDensitySelected)
-                        targetIndex &= 0x7FFFFFFE;
+                // we want to come back exactly as the target byte is under the drive head
+                targetDataIndex = (TrackDataIndex + Bytes) % track.DataLength;
 
-                    commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds,
-                                                   DoubleDensitySelected ? BYTE_POLL_TIME_DD : BYTE_POLL_TIME_SD,
-                                                   () => { if (TrackDataIndex == targetIndex)
-                                                           Callback();
-                                                       else
-                                                           computer.RegisterPulseReq(commandPulseReq);                                                        
-                                                   },
-                                                   false);
-                    computer.RegisterPulseReq(commandPulseReq);
-                }
+                if (!DoubleDensitySelected)
+                    targetDataIndex &= 0xFFFE;
+
+                nextCallback = Callback;
+                isPolling = true;
+                commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds,
+                                               DoubleDensitySelected ? BYTE_POLL_TIME_DD : BYTE_POLL_TIME_SD,
+                                               Poll,
+                                               false);
+                computer.Activate(commandPulseReq);
             }
             else
             {
+                // Time based delay
+
                 int bytesToAdvance = Bytes + (int)(DelayInUsec / BYTE_TIME_IN_USEC_DD);
                 ulong delayTime = DelayInUsec + (ulong)Bytes * BYTE_TIME_IN_USEC_DD;
 
@@ -1146,7 +1148,7 @@ namespace Sharp80
                 {
                     Log.LogDebug(string.Format("Callback Request. Command: {0} Opstatus: {1}", command, opStatus));
                     commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, delayTime, Callback, false);
-                    computer.RegisterPulseReq(commandPulseReq);
+                    computer.Activate(commandPulseReq);
                 }
                 else
                 {
@@ -1154,7 +1156,25 @@ namespace Sharp80
                 }
             }
         }
-
+        private void Poll()
+        {
+            if (isPolling && TrackDataIndex == targetDataIndex)
+            {
+                // this is the byte we're looking for
+                isPolling = false;
+                nextCallback();
+            }
+            else if (isPolling)
+            {
+                System.Diagnostics.Debug.Assert(TrackDataIndex != targetDataIndex + 1, "Just missed the target!!");
+                // keep looking for the target index
+                computer.Activate(commandPulseReq);
+            }
+            else
+            {
+                throw new Exception("Polling error.");
+            }
+        }
         // SNAPSHOTS
 
         public void Serialize(BinaryWriter Writer)
@@ -1196,6 +1216,8 @@ namespace Sharp80
             Writer.Write(bytesToWrite);
             Writer.Write(indexesFound);
             Writer.Write(indexFoundLastCheck);
+            Writer.Write(isPolling);
+            Writer.Write(targetDataIndex);
 
             Writer.Write(crc);
             Writer.Write(crcCalc);
@@ -1251,6 +1273,8 @@ namespace Sharp80
 
             indexesFound = Reader.ReadInt32();
             indexFoundLastCheck = Reader.ReadBoolean();
+            isPolling = Reader.ReadBoolean();
+            targetDataIndex = Reader.ReadInt32();
 
             crc = Reader.ReadUInt16();
             crcCalc = Reader.ReadUInt16();
@@ -1297,10 +1321,17 @@ namespace Sharp80
                     break;
             }
 
+            if (isPolling)
+            {
+                nextCallback = callback;
+                callback = Poll;
+            }
+
             commandPulseReq.Deserialize(Reader, callback);
+
             if (commandPulseReq.Active)
                 computer.AddPulseReq(commandPulseReq);
-
+            
             motorOnPulseReq.Deserialize(Reader, MotorOnCallback);
             if (motorOnPulseReq.Active)
                 computer.AddPulseReq(motorOnPulseReq);
@@ -1576,7 +1607,7 @@ namespace Sharp80
             if (MotorOn)
                 MotorOnCallback();
             else
-                computer.RegisterPulseReq(motorOnPulseReq);
+                computer.Activate(motorOnPulseReq);
         }
         private static Command GetCommand(byte CommandRegister)
         {

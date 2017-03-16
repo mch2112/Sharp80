@@ -375,7 +375,7 @@ namespace Sharp80
                 }
                 // Keep coming back as long as we're in read status
                 readPulseReq?.Expire();
-                computer.RegisterPulseReq(readPulseReq = new PulseReq(PulseReq.DelayBasis.Ticks,
+                computer.Activate(readPulseReq = new PulseReq(PulseReq.DelayBasis.Ticks,
                                                                       t.TicksUntilNext,
                                                                       Update));
             }

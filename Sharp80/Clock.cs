@@ -144,10 +144,9 @@ namespace Sharp80
             
             waitTrigger.Latch();
         }
-        public void RegisterPulseReq(PulseReq Req)
+        public void ActivatePulseReq(PulseReq Req)
         {
             Req.SetTrigger(BaselineTicks: tickCount);
-
             AddPulseReq(Req);
         }
         public void AddPulseReq(PulseReq Req)
