@@ -55,7 +55,7 @@ namespace Sharp80
                                         Format(new string[] { "Keyboard Key", "Virtual TRS-80 Key" }, true) +
                                         Format(new string[] { "-------------------", "------------------" }, true) +
                                         Format(new string[] { "[Esc]", "[Break]           " }, true) +
-                                        Format(new string[] { "[Home]", "[Clear]           " }, true) +
+                                        Format(new string[] { "[Home] or [`]", "[Clear]           " }, true) +
                                         Format() +
                                         Format(new string[] { "[\\] or [Shift]+[2]", "[@]               " }, true) +
                                         Format(new string[] { "[Caps Lock]", "[Shift]+[0]       " }, true) +

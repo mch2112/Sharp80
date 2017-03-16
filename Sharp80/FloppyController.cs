@@ -1572,9 +1572,9 @@ namespace Sharp80
             }
 
             bool sideOne = value.IsBitSet(4);
-            if (this.SideOne != sideOne)
+            if (SideOne != sideOne)
             {
-                this.SideOne = sideOne;
+                SideOne = sideOne;
                 Log.LogDebug(string.Format("FDC Side select: {0}", sideOne ? 1 : 0));
             }
 
@@ -1680,7 +1680,7 @@ namespace Sharp80
                     if (writeProtected)
                         statusRegister |= 0x40;   // Bit 6: Write Protect detect
                     if (headLoaded)
-                        statusRegister |= 0x20;       // Bit 5: head loaded and engaged
+                        statusRegister |= 0x20;   // Bit 5: head loaded and engaged
                     if (SeekError)
                         statusRegister |= 0x10;   // Bit 4: Seek error
                     if (CrcError)
@@ -1741,11 +1741,6 @@ namespace Sharp80
             }
             if (Busy)
                 statusRegister |= 0x01; // Bit 0: Busy
-
-            // TODO: should these be here?
-            // drqStatus = false;
-            // seekErrorOrRecordNotFound = false;
-            //  lostData = false;
         }
 
         // INTERRUPTS
