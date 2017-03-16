@@ -1096,7 +1096,6 @@ namespace Sharp80
                     return false;
             }
         }
-
         private void SetCommandPulseReq(int Bytes, ulong DelayInUsec, Clock.ClockCallback Callback)
         {
             commandPulseReq.Expire();
@@ -1118,7 +1117,7 @@ namespace Sharp80
                 if (!DoubleDensitySelected)
                     Bytes *= 2;
 
-                // we want to come back exactly as the target byte is under the drive head
+                // we want to come back exactly when the target byte is under the drive head
                 targetDataIndex = (TrackDataIndex + Bytes) % track.DataLength;
 
                 if (!DoubleDensitySelected)
@@ -1135,25 +1134,9 @@ namespace Sharp80
             else
             {
                 // Time based delay
-
-                int bytesToAdvance = Bytes + (int)(DelayInUsec / BYTE_TIME_IN_USEC_DD);
-                ulong delayTime = DelayInUsec + (ulong)Bytes * BYTE_TIME_IN_USEC_DD;
-
-                if (!DoubleDensitySelected)
-                {
-                    bytesToAdvance *= 2;
-                    delayTime *= 2;
-                }
-                if (delayTime > 0)
-                {
-                    Log.LogDebug(string.Format("Callback Request. Command: {0} Opstatus: {1}", command, opStatus));
-                    commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, delayTime, Callback, false);
-                    computer.Activate(commandPulseReq);
-                }
-                else
-                {
-                    Callback();
-                }
+                Log.LogDebug(string.Format("Callback Request. Command: {0} Opstatus: {1}", command, opStatus));
+                commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, DelayInUsec, Callback, false);
+                computer.Activate(commandPulseReq);
             }
         }
         private void Poll()
@@ -1175,6 +1158,7 @@ namespace Sharp80
                 throw new Exception("Polling error.");
             }
         }
+
         // SNAPSHOTS
 
         public void Serialize(BinaryWriter Writer)
