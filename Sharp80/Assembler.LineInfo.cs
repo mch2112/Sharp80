@@ -33,14 +33,24 @@ namespace Sharp80.Assembler
             public byte? Byte3 = null;
 
             public int SourceFileLine { get; private set; }
+            public bool IsSuppressed { get; private set; } = false;
+            public string Error { get; private set; } = null;
+            public void SetError(string ErrMsg)
+            {
+                if (String.IsNullOrWhiteSpace(Error))
+                    Error = ErrMsg;
+                else
+                    Error += Environment.NewLine + ErrMsg;
+            }
 
-            public string Error = null;
+            public bool Valid { get { return !IsSuppressed && !HasError && (HasLabel || HasMnemonic); } }
+            public bool Empty {  get { return !HasLabel && !HasMnemonic && !HasComment; } }
+            public bool HasLabel { get { return Label.Length > 0; } }
+            public bool HasMnemonic { get { return Mnemonic.Length > 0; } }
+            public bool HasComment { get { return Comment.Length > 0; } }
+            public bool CommentOnly { get { return HasComment || !Valid; } }
 
-            public bool IsEmpty { get { return !this.HasLabel && !this.HasMnemonic; } }
-            public bool HasLabel { get { return this.Label.Length > 0; } }
-            public bool HasMnemonic { get { return this.Mnemonic.Length > 0; } }
-
-            public Processor.Instruction Instruction = null;
+            public Processor.Instruction Instruction { get; set; } = null;
             public Dictionary<string, LineInfo> SymbolTable { get; private set; }
 
             public LineInfo(string RawLine, int SourceFileLine, Dictionary<string, LineInfo> SymbolTable)
@@ -49,17 +59,18 @@ namespace Sharp80.Assembler
 
                 this.SourceFileLine = SourceFileLine;
                 this.SymbolTable = SymbolTable;
-                this.Label = String.Empty;
-                this.Mnemonic = String.Empty;
+
+                Label = String.Empty;
+                Mnemonic = String.Empty;
 
                 if (text.Contains(";"))
                 {
-                    this.Comment = text.Substring(text.IndexOf(';') + 1);
+                    Comment = text.Substring(text.IndexOf(';') + 1);
                     text = text.Substring(0, text.IndexOf(';')).TrimEnd();
                 }
                 else
                 {
-                    this.Comment = String.Empty;
+                    Comment = String.Empty;
                 }
 
                 string[] cols = text.Split('\t').Select(c => c.Trim()).ToArray();
@@ -106,7 +117,7 @@ namespace Sharp80.Assembler
 
                 if (cols.Length > 2)
                 {
-                    string[] ops = cols[2].Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    string[] ops = GetCSV(cols[2], 1000);
 
                     foreach (var o in ops)
                     {
@@ -120,6 +131,7 @@ namespace Sharp80.Assembler
                     {
                         case "DEFB":
                         case "DEFW":
+                        case "DEFM":
                             break;
                         default:
                             Error = "Unexpected number of operands";
@@ -139,14 +151,20 @@ namespace Sharp80.Assembler
                         case "XOR":
                         case "CP":
                             // Change lines like "ADD A, B" to "ADD B"
-                            this.TrimAccumlatorOperand(0);
+                            TrimAccumlatorOperand(0);
                             break;
                     }
                 }
             }
             public bool HasError
             {
-                get { return !String.IsNullOrWhiteSpace(Error); }
+                get
+                {
+#if DEBUG
+                    if (IsSuppressed && !String.IsNullOrWhiteSpace(Error))
+                        throw new Exception("Suppressed lines should never have errors.");
+#endif
+                    return !String.IsNullOrWhiteSpace(Error); }
             }
             private void TrimAccumlatorOperand(int OpNum)
             {
@@ -195,8 +213,14 @@ namespace Sharp80.Assembler
             {
                 get
                 {
-                    if (HasError)
-                        return RawLine + Environment.NewLine + "ERROR: " + Error;
+                    if (IsSuppressed)
+                        return "; " + RawLine;
+                    else if (HasError)
+                        return Environment.NewLine +
+                               RawLine + Environment.NewLine + "ERROR: " + Error +
+                               Environment.NewLine;
+                    else if (CommentOnly)
+                        return RawLine.Trim().PadLeft(26);
 
                     var s = new StringBuilder();
                     if (RawLine.Length > 0)
@@ -210,7 +234,7 @@ namespace Sharp80.Assembler
             {
                 get
                 {
-                    if (this.HasError)
+                    if (!Valid)
                         return 0;
                     else if (Instruction != null)
                         return Instruction.Size;
@@ -241,8 +265,8 @@ namespace Sharp80.Assembler
             {
                 get
                 {
-                    if (this.Instruction != null)
-                        return this.Instruction.OpcodeLength;
+                    if (Instruction != null)
+                        return Instruction.OpcodeLength;
                     else
                         return 0;
                 }
@@ -254,6 +278,12 @@ namespace Sharp80.Assembler
                     return Size - OpcodeSize;
                 }
             }
+
+            /// <summary>
+            /// Suppressed lines show up in intermediate files but aren't compiled
+            /// </summary>
+            public void Suppress() { IsSuppressed = true; }
+
             private bool ValidateLabel(ref string Label)
             {
                 System.Diagnostics.Debug.Assert(Label == Label.Trim().ToUpper());

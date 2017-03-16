@@ -129,7 +129,7 @@ namespace Sharp80.Assembler
                             _indexDisplacement = 0;
                         else
                         {
-                            _indexDisplacement = (byte?)GetSymbolValue(LineInfo, indexDisplacementRaw);
+                            _indexDisplacement = (byte?)GetSymbolValue(LineInfo.SymbolTable, LineInfo, indexDisplacementRaw);
                         }
 
                         return _indexDisplacement;
@@ -185,7 +185,7 @@ namespace Sharp80.Assembler
                     if (!IsNumeric)
                         throw new Exception(string.Format("Numeric Value Expected; found {0}", RawText));
 
-                    return GetNumericValue(RawText) ?? GetSymbolValue(LineInfo, RawText);
+                    return GetNumericValue(RawText) ?? GetSymbolValue(LineInfo.SymbolTable, LineInfo, RawText);
                 }
             }
             public string Text
@@ -201,15 +201,15 @@ namespace Sharp80.Assembler
                     return RawText;
                 }
             }
-            public bool GetDataBytes(out byte? Low, out byte? High)
+            public (byte Low, byte High) GetDataBytes()
             {
                 if (NumericValue.HasValue)
                 {
-                    NumericValue.Value.Split(out Low, out High);
-                    return true;
+                    NumericValue.Value.Split(out byte? Low, out byte? High);
+                    return (Low.Value, High.Value);
                 }
                 else
-                    throw new Exception();
+                    return (0, 0);
             }
             public override string ToString()
             {

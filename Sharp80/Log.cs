@@ -20,13 +20,13 @@ namespace Sharp80
         /// We save exception events in a queue that can be processed by the main form's ui thread,
         /// because showing dialogs can only be done in that thread.
         /// </summary>
-        public static Queue<Tuple<Exception, ExceptionHandlingOptions>> ExceptionQueue = new Queue<Tuple<Exception, ExceptionHandlingOptions>>();
+        public static Queue<(Exception Exception, ExceptionHandlingOptions Option)> ExceptionQueue = new Queue<(Exception Exception, ExceptionHandlingOptions Option)>();
 
         public static bool TraceOn { get; set; } = false;
 
         private const int MAX_LOG_ITEMS = 1000000;
 
-        private static List<Tuple<ulong, string>> log = new List<Tuple<ulong, string>>();
+        private static List<(ulong Tick, string Message)> log = new List<(ulong Tick, string Message)>();
         private static GetTickDelegate tickFn = () => 0;
         private static bool terminating = false;
 
@@ -52,7 +52,7 @@ namespace Sharp80
             LogDebug(Ex.ToReport());
             if (!terminating && Option != ExceptionHandlingOptions.LogOnly)
             {
-                ExceptionQueue.Enqueue(new Tuple<Exception, ExceptionHandlingOptions>(Ex, Option));
+                ExceptionQueue.Enqueue((Ex, Option));
                 if (Option == ExceptionHandlingOptions.Terminate)
                     terminating = true;
             }
@@ -66,9 +66,9 @@ namespace Sharp80
                 // create a new log so that we can save the old one without
                 // it being modified.
                 var oldLog = log;
-                log = new List<Tuple<ulong, string>>();
+                log = new List<(ulong Tick, string Message)>();
 
-                Storage.SaveTextFile(Path, oldLog.Select(l => string.Format("{0:000,000,000,000}: {1}", l.Item1, l.Item2)));
+                Storage.SaveTextFile(Path, oldLog.Select(l => string.Format("{0:000,000,000,000}: {1}", l.Tick, l.Message)));
 
                 // and restore if not flushed
                 if (!Flush)
@@ -90,7 +90,7 @@ namespace Sharp80
             if (log.Count >= MAX_LOG_ITEMS)
                 log.RemoveRange(0, MAX_LOG_ITEMS / 10);
 
-            log.Add(new Tuple<ulong, string>(tickFn(), Message));
+            log.Add((tickFn(), Message));
         }
     }
 }

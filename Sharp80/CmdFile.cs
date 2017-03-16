@@ -12,7 +12,7 @@ namespace Sharp80
 
         public bool Valid { get; private set; } = false;
         public string FilePath { get; private set; }
-        private List<Tuple<ushort, byte[]>> blocks = new List<Tuple<ushort, byte[]>>();
+        private List<(ushort SegmentAddress, byte[] Bytes)> blocks = new List<(ushort SegmentAddress, byte[] Bytes)>();
         public int Size { get; private set; }
         public int NumBlocks {  get { return blocks.Count; } }
         public ushort LowAddress { get; private set; }
@@ -53,7 +53,7 @@ namespace Sharp80
                                         length -= 0x02;
                                     var data = new byte[length];
                                     Array.Copy(b, i, data, 0, length);
-                                    blocks.Add(new Tuple<ushort, byte[]>(addr, data));
+                                    blocks.Add((addr, data));
                                     break;
                                 case 0x02:          // transfer address
                                     if (length == 0x01)
@@ -97,8 +97,8 @@ namespace Sharp80
             if (Valid)
             {
                 foreach (var b in blocks)
-                    for (int i = 0; i < b.Item2.Length; i++)
-                        Memory[(ushort)(i + b.Item1)] = b.Item2[i];
+                    for (int i = 0; i < b.Bytes.Length; i++)
+                        Memory[(ushort)(i + b.SegmentAddress)] = b.Bytes[i];
                 return true;
             }
             else
@@ -111,25 +111,25 @@ namespace Sharp80
             this.Valid = Valid && blocks.Count > 0;
             if (Valid)
             {
-                blocks = blocks.OrderBy(b => b.Item1).ToList();
+                blocks = blocks.OrderBy(b => b.SegmentAddress).ToList();
                 for (int i = 0; i < blocks.Count - 1; i++)
                 {
                     // are these adjoining blocks?
-                    if (blocks[i].Item1 + blocks[i].Item2.Length == blocks[i + 1].Item1)
+                    if (blocks[i].SegmentAddress + blocks[i].Bytes.Length == blocks[i + 1].SegmentAddress)
                     {
                         // if so, combine them
-                        byte[] data = new byte[blocks[i].Item2.Length + blocks[i + 1].Item2.Length];
-                        Array.Copy(blocks[i].Item2, 0, data, 0, blocks[i].Item2.Length);
-                        Array.Copy(blocks[i + 1].Item2, 0, data, blocks[i].Item2.Length, blocks[i + 1].Item2.Length);
-                        blocks[i] = new Tuple<ushort, byte[]>(blocks[i].Item1, data);
+                        byte[] data = new byte[blocks[i].Bytes.Length + blocks[i + 1].Bytes.Length];
+                        Array.Copy(blocks[i].Bytes, 0, data, 0, blocks[i].Bytes.Length);
+                        Array.Copy(blocks[i + 1].Bytes, 0, data, blocks[i].Bytes.Length, blocks[i + 1].Bytes.Length);
+                        blocks[i] = (blocks[i].SegmentAddress, data);
                         blocks.RemoveAt(i + 1);
                         i--;
                     }
                 }
-                Size = blocks.Sum(b => b.Item2.Length);
+                Size = blocks.Sum(b => b.Bytes.Length);
                 Valid &= Size > 0;
-                LowAddress = blocks[0].Item1;
-                HighAddress = (ushort)(blocks.Last().Item1 + blocks.Last().Item2.Length - 1);
+                LowAddress = blocks[0].SegmentAddress;
+                HighAddress = (ushort)(blocks.Last().SegmentAddress + blocks.Last().Bytes.Length - 1);
             }
             else
             {

@@ -19,9 +19,9 @@ namespace Sharp80
             DOWNARROW, A, S, D, F, G, H, J, K, L, SEMICOLON, ENTER, CLEAR, LEFTSHIFT, Z, X, C, V, B, N, M, COMMA, PERIOD, SLASH, RIGHTSHIFT, SPACEBAR
         }
 
-        private Dictionary<VirtualKey, Tuple<ushort, byte, byte>> keyAddresses;
+        private Dictionary<VirtualKey, (ushort Address, byte KeyMask, byte InverseMask)> keyAddresses;
         private Dictionary<KeyCode, VirtualKey> basicMappings = new Dictionary<KeyCode, VirtualKey>();
-        private Dictionary<Tuple<KeyCode, bool>, Tuple<VirtualKey, bool>> complexMappings = new Dictionary<Tuple<KeyCode, bool>, Tuple<VirtualKey, bool>>();
+        private Dictionary<(KeyCode KeyCode, bool Shifted), (VirtualKey VirtualKey, bool Shifted)> complexMappings = new Dictionary<(KeyCode KeyCode, bool Shifted), (VirtualKey VirtualKey, bool Shifted)>();
 
         private bool isLeftShifted = false;
         private bool isRightShifted = false;
@@ -33,7 +33,7 @@ namespace Sharp80
         
         private void SetupDXKeyboardMatrix()
         {
-            keyAddresses = new Dictionary<VirtualKey, Tuple<ushort, byte, byte>>();
+            keyAddresses = new Dictionary<VirtualKey, (ushort Address, byte KeyMask, byte InverseMask)>();
 
             AddKey(VirtualKey.AT, 0x3801, 0x01, KeyCode.Backslash);
             AddKey(VirtualKey.A, 0x3801, 0x02, KeyCode.A);
@@ -111,13 +111,13 @@ namespace Sharp80
 
         private void AddComplexMapping(KeyCode PhysicalKey, VirtualKey VirtualKeyUnshifted, bool VirtualShiftUnshifted, VirtualKey VirtualKeyShifted, bool VirtualShiftShifted)
         {
-            complexMappings.Add(new Tuple<KeyCode, bool>(PhysicalKey, false), new Tuple<VirtualKey, bool>(VirtualKeyUnshifted, VirtualShiftUnshifted));
-            complexMappings.Add(new Tuple<KeyCode, bool>(PhysicalKey, true), new Tuple<VirtualKey, bool>(VirtualKeyShifted, VirtualShiftShifted));
+            complexMappings.Add((PhysicalKey, false), (VirtualKeyUnshifted, VirtualShiftUnshifted));
+            complexMappings.Add((PhysicalKey, true), (VirtualKeyShifted, VirtualShiftShifted));
         }
 
         private void AddKey(VirtualKey VirtualKey, ushort Address, byte Mask, params KeyCode[] PhysicalKeys)
         {
-            keyAddresses.Add(VirtualKey, new Tuple<ushort, byte, byte>(Address, Mask, (byte) ~Mask));
+            keyAddresses.Add(VirtualKey, (Address, Mask, (byte) ~Mask));
             foreach (var pk in PhysicalKeys)
                 basicMappings.Add(pk, VirtualKey);
         }
@@ -169,14 +169,14 @@ namespace Sharp80
                 if (!Key.Pressed)
                     return false;
 
-                if (!complexMappings.TryGetValue(new Tuple<KeyCode, bool>(Key.Key, IsShiftedPhysical), out Tuple<VirtualKey, bool> cm))
+                if (!complexMappings.TryGetValue((Key.Key, IsShiftedPhysical), out (VirtualKey VirtualKey, bool Shifted) cm))
                     return false;
 
-                DoKeyChange(cm.Item2, VirtualKey.RIGHTSHIFT);
-                if (!cm.Item2)
+                DoKeyChange(cm.Shifted, VirtualKey.RIGHTSHIFT);
+                if (!cm.Shifted)
                     DoKeyChange(false, VirtualKey.LEFTSHIFT);
 
-                k = fakedVirtualKey = cm.Item1;
+                k = fakedVirtualKey = cm.VirtualKey;
                 fakedInputKey = Key.Key;
             }
             DoKeyChange(Key.Pressed, k);
@@ -191,9 +191,9 @@ namespace Sharp80
                 var m = keyAddresses[k];
 
                 if (IsPressed)
-                    mem[m.Item1] |= m.Item2;
+                    mem[m.Address] |= m.KeyMask;
                 else
-                    mem[m.Item1] &= m.Item3;
+                    mem[m.Address] &= m.InverseMask;
             }
         }
 

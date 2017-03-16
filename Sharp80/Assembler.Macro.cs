@@ -22,7 +22,7 @@ namespace Sharp80.Assembler
 
                 Debug.Assert(GetCol(line, 1) == "MACRO");
 
-                arguments = new List<string>(GetCSV(GetCol(line, 2)));
+                arguments = new List<string>(GetCSV(GetCol(line, 2), 10000));
 
                 for (int i = 0; i < arguments.Count; i++)
                 {
@@ -33,20 +33,21 @@ namespace Sharp80.Assembler
             {
                 this.lines.Add(Line);
             }
-            public List<string> Expand(string inputArguments, int InputLineNumber)
+            public List<string> Expand(string inputArguments, int InputLineNumber, out string Error)
             {
+                Error = String.Empty;
+
                 string line;
                 List<string> returnLines = new List<string>();
                 int argNum;
-                string[] inputArgs = GetCSV(inputArguments);
+                string[] inputArgs = GetCSV(inputArguments, 1000);
 
-                // TODO: Write the as an error in the INT file and prevent compilation
                 if (inputArgs.Length != arguments.Count)
-                    Console.WriteLine(string.Format("Macro {0} Arguments Mismatch: {1} Required, {2} Specified, Line {3}",
-                                                    Name, 
-                                                    arguments.Count, 
-                                                    inputArgs.Length, 
-                                                    InputLineNumber));
+                    Error = string.Format("Macro {0} Arguments Mismatch: {1} Required, {2} Specified, Line {3}",
+                                           Name, 
+                                           arguments.Count, 
+                                           inputArgs.Length, 
+                                           InputLineNumber);
 
                 foreach (string l in lines)
                 {
