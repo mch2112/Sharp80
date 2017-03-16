@@ -9,12 +9,13 @@ namespace Sharp80
     {
         public enum DelayBasis { Microseconds, Ticks }
 
+        public ulong Trigger { get; private set; }
+        public bool Active { get; private set; }
+
         private ulong delay;
         private DelayBasis delayBasis;
-        private ulong trigger;
         private Clock.ClockCallback callback;
 
-        private bool active = false;
         private static ulong ticksPerMillisecond;
         private const ulong MICROSECONDS_PER_MILLISECOND = 1000;
         private const ulong MILLISECONDS_PER_SECOND = 1000;
@@ -28,45 +29,40 @@ namespace Sharp80
             delayBasis = DelayBasis;
             delay = Delay;
             callback = Callback;
-            active = Active;
+            this.Active = Active;
         }
         public PulseReq() : this(DelayBasis.Ticks, 0, null, true) { }
         public void Execute()
         {
-            if (active)
+            if (Active)
             {
-                active = false;
+                Active = false;
                 callback();
             }
-        }
-        public ulong Trigger
-        {
-            get { return trigger; }
         }
         public void SetTrigger(ulong BaselineTicks)
         {
             switch (delayBasis)
             {
                 case DelayBasis.Ticks:
-                    trigger = BaselineTicks + delay;
+                    Trigger = BaselineTicks + delay;
                     break;
                 case DelayBasis.Microseconds:
-                    trigger = BaselineTicks + delay * ticksPerMillisecond / MICROSECONDS_PER_MILLISECOND;
+                    Trigger = BaselineTicks + delay * ticksPerMillisecond / MICROSECONDS_PER_MILLISECOND;
                     break;
             }
-            active = true;
+            Active = true;
         }
 
-        public void Expire() { active = false; }
-        public bool Active {  get { return active; } }
-        public bool Inactive { get { return !active; } }
+        public void Expire() { Active = false; }
+        public bool Inactive { get { return !Active; } }
 
         public void Serialize(System.IO.BinaryWriter Writer)
         {
             Writer.Write(delay);
             Writer.Write((int)delayBasis);
-            Writer.Write(trigger);
-            Writer.Write(active);
+            Writer.Write(Trigger);
+            Writer.Write(Active);
         }
         public void Deserialize(System.IO.BinaryReader Reader, Clock.ClockCallback Callback)
         {
@@ -74,8 +70,8 @@ namespace Sharp80
 
             delay = Reader.ReadUInt64();
             delayBasis = (DelayBasis)Reader.ReadInt32();
-            trigger = Reader.ReadUInt64();
-            active = Reader.ReadBoolean();
+            Trigger = Reader.ReadUInt64();
+            Active = Reader.ReadBoolean();
         }
     }
 }
