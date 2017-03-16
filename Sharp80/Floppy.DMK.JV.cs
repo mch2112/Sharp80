@@ -9,6 +9,9 @@ namespace Sharp80
 {
     internal sealed partial class DMK
     {
+        const int JV1_SECTORS_PER_TRACK = 10;
+        const int JV1_SECTOR_SIZE = 0x100;
+
         private const int JV3_SECTORS_PER_HEADER = 2901;
         private const int JV3_HEADER_SIZE = JV3_SECTORS_PER_HEADER * 3;
         private const byte JV3_DOUBLE_DENSITY = 0x80; // 1 = DDEN; 0 = SDEN
@@ -205,6 +208,8 @@ namespace Sharp80
 
             byte numTracks = (byte)(DiskData.Length / 0x100 / 0x0A);
 
+            // Sectors not interleaved
+
             for (byte i = 0; i < numTracks; i++)
                 for (byte j = 0; j < SECTORS_PER_TRACK; j++)
                 {
@@ -232,24 +237,31 @@ namespace Sharp80
         }
         private byte[] SerializeToJV1()
         {
-            const int SECTORS_PER_TRACK = 10;
-            const int SECTOR_SIZE = 0x100;
-
             var sectors = tracks.Where(t => !t.SideOne)
-                                    .SelectMany(t => t.ToSectorDescriptors())
-                                    .Where(s => s.SectorNumber >= 0 && s.SectorNumber < SECTORS_PER_TRACK && s.SectorSize == SECTOR_SIZE)
-                                    .OrderBy(s => s.SectorNumber)
-                                    .OrderBy(s => s.TrackNumber);
+                                .SelectMany(t => MakeJV1Compatible(t.ToSectorDescriptors()))
+                                .OrderBy(s => s.SectorNumber)
+                                .OrderBy(s => s.TrackNumber);
 
-            byte[] data = new byte[tracks.Count() * SECTORS_PER_TRACK * SECTOR_SIZE];
+            byte[] data = new byte[tracks.Count() * JV1_SECTORS_PER_TRACK * JV1_SECTOR_SIZE];
 
             int cursor = 0;
             foreach (var s in sectors)
             {
-                Array.Copy(s.SectorData, 0, data, cursor, SECTOR_SIZE);
-                cursor += SECTOR_SIZE;
+                Array.Copy(s.SectorData, 0, data, cursor, JV1_SECTOR_SIZE);
+                cursor += JV1_SECTOR_SIZE;
             }
             return data;
+        }
+        private IEnumerable<SectorDescriptor> MakeJV1Compatible(IEnumerable<SectorDescriptor> Sectors)
+        {
+            var sectors = Sectors.Where(s => s.SectorSize == JV1_SECTOR_SIZE);
+
+            List<SectorDescriptor> newSectors = new List<SectorDescriptor>();
+
+            for (int i = 0; i < JV1_SECTORS_PER_TRACK; i++)
+                newSectors.Add(sectors.FirstOrDefault(s => s.SectorNumber == i) ?? new SectorDescriptor() { SectorData = new byte[JV1_SECTOR_SIZE] });
+
+            return newSectors;
         }
     }
 }

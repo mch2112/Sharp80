@@ -350,9 +350,9 @@ namespace Sharp80
             }
             return sds.OrderBy(s => s.SectorNumber).ToList();
         }
-        public List<SectorDescriptor> ToSectorDescriptors()
+        public IEnumerable<SectorDescriptor> ToSectorDescriptors()
         {
-            throw new NotImplementedException("Track.ToSectorDescriptors()");
+            return GetSectorDescriptorCache();
         }
         public byte NumSectors
         {
