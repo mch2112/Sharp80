@@ -23,6 +23,8 @@ namespace Sharp80
 
         public static bool AskYesNo(string Question, string Caption = "Sharp 80")
         {
+            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
             bool res;
             BeforeShowDialog?.Invoke();
             switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
@@ -39,6 +41,8 @@ namespace Sharp80
         }
         public static bool? AskYesNoCancel(string Question, string Caption = "Sharp 80")
         {
+            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
             bool? res;
             BeforeShowDialog?.Invoke();
             switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
@@ -58,18 +62,24 @@ namespace Sharp80
         }
         public static void InformUser(string Information, string Caption = "Sharp 80")
         {
+            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
             BeforeShowDialog?.Invoke();
             MessageBox.Show(Parent, Information, Caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
             AfterShowDialog?.Invoke();
         }
         public static void AlertUser(string Alert, string Caption = "Sharp 80")
         {
+            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
             BeforeShowDialog?.Invoke();
             MessageBox.Show(Parent, Alert, Caption, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             AfterShowDialog?.Invoke();
         }
         public static string UserSelectFile(bool Save, string DefaultPath, string Title, string Filter, string DefaultExtension, bool SelectFileInDialog)
         {
+            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
             string dir = DefaultPath.Length > 0 ? Path.GetDirectoryName(DefaultPath) :
                                                   Storage.DocsPath;
 
@@ -112,6 +122,8 @@ namespace Sharp80
         }
         public static string GetFilePath(string DefaultPath)
         {
+            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
             return UserSelectFile(Save: false,
                                   DefaultPath: DefaultPath,
                                   Title: "Select File",
@@ -121,6 +133,8 @@ namespace Sharp80
         }
         public static string GetCommandFile(string DefaultPath)
         {
+            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
             return UserSelectFile(Save: false,
                                   DefaultPath: DefaultPath,
                                   Title: "Select CMD File",
@@ -130,6 +144,8 @@ namespace Sharp80
         }
         public static string GetSnapshotFile(string DefaultPath, bool Save)
         {
+            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
             return UserSelectFile(Save: Save,
                                   DefaultPath: DefaultPath,
                                   Title: Save ? "Save Snapshot File" : "Load Snapshot File",
@@ -139,6 +155,8 @@ namespace Sharp80
         }
         public static string GetAssemblyFile(string DefaultPath, bool Save)
         {
+            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
             return UserSelectFile(Save: Save,
                                   DefaultPath: DefaultPath,
                                   Title: Save ? "Save Assembly File" : "Load Assembly File",
@@ -148,6 +166,8 @@ namespace Sharp80
         }
         public static string GetTapeFilePath(string DefaultPath, bool Save)
         {
+            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
             return UserSelectFile(Save: Save,
                                   DefaultPath: DefaultPath,
                                   Title: Save ? "Save Tape File" : "Load Tape File",

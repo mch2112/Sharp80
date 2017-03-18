@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Sharp80
@@ -10,10 +11,12 @@ namespace Sharp80
     {
         public event MessageEventHandler Sizing;
 
+        private static Thread uiThread;
+
         private Computer computer;
         private IScreen screen;
         private IKeyboard keyboard;
-        private Timer uiTimer;
+        private System.Windows.Forms.Timer uiTimer;
         private int resizing = 0;
 
         private int previousClientHeight;
@@ -28,6 +31,7 @@ namespace Sharp80
 
         public MainForm()
         {
+            uiThread = Thread.CurrentThread;
             KeyPreview = true;
             Text = "Sharp 80 - TRS-80 Model III Emulator";
 
@@ -42,9 +46,11 @@ namespace Sharp80
             InitializeComponent();
             SetupClientArea();
 
-            uiTimer = new Timer() { Interval = SCREEN_REFRESH_SLEEP };
+            uiTimer = new System.Windows.Forms.Timer() { Interval = SCREEN_REFRESH_SLEEP };
             uiTimer.Tick += UiTimerTick;
         }
+
+        public static bool IsUiThread => Thread.CurrentThread == uiThread;
 
         private void SetupClientArea()
         {
@@ -96,9 +102,7 @@ namespace Sharp80
 
                 if (Settings.AutoStartOnReset)
                 {
-                    var startTimer = new Timer() { Interval = 500 };
-                    startTimer.Tick += (s, ee) => { startTimer.Stop(); startTimer.Dispose(); computer.Start(); };
-                    startTimer.Start();
+                    AutoStart();
                 }
 
                 uiTimer.Start();
@@ -139,14 +143,6 @@ namespace Sharp80
                     break;
             }
         }
-
-        protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == MessageEventArgs.WM_SIZING)
-                Sizing?.Invoke(this, new MessageEventArgs(m));
-
-            base.WndProc(ref m);
-        }
         
         private KeyCode repeatKey = KeyCode.None;
         private uint repeatKeyCount = 0;
@@ -160,6 +156,31 @@ namespace Sharp80
                 e.SuppressKeyPress = true;
                 base.OnKeyDown(e);
             }
+        }
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (Storage.SaveChangedStorage(computer))
+            {
+                Settings.WindowX = Location.X;
+                Settings.WindowY = Location.Y;
+                Settings.WindowWidth = ClientSize.Width;
+                Settings.WindowHeight = ClientSize.Height;
+                Settings.Save();
+                Log.Save(true, out string _);
+                Dispose();
+            }
+            else
+            {
+                e.Cancel = true;
+            }
+            base.OnFormClosing(e);
+        }
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == MessageEventArgs.WM_SIZING)
+                Sizing?.Invoke(this, new MessageEventArgs(m));
+
+            base.WndProc(ref m);
         }
 
         private void UiTimerTick(object Sender, EventArgs e)
@@ -275,24 +296,6 @@ namespace Sharp80
             }
 
             resizing--;
-        }
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            if (Storage.SaveChangedStorage(computer))
-            {
-                Settings.WindowX = Location.X;
-                Settings.WindowY = Location.Y;
-                Settings.WindowWidth = ClientSize.Width;
-                Settings.WindowHeight = ClientSize.Height;
-                Settings.Save();
-                Log.Save(true, out string _);
-                Dispose();
-            }
-            else
-            {
-                e.Cancel = true;
-            }
-            base.OnFormClosing(e);
         }
         
         private void Form_Activated(object sender, EventArgs e)
@@ -418,6 +421,24 @@ namespace Sharp80
                 Log.LogException(ex);
             }
         }
+        private void AutoStart()
+        {
+            var startTimer = new System.Windows.Forms.Timer() { Interval = 500 };
+            startTimer.Tick += (s, ee) =>
+            {
+                startTimer.Stop();
+                startTimer.Dispose();
+                startTimer = null;
+                if (computer.Ready)
+                    computer.Start();
+                else if (Disposing)
+                    return;
+                else
+                    AutoStart();
+            };
+            startTimer.Start();
+        }
+
         private void HandleExceptions()
         {
             while (Log.ExceptionQueue.Count > 0)
@@ -435,6 +456,7 @@ namespace Sharp80
                 }
             }
         }
+        
         // CURSOR & DIALOG MANAGEMENT
 
         private static bool suppressCursor = false;

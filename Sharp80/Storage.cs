@@ -50,7 +50,18 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogException(ex, ExceptionHandlingOptions.LogOnly);
+                if (ex is IOException && !SuppressIoException)
+                {
+                    Dialogs.AlertUser("File already is use.");
+                }
+                else if (ex is FileNotFoundException && !SuppressIoException)
+                {
+                    Dialogs.AlertUser("File not found");
+                }
+                else
+                {
+                    Log.LogException(ex, ExceptionHandlingOptions.LogOnly);
+                }
                 Bytes = null;
                 return false;
             }

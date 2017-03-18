@@ -80,7 +80,7 @@ namespace Sharp80.Processor
         private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstDelegate exec, byte TStatesAlt)
         {
             this.Name = Name;            
-            this.Mnemonic = Lib.FirstText(Name);
+            Mnemonic = Name.FirstText();
             
             op[0] = Op0;
             op[1] = Op1 ?? 0x00;

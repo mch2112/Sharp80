@@ -375,5 +375,13 @@ namespace Sharp80
             else
                 return Input.Substring(0, Chars);
         }
+        public static string FirstText(this string Input)
+        {
+            if (Input.Contains(" "))
+                return Input.Substring(0, Input.IndexOf(' '));
+            else
+                return Input;
+        }
+
     }
 }
