@@ -140,8 +140,14 @@ namespace Sharp80
         public void Wait()
         {
             if (!waitTrigger.Latched)
+            {
                 waitTimeout = tickCount + (ticksPerSec * 1024ul / 1000000ul); // max 1024 usec
-            
+                Log.LogDebug("Waiting @ " + computer.FloppyControllerStatus.DiskAngleDegrees);
+            }
+            else
+            {
+                Log.LogDebug("Already Waiting");
+            }
             waitTrigger.Latch();
         }
         public void ActivatePulseReq(PulseReq Req)
@@ -224,7 +230,8 @@ namespace Sharp80
 
             if (tickCount > nextRtcIrqTick)
             {
-                nextRtcIrqTick += ticksPerIRQ;
+                while (tickCount > NextRtcIrqTick)
+                    nextRtcIrqTick += ticksPerIRQ;
                 IntMgr.RtcIntLatch.Latch();
             }
 
@@ -235,6 +242,8 @@ namespace Sharp80
                     IntMgr.FdcNmiLatch.Latched || 
                     IntMgr.ResetButtonLatch.Latched)
                 {
+                    Log.LogDebug("Stop Waiting @ " + computer.FloppyControllerStatus.DiskAngleDegrees +
+                        ((tickCount > waitTimeout) ? " Wait Timeout" : "") + (computer.FloppyControllerDrq ? " DRQ" : "") + (IntMgr.FdcNmiLatch.Latched ? " FDC NMI Latch" : "") + (IntMgr.ResetButtonLatch.Latched ? " Reset Button" : ""));
                     waitTrigger.Unlatch();
                     waitTrigger.ResetTrigger();
                 }

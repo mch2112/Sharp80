@@ -19,99 +19,102 @@ namespace Sharp80
         }
         protected override bool processKey(KeyState Key)
         {
-            if (Key.Released)
+            if (Key.IsUnmodified)
             {
-                // Some selections fire on key released to avoid keys leaking into 
-                // Windows' dialogs.
-                switch (Key.Key)
+                if (Key.Released)
                 {
-                    case KeyCode.F:
-                        if (Settings.DiskEnabled)
-                            LoadFloppy(false);
-                        break;
-                    case KeyCode.L:
-                        if (Settings.DiskEnabled)
-                            LoadFloppy(true);
-                        break;
-                    default:
-                        return base.processKey(Key);
-                }
-            }
-            else
-            {
-                if (Settings.DiskEnabled)
-                {
+                    // Some selections fire on key released to avoid keys leaking into 
+                    // Windows' dialogs.
                     switch (Key.Key)
                     {
-                        case KeyCode.D0:
-                            DriveNumber = DriveNumber ?? 0;
+                        case KeyCode.F:
+                            if (Settings.DiskEnabled)
+                                LoadFloppy(false);
                             break;
-                        case KeyCode.D1:
-                            DriveNumber = DriveNumber ?? 1;
+                        case KeyCode.L:
+                            if (Settings.DiskEnabled)
+                                LoadFloppy(true);
                             break;
-                        case KeyCode.D2:
-                            DriveNumber = DriveNumber ?? 2;
-                            break;
-                        case KeyCode.D3:
-                            DriveNumber = DriveNumber ?? 3;
-                            break;
-                        case KeyCode.B:
-                            LoadFloppy(false, Storage.FILE_NAME_NEW);
-                            break;
-                        case KeyCode.D:
-                            ToggleFloppyEnable();
-                            break;
-                        case KeyCode.E:
-                            EjectFloppy();
-                            break;
-                        case KeyCode.T:
-                            LoadFloppy(false, Storage.FILE_NAME_TRSDOS);
-                            break;
-                        case KeyCode.U:
-                            LoadFloppy(false, Storage.FILE_NAME_UNFORMATTED);
-                            break;
-                        case KeyCode.W:
-                            ToggleWriteProtection();
-                            break;
-                        case KeyCode.Z:
-                            if (DriveNumber.HasValue)
-                                CurrentMode = ViewMode.Zap;
-                            break;
-                        case KeyCode.Return:
-                            if (DriveNumber.HasValue)
-                                DriveNumber = null;
-                            else
-                                return base.processKey(Key);
-                            break;
-                        case KeyCode.Escape:
-                            if (DriveNumber.HasValue)
-                                DriveNumber = null;
-                            else
-                                RevertMode();
-                            break;
-                        case KeyCode.F8:
-                            if (!Computer.IsRunning)
-                                CurrentMode = ViewMode.Normal;
-                            return base.processKey(Key);
                         default:
                             return base.processKey(Key);
                     }
                 }
                 else
                 {
-                    switch (Key.Key)
+                    if (Settings.DiskEnabled)
                     {
-                        case KeyCode.D:
-                            ToggleFloppyEnable();
-                            break;
-                        case KeyCode.Escape:
-                            RevertMode();
-                            break;
-                        case KeyCode.F8:
-                            CurrentMode = ViewMode.Normal;
-                            return base.processKey(Key);
-                        default:
-                            return base.processKey(Key);
+                        switch (Key.Key)
+                        {
+                            case KeyCode.D0:
+                                DriveNumber = DriveNumber ?? 0;
+                                break;
+                            case KeyCode.D1:
+                                DriveNumber = DriveNumber ?? 1;
+                                break;
+                            case KeyCode.D2:
+                                DriveNumber = DriveNumber ?? 2;
+                                break;
+                            case KeyCode.D3:
+                                DriveNumber = DriveNumber ?? 3;
+                                break;
+                            case KeyCode.B:
+                                LoadFloppy(false, Storage.FILE_NAME_NEW);
+                                break;
+                            case KeyCode.D:
+                                ToggleFloppyEnable();
+                                break;
+                            case KeyCode.E:
+                                EjectFloppy();
+                                break;
+                            case KeyCode.T:
+                                LoadFloppy(false, Storage.FILE_NAME_TRSDOS);
+                                break;
+                            case KeyCode.U:
+                                LoadFloppy(false, Storage.FILE_NAME_UNFORMATTED);
+                                break;
+                            case KeyCode.W:
+                                ToggleWriteProtection();
+                                break;
+                            case KeyCode.Z:
+                                if (DriveNumber.HasValue)
+                                    CurrentMode = ViewMode.Zap;
+                                break;
+                            case KeyCode.Return:
+                                if (DriveNumber.HasValue)
+                                    DriveNumber = null;
+                                else
+                                    return base.processKey(Key);
+                                break;
+                            case KeyCode.Escape:
+                                if (DriveNumber.HasValue)
+                                    DriveNumber = null;
+                                else
+                                    RevertMode();
+                                break;
+                            case KeyCode.F8:
+                                if (!Computer.IsRunning)
+                                    CurrentMode = ViewMode.Normal;
+                                return base.processKey(Key);
+                            default:
+                                return base.processKey(Key);
+                        }
+                    }
+                    else
+                    {
+                        switch (Key.Key)
+                        {
+                            case KeyCode.D:
+                                ToggleFloppyEnable();
+                                break;
+                            case KeyCode.Escape:
+                                RevertMode();
+                                break;
+                            case KeyCode.F8:
+                                CurrentMode = ViewMode.Normal;
+                                return base.processKey(Key);
+                            default:
+                                return base.processKey(Key);
+                        }
                     }
                 }
             }

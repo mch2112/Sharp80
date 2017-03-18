@@ -20,17 +20,16 @@ namespace Sharp80
         public SectorDescriptor()
         {
         }
-        public static SectorDescriptor Empty
-        {
-            get
-            {
-                return new SectorDescriptor() { InUse = false };
-            }
-        }
+        public static SectorDescriptor Empty => new SectorDescriptor() { InUse = false };
         public override string ToString()
         {
-            return string.Format("Track: {0} Side: {1} Sector: {2} Double Density: {3} Length: {4}{5}", TrackNumber, SideOne ? "1" : "0", SectorNumber, DoubleDensity, SectorSize.ToHexString(), InUse ? string.Empty : " Un" +
-                "used");
+            return string.Format("Track: {0} Side: {1} Sector: {2} Double Density: {3} Length: {4} {5}",
+                                 TrackNumber,
+                                 SideOne ? "1" : "0",
+                                 SectorNumber,
+                                 DoubleDensity,
+                                 SectorSize.ToHexString(),
+                                 InUse ? "Used" : "Unused");
         }
     }
 }

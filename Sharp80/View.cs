@@ -196,9 +196,17 @@ namespace Sharp80
                     // SHIFT-ALT
                     switch (Key.Key)
                     {
+                        //case KeyCode.B:
+                        //    Log.DebugLogOn = !Log.DebugLogOn;
+                        //    MessageCallback("Debug Log: " + (Log.DebugLogOn ? "On" : "Off"));
+                        //    break;
                         case KeyCode.E:
                             // start the disassembly at the current PC location
                             Disassemble(true);
+                            return true;
+                        case KeyCode.L:
+                            Log.Clear();
+                            MessageCallback("Log Cleared");
                             return true;
                         case KeyCode.N:
                             bool wasRunning = Computer.IsRunning;

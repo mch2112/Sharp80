@@ -30,7 +30,7 @@ namespace Sharp80
 
         public Computer(IAppWindow MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool FloppyEnabled, bool NormalSpeed, bool SoundOn)
         {
-            ulong milliTStatesPerIRQ = CLOCK_RATE * Clock.TICKS_PER_TSTATE / 30;
+            ulong milliTStatesPerIRQ = CLOCK_RATE * Clock.TICKS_PER_TSTATE * 100 / 3005; // near 30 hz but not exactly since we don't want to sync with Floppy disk angle
             ulong milliTStatesPerSoundSample = CLOCK_RATE * Clock.TICKS_PER_TSTATE / SoundX.SAMPLE_RATE;
 
             HasRunYet = false;
@@ -81,15 +81,15 @@ namespace Sharp80
         /// </summary>
         public bool DiskEnabled
         {
-            get { return FloppyController.Enabled; }
+            get => FloppyController.Enabled;
         }
         public bool IsRunning
         {
-            get { return Clock.IsRunning; }
+            get => Clock.IsRunning;
         }
         public ushort ProgramCounter
         {
-            get { return Processor.PcVal; }
+            get => Processor.PcVal;
         }
         public ulong GetElapsedTStates()
         {
@@ -97,59 +97,61 @@ namespace Sharp80
         }
         public IMemory Memory
         {
-            get { return Processor.Memory; }
+            get => Processor.Memory;
         }
         public ushort BreakPoint
         {
-            get { return Processor.BreakPoint; }
-            set { Processor.BreakPoint = value; }
+            get => Processor.BreakPoint;
+            set => Processor.BreakPoint = value;
         }
         public bool BreakPointOn
         {
-            get { return Processor.BreakPointOn; }
-            set { Processor.BreakPointOn = value; }
+            get => Processor.BreakPointOn;
+            set => Processor.BreakPointOn = value;
         }
         public bool AltKeyboardLayout
         {
-            get { return Memory.AltKeyboardLayout; }
-            set { Memory.AltKeyboardLayout = value; }
+            get => Memory.AltKeyboardLayout;
+            set => Memory.AltKeyboardLayout = value;
         }
         public bool SoundOn
         {
-            get { return Sound.On; }
-            set { Sound.On = value; }
+            get => Sound.On;
+            set => Sound.On = value;
         }
         public bool DriveNoise
         {
-            get { return Sound.UseDriveNoise; }
-            set { Sound.UseDriveNoise = value; }
+            get => Sound.UseDriveNoise;
+            set => Sound.UseDriveNoise = value;
         }
         public IZ80_Status CpuStatus
         {
             // Safe to send this out in interface form
-            get { return Processor; }
+            get => Processor;
         }
 
-        public IFloppy GetFloppy(byte DriveNum) { return FloppyController.GetFloppy(DriveNum); }
+        public IFloppy GetFloppy(byte DriveNum) => FloppyController.GetFloppy(DriveNum);
 
-        public bool DriveIsUnloaded(byte DriveNum) { return FloppyController.DriveIsUnloaded(DriveNum); }
+        public bool DriveIsUnloaded(byte DriveNum) => FloppyController.DriveIsUnloaded(DriveNum);
         public string GetIoStatusReport()
         {
-            return FloppyController.StatusReport + (Tape.MotorOn ? " Tape: " + Tape.StatusReport : String.Empty);
+            return FloppyController.StatusReport +
+                   (Tape.MotorOn ? " Tape: " + Tape.StatusReport : String.Empty) +
+                   (Printer.HasContent ? " PRT" : String.Empty);
         }
-        public bool? DriveBusyStatus { get { return FloppyController.DriveBusyStatus; } }
-        public bool AnyDriveLoaded { get { return FloppyController.AnyDriveLoaded; } }
-        public bool FloppyControllerDrq { get { return FloppyController.Drq; } }
-        public string GetFloppyFilePath(byte DriveNum) { return FloppyController.FloppyFilePath(DriveNum); }
+        public bool? DriveBusyStatus => FloppyController.DriveBusyStatus;
+        public bool AnyDriveLoaded => FloppyController.AnyDriveLoaded;
+        public bool FloppyControllerDrq => FloppyController.Drq;
+        public string GetFloppyFilePath(byte DriveNum) => FloppyController.FloppyFilePath(DriveNum);
         public void SetFloppyFilePath(byte DriveNum, string Path)
         {
             var f = FloppyController.GetFloppy(DriveNum);
             if (f != null)
                 f.FilePath = Path;
         }
-        public IFloppyControllerStatus FloppyControllerStatus { get { return FloppyController; } }
-        public bool DiskHasChanged(byte DriveNum) { return FloppyController.DiskHasChanged(DriveNum) ?? false; }
-        public void SaveFloppy(byte DriveNum) { FloppyController.SaveFloppy(DriveNum); }
+        public IFloppyControllerStatus FloppyControllerStatus => FloppyController;
+        public bool DiskHasChanged(byte DriveNum) => FloppyController.DiskHasChanged(DriveNum) ?? false;
+        public void SaveFloppy(byte DriveNum) => FloppyController.SaveFloppy(DriveNum);
 
         // RUN COMMANDS
 
@@ -174,10 +176,8 @@ namespace Sharp80
                     System.Threading.Thread.Sleep(0);     // make sure we're not in the middle of a cycle
             }
         }
-        public void ResetButton()
-        {
-            IntMgr.ResetButtonLatch.Latch();
-        }
+        public void ResetButton() => IntMgr.ResetButtonLatch.Latch();
+
         public void StepOver()
         {
             if (!IsRunning)
@@ -238,31 +238,28 @@ namespace Sharp80
         /// trigger's delay
         /// </summary>
         /// <param name="Req"></param>
-        public void Activate(PulseReq Req)
-        {
-            Clock.ActivatePulseReq(Req);
-        }
+        public void Activate(PulseReq Req) => Clock.ActivatePulseReq(Req);
+
         /// <summary>
         /// Adds a pulse req without resetting the trigger
         /// </summary>
         /// <param name="Req"></param>
-        public void AddPulseReq(PulseReq Req)
-        {
-            Clock.AddPulseReq(Req);
-        }
+        public void AddPulseReq(PulseReq Req) => Clock.AddPulseReq(Req);
 
         // FLOPPY SUPPORT
 
         public bool FloppyEnabled { get; set; }
-        public void StartupLoadFloppies()
+        public void StartupInitializeStorage()
         {
             for (byte i = 0; i < 4; i++)
                 LoadFloppy(i);
+
+            var tape = Settings.LastTapeFile;
+            if (tape.Length > 0 && File.Exists(tape))
+                TapeLoad(tape);
         }
-        public void LoadFloppy(byte DriveNum)
-        {
-            LoadFloppy(DriveNum, Storage.GetDefaultDriveFileName(DriveNum));
-        }
+        public void LoadFloppy(byte DriveNum) => LoadFloppy(DriveNum, Storage.GetDefaultDriveFileName(DriveNum));
+
         public void LoadFloppy(byte DriveNum, string FilePath)
         {
             bool running = IsRunning;
@@ -294,15 +291,11 @@ namespace Sharp80
             if (running)
                 Start();
         }
-        public void LoadFloppy(byte DriveNum, Floppy Floppy)
-        {
-            FloppyController.LoadFloppy(DriveNum, Floppy);
-        }
+        public void LoadFloppy(byte DriveNum, Floppy Floppy) => FloppyController.LoadFloppy(DriveNum, Floppy);
+
         public void LoadTrsDosFloppy(byte DriveNum)
         {
             LoadFloppy(DriveNum, new DMK(Resources.TRSDOS) { FilePath = Storage.FILE_NAME_TRSDOS });
-            //FloppyController.SetWriteProtection(DriveNum, false);
-            //var b = FloppyController.GetFloppy(DriveNum).Serialize(true).Compress().ToArrayDeclaration();
             Storage.SaveDefaultDriveFileName(DriveNum, Storage.FILE_NAME_TRSDOS);
         }
         public void EjectFloppy(byte DriveNum)
@@ -323,52 +316,37 @@ namespace Sharp80
         // TAPE DRIVE
 
         public bool TapeLoad(string Path) { return Tape.Load(Path); }
-        public string TapeFilePath { get { return Tape.FilePath; } set { Tape.FilePath = value; } }
-        public void TapeLoadBlank() { Tape.LoadBlank(); }
-        public void TapePlay() { Tape.Play(); }
-        public void TapeRecord() { Tape.Record(); }
-        public void TapeRewind() { Tape.Rewind(); }
-        public void TapeEject() { Tape.Eject(); }
-        public void TapeStop() { Tape.Stop(); }
-        public void TapeSave()  { Tape.Save(); }
-        public bool TapeChanged { get { return Tape.Changed; } }
-        public bool TapeMotorOnSignal { set { Tape.MotorOnSignal = value; } }
-        public bool TapeMotorOn { get { return Tape.MotorOn; } }
-        public float TapePercent { get { return Tape.Percent; } }
-        public float TapeCounter { get { return Tape.Counter; } }
-        public TapeStatus TapeStatus { get { return Tape.Status; } }
-        public bool TapeIsBlank {  get { return Tape.IsBlank; } }
-        public string TapePulseStatus {  get { return Tape.PulseStatus; } }
-        public Baud TapeSpeed { get { return Tape.Speed; } }
+        public string TapeFilePath { get => Tape.FilePath; set => Tape.FilePath = value; }
+        public void TapeLoadBlank() => Tape.LoadBlank();
+        public void TapePlay() => Tape.Play();
+        public void TapeRecord() => Tape.Record();
+        public void TapeRewind() => Tape.Rewind();
+        public void TapeEject() => Tape.Eject();
+        public void TapeStop() => Tape.Stop();
+        public void TapeSave() => Tape.Save();
+        public bool TapeChanged => Tape.Changed;
+        public bool TapeMotorOnSignal { set => Tape.MotorOnSignal = value; }
+        public bool TapeMotorOn => Tape.MotorOn;
+        public float TapePercent => Tape.Percent;
+        public float TapeCounter => Tape.Counter;
+        public TapeStatus TapeStatus => Tape.Status;
+        public bool TapeIsBlank => Tape.IsBlank;
+        public string TapePulseStatus => Tape.PulseStatus;
+        public Baud TapeSpeed => Tape.Speed;
 
         /// <summary>
         /// Backdoor to get or change the initial user selection at
         /// the "Cass?" prompt
         /// </summary>
-        public Baud TapeUserSelectedSpeed
-        {
-            get
-            {
-                switch (Memory[0x4211])
-                {
-                    case 0x00:
-                        return Baud.Low;
-                    default:
-                        return Baud.High;
-                }
-            }
-            set
-            {
-                 Memory[0x4211] = (value == Baud.High) ? (byte)0x48 : (byte)0x00;
-            }
-        }
+
+        public Baud TapeUserSelectedSpeed { get => Tape.UserSelectedSpeed; set => Tape.UserSelectedSpeed = value; }
 
         // PRINTER
 
-        public bool PrinterHasContent {  get { return Printer.HasContent; } }
+        public bool PrinterHasContent => Printer.HasContent;
         public bool PrinterSave() { return Printer.Save(); }
-        public string PrinterContent { get { return Printer.PrintBuffer; } }
-        public string PrinterFilePath { get { return Printer.FilePath; } }
+        public string PrinterContent => Printer.PrintBuffer;
+        public string PrinterFilePath { get => Printer.FilePath; }
         public void PrinterReset() { Printer.Reset(); }
 
         // SNAPSHOTS
@@ -481,9 +459,9 @@ namespace Sharp80
         {
             return Processor.Memory.NotifyKeyboardChange(Key);
         }
-        public void ResetKeyboard()
+        public void ResetKeyboard(bool LeftShift, bool RightShift)
         {
-            Processor.Memory.ResetKeyboard();
+            Processor.Memory.ResetKeyboard(LeftShift, RightShift);
         }
 
         public void Dispose()

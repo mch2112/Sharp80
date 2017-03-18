@@ -14,10 +14,11 @@ namespace Sharp80
 
         protected override bool processKey(KeyState Key)
         {
+            Invalidate();
+
             if (Key.Released)
                 return base.processKey(Key);
 
-            bool processed = false;
             if (Key.IsUnmodified && Key.Pressed)
             {
                 char c = '\0';
@@ -32,16 +33,18 @@ namespace Sharp80
                         return true;
                     default:
                         c = Key.ToHexChar();
-                        break;
+                        if (c == '\0')
+                            return base.processKey(Key);
+                        else
+                            break;
                 }
                 if (Computer.BreakPoint.RotateAddress(c, out ushort newBp))
                 {
                     Settings.Breakpoint = Computer.BreakPoint = newBp;
-                    Invalidate();
-                    processed = true;
+                    return true;
                 }
             }
-            return processed || base.processKey(Key);
+            return base.processKey(Key);
         }
         protected override byte[] GetViewBytes()
         {

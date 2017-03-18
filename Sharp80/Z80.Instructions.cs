@@ -666,11 +666,13 @@ namespace Sharp80.Processor
         }
         private void di()
         {
+            Log.LogDebug("Disable interrupts");
             IFF1 = false;
             IFF2 = false;
         }
         private void ei()
         {
+            Log.LogDebug("Enable interrupts");
             RestoreInterrupts = true;
             restoreInterruptsNow = false;
         }

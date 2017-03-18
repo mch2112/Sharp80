@@ -260,6 +260,15 @@ namespace Sharp80
         {
             return "{" + String.Join(",", Input.Select(b => "0x" + b.ToHexString())) + "}";
         }
+        public static string ToHexDisplay(this byte[] Input)
+        {
+            var lines = Input.Select((x, i) => new { Index = i, Value = x })
+                             .GroupBy(x => x.Index / 0x10)
+                             .Select(x => x.Select(v => v.Value).ToList())
+                             .ToList();
+
+            return String.Join(Environment.NewLine, lines.Select(l => String.Join(" ", l.Select(ll => ll.ToHexString()))));
+        }
         public static byte[] Compress(this byte[] data)
         {
             var output = new MemoryStream();

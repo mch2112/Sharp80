@@ -46,8 +46,13 @@ namespace Sharp80
             if (SingleDensitySingleByte)
                 ConvertFromSingleByte();
 
-            LengthWithHeader = Data.Length;
+            LengthWithHeader = this.Data.Length + HEADER_LENGTH_BYTES;
             densityMap = null;
+
+#if DEBUG
+//           RebuildHeader();
+  //         Changed = true;
+#endif
         }
 
         private void SetDensity()
@@ -216,11 +221,10 @@ namespace Sharp80
                 densityMap[Index] = Value;
             }
         }
-        public int DataLength
-        {
-            get { return Data.Length; }
-        }
-        public byte[] Deserialize()
+
+        public int DataLength => Data.Length;
+
+        public byte[] Serialize()
         {
             return Header.ToByteArray().Concat(Data);
         }
@@ -350,23 +354,19 @@ namespace Sharp80
             }
             return sds.OrderBy(s => s.SectorNumber).ToList();
         }
-        public IEnumerable<SectorDescriptor> ToSectorDescriptors()
-        {
-            return GetSectorDescriptorCache();
-        }
-        public byte NumSectors
-        {
-            get { return (byte)Header.Count(h => h > 0); }
-        }
-        public bool Formatted
-        {
-            get { return NumSectors > 0; }
-        }
+
+        public IEnumerable<SectorDescriptor> ToSectorDescriptors() => GetSectorDescriptorCache();
+        public bool DoubleDensity => density != false;
+        public byte NumSectors => (byte)Header.Count(h => h > 0);
+        public bool Formatted => NumSectors > 0;
+        
         private byte FetchByte(ref int TrackIndex, ref ushort Crc, bool AllowResetCRC, bool DoubleDensityMode)
         {
             if (GetDensity(TrackIndex) != DoubleDensityMode)
             {
+#if DEBUG
                 throw new NotImplementedException("TODO: Handle case where reading from wrong density.");
+#endif
             }
             byte b = 0;
             if (TrackIndex < Data.Length)
@@ -417,7 +417,7 @@ namespace Sharp80
                     // advance to length
                     if (density) i += 4; else i += 8;
                     i += Floppy.GetDataLengthFromCode(Data[i]) * (density ? 1 : 2);
-                    i += 20; // filler minimum
+                    i += 20 * (density ? 1 : 2); // filler minimum
                 }
                 else
                 {
@@ -493,10 +493,6 @@ namespace Sharp80
 
                     break;
             }
-        }
-        public bool DoubleDensity
-        {
-            get { return density != false; }
         }
         public override string ToString()
         {

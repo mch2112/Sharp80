@@ -54,8 +54,8 @@ namespace Sharp80
             Active = true;
         }
 
-        public void Expire() { Active = false; }
-        public bool Inactive { get { return !Active; } }
+        public void Expire() => Active = false;
+        public bool Inactive => !Active;
 
         public void Serialize(System.IO.BinaryWriter Writer)
         {

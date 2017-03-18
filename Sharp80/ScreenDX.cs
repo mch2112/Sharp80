@@ -170,7 +170,7 @@ namespace Sharp80
 
         public bool GreenScreen
         {
-            get { return isGreenScreen; }
+            get => isGreenScreen;
             set
             {
                 if (value != isGreenScreen)
@@ -190,7 +190,7 @@ namespace Sharp80
         }
         public bool IsFullScreen
         {
-            get { return isFullScreen; }
+            get => isFullScreen;
             set
             {
                 if (isFullScreen != value)
@@ -202,7 +202,7 @@ namespace Sharp80
         }
         public bool AdvancedView
         {
-            get { return advancedView; }
+            get => advancedView;
             set
             {
                 if (advancedView != value)
@@ -565,8 +565,8 @@ namespace Sharp80
                 }
             }
         }
-        public void Invalidate() { invalid = true; }
-        private bool DrawOK { get { return isResizing == 0 && !isDrawing && !parent.IsMinimized; } }
+        public void Invalidate() => invalid = true;
+        private bool DrawOK => isResizing == 0 && !isDrawing && !parent.IsMinimized;
         private void Draw()
         {
             if (initialized)

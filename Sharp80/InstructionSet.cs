@@ -34,10 +34,7 @@ namespace Sharp80.Processor
                 FDCB = new Instruction[0x100];
             }
 
-            public SortedDictionary<uint, Instruction> Instructions
-            {
-                get { return instructions; }
-            }
+            public SortedDictionary<uint, Instruction> Instructions => instructions;
 
             public Instruction GetInstruction(byte b, byte b2, byte b3)
             {
@@ -179,10 +176,7 @@ namespace Sharp80.Processor
                 DDPrefixNOP = new Instruction("NOP", 0xDD, 4, NOP.Execute, true);
                 FDPrefixNOP = new Instruction("NOP", 0xFD, 4, NOP.Execute, true);
             }
-            public void Add(Instruction i)
-            {
-                instructions.Add(i.Signature, i);
-            }
+            public void Add(Instruction i) => instructions.Add(i.Signature, i);
         }
     }
 }

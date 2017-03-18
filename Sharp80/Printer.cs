@@ -14,22 +14,11 @@ namespace Sharp80
 
         public string FilePath { get; private set; } = null;
 
-        public bool HasContent
-        {
-            get { return printBuffer.Length > 0; }
-        }
-        public bool HasUnsavedContent
-        {
-            get { return hasUnsavedContent; }
-        }
-        public byte PrinterStatus
-        {
-            get
-            {
-                // not busy, not out of paper, selected, no fault
-                return 0x30;
-            }
-        }
+        public bool HasContent => printBuffer.Length > 0;
+        public bool HasUnsavedContent => hasUnsavedContent;
+
+        // not busy, not out of paper, selected, no fault
+        public byte PrinterStatus => 0x30;
         public void Print(byte b)
         {
             switch (b)
@@ -43,10 +32,9 @@ namespace Sharp80
                     break;
             }
         }
-        public string PrintBuffer
-        {
-            get { return printBuffer.ToString(); }
-        }
+
+        public string PrintBuffer => printBuffer.ToString();
+        
         public void Reset()
         {
             FilePath = null;

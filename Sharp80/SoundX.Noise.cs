@@ -78,10 +78,8 @@ namespace Sharp80
 
                 return sample;
             }
-            public void TrackStep()
-            {
-                trackStepCursor = 0;
-            }
+
+            public void TrackStep() => trackStepCursor = 0;
         }
     }
 }

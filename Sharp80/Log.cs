@@ -1,7 +1,4 @@
-﻿//#define DEBUGLOG
-#undef DEBUGLOG
-
-/// Sharp 80 (c) Matthew Hamilton
+﻿/// Sharp 80 (c) Matthew Hamilton
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
@@ -20,8 +17,11 @@ namespace Sharp80
         /// We save exception events in a queue that can be processed by the main form's ui thread,
         /// because showing dialogs can only be done in that thread.
         /// </summary>
-        public static Queue<(Exception Exception, ExceptionHandlingOptions Option)> ExceptionQueue = new Queue<(Exception Exception, ExceptionHandlingOptions Option)>();
 
+        public static Queue<(Exception Exception, ExceptionHandlingOptions Option)> ExceptionQueue = new Queue<(Exception Exception, ExceptionHandlingOptions Option)>();
+        public static List<(ulong Tick, string Message)> LLog = new List<(ulong Tick, string Message)>();
+
+        public static bool DebugLogOn { get; set; } = false;
         public static bool TraceOn { get; set; } = false;
 
         private const int MAX_LOG_ITEMS = 1000000;
@@ -29,7 +29,7 @@ namespace Sharp80
         private static List<(ulong Tick, string Message)> log = new List<(ulong Tick, string Message)>();
         private static GetTickDelegate tickFn = () => 0;
         private static bool terminating = false;
-
+        
         public static void Initalize(GetTickDelegate Callback)
         {
             tickFn = Callback;
@@ -42,10 +42,11 @@ namespace Sharp80
             }
         }
 
-        [Conditional("DEBUGLOG")]
+        [Conditional("LOGDEBUG")]
         public static void LogDebug(string Message)
         {
-            LogItem(Message);
+            if (DebugLogOn)
+                LogItem(Message);
         }
         public static void LogException(Exception Ex, ExceptionHandlingOptions Option = ExceptionHandlingOptions.Terminate)
         {
@@ -84,6 +85,10 @@ namespace Sharp80
                 Path = String.Empty;
                 return false;
             }
+        }
+        public static void Clear()
+        {
+            log.Clear();
         }
         private static void LogItem(string Message)
         {

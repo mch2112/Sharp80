@@ -11,7 +11,7 @@ namespace Sharp80
 
         protected override bool processKey(KeyState Key)
         {
-            if (Key.Pressed)
+            if (Key.Pressed && Key.IsUnmodified)
             {
                 Invalidate();
                 switch (Key.Key)
@@ -69,8 +69,13 @@ namespace Sharp80
                     default:
                         return base.processKey(Key);
                 }
+
+                return true;
             }
-            return true;
+            else
+            {
+                return base.processKey(Key);
+            }
         }
 
         protected override byte[] GetViewBytes()
@@ -119,13 +124,16 @@ namespace Sharp80
 
             if (path.Length > 0)
             {
-                if (!Computer.TapeLoad(path))
+                if (Computer.TapeLoad(path))
+                {
+                    Settings.LastTapeFile = Computer.TapeFilePath;
+                }
+                else
                 {
                     Dialogs.AlertUser("Failed to load tape file.");
                     return;
                 }
-            }
-            Settings.LastTapeFile = Computer.TapeFilePath;
+            }    
             MessageCallback("Tape Loaded");
         }
         private string StatusToString(TapeStatus Status)

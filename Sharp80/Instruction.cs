@@ -36,17 +36,17 @@ namespace Sharp80.Processor
 
         public InstDelegate Execute { get { return exec; } }
 
-        public byte RIncrement { get { return rIncrement; } }
-        public bool IsPrefix { get { return isPrefix; } }
-        public byte TStates { get { return tStates; } }
-        public byte TStatesAlt { get { return tStatesAlt; } }
-        public ushort Ticks { get { return ticks; } }
-        public ushort TicksWithExtra { get { return ticksWithExtra; } }
-        public uint Signature { get { return signature; } }
-        public uint PaddedSig { get { return paddedSig; } }
-        public byte Op0 { get { return op[0]; } }
-        public byte Op1 { get { return op[1]; } }
-        public byte Op3 { get { return op[3]; } }
+        public byte RIncrement => rIncrement;
+        public bool IsPrefix => isPrefix;
+        public byte TStates => tStates;
+        public byte TStatesAlt => tStatesAlt;
+        public ushort Ticks => ticks;
+        public ushort TicksWithExtra => ticksWithExtra;
+        public uint Signature => signature;
+        public uint PaddedSig => paddedSig;
+        public byte Op0 => op[0];
+        public byte Op1 => op[1];
+        public byte Op3 => op[3];
 
         public Instruction(string Name, byte Op0, byte TStates, InstDelegate exec)
             : this(Name, Op0, null, null, TStates, exec, 0)
@@ -148,7 +148,11 @@ namespace Sharp80.Processor
             Debug.Assert(Op1 != null || Op3 == null);
             Debug.Assert(Op1 == null || size >= 2); 
             Debug.Assert(Op3 == null || size == 4);
-        }        
+        }
+
+
+        public string Name { get; private set; }
+        public string Mnemonic { get; private set; }
 
         public byte Size
         {
@@ -163,10 +167,7 @@ namespace Sharp80.Processor
         {
             get { return this.opInitSize; }
         }
-        public byte[] Bytes
-        {
-            get { return op; }
-        }
+        public byte[] Bytes => op;
 
         public string FullName(IMemory Memory, ushort PC)
         {
@@ -186,10 +187,7 @@ namespace Sharp80.Processor
 
             return s;
         }
-
-        public string Name { get; private set; }
-        public string Mnemonic { get; private set; }
-
+        
         public int NumOperands
         {
             get
@@ -304,10 +302,7 @@ namespace Sharp80.Processor
 
             return s;
         }
-        
-        public override string ToString()
-        {
-            return Name;
-        }
+
+        public override string ToString() => Name;
     }
 }

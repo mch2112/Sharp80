@@ -17,6 +17,6 @@ namespace Sharp80
 
         bool AltKeyboardLayout { get; set; }
         bool NotifyKeyboardChange(KeyState Key);
-        void ResetKeyboard();
+        void ResetKeyboard(bool LeftShift, bool RightShift);
     }
 }

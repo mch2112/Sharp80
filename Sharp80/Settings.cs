@@ -37,7 +37,7 @@ namespace Sharp80
         static Settings()
         {
 #if DEBUG
-       //     Properties.Settings.Default.Reset();
+        //    Properties.Settings.Default.Reset();
 #endif
         }
 
@@ -220,7 +220,7 @@ namespace Sharp80
                 lastTapeFile = lastTapeFile ?? Properties.Settings.Default.last_tape_file;
 
                 if (String.IsNullOrWhiteSpace(lastTapeFile))
-                    lastTapeFile = System.IO.Path.Combine(Storage.AppDataPath, @"Disks\");
+                    lastTapeFile = System.IO.Path.Combine(Storage.AppDataPath, @"Tapes\");
 
                 return lastTapeFile;
             }

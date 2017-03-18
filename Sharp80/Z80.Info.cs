@@ -39,9 +39,15 @@ namespace Sharp80.Processor
             if (HistoricDisassemblyMode)
             {
                 var history = new ushort[historyBuffer.Length];
-                for (int i = 0; i < historyBuffer.Length; i++)
-                    history[(i - historyBufferCursor + historyBuffer.Length - 1) % historyBuffer.Length] = historyBuffer[i];
-
+                try
+                {
+                    for (int i = 0; i < historyBuffer.Length; i++)
+                        history[(i - historyBufferCursor + historyBuffer.Length - 1) % historyBuffer.Length] = historyBuffer[i];
+                }
+                catch
+                {
+                    // TODO: find out why exceptions happen here
+                }
                 if (historyInstructionCount < (ulong) historyBuffer.Length)
                 {
                     return GetHistoricDisassembly(history,
@@ -50,7 +56,6 @@ namespace Sharp80.Processor
                 }
                 else
                 {
-                    
                     return GetHistoricDisassembly(history, 0, PC.val);
                 }
             }

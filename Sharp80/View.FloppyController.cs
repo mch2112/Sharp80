@@ -40,7 +40,7 @@ namespace Sharp80
                 Format() +
                 Indent(string.Format("Track / Sector Register:   {0:X2} / {1:X2}", status.TrackRegister, status.SectorRegister)) +
                 Indent(string.Format("Command / Data Register:   {0:X2} / {1:X2}", status.CommandRegister, status.DataRegister)) +
-                Indent(string.Format("Density Mode:              {0}", status.DoubleDensitySelected ? "Double" : "Single")) +
+                Indent(string.Format("Side / Density Mode:       {0}  / {1}", status.SideOneSelected ? "1" : "0", status.DoubleDensitySelected ? "Double" : "Single")) +
                 Format() +
                 physicalData +
                 errorData

@@ -13,9 +13,9 @@ namespace Sharp80
     {
         private Keyboard keyboard;
 
-        public bool IsShifted { get { return LeftShiftPressed || RightShiftPressed; } }
-        public bool IsControlPressed { get { return leftControlPressed || rightControlPressed; } }
-        public bool IsAltPressed { get { return leftAltPressed || rightAltPressed; } }
+        public bool IsShifted => LeftShiftPressed || RightShiftPressed;
+        public bool IsControlPressed => leftControlPressed || rightControlPressed;
+        public bool IsAltPressed => leftAltPressed || rightAltPressed;
         public bool LeftShiftPressed { get; private set; }
         public bool RightShiftPressed { get; private set; }
 

@@ -20,10 +20,10 @@ namespace Sharp80
 
         public const uint SCREEN_REFRESH_RATE = 60;
         private const int SCREEN_REFRESH_SLEEP = (int)(1000 / SCREEN_REFRESH_RATE);
-
         private const uint REPEAT_THRESHOLD = SCREEN_REFRESH_RATE / 2;                    // Half-second (30 cycles)
         private const uint DISPLAY_MESSAGE_CYCLE_DURATION = SCREEN_REFRESH_RATE;  // 1 seconds
 
+        public bool IsMinimized { get { return WindowState == FormWindowState.Minimized; } }
         private bool IsActive { get; set; }
 
         public MainForm()
@@ -81,9 +81,7 @@ namespace Sharp80
             ClientSize = new System.Drawing.Size(w, h);
             Location = new System.Drawing.Point(x, y);
         }
-
-        public bool IsMinimized { get { return WindowState == FormWindowState.Minimized; } }
-
+        
         private void Form_Load(object sender, EventArgs e)
         {
             try
@@ -234,13 +232,7 @@ namespace Sharp80
 
             keyboard.Refresh();
 
-            computer?.ResetKeyboard();
-
-            if (View.CurrentMode == ViewMode.Normal)
-            {
-                ProcessKey(new KeyState(KeyCode.LeftShift,    false, false, false, keyboard.LeftShiftPressed));
-                ProcessKey(new KeyState(KeyCode.RightShift,   false, false, false, keyboard.RightShiftPressed));
-            }
+            computer?.ResetKeyboard(keyboard.RightShiftPressed, keyboard.LeftShiftPressed);
         }
         private void ToggleFullScreen(bool AdjustClientSize = true)
         {
@@ -313,7 +305,7 @@ namespace Sharp80
         private void Form_Deactivate(object sender, EventArgs e)
         {
             IsActive = false;
-            computer.ResetKeyboard();
+            computer.ResetKeyboard(false, false);
         }
         private void Zoom(bool In)
         {
@@ -408,7 +400,7 @@ namespace Sharp80
                     BreakPointOn = Settings.BreakpointOn
                 };
 
-                computer.StartupLoadFloppies();
+                computer.StartupInitializeStorage();
                 screen.Reinitialize(computer);
 
                 Log.Initalize(computer.GetElapsedTStates);

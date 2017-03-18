@@ -157,22 +157,14 @@ namespace Sharp80
         /// <summary>
         /// Used to avoid side effects
         /// </summary>
-        public void SetPortDirect(byte PortNum, byte B)
-        {
-            ports[PortNum] = B;
-        }
+        public void SetPortDirect(byte PortNum, byte B) => ports[PortNum] = B;
+        
         /// <summary>
         /// Used to avoid side effects
         /// </summary>
-        public byte GetPortDirect(byte PortNum)
-        {
-            return ports[PortNum];
-        }
+        public byte GetPortDirect(byte PortNum) => ports[PortNum];
         
-        public byte CassetteOut()
-        {
-            return lastFFout;
-        }
+        public byte CassetteOut() => lastFFout;
       
         // SNAPSHOTS
 

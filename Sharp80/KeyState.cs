@@ -12,9 +12,9 @@ namespace Sharp80
         public bool Control { get; }
         public bool Alt { get; }
         public bool Pressed { get; }
-        public bool Released { get { return !Pressed; } }
+        public bool Released => !Pressed;
         public bool Repeat { get; }
-        public bool IsUnmodified { get { return !Alt && !Control; } }
+        public bool IsUnmodified => !Alt && !Control; 
 
         public KeyState(KeyCode Key, bool Shift, bool Control, bool Alt, bool Pressed, bool Repeat = false)
         {
@@ -24,6 +24,8 @@ namespace Sharp80
             this.Alt = Alt;
             this.Pressed = Pressed;
             this.Repeat = Repeat;
+
+            System.Diagnostics.Debug.Assert(Pressed == !Released);
         }
         
         public char ToHexChar()
@@ -65,6 +67,14 @@ namespace Sharp80
                 default:
                     return '\0';
             }
+        }
+        public override string ToString()
+        {
+            return Key.ToString() +
+                   (Pressed ? " Pressed" : " Released") +
+                   (Shift ? " Shft" : "") +
+                   (Alt ? " Alt" : "") +
+                   (Control ? " Ctrl" : "");
         }
     }
 }

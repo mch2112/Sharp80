@@ -366,8 +366,6 @@ namespace Sharp80.Processor
 
         public ulong Interrupt()
         {
-            // TODO: ensure no interrupts between strings of DD or FD prefixes.
-
             if (CanInterrupt)
             {
                 Log.LogDebug(string.Format("CPU Interrupt. IFF1: {0} IFF2: {1}", IFF1, IFF2));
@@ -417,7 +415,9 @@ namespace Sharp80.Processor
         {
             Log.LogDebug("Non Maskable Interrupt exec, IFF1 False");
 
-            IFF1 = false;   // Leave IFF2 alone to restore IFF1 after the NMI
+            IFF2 = IFF1;
+            IFF1 = false;
+
             if (halted)
             {
                 PushWord(PC.val.Offset(2));

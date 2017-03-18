@@ -328,11 +328,11 @@ namespace Sharp80
             byte numTracks = NumTracks;
             int numSides = DoubleSided ? 2 : 1;
 
-            byte[] diskData = new byte[DISK_HEADER_LENGTH + numTracks * numSides * (trackLength + TRACK_HEADER_LEN)];
+            byte[] diskData = new byte[DISK_HEADER_LENGTH + numTracks * numSides * trackLength * 2];
 
             diskData[WRITE_PROTECT_BYTE] = writeProtected ? WRITE_PROTECT_VAL : NO_WRITE_PROTECT_BYTE;
             diskData[NUM_TRACKS_BYTE] = numTracks;
-            ((ushort)(trackLength + TRACK_HEADER_LEN)).Split(out diskData[TRACK_LEN_LOW_BYTE], out diskData[TRACK_LEN_HIGH_BYTE]);
+            ((ushort)trackLength).Split(out diskData[TRACK_LEN_LOW_BYTE], out diskData[TRACK_LEN_HIGH_BYTE]);
             if (numSides == 1)
                 diskData[FLAGS_BYTE] |= SINGLE_SIDED_FLAG;
 
@@ -352,11 +352,11 @@ namespace Sharp80
                     }
                     else
                     {
-                        var d = t.Deserialize();
+                        var d = t.Serialize();
                         Array.Copy(d, 0, diskData, diskCursor, d.Length);
                         for (int k = diskCursor + d.Length; k < diskCursor + trackLength; k++)
                             diskData[k] = (t.DoubleDensity == true) ? FILLER_BYTE_DD : FILLER_BYTE_SD;
-                        diskCursor += trackLength + TRACK_HEADER_LEN;
+                        diskCursor += trackLength;
                     }
                 }
             }

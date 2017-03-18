@@ -60,7 +60,7 @@ namespace Sharp80
         }
         public bool Mute
         {
-            get { return mute; }
+            get => mute;
             set
             {
                 if (mute != value)
@@ -73,9 +73,10 @@ namespace Sharp80
         public bool UseDriveNoise { get; set; } = false;
         public bool DriveMotorRunning { get; set; } = false;
 
-        public void TrackStep() { noise.TrackStep(); }
+        public void TrackStep() => noise.TrackStep();
 
         private int ringCursor = 0;
+
         private AudioBuffer[] audioBuffersRing = new AudioBuffer[RING_SIZE];
         private DataPointer[] memBuffers = new DataPointer[RING_SIZE];
         private FrameBuffer<short> frameBuffer;

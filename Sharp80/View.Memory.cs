@@ -20,7 +20,7 @@ namespace Sharp80
         }
         protected override bool processKey(KeyState Key)
         {
-            if (Key.Pressed)
+            if (Key.Pressed && Key.IsUnmodified)
             {
                 switch (Key.Key)
                 {

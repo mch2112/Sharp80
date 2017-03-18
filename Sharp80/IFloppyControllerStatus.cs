@@ -15,6 +15,7 @@ namespace Sharp80
         byte SectorRegister { get; }
         byte CommandRegister { get; }
         byte DataRegister { get; }
+        bool SideOneSelected { get; }
         bool DoubleDensitySelected { get; }
         bool Drq { get; }
         bool SeekError { get; }
