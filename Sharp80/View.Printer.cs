@@ -36,6 +36,15 @@ namespace Sharp80
                             break;
                         case KeyCode.D:
                             Computer.PrinterReset();
+                            curLine = 0;
+                            break;
+                        case KeyCode.Up:
+                            if (CanScrollUp)
+                                curLine--;
+                            break;
+                        case KeyCode.Down:
+                            if (CanScrollDown)
+                                curLine++;
                             break;
                     }
                 }
@@ -52,7 +61,7 @@ namespace Sharp80
                 options = Format("[S] Save to Text File") +
                           Format("[D] Delete Print Job");
 
-                if (Lines.Count() > NUM_DISPLAY_LINES)
+                if (CanScroll)
                     options += Format("[Up Arrow] / [Down Arrow] Scroll Output");
 
             }
@@ -71,7 +80,12 @@ namespace Sharp80
 				options));
 
         }
-		private string[] GetPrinterOutput()
+
+        private bool CanScroll => Lines.Count() > NUM_DISPLAY_LINES;
+        private bool CanScrollUp => CanScroll && curLine > 0;
+        private bool CanScrollDown => CanScroll && curLine < Lines.Count() - NUM_DISPLAY_LINES - 1;
+
+        private string[] GetPrinterOutput()
         {
             return Computer.PrinterContent.Split(new string[] { "\r\n" }, StringSplitOptions.None).Select(l => Format(l).Truncate(ScreenMetrics.NUM_SCREEN_CHARS_X)).ToArray();
         }
@@ -84,6 +98,7 @@ namespace Sharp80
 		private void RefreshPrinterContent()
         {
             Lines = GetPrinterOutput();
+            curLine = Math.Min(curLine, Lines.Count() - NUM_DISPLAY_LINES + 1);
         }
         private bool ShowPrinterOutput()
         {
