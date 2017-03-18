@@ -10,7 +10,7 @@ namespace Sharp80
     {
         public const ulong CLOCK_RATE = 2027520;
 
-        private const int SERIALIZATION_VERSION = 7;
+        private const int SERIALIZATION_VERSION = 8;
 
         public bool Ready { get; private set; }
         public bool HasRunYet { get; private set; }
@@ -30,7 +30,7 @@ namespace Sharp80
 
         public Computer(IAppWindow MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool FloppyEnabled, bool NormalSpeed, bool SoundOn)
         {
-            ulong milliTStatesPerIRQ = CLOCK_RATE * Clock.TICKS_PER_TSTATE * 100 / 3005; // near 30 hz but not exactly since we don't want to sync with Floppy disk angle
+            ulong milliTStatesPerIRQ = CLOCK_RATE * Clock.TICKS_PER_TSTATE * 100 / 3001; // near 30 hz but not exactly since we don't want to sync with Floppy disk angle
             ulong milliTStatesPerSoundSample = CLOCK_RATE * Clock.TICKS_PER_TSTATE / SoundX.SAMPLE_RATE;
 
             HasRunYet = false;

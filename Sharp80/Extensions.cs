@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 
 namespace Sharp80
 {
@@ -350,6 +351,29 @@ namespace Sharp80
         public static string ReplaceExtension(this string Path, string NewExtension)
         {
             return System.IO.Path.ChangeExtension(Path, NewExtension);
+        }
+        public static string Repeat(this String Input, int Count)
+        {
+            Count = Math.Max(0, Count);
+            switch (Count)
+            {
+                case 0:
+                    return String.Empty;
+                case 1:
+                    return Input;
+                default:
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < Count; i++)
+                        sb.Append(Input);
+                    return sb.ToString();
+            }
+        }
+        public static string Truncate(this string Input, int Chars)
+        {
+            if (Input.Length < Chars)
+                return Input;
+            else
+                return Input.Substring(0, Chars);
         }
     }
 }

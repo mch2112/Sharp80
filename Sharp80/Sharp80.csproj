@@ -232,6 +232,7 @@
     <Compile Include="Z80.Init.cs" />
     <Compile Include="Z80.Info.cs" />
     <Compile Include="Z80.Instructions.cs" />
+    <Compile Include="View.Printer.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0,Profile=Client">

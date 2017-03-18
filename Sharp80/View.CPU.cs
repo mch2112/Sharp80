@@ -11,11 +11,15 @@ namespace Sharp80
         protected override ViewMode Mode => ViewMode.Cpu;
         protected override bool ForceRedraw => Computer.IsRunning;
         protected override bool CanSendKeysToEmulation => false;
+        protected override bool processKey(KeyState Key)
+        {
+            Invalidate();
+            return base.processKey(Key);
+        }
         protected override byte[] GetViewBytes()
         {
             var Status = Computer.CpuStatus;
 
-            Invalidate();
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Sharp 80 Z80 Register Status") +
                 Format() +

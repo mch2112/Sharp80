@@ -19,6 +19,7 @@ namespace Sharp80
         }
         protected override bool processKey(KeyState Key)
         {
+            Invalidate();
             if (Key.IsUnmodified)
             {
                 if (Key.Released)
@@ -118,7 +119,10 @@ namespace Sharp80
                     }
                 }
             }
-            Invalidate();
+            else
+            {
+                return base.processKey(Key);
+            }
             return true;
         }
         protected override byte[] GetViewBytes()

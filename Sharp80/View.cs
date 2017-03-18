@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Sharp80
 {
-    public enum ViewMode { Normal, Tape, Memory, Disk, Help, Zap, Breakpoint, Jump, Options, CmdFile, Cpu, FloppyController, Splash }
+    public enum ViewMode { Breakpoint, CmdFile, Cpu, Disk, FloppyController, Help, Jump, Memory, Normal, Options, Printer, Splash, Tape, Zap }
     public enum UserCommand { ToggleAdvancedView, ShowAdvancedView, ToggleFullScreen, Window, GreenScreen, ZoomIn, ZoomOut, HardReset, Exit }
 
     internal abstract class View
@@ -84,6 +84,7 @@ namespace Sharp80
                 new ViewMemory();
                 new ViewNormal();
                 new ViewOptions();
+                new ViewPrinter();
                 new ViewSplash();
                 new ViewTape();
                 new ViewZap();
@@ -220,9 +221,6 @@ namespace Sharp80
                             if (wasRunning)
                                 Computer.Start();
                             return true;
-                        case KeyCode.P:
-                            FlushPrinterOutput();
-                            break;
                         case KeyCode.S:
                             Settings.DriveNoise = Computer.DriveNoise = !Computer.DriveNoise;
                             MessageCallback(Settings.DriveNoise ? "Drive noise on" : "Drive noise off");
@@ -302,7 +300,7 @@ namespace Sharp80
                             }
                             return true;
                         case KeyCode.P:
-                            ShowPrinterOutput();
+                            CurrentMode = ViewMode.Printer;
                             break;
                         case KeyCode.Q:
                             MakeFloppyFromFile(out string _);
@@ -548,28 +546,6 @@ namespace Sharp80
                 else
                     Dialogs.AlertUser(string.Format("Failed to create floppy with filename {0}.", path),
                                       "Create floppy failed");
-            }
-        }
-        private bool ShowPrinterOutput()
-        {
-            if (Computer.PrinterHasContent)
-            {
-                Computer.PrinterSave();
-                Dialogs.ShowTextFile(Computer.PrinterFilePath);
-                return true;
-            }
-            else
-            {
-                Dialogs.AlertUser("Nothing printed yet.");
-                return false;
-            }
-        }
-        private void FlushPrinterOutput()
-        {
-            if (ShowPrinterOutput())
-            {
-                Computer.PrinterReset();
-                MessageCallback("Print Job Done");
             }
         }
     }

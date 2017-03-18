@@ -29,9 +29,7 @@ namespace Sharp80
         private const ulong DISK_REV_PER_SEC = 300 / 60; // 300 rpm
         private const ulong TRACK_FULL_ROTATION_TIME_IN_USEC = SECONDS_TO_MICROSECONDS / DISK_REV_PER_SEC; // 300 rpm
         private const ulong INDEX_PULSE_WIDTH_IN_USEC = 20 / FDC_CLOCK_MHZ;
-        private const ulong INDEX_PULSE_WIDTH_IN_DIVISIONS = 10000;//INDEX_PULSE_WIDTH_IN_USEC * DISK_ANGLE_DIVISIONS / TRACK_FULL_ROTATION_TIME_IN_USEC;
-        private const ulong INDEX_PULSE_START = INDEX_PULSE_END - INDEX_PULSE_WIDTH_IN_DIVISIONS;
-        private const ulong INDEX_PULSE_END = INDEX_PULSE_WIDTH_IN_DIVISIONS;
+        private const ulong INDEX_PULSE_END = 10000;//INDEX_PULSE_WIDTH_IN_USEC * DISK_ANGLE_DIVISIONS / TRACK_FULL_ROTATION_TIME_IN_USEC;
         private const ulong MOTOR_OFF_DELAY_IN_USEC = 2 * SECONDS_TO_MICROSECONDS;
         private const ulong MOTOR_ON_DELAY_IN_USEC = 10;
         private const ulong BYTE_TIME_IN_USEC_DD = 1000000 / Floppy.STANDARD_TRACK_LENGTH_DOUBLE_DENSITY / 5;
@@ -102,7 +100,6 @@ namespace Sharp80
             }
         }
         private DriveState[] drives;
-        private DriveState CurrentDrive { get { return (CurrentDriveNumber >= NUM_DRIVES) ? null : drives[CurrentDriveNumber]; } }
         
         // Operation state
         private Command command;
@@ -113,8 +110,7 @@ namespace Sharp80
         private int idamBytesFound;
         private int sectorLength;
         private int bytesRead;
-        private int indexesFound;
-        private bool indexFoundLastCheck;
+        private ulong indexCheckStartTick;
         private int bytesToWrite;
         private ushort crc;
         private ushort crcCalc;
@@ -155,15 +151,13 @@ namespace Sharp80
 
         // STATUS INFO
 
-        public string OperationStatus {  get { return opStatus.ToString(); } }
-        public string CommandStatus { get { return command.ToString(); } }
-        public byte PhysicalTrackNum { get { return CurrentDrive.PhysicalTrackNumber; } }
-        public string DiskAngleDegrees { get { return ((double)DiskAngle / DISK_ANGLE_DIVISIONS * 360).ToString("000.00000") + " degrees"; } }
-        public byte ValueAtTrackDataIndex { get { return track?.ReadByte(TrackDataIndex, null) ?? 0; } }
-        public Floppy GetFloppy(int DriveNumber)
-        {
-            return drives[DriveNumber].Floppy;
-        }
+        public string OperationStatus => opStatus.ToString();
+        public string CommandStatus => command.ToString();
+        public byte PhysicalTrackNum => CurrentDrive.PhysicalTrackNumber;
+        public string DiskAngleDegrees => ((double)DiskAngle / DISK_ANGLE_DIVISIONS * 360).ToString("000.00000") + " degrees";
+        public byte ValueAtTrackDataIndex => track?.ReadByte(TrackDataIndex, null) ?? 0;
+        public Floppy GetFloppy(int DriveNumber) => drives[DriveNumber].Floppy;
+        private DriveState CurrentDrive => (CurrentDriveNumber >= NUM_DRIVES) ? null : drives[CurrentDriveNumber];
 
         public static ushort UpdateCRC(ushort crc, byte ByteRead, bool AllowReset, bool DoubleDensity)
         {
@@ -300,45 +294,15 @@ namespace Sharp80
             }
         }
 
-        public bool? DriveBusyStatus
-        {
-            get
-            {
-                if (Busy)
-                    return true;
-                else if (MotorOn)
-                    return false;
-                else
-                    return null;
-            }
-        }
-        public bool AnyDriveLoaded
-        {
-            get { return drives.Any(d => !d.IsUnloaded); }
-        }
-        public bool Available
-        {
-            get { return Enabled && !DriveIsUnloaded(0); }
-        }
-        public void Disable()
-        {
-            Enabled = false;
-        }
-        public bool DriveIsUnloaded(byte DriveNum)
-        {
-            return drives[DriveNum].IsUnloaded;
-        }
-        public string FloppyFilePath(byte DriveNum)
-        {
-            return drives[DriveNum].Floppy?.FilePath ?? String.Empty;
-        }
-        public bool? DiskHasChanged(byte DriveNum)
-        {
-            if (drives[DriveNum].IsUnloaded)
-                return null;
-            else
-                return drives[DriveNum].Floppy.Changed;
-        }
+        public bool? DriveBusyStatus => MotorOn ? (bool?)Busy : null;
+        
+        public bool AnyDriveLoaded => drives.Any(d => !d.IsUnloaded);
+        public bool Available => Enabled && !DriveIsUnloaded(0);
+        public void Disable() => Enabled = false;
+        public bool DriveIsUnloaded(byte DriveNum) => drives[DriveNum].IsUnloaded;
+        public string FloppyFilePath(byte DriveNum) => drives[DriveNum].Floppy?.FilePath ?? String.Empty;
+        public bool? DiskHasChanged(byte DriveNum) => drives[DriveNum].Floppy?.Changed;
+        
         public bool? IsWriteProtected(byte DriveNumber)
         {
             if (DriveIsUnloaded(DriveNumber))
@@ -955,7 +919,6 @@ namespace Sharp80
             if (Busy)
                 SetCommandPulseReq(delayBytes, delayTime, ReadTrackCallback);
         }
-        // TODO: Events for these
         private void MotorOnCallback()
         {
             MotorOn = true;
@@ -1072,17 +1035,12 @@ namespace Sharp80
                     throw new Exception();
             }
         }
-        private void StepUp()
-        {
-            SetTrackNumber(CurrentDrive.PhysicalTrackNumber + 1);
-        }
-        private void StepDown()
-        {
-            SetTrackNumber(CurrentDrive.PhysicalTrackNumber - 1);
-        }
+
+        private void StepUp() => SetTrackNumber(CurrentDrive.PhysicalTrackNumber + 1);
+        private void StepDown() => SetTrackNumber(CurrentDrive.PhysicalTrackNumber - 1);
+        
         private void UpdateTrack()
         {
-            byte? trackNum = currentDriveNumber;
             track = CurrentDrive.Floppy?.GetTrack(CurrentDrive.PhysicalTrackNumber, SideOneSelected);
         }
         private void SetTrackNumber(int TrackNum)
@@ -1220,8 +1178,7 @@ namespace Sharp80
             Writer.Write(sectorLength);
             Writer.Write(bytesRead);
             Writer.Write(bytesToWrite);
-            Writer.Write(indexesFound);
-            Writer.Write(indexFoundLastCheck);
+            Writer.Write(indexCheckStartTick);
             Writer.Write(isPolling);
             Writer.Write(targetDataIndex);
 
@@ -1277,8 +1234,7 @@ namespace Sharp80
             bytesRead = Reader.ReadInt32();
             bytesToWrite = Reader.ReadInt32();
 
-            indexesFound = Reader.ReadInt32();
-            indexFoundLastCheck = Reader.ReadBoolean();
+            indexCheckStartTick = Reader.ReadUInt64();
             isPolling = Reader.ReadBoolean();
             targetDataIndex = Reader.ReadInt32();
 
@@ -1369,10 +1325,7 @@ namespace Sharp80
 
             WriteTrackByte(B);
         }
-        private void ResetCRC()
-        {
-            crc = DoubleDensitySelected ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET;
-        }
+        private void ResetCRC() => crc = DoubleDensitySelected ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET;
 
         // REGISTER I/O
 
@@ -1794,58 +1747,36 @@ namespace Sharp80
 
         private ulong DiskAngle
         {
-            get { return DISK_ANGLE_DIVISIONS * (clock.TickCount % TicksPerDiskRev) / TicksPerDiskRev; }
+            get => DISK_ANGLE_DIVISIONS * (clock.TickCount % TicksPerDiskRev) / TicksPerDiskRev;
         }
         public bool IndexDetect
         {
-            get
-            {
-                var da = DiskAngle;
-                bool indexDetect = MotorOn && DiskAngle > INDEX_PULSE_START && DiskAngle < INDEX_PULSE_END;
-
-                return indexDetect;
-            }
+            get => MotorOn && DiskAngle < INDEX_PULSE_END;
         }
-        private int IndexesFound
+        public int IndexesFound
         {
-            get
-            {
-                UpdateIndexHoleStatus();
-                return indexesFound;
-            }
+            get => (int)((clock.TickCount - indexCheckStartTick) / TicksPerDiskRev);
+        }
+        public void ResetIndexCount()
+        {
+            // make as if we started checking just after the index pulse started
+            indexCheckStartTick = clock.TickCount - (clock.TickCount % TicksPerDiskRev) + 10;
         }
 
         // TRACK DATA HANLDING
 
         public int TrackDataIndex
         {
-            get
-            {
-                return (int)(DiskAngle * (ulong)(track?.DataLength ?? (DoubleDensitySelected ? Floppy.STANDARD_TRACK_LENGTH_DOUBLE_DENSITY : Floppy.STANDARD_TRACK_LENGTH_SINGLE_DENSITY)) / DISK_ANGLE_DIVISIONS);
-            }
+            get =>
+                (int)(DiskAngle * (ulong)(track?.DataLength ?? 
+                    (DoubleDensitySelected ? Floppy.STANDARD_TRACK_LENGTH_DOUBLE_DENSITY 
+                                           : Floppy.STANDARD_TRACK_LENGTH_SINGLE_DENSITY)) / DISK_ANGLE_DIVISIONS);
+            
         }
-        private byte ReadTrackByte()
-        {
-            return track?.ReadByte(TrackDataIndex, DoubleDensitySelected) ?? 0;
-        }
-        private void WriteTrackByte(byte B)
-        {
-            track?.WriteByte(TrackDataIndex, DoubleDensitySelected, B);
-        }
-        private void ResetIndexCount()
-        {
-            indexesFound = 0;
-            indexFoundLastCheck = false;
-        }
-        private void UpdateIndexHoleStatus()
-        {
-            bool indexDetected = IndexDetect;
-
-            if (indexDetected && !indexFoundLastCheck)
-                indexesFound++;
-
-            indexFoundLastCheck = indexDetected;
-        }
+        private byte ReadTrackByte() => track?.ReadByte(TrackDataIndex, DoubleDensitySelected) ?? 0;
+        
+        private void WriteTrackByte(byte B) => track?.WriteByte(TrackDataIndex, DoubleDensitySelected, B);
+        
         private int CommandType(Command Command)
         {
             switch (Command)
