@@ -9,6 +9,7 @@ namespace Sharp80
     internal class Printer : IDisposable
     {
         private StringBuilder printBuffer = new StringBuilder();
+
         private bool isDisposed = false;
         private bool hasUnsavedContent = false;
 
@@ -23,6 +24,16 @@ namespace Sharp80
         {
             switch (b)
             {
+                case 0x00: // NUL
+                case 0x02: // start of heading
+                case 0x08: // backspace
+                case 0x0F: // shift in
+                case 0x11: // device control 1
+                case 0x19: // end of medium
+                    break;
+                case 0x1B:
+                    printBuffer.Append(' ');
+                    break;
                 case 0x0D:
                     printBuffer.AppendLine();
                     break;

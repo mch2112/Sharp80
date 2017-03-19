@@ -316,7 +316,6 @@ namespace Sharp80
             for (int i = 0; i < 0xC0; i++)
                 charGenKanji[i] = charGenNormal[i] = CreateBitmap(renderTarget, ms, filterABGR, false, properties);
 
-
             byte[] h = Resources.CharGenHigh;
             ms = new System.IO.MemoryStream(h);
             for (int i = 0xC0; i < 0x100; i++)

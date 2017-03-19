@@ -87,7 +87,7 @@ namespace Sharp80
 
         private string[] GetPrinterOutput()
         {
-            return Computer.PrinterContent.Split(new string[] { "\r\n" }, StringSplitOptions.None).Select(l => Format(l).Truncate(ScreenMetrics.NUM_SCREEN_CHARS_X)).ToArray();
+            return Computer.PrinterContent.Split(new string[] { "\r\n" }, StringSplitOptions.None).Select(l => Format(l.Truncate(ScreenMetrics.NUM_SCREEN_CHARS_X))).ToArray();
         }
 		private string ViewPrinterOutput()
         {
