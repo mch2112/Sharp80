@@ -260,10 +260,10 @@ namespace Sharp80
         }
         public void LoadFloppy(byte DriveNum) => LoadFloppy(DriveNum, Storage.GetDefaultDriveFileName(DriveNum));
 
-        public void LoadFloppy(byte DriveNum, string FilePath)
+        public bool LoadFloppy(byte DriveNum, string FilePath)
         {
             bool running = IsRunning;
-
+            bool ret = false;
             if (running)
                 Stop(WaitForStop: true);
 
@@ -271,33 +271,38 @@ namespace Sharp80
             {
                 case Storage.FILE_NAME_TRSDOS:
                     LoadTrsDosFloppy(DriveNum);
+                    ret = true;
                     break;
                 case Storage.FILE_NAME_NEW:
                     LoadFloppy(DriveNum, Storage.MakeBlankFloppy(true));
+                    ret = true;
                     break;
                 case Storage.FILE_NAME_UNFORMATTED:
                     LoadFloppy(DriveNum, Storage.MakeBlankFloppy(false));
+                    ret = true;
                     break;
                 case "":
                     FloppyController.UnloadDrive(DriveNum);
+                    ret = true;
                     break;
                 default:
-                    FloppyController.LoadFloppy(DriveNum, FilePath);
+                    ret = FloppyController.LoadFloppy(DriveNum, FilePath);
                     break;
             }
-
-            Storage.SaveDefaultDriveFileName(DriveNum, FilePath);
+            if (ret)
+                Storage.SaveDefaultDriveFileName(DriveNum, FilePath);
+            else if (Storage.GetDefaultDriveFileName(DriveNum) == FilePath)
+                Storage.SaveDefaultDriveFileName(DriveNum, String.Empty);
 
             if (running)
                 Start();
+
+            return ret;
         }
         public void LoadFloppy(byte DriveNum, Floppy Floppy) => FloppyController.LoadFloppy(DriveNum, Floppy);
 
-        public void LoadTrsDosFloppy(byte DriveNum)
-        {
-            LoadFloppy(DriveNum, new DMK(Resources.TRSDOS) { FilePath = Storage.FILE_NAME_TRSDOS });
-            Storage.SaveDefaultDriveFileName(DriveNum, Storage.FILE_NAME_TRSDOS);
-        }
+        public void LoadTrsDosFloppy(byte DriveNum) => LoadFloppy(DriveNum, new DMK(Resources.TRSDOS) { FilePath = Storage.FILE_NAME_TRSDOS });
+        
         public void EjectFloppy(byte DriveNum)
         {
             bool running = IsRunning;

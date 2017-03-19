@@ -421,25 +421,22 @@ namespace Sharp80.Assembler
             bool escaping = false;
 
             // keep quoting from messing these up
-            line = line.Replace("AF'", "{AFPRIME}")
-                       .Replace("BC'", "{BCPRIME}")
-                       .Replace("DE'", "{DCPRIME}")
-                       .Replace("HL'", "{HLPRIME}");
-
-            foreach (char c in line)
+            
+            for (int i = 0; i < line.Length; i++)
             {
-                if (c == ';')
+                var c = line[i];
+
+                if (c == ';' && !quoting)
                 {
                     commenting = true;
-                    if (quoting)
-                    {
-                        quoting = false;
-                        sb.Append(SINGLE_QUOTE);
-                    }
                 }
                 if (!commenting && c == SINGLE_QUOTE && !escaping)
-                    quoting = !quoting;
-                
+                {
+                    // AF', BC', DE', HL' aren't quoted
+                    if (c >= 2 && !IsPrimableRegister(line.Substring(i - 2, 2)))
+                        quoting = !quoting;
+                }
+
                 if (quoting || commenting)
                     sb.Append(c);
                 else
@@ -448,15 +445,24 @@ namespace Sharp80.Assembler
                 escaping = c == '\\';
             }
 
-            sb = sb.Replace("{AFPRIME}", "AF'")
-                   .Replace("{BCPRIME}", "BC'")
-                   .Replace("{DCPRIME}", "DE'")
-                   .Replace("{HLPRIME}", "HL'");
-
             if (quoting)
                 sb.Append(SINGLE_QUOTE);
 
             return sb.ToString();
+        }
+        private bool IsPrimableRegister(string RegName)
+        {
+            Debug.Assert(RegName.Length == 2);
+            switch (RegName.ToUpper())
+            {
+                case "AF":
+                case "BC":
+                case "DE":
+                case "HL":
+                    return true;
+                default:
+                    return false;
+            }
         }
         private Macro GetMacro(string Name)
         {

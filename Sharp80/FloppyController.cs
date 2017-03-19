@@ -223,15 +223,13 @@ namespace Sharp80
 
             isPolling = false;
         }
-        public void LoadFloppy(byte DriveNum, string FilePath)
+        public bool LoadFloppy(byte DriveNum, string FilePath)
         {
+            var ret = false;
             if (FilePath.Length == 0)
             {
                 UnloadDrive(DriveNum);
-            }
-            else if (!File.Exists(FilePath))
-            {
-                Log.LogDebug(string.Format("File {0} does not exist. Load cancelled.", FilePath));
+                ret = true;
             }
             else
             {
@@ -239,17 +237,20 @@ namespace Sharp80
                 try
                 {
                     f = Floppy.LoadDisk(FilePath);
+                    ret = !(f is null);
                 }
                 catch (Exception ex)
                 {
                     ex.Data["ExtraMessage"] = "Failed to load flopy from " + FilePath;
                     Log.LogException(ex);
+                    ret = false;
                 }
                 if (f == null)
                     UnloadDrive(DriveNum);
                 else
                     LoadDrive(DriveNum, f);
             }
+            return ret;
         }
         public void LoadFloppy(byte DriveNum, Floppy Floppy)
         {
@@ -279,7 +280,7 @@ namespace Sharp80
         }
         public void UnloadDrive(byte DriveNum)
         {
-            LoadDrive(DriveNum, null);
+            drives[DriveNum].Floppy = null;
             UpdateTrack();
         }
 

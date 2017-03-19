@@ -120,9 +120,7 @@ namespace Sharp80.Assembler
                     string[] ops = GetCSV(cols[2], 1000);
 
                     foreach (var o in ops)
-                    {
                         Operands.Add(new Operand(this, o.Trim()));
-                    }
                 }
 
                 if (IsMultiline)

@@ -100,15 +100,13 @@ namespace Sharp80
                 screen.Initialize(this);
                 HardReset();
 
-                if (Settings.AutoStartOnReset)
-                {
-                    AutoStart();
-                }
-
                 uiTimer.Start();
-
+                
                 if (Settings.FullScreen)
                     ToggleFullScreen();
+
+                if (Settings.AutoStartOnReset)
+                    AutoStart();
 
                 UpdateDialogLevel();
             }

@@ -50,18 +50,13 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                if (ex is IOException && !SuppressIoException)
-                {
-                    Dialogs.AlertUser("File already is use.");
-                }
-                else if (ex is FileNotFoundException && !SuppressIoException)
-                {
-                    Dialogs.AlertUser("File not found");
-                }
+                if (ex is IOException && MainForm.IsUiThread)
+                    Dialogs.AlertUser(string.Format("File \"{0}\" already is use.", Path.GetFileName(FilePath)));
+                else if (ex is FileNotFoundException && MainForm.IsUiThread)
+                    Dialogs.AlertUser(string.Format("File \"{0}\" not found.", Path.GetFileName(FilePath)));
                 else
-                {
                     Log.LogException(ex, ExceptionHandlingOptions.LogOnly);
-                }
+
                 Bytes = null;
                 return false;
             }
@@ -80,7 +75,14 @@ namespace Sharp80
             catch (Exception ex)
             {
                 ex.Data["ExtraMessage"] = string.Format("Exception saving file {0}", FilePath);
-                Log.LogException(ex, ExceptionHandlingOptions.InformUser);
+
+                if (ex is IOException && MainForm.IsUiThread)
+                    Dialogs.AlertUser(string.Format("File \"{0}\" already is use.", Path.GetFileName(FilePath)));
+                else if (ex is FileNotFoundException && MainForm.IsUiThread)
+                    Dialogs.AlertUser(string.Format("File \"{0}\" not found.", Path.GetFileName(FilePath)));
+                else
+                    Log.LogException(ex, ExceptionHandlingOptions.InformUser);
+
                 return false;
             }
         }

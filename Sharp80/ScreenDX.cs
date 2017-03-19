@@ -299,6 +299,29 @@ namespace Sharp80
 
         // SPRITE SETUP
 
+        
+        private byte[] b()
+        {
+            var bb = new System.Drawing.Bitmap(@"c:\users\mcham\Desktop\Characters.bmp");
+
+            var ret = new byte[320 * 24 * 8];
+
+            int cur = 0;
+            for (int i = 0; i < 320; i++)
+            {
+                var x = i % 32 * 8;
+                var y = i / 32 * 24;
+                for (int k = 0; k < 24; k++)
+                    for (int j = 0; j < 8; j++)
+                    {
+                        if (bb.GetPixel(x + j, y + k).GetBrightness() > 0.5)
+                            ret[cur++] = 1;
+                        else
+                            ret[cur++] = 0;
+                    }
+            }
+            return ret;
+        }
         private void LoadCharGen()
         {
             charGenNormal = charGenNormal ?? new DXBitmap[0x100];
@@ -312,20 +335,32 @@ namespace Sharp80
                                                                   SharpDX.Direct2D1.AlphaMode.Premultiplied));
 
             byte[] b = Resources.CharGenBase;
+
+            //var qqq = this.b();
+
+            //b = qqq.Slice(0, 192 * 8 * 24);
+
             var ms = new System.IO.MemoryStream(b);
             for (int i = 0; i < 0xC0; i++)
                 charGenKanji[i] = charGenNormal[i] = CreateBitmap(renderTarget, ms, filterABGR, false, properties);
 
+
             byte[] h = Resources.CharGenHigh;
+
+            //h = qqq.Slice(192 * 8 * 24, 256 * 8 * 24);
+            //var hh = h.Compress().ToArrayDeclaration();
+
             ms = new System.IO.MemoryStream(h);
             for (int i = 0xC0; i < 0x100; i++)
                 charGenNormal[i] = CreateBitmap(renderTarget, ms, filterABGR, false, properties);
-
+            
             byte[] k = Resources.CharGenKanji;
+            //k = qqq.Slice(256 * 8 * 24);
+            //var kk = k.Compress().ToArrayDeclaration();
             ms = new System.IO.MemoryStream(k);
             for (int i = 0xC0; i < 0x100; i++)
                 charGenKanji[i] = CreateBitmap(renderTarget, ms, filterABGR, false, properties);
-
+            
             ms = new System.IO.MemoryStream(b.Double());
             for (int i = 0; i < 0xC0; i++)
                 charGenKanjiWide[i] = charGenWide[i] = CreateBitmap(renderTarget, ms, filterABGR, true, properties);
