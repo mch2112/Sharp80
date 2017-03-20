@@ -8,7 +8,7 @@ namespace Sharp80
 {
     internal class ViewPrinter : View
     {
-        private const int NUM_DISPLAY_LINES = 6;
+        private const int NUM_DISPLAY_LINES = 10;
 
         protected override ViewMode Mode => ViewMode.Printer;
         protected override bool CanSendKeysToEmulation => false;

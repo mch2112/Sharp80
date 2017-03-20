@@ -41,12 +41,12 @@ namespace Sharp80
                                         Indent("[F5]                  Show / Hide CPU Internal Info") +
                                         Indent("[F9]                  Single Step (when paused)") +
                                         Format() +
-                                        Indent("[Alt]+[P]             Save and Show Printer Output") +
-                                        Indent("[Alt]+[Shift]+[P]     Save and Reset Printer") +
+                                        Indent("[Alt]+[P]             Manage Printer Output") +
                                         Format() +
                                         Indent("[Alt]+[End]           Reset Button") +
                                         Indent("[Alt]+[Shift]+[End]   Hard Reset (Power Cycle)") +
                                         Indent("[Alt]+[Shift]+[X]     Exit") +
+                                        Format() +
                                         Format() +
                                         Footer(footerText)));
                 case 2:

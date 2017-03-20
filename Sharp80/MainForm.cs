@@ -16,17 +16,14 @@ namespace Sharp80
         private Computer computer;
         private IScreen screen;
         private IKeyboard keyboard;
-        private System.Windows.Forms.Timer uiTimer;
         private int resizing = 0;
-        private bool stopped = false;
         private bool isDisposing = false;
 
         private int previousClientHeight;
 
-        public const uint SCREEN_REFRESH_RATE = 60;
-        private const int SCREEN_REFRESH_SLEEP = (int)(1000 / SCREEN_REFRESH_RATE);
-        private const uint REPEAT_THRESHOLD = SCREEN_REFRESH_RATE / 2;                    // Half-second (30 cycles)
-        private const uint DISPLAY_MESSAGE_CYCLE_DURATION = SCREEN_REFRESH_RATE;  // 1 seconds
+        public const uint UI_REFRESH_RATE = 60;
+        private const int UI_REFRESH_SLEEP = (int)(1000 / UI_REFRESH_RATE);
+        private const uint DISPLAY_MESSAGE_CYCLE_DURATION = UI_REFRESH_RATE;  // 1 seconds
 
         public static bool IsUiThread => Thread.CurrentThread == uiThread;
         public bool IsMinimized => WindowState == FormWindowState.Minimized;
@@ -43,13 +40,14 @@ namespace Sharp80
             Dialogs.BeforeShowDialog += BeforeDialog;
             Dialogs.AfterShowDialog += AfterDialog;
 
+            keyboard = new KeyboardDX();
+
             screen = new ScreenDX(Settings.AdvancedView,
                                   DISPLAY_MESSAGE_CYCLE_DURATION,
                                   Settings.GreenScreen);
 
             InitializeComponent();
             SetupClientArea();
-
         }
         
         private void Form_Load(object sender, EventArgs e)
@@ -59,7 +57,6 @@ namespace Sharp80
                 ResizeBegin += (o, ee) => { screen.Suspend = true;  resizing++; };
                 ResizeEnd += (o, ee) => { resizing--; screen.Suspend = false; };
 
-                keyboard = new KeyboardDX();
                 View.OnUserCommand += OnUserCommand;
                 screen.Initialize(this);
                 HardReset();
@@ -72,11 +69,8 @@ namespace Sharp80
 
                 UpdateDialogLevel();
 
-                screen.Start(SCREEN_REFRESH_SLEEP);
-
-                uiTimer = new System.Windows.Forms.Timer() { Interval = SCREEN_REFRESH_SLEEP };
-                uiTimer.Tick += UiTimerTick;
-                uiTimer.Start();
+                screen.Start(UI_REFRESH_SLEEP);
+                keyboard.Start(UI_REFRESH_SLEEP, ProcessKey);
             }
             catch (Exception ex)
             {
@@ -145,9 +139,6 @@ namespace Sharp80
             }
         }
         
-        private KeyCode repeatKey = KeyCode.None;
-        private uint repeatKeyCount = 0;
-        
         protected override void OnKeyDown(KeyEventArgs e)
         {
             // Prevent stupid ding noise
@@ -184,72 +175,25 @@ namespace Sharp80
 
             base.WndProc(ref m);
         }
-
-        private void UiTimerTick(object Sender, EventArgs e)
-        {
-            try
-            {
-                if (!Disposing)
-                {
-                    // Handle Keyboard Events
-                    foreach (var ks in keyboard)
-                    {
-                        if (IsActive)
-                            ProcessKey(ks);
-                    }
-                    if (IsActive)
-                    {
-                        if (repeatKey != KeyCode.None)
-                        {
-                            if (++repeatKeyCount > REPEAT_THRESHOLD)
-                                ProcessRepeatKey(repeatKey);
-                        }
-                    }
-                    HandleExceptions();
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.LogException(ex, ExceptionHandlingOptions.Terminate);
-            }
-        }
-        private void ProcessRepeatKey(KeyCode Key)
-        {
-            ProcessKey(new KeyState(Key, keyboard.IsShifted, keyboard.IsControlPressed, keyboard.IsAltPressed, true, true));
-        }
+        
         private void ProcessKey(KeyState k)
         {
-            if (k.Pressed)
+            if (IsActive)
             {
-                switch (k.Key)
+                try
                 {
-                    case KeyCode.Up:
-                    case KeyCode.Down:
-                    case KeyCode.Left:
-                    case KeyCode.Right:
-                    case KeyCode.PageUp:
-                    case KeyCode.PageDown:
-                    case KeyCode.F8:
-                    case KeyCode.F9:
-                    case KeyCode.F10:
-                        repeatKey = k.Key;
-                        break;
+                    View.ProcessKey(k);
                 }
+                catch (Exception ex)
+                {
+                    Log.LogException(ex, ExceptionHandlingOptions.Terminate);
+                }
+                HandleExceptions();
             }
-            else if (k.Key == repeatKey)
-            {
-                repeatKey = KeyCode.None;
-                repeatKeyCount = 0;
-            }
-            if (View.ProcessKey(k))
-                return;
         }
         private void SyncKeyboard()
         {
-            repeatKey = KeyCode.None;
-
             keyboard.Refresh();
-
             computer?.ResetKeyboard(keyboard.RightShiftPressed, keyboard.LeftShiftPressed);
         }
         private void ToggleFullScreen(bool AdjustClientSize = true)
@@ -393,7 +337,7 @@ namespace Sharp80
 
                     computer.Dispose();
                 }
-                computer = new Computer(this, screen, SCREEN_REFRESH_RATE, Settings.DiskEnabled, Settings.NormalSpeed, Settings.SoundOn)
+                computer = new Computer(this, screen, UI_REFRESH_RATE, Settings.DiskEnabled, Settings.NormalSpeed, Settings.SoundOn)
                 {
                     DriveNoise = Settings.DriveNoise,
                     BreakPoint = Settings.Breakpoint,
@@ -428,9 +372,7 @@ namespace Sharp80
                 startTimer = null;
                 if (computer.Ready)
                     computer.Start();
-                else if (Disposing)
-                    return;
-                else
+                else if (!Disposing)
                     AutoStart();
             };
             startTimer.Start();
@@ -505,7 +447,7 @@ namespace Sharp80
 
         private void Stop()
         {
-            stopped = true;
+            keyboard?.Stop();
             screen?.Stop();
         }
     }

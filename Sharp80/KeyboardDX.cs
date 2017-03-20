@@ -4,11 +4,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.Threading;
+using System.Threading.Tasks;
 using SharpDX.DirectInput;
 
 namespace Sharp80
 {
+    internal delegate void KeyPressedDelegate(KeyState KeyState);
+
     internal sealed class KeyboardDX : IDisposable, IKeyboard
     {
         private Keyboard keyboard;
@@ -25,6 +28,11 @@ namespace Sharp80
         private bool leftAltPressed = false;
         private bool rightAltPressed = false;
 
+        private CancellationTokenSource CancelToken;
+
+        private KeyCode repeatKey = KeyCode.None;
+        private uint repeatKeyCount = 0;
+
         public KeyboardDX()
         {
             // Initialize DirectInput
@@ -35,7 +43,72 @@ namespace Sharp80
             keyboard.Properties.BufferSize = 128;
             keyboard.Acquire();
         }
-        
+
+        public async Task Start(float RefreshRateHz, KeyPressedDelegate Callback)
+        {
+            CancelToken = new CancellationTokenSource();
+            var delay = TimeSpan.FromTicks((int)(10_000_000f / RefreshRateHz));
+            await Poll(delay, Callback, (int)(RefreshRateHz / 2));
+        }
+        private async Task Poll(TimeSpan Delay, KeyPressedDelegate Callback, int RepeatThreshold)
+        {
+            try
+            {
+                while (!CancelToken.IsCancellationRequested)
+                {
+                    await Task.Delay(Delay, CancelToken.Token);
+
+                    var data = keyboard.GetBufferedData();
+                    foreach (var d in data)
+                    {
+                        switch (d.Key)
+                        {
+                            case Key.LeftShift: LeftShiftPressed = d.IsPressed; break;
+                            case Key.RightShift: RightShiftPressed = d.IsPressed; break;
+                            case Key.LeftControl: leftControlPressed = d.IsPressed; break;
+                            case Key.RightControl: rightControlPressed = d.IsPressed; break;
+                            case Key.LeftAlt: leftAltPressed = d.IsPressed; break;
+                            case Key.RightAlt: rightAltPressed = d.IsPressed; break;
+                        }
+                        if (Enabled)
+                        {
+                            var keyCode = (KeyCode)d.Key;
+                            if (d.IsPressed)
+                            {
+                                switch (keyCode)
+                                {
+                                    case KeyCode.Up:
+                                    case KeyCode.Down:
+                                    case KeyCode.Left:
+                                    case KeyCode.Right:
+                                    case KeyCode.PageUp:
+                                    case KeyCode.PageDown:
+                                    case KeyCode.F8:
+                                    case KeyCode.F9:
+                                    case KeyCode.F10:
+                                        if (repeatKey != keyCode)
+                                        {
+                                            repeatKey = keyCode;
+                                            repeatKeyCount = 0;
+                                        }
+                                        break;
+                                }
+                            }
+                            else if (keyCode == repeatKey)
+                            {
+                                // repeat key is released
+                                repeatKey = KeyCode.None;
+                            }
+
+                            Callback(new KeyState(keyCode, IsShifted, IsControlPressed, IsAltPressed, d.IsPressed));
+                        }
+                    }
+                    if (repeatKey != KeyCode.None && ++repeatKeyCount > RepeatThreshold)
+                        Callback(new KeyState(repeatKey, IsShifted, IsControlPressed, IsAltPressed, true, true));
+                }
+            }
+            catch (OperationCanceledException) { }
+        }
         public bool Enabled { get { return enabled; }
         set
             {
@@ -47,38 +120,14 @@ namespace Sharp80
             }
         }
 
-        // required explicit interface implementation
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-        public IEnumerator<KeyState> GetEnumerator()
-        {
-            var data = keyboard.GetBufferedData();
-
-            foreach (var d in data)
-            {
-                switch (d.Key)
-                {
-                    case Key.LeftShift: LeftShiftPressed = d.IsPressed; break;
-                    case Key.RightShift: RightShiftPressed = d.IsPressed; break;
-                    case Key.LeftControl: leftControlPressed = d.IsPressed; break;
-                    case Key.RightControl: rightControlPressed = d.IsPressed; break;
-                    case Key.LeftAlt: leftAltPressed = d.IsPressed; break;
-                    case Key.RightAlt: rightAltPressed = d.IsPressed; break;
-                }
-                if (Enabled)
-                {
-                    yield return new KeyState((KeyCode)d.Key, IsShifted, IsControlPressed, IsAltPressed, d.IsPressed);
-                }
-            }
-        }
         public bool IsPressed(KeyCode Key)
         {
             return keyboard.GetCurrentState().IsPressed((Key)Key);
         }
         public void Refresh()
         {
+            repeatKey = KeyCode.None;
+
             var cs = keyboard.GetCurrentState();
             LeftShiftPressed =    cs.IsPressed(Key.LeftShift);
             RightShiftPressed =   cs.IsPressed(Key.RightShift);
@@ -86,6 +135,10 @@ namespace Sharp80
             rightAltPressed =     cs.IsPressed(Key.RightAlt);
             leftControlPressed =  cs.IsPressed(Key.LeftControl);
             rightControlPressed = cs.IsPressed(Key.RightControl);
+        }
+        public void Stop()
+        {
+            CancelToken.Cancel();
         }
         public void Dispose()
         {

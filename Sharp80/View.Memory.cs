@@ -29,6 +29,7 @@ namespace Sharp80
                         Invalidate();
                         break;
                     case KeyCode.Up:
+                    case KeyCode.Left:
                         baseAddress -= 0x0100;
                         Invalidate();
                         break;
@@ -37,6 +38,7 @@ namespace Sharp80
                         Invalidate();
                         break;
                     case KeyCode.Down:
+                    case KeyCode.Right:
                         baseAddress += 0x0100;
                         Invalidate();
                         break;

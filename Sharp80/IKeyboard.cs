@@ -2,15 +2,17 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Sharp80
 {
     /// <summary>
     /// This interface is used to allow for future non-DirectInput based implementations
     /// </summary>
-    internal interface IKeyboard : IEnumerable<KeyState>, IDisposable
+    internal interface IKeyboard : IDisposable
     {
+        Task Start(float PollRateInHz, KeyPressedDelegate Callback);
+        void Stop();
         bool Enabled { get; set; }
         bool IsShifted { get; }
         bool LeftShiftPressed { get; }
