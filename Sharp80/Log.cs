@@ -69,7 +69,7 @@ namespace Sharp80
                 var oldLog = log;
                 log = new List<(ulong Tick, string Message)>();
 
-                Storage.SaveTextFile(Path, oldLog.Select(l => string.Format("{0:000,000,000,000}: {1}", l.Tick, l.Message)));
+                Storage.SaveTextFile(Path, oldLog.Select(l => $"{l.Tick:000,000,000,000}: {l.Message}"));
 
                 // and restore if not flushed
                 if (!Flush)

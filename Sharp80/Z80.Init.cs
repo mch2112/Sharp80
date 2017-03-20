@@ -114,41 +114,41 @@ namespace Sharp80.Processor
                 {
                     foreach (var j in iter2)
                     {
-                        instructionSet.Add(new Instruction(string.Format("LD {0}, ({1}+d)", r8[i].Name, rxyi[j].Proxy.Name), (byte)(0xDD + 0x20 * j), (byte)(0x46 + i * 0x08), 19, () => load(r8[i], rxyi[j])));
-                        instructionSet.Add(new Instruction(string.Format("LD ({0}+d), {1}", rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), (byte)(0x70 + i), 19, () => load(rxyi[j], r8[i])));
+                        instructionSet.Add(new Instruction($"LD {r8[i].Name}, ({rxyi[j].Proxy.Name}+d)", (byte)(0xDD + 0x20 * j), (byte)(0x46 + i * 0x08), 19, () => load(r8[i], rxyi[j])));
+                        instructionSet.Add(new Instruction($"LD ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", (byte)(0xDD + 0x20 * j), (byte)(0x70 + i), 19, () => load(rxyi[j], r8[i])));
 
                         // COMPOUND INSTRUCTIONS (UNDOCUMENTED)
-                        instructionSet.Add(new Instruction(string.Format("RLC ({0}+d), {1}", rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), 0xCB,               i,  23, () => rlc_compound(rxyi[j], r8[i])));
-                        instructionSet.Add(new Instruction(string.Format("RRC ({0}+d), {1}", rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x08 + i), 23, () => rrc_compound(rxyi[j], r8[i])));
-                        instructionSet.Add(new Instruction(string.Format("RL ({0}+d), {1}",  rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x10 + i), 23, () => rl_compound(rxyi[j], r8[i])));
-                        instructionSet.Add(new Instruction(string.Format("RR ({0}+d), {1}",  rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x18 + i), 23, () => rr_compound(rxyi[j], r8[i])));
-                        instructionSet.Add(new Instruction(string.Format("SLA ({0}+d), {1}", rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x20 + i), 23, () => sla_compound(rxyi[j], r8[i])));
-                        instructionSet.Add(new Instruction(string.Format("SRA ({0}+d), {1}", rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x28 + i), 23, () => sra_compound(rxyi[j], r8[i])));
-                        instructionSet.Add(new Instruction(string.Format("SLL ({0}+d), {1}", rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x30 + i), 23, () => sll_compound(rxyi[j], r8[i])));
-                        instructionSet.Add(new Instruction(string.Format("SRL ({0}+d), {1}", rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x38 + i), 23, () => srl_compound(rxyi[j], r8[i])));
+                        instructionSet.Add(new Instruction($"RLC ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", (byte)(0xDD + 0x20 * j), 0xCB,               i,  23, () => rlc_compound(rxyi[j], r8[i])));
+                        instructionSet.Add(new Instruction($"RRC ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x08 + i), 23, () => rrc_compound(rxyi[j], r8[i])));
+                        instructionSet.Add(new Instruction($"RL  ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x10 + i), 23, () => rl_compound(rxyi[j], r8[i])));
+                        instructionSet.Add(new Instruction($"RR  ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x18 + i), 23, () => rr_compound(rxyi[j], r8[i])));
+                        instructionSet.Add(new Instruction($"SLA ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x20 + i), 23, () => sla_compound(rxyi[j], r8[i])));
+                        instructionSet.Add(new Instruction($"SRA ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x28 + i), 23, () => sra_compound(rxyi[j], r8[i])));
+                        instructionSet.Add(new Instruction($"SLL ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x30 + i), 23, () => sll_compound(rxyi[j], r8[i])));
+                        instructionSet.Add(new Instruction($"SRL ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x38 + i), 23, () => srl_compound(rxyi[j], r8[i])));
                         foreach (var k in iter8)
                         {
                             instructionSet.Add(new Instruction(string.Format("RES {0}, ({1}+d), {2}", k, rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x80 + k * 0x08 + i), 23, () => res_compound(rxyi[j], r8[i], k)));
                             instructionSet.Add(new Instruction(string.Format("SET {0}, ({1}+d), {2}", k, rxyi[j].Proxy.Name, r8[i].Name), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0xC0 + k * 0x08 + i), 23, () => set_compound(rxyi[j], r8[i], k)));
                         }
                     }
-                    instructionSet.Add(new Instruction(string.Format("LD {0}, IXh", r8x[i].Name), 0xDD, (byte)(0x44 + i * 0x08), 8, () => load(r8x[i], IX.H)));
-                    instructionSet.Add(new Instruction(string.Format("LD {0}, IXl", r8x[i].Name), 0xDD, (byte)(0x45 + i * 0x08), 8, () => load(r8x[i], IX.L)));
+                    instructionSet.Add(new Instruction($"LD {r8x[i].Name}, IXh", 0xDD, (byte)(0x44 + i * 0x08), 8, () => load(r8x[i], IX.H)));
+                    instructionSet.Add(new Instruction($"LD {r8x[i].Name}, IXl", 0xDD, (byte)(0x45 + i * 0x08), 8, () => load(r8x[i], IX.L)));
 
-                    instructionSet.Add(new Instruction(string.Format("LD {0}, IYh", r8y[i].Name), 0xFD, (byte)(0x44 + i * 0x08), 8, () => load(r8y[i], IY.H)));
-                    instructionSet.Add(new Instruction(string.Format("LD {0}, IYl", r8y[i].Name), 0xFD, (byte)(0x45 + i * 0x08), 8, () => load(r8y[i], IY.L)));
+                    instructionSet.Add(new Instruction($"LD {r8y[i].Name}, IYh", 0xFD, (byte)(0x44 + i * 0x08), 8, () => load(r8y[i], IY.H)));
+                    instructionSet.Add(new Instruction($"LD {r8y[i].Name}, IYl", 0xFD, (byte)(0x45 + i * 0x08), 8, () => load(r8y[i], IY.L)));
 
                     if (i <= 3 || i == 7) // r is B, C, D, E, or A
                     {
-                        instructionSet.Add(new Instruction(string.Format("LD IXh, {0}", r8x[i].Name), 0xDD, (byte)(0x60 + i), 8, () => load(IX.H, r8x[i])));
-                        instructionSet.Add(new Instruction(string.Format("LD IXl, {0}", r8x[i].Name), 0xDD, (byte)(0x68 + i), 8, () => load(IX.L, r8x[i])));
+                        instructionSet.Add(new Instruction($"LD IXh, {r8x[i].Name}", 0xDD, (byte)(0x60 + i), 8, () => load(IX.H, r8x[i])));
+                        instructionSet.Add(new Instruction($"LD IXl, {r8x[i].Name}", 0xDD, (byte)(0x68 + i), 8, () => load(IX.L, r8x[i])));
 
-                        instructionSet.Add(new Instruction(string.Format("LD IYh, {0}", r8y[i].Name), 0xFD, (byte)(0x60 + i), 8, () => load(IY.H, r8y[i])));
-                        instructionSet.Add(new Instruction(string.Format("LD IYl, {0}", r8y[i].Name), 0xFD, (byte)(0x68 + i), 8, () => load(IY.L, r8y[i])));
+                        instructionSet.Add(new Instruction($"LD IYh, {r8y[i].Name}", 0xFD, (byte)(0x60 + i), 8, () => load(IY.H, r8y[i])));
+                        instructionSet.Add(new Instruction($"LD IYl, {r8y[i].Name}", 0xFD, (byte)(0x68 + i), 8, () => load(IY.L, r8y[i])));
                     }
 
-                    instructionSet.Add(new Instruction(string.Format("IN {0}, (C)",  r8[i].Name), 0xED, (byte)(0x40 + i * 0x08), 12, () => InPortR(r8[i])));
-                    instructionSet.Add(new Instruction(string.Format("OUT (C), {0}", r8[i].Name), 0xED, (byte)(0x41 + i * 0x08), 12, () => OutPortR(r8[i])));
+                    instructionSet.Add(new Instruction($"IN {r8[i].Name}, (C)",  0xED, (byte)(0x40 + i * 0x08), 12, () => InPortR(r8[i])));
+                    instructionSet.Add(new Instruction($"OUT (C), {r8[i].Name}", 0xED, (byte)(0x41 + i * 0x08), 12, () => OutPortR(r8[i])));
                 }
 
                 foreach (var j in iter2)
@@ -162,7 +162,7 @@ namespace Sharp80.Processor
                     tStates = (byte)(i == HLMIndex || j == HLMIndex ? 7 : 4); // (HL) takes longer
                     opCode = (byte)(0x40 + 0x08 * i + j);
                     if (opCode != 0x76) // halt
-                        instructionSet.Add(new Instruction(string.Format("LD {0}, {1}", r8[i].Name, r8[j].Name), opCode, tStates, () => load(r8[i], r8[j])));
+                        instructionSet.Add(new Instruction($"LD {r8[i].Name}, {r8[j].Name}", opCode, tStates, () => load(r8[i], r8[j])));
 
                     tStates = (byte)(i == HLMIndex ? 12 : 8);
 
