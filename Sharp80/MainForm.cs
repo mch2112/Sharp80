@@ -18,6 +18,8 @@ namespace Sharp80
         private IKeyboard keyboard;
         private System.Windows.Forms.Timer uiTimer;
         private int resizing = 0;
+        private bool stopped = false;
+        private bool isDisposing = false;
 
         private int previousClientHeight;
 
@@ -26,7 +28,9 @@ namespace Sharp80
         private const uint REPEAT_THRESHOLD = SCREEN_REFRESH_RATE / 2;                    // Half-second (30 cycles)
         private const uint DISPLAY_MESSAGE_CYCLE_DURATION = SCREEN_REFRESH_RATE;  // 1 seconds
 
-        public bool IsMinimized { get { return WindowState == FormWindowState.Minimized; } }
+        public static bool IsUiThread => Thread.CurrentThread == uiThread;
+        public bool IsMinimized => WindowState == FormWindowState.Minimized;
+
         private bool IsActive { get; set; }
 
         public MainForm()
@@ -46,12 +50,39 @@ namespace Sharp80
             InitializeComponent();
             SetupClientArea();
 
-            uiTimer = new System.Windows.Forms.Timer() { Interval = SCREEN_REFRESH_SLEEP };
-            uiTimer.Tick += UiTimerTick;
         }
+        
+        private void Form_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                ResizeBegin += (o, ee) => { screen.Suspend = true;  resizing++; };
+                ResizeEnd += (o, ee) => { resizing--; screen.Suspend = false; };
 
-        public static bool IsUiThread => Thread.CurrentThread == uiThread;
+                keyboard = new KeyboardDX();
+                View.OnUserCommand += OnUserCommand;
+                screen.Initialize(this);
+                HardReset();
+                
+                if (Settings.FullScreen)
+                    ToggleFullScreen();
 
+                if (Settings.AutoStartOnReset)
+                    AutoStart();
+
+                UpdateDialogLevel();
+
+                screen.Start(SCREEN_REFRESH_SLEEP);
+
+                uiTimer = new System.Windows.Forms.Timer() { Interval = SCREEN_REFRESH_SLEEP };
+                uiTimer.Tick += UiTimerTick;
+                uiTimer.Start();
+            }
+            catch (Exception ex)
+            {
+                Log.LogException(ex);
+            }
+        }
         private void SetupClientArea()
         {
             var scn = Screen.FromHandle(Handle);
@@ -86,34 +117,6 @@ namespace Sharp80
 
             ClientSize = new System.Drawing.Size(w, h);
             Location = new System.Drawing.Point(x, y);
-        }
-        
-        private void Form_Load(object sender, EventArgs e)
-        {
-            try
-            {
-                ResizeBegin += (o, ee) => { resizing++; };
-                ResizeEnd += (o, ee) => { resizing--; };
-
-                keyboard = new KeyboardDX();
-                View.OnUserCommand += OnUserCommand;
-                screen.Initialize(this);
-                HardReset();
-
-                uiTimer.Start();
-                
-                if (Settings.FullScreen)
-                    ToggleFullScreen();
-
-                if (Settings.AutoStartOnReset)
-                    AutoStart();
-
-                UpdateDialogLevel();
-            }
-            catch (Exception ex)
-            {
-                Log.LogException(ex);
-            }
         }
         
         private void OnUserCommand(UserCommand Command)
@@ -165,6 +168,7 @@ namespace Sharp80
                 Settings.WindowHeight = ClientSize.Height;
                 Settings.Save();
                 Log.Save(true, out string _);
+                Stop();
                 Dispose();
             }
             else
@@ -187,16 +191,11 @@ namespace Sharp80
             {
                 if (!Disposing)
                 {
-                    if (!IsMinimized && resizing == 0)
-                        screen.Render();
-
                     // Handle Keyboard Events
                     foreach (var ks in keyboard)
                     {
                         if (IsActive)
-                        {
                             ProcessKey(ks);
-                        }
                     }
                     if (IsActive)
                     {
@@ -502,6 +501,12 @@ namespace Sharp80
             }
 
             keyboard.Enabled = dialogLevel == 0;
+        }
+
+        private void Stop()
+        {
+            stopped = true;
+            screen?.Stop();
         }
     }
 }

@@ -118,7 +118,7 @@ namespace Sharp80
 
                 xaudio.StartEngine();
                 
-                sourceVoice.BufferEnd += SourceVoice_BufferEnd;
+                sourceVoice.BufferEnd += (o) => bufferEndEvent?.Set();
                 sourceVoice.Start();
                 
                 playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
@@ -185,12 +185,14 @@ namespace Sharp80
                     }
                     else
                     {
-                        if (enabled)
-                            frameBuffer.ReadFrame(memBuffers[ringCursor]);
-                        else
-                            frameBuffer.ReadSilentFrame(memBuffers[ringCursor]);
+                        var buf = memBuffers[ringCursor];
 
-                        audioBuffersRing[ringCursor].AudioDataPointer = memBuffers[ringCursor].Pointer;
+                        if (enabled)
+                            frameBuffer.ReadFrame(buf);
+                        else
+                            frameBuffer.ReadSilentFrame(buf);
+
+                        audioBuffersRing[ringCursor].AudioDataPointer = buf.Pointer;
 
                         sourceVoice.SubmitSourceBuffer(audioBuffersRing[ringCursor], null);
 
@@ -203,10 +205,6 @@ namespace Sharp80
                 Mute = true;
                 Log.LogException(ex);
             }
-        }
-        private void SourceVoice_BufferEnd(IntPtr obj)
-        {
-            bufferEndEvent?.Set();
         }
         private void DisposeXAudio()
         {

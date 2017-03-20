@@ -14,7 +14,6 @@ namespace Sharp80
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         /// 
-        private bool isDisposing = false;
         protected override void Dispose(bool disposing)
         {
             if (!isDisposing && !IsDisposed)

@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 using SharpDX;
 using SharpDX.Direct2D1;
@@ -15,7 +17,7 @@ using SharpDX.Mathematics.Interop;
 
 using Color = SharpDX.Color;
 using DXBitmap = SharpDX.Direct2D1.Bitmap;
-
+    
 namespace Sharp80
 {
     internal sealed class ScreenDX : IScreen
@@ -66,6 +68,8 @@ namespace Sharp80
         private bool isGreenScreen = false;
         private bool isWideCharMode = false;
         private bool isKanjiCharMode = false;
+
+        private CancellationTokenSource CancelToken;
 
         // CONSTRUCTOR
 
@@ -542,31 +546,46 @@ namespace Sharp80
 
         // RENDERING
 
-        public void Render()
+        public async Task Start(float RefreshRateHz)
         {
-            if (DrawOK)
+            CancelToken = new CancellationTokenSource();
+            var delay = TimeSpan.FromTicks((int)(10_000_000f / RefreshRateHz));
+            await DoRender(delay);           
+        }
+        public bool Suspend { private get; set; }
+        private async Task DoRender(TimeSpan Delay)
+        {
+            try
             {
-                try
+                while (!CancelToken.IsCancellationRequested)
                 {
-                    isDrawing = true;
+                    await Task.Delay(Delay, CancelToken.Token);
+                    if (DrawOK)
+                    {
+                        try
+                        {
+                            isDrawing = true;
 
-                    BeginDraw();
-                    Draw();
-                    EndDraw();
-                }
-                catch (Exception ex)
-                {
-                    ex.Data.Add("ExtraMessage", "Exception in D3D Render Loop");
-                    Log.LogException(ex);
-                }
-                finally
-                {
-                    isDrawing = false;
+                            BeginDraw();
+                            Draw();
+                            EndDraw();
+                        }
+                        catch (Exception ex)
+                        {
+                            ex.Data.Add("ExtraMessage", "Exception in D3D Render Loop");
+                            Log.LogException(ex);
+                        }
+                        finally
+                        {
+                            isDrawing = false;
+                        }
+                    }
                 }
             }
+            catch (TaskCanceledException) { }
         }
         public void Invalidate() => invalid = true;
-        private bool DrawOK => isResizing == 0 && !isDrawing && !parent.IsMinimized;
+        private bool DrawOK => isResizing == 0 && !isDrawing && !parent.IsMinimized && !Suspend;
         private void Draw()
         {
             if (initialized)
@@ -717,6 +736,10 @@ namespace Sharp80
 
         // CLEANUP
 
+        public void Stop()
+        {
+            CancelToken.Cancel();
+        }
         public void Dispose()
         {
             if (!isDisposed)

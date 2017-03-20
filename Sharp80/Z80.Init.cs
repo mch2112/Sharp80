@@ -81,34 +81,34 @@ namespace Sharp80.Processor
             {
                 tStates = (byte)(i == HLMIndex ? 7 : 4); // (HL) takes longer
 
-                instructionSet.Add(new Instruction(string.Format("ADD {0}", r8[i].Name), (byte)(0x80 + i), tStates, () => add(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("ADC {0}", r8[i].Name), (byte)(0x88 + i), tStates, () => adc(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("SUB {0}", r8[i].Name), (byte)(0x90 + i), tStates, () => sub(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("SBC {0}", r8[i].Name), (byte)(0x98 + i), tStates, () => sbc(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("AND {0}", r8[i].Name), (byte)(0xA0 + i), tStates, () => and(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("XOR {0}", r8[i].Name), (byte)(0xA8 + i), tStates, () => xor(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("OR {0}",  r8[i].Name), (byte)(0xB0 + i), tStates, () => or(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("CP {0}",  r8[i].Name), (byte)(0xB8 + i), tStates, () => cp(r8[i])));
+                instructionSet.Add(new Instruction($"ADD {r8[i].Name}", (byte)(0x80 + i), tStates, () => add(r8[i])));
+                instructionSet.Add(new Instruction($"ADC {r8[i].Name}", (byte)(0x88 + i), tStates, () => adc(r8[i])));
+                instructionSet.Add(new Instruction($"SUB {r8[i].Name}", (byte)(0x90 + i), tStates, () => sub(r8[i])));
+                instructionSet.Add(new Instruction($"SBC {r8[i].Name}", (byte)(0x98 + i), tStates, () => sbc(r8[i])));
+                instructionSet.Add(new Instruction($"AND {r8[i].Name}", (byte)(0xA0 + i), tStates, () => and(r8[i])));
+                instructionSet.Add(new Instruction($"XOR {r8[i].Name}", (byte)(0xA8 + i), tStates, () => xor(r8[i])));
+                instructionSet.Add(new Instruction($"OR {r8[i].Name}",  (byte)(0xB0 + i), tStates, () => or(r8[i])));
+                instructionSet.Add(new Instruction($"CP {r8[i].Name}",  (byte)(0xB8 + i), tStates, () => cp(r8[i])));
 
                 tStates = (byte)(i == HLMIndex ? 11 : 4);
 
-                instructionSet.Add(new Instruction(string.Format("INC {0}",  r8[i].Name), (byte)(0x04 + i * 0x08), tStates, () => inc(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("DEC {0}",  r8[i].Name), (byte)(0x05 + i * 0x08), tStates, () => dec(r8[i])));
+                instructionSet.Add(new Instruction($"INC {r8[i].Name}", (byte)(0x04 + i * 0x08), tStates, () => inc(r8[i])));
+                instructionSet.Add(new Instruction($"DEC {r8[i].Name}", (byte)(0x05 + i * 0x08), tStates, () => dec(r8[i])));
 
                 tStates = (byte)(i == HLMIndex ? 15 : 8);
 
-                instructionSet.Add(new Instruction(string.Format("RLC {0}", r8[i].Name), 0xCB, i,                tStates, () => rlc(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("RRC {0}", r8[i].Name), 0xCB, (byte)(i + 0x08), tStates, () => rrc(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("RL {0}",  r8[i].Name), 0xCB, (byte)(i + 0x10), tStates, () => rl(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("RR {0}",  r8[i].Name), 0xCB, (byte)(i + 0x18), tStates, () => rr(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("SLA {0}", r8[i].Name), 0xCB, (byte)(i + 0x20), tStates, () => sla(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("SRA {0}", r8[i].Name), 0xCB, (byte)(i + 0x28), tStates, () => sra(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("SLL {0}", r8[i].Name), 0xCB, (byte)(i + 0x30), tStates, () => sll(r8[i])));
-                instructionSet.Add(new Instruction(string.Format("SRL {0}", r8[i].Name), 0xCB, (byte)(i + 0x38), tStates, () => srl(r8[i])));
+                instructionSet.Add(new Instruction($"RLC {r8[i].Name}", 0xCB, i,                tStates, () => rlc(r8[i])));
+                instructionSet.Add(new Instruction($"RRC {r8[i].Name}", 0xCB, (byte)(i + 0x08), tStates, () => rrc(r8[i])));
+                instructionSet.Add(new Instruction($"RL {r8[i].Name}",  0xCB, (byte)(i + 0x10), tStates, () => rl(r8[i])));
+                instructionSet.Add(new Instruction($"RR {r8[i].Name}",  0xCB, (byte)(i + 0x18), tStates, () => rr(r8[i])));
+                instructionSet.Add(new Instruction($"SLA {r8[i].Name}", 0xCB, (byte)(i + 0x20), tStates, () => sla(r8[i])));
+                instructionSet.Add(new Instruction($"SRA {r8[i].Name}", 0xCB, (byte)(i + 0x28), tStates, () => sra(r8[i])));
+                instructionSet.Add(new Instruction($"SLL {r8[i].Name}", 0xCB, (byte)(i + 0x30), tStates, () => sll(r8[i])));
+                instructionSet.Add(new Instruction($"SRL {r8[i].Name}", 0xCB, (byte)(i + 0x38), tStates, () => srl(r8[i])));
 
                 tStates = (byte)(i == HLMIndex ? 10 : 7);
 
-                instructionSet.Add(new Instruction(string.Format("LD {0}, N", r8[i].Name), (byte)(i * 0x08 + 0x06), tStates, () => load_reg_nn(r8[i])));
+                instructionSet.Add(new Instruction($"LD {r8[i].Name}, N", (byte)(i * 0x08 + 0x06), tStates, () => load_reg_nn(r8[i])));
                 
                 if (i != HLMIndex)
                 {
