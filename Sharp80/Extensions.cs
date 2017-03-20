@@ -339,7 +339,7 @@ namespace Sharp80
             int i = 0;
             do
             {
-                string name = i++ > 0 ? string.Format("{0} ({1})", FileNameWithoutExtension, i)
+                string name = i++ > 0 ? $"{FileNameWithoutExtension} ({i})"
                                       : FileNameWithoutExtension;
 
                 Path = System.IO.Path.Combine(Dir, name + Extension);

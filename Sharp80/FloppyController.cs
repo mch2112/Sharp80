@@ -269,7 +269,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                ex.Data["ExtraMessage"] = string.Format("Error saving drive number {0}:", DriveNum);
+                ex.Data["ExtraMessage"] = $"Error saving drive number: {DriveNum}";
                 Log.LogException(ex, ExceptionHandlingOptions.InformUser);
             }
         }
@@ -367,7 +367,7 @@ namespace Sharp80
                 case OpStatus.CheckVerify:
 
                     if (CurrentDrive.PhysicalTrackNumber != TrackRegister)
-                        Log.LogDebug(string.Format("Track Register {0:X2} != Physical Track Number {1:X2}", TrackRegister, CurrentDrive.PhysicalTrackNumber));
+                        Log.LogDebug($"Track Register {TrackRegister:X2} != Physical Track Number {CurrentDrive.PhysicalTrackNumber:X2}");
 
                     if (verify)
                     {
@@ -396,7 +396,7 @@ namespace Sharp80
                     }
                     else
                     {
-                        Log.LogDebug(string.Format(opStatus.ToString() + " Verify Track failed: Track Register: {0:X2} Track Read {1:X2}", TrackRegister, readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE]));
+                        Log.LogDebug($"{opStatus} Verify Track failed: Track Register: {TrackRegister:X2} Track Read {readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE]:X2}");
                         delayBytes = 1;
                         opStatus = OpStatus.SeekingIDAM;
                     }
@@ -447,7 +447,7 @@ namespace Sharp80
                     delayBytes = 1;
                     if (damBytesChecked++ > (DoubleDensitySelected ? 43 : 30))
                     {
-                        Log.LogDebug(string.Format("Error: Seek Error / Record Not Found. Command: {0:X2} OpStatus: {1}", command, opStatus));
+                        Log.LogDebug($"Error: Seek Error / Record Not Found. Command: {command:X2} OpStatus: {opStatus}");
                         SeekError = true;
                         opStatus = OpStatus.NMI;
                         delayTime = NMI_DELAY_IN_USEC;
@@ -463,14 +463,13 @@ namespace Sharp80
                     }
                     else
                     {
-                        Log.LogDebug(string.Format("Check for DAM, byte {0}", damBytesChecked));
+                        Log.LogDebug($"Check for DAM, byte {damBytesChecked}");
                     }
                     break;
                 case OpStatus.ReadingData:
                     if (Drq)
                     {
-                        Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1} TrackRegister: {2:X2} SectorRegister {3:X2} Bytes Read: {4} Disk Angle: {5}",
-                                                      command, opStatus, TrackRegister, SectorRegister, bytesRead, DiskAngleDegrees));
+                        Log.LogDebug($"Error: Lost Data. Command: {command} OpStatus: {opStatus} TrackRegister: {TrackRegister:X2} SectorRegister {SectorRegister:X2} Bytes Read: {bytesRead} Disk Angle: {DiskAngleDegrees}");
                         LostData = true;
                     }
                     if (++bytesRead >= sectorLength)
@@ -478,7 +477,7 @@ namespace Sharp80
                         crcCalc = crc;
                         opStatus = OpStatus.ReadCRCHigh;
                     }
-                    Log.LogDebug(string.Format("FDC Write to data register: {0:X2} ({1} of {2})", b, bytesRead, sectorLength));
+                    Log.LogDebug($"FDC Write to data register: {b:X2} ({bytesRead} of {sectorLength})");
                     DataRegister = b;
                     SetDRQ();
                     delayBytes = 1;
@@ -493,9 +492,8 @@ namespace Sharp80
                     CrcError = crcCalc != Lib.CombineBytes(crcLow, crcHigh);
                     if (CrcError)
                     {
-                        Log.LogDebug(string.Format("Error: CRC Error. Command: {0} OpStatus: {1}", command, opStatus));
+                        Log.LogDebug($"Error: CRC Error. Command: {command} OpStatus: {opStatus}");
                         Log.LogDebug(string.Format("Data CRC Error - Drv: {0} Trk: {1} Side: {2} Sec: {3:X2}", CurrentDriveNumber, TrackRegister, sideOneExpected ? 1 : 0, SectorRegister));
-                        //opStatus = OpStatus.SeekingIDAM;
                         delayTime = NMI_DELAY_IN_USEC;
                         opStatus = OpStatus.NMI;
                     }
@@ -514,7 +512,7 @@ namespace Sharp80
 
                     break;
                 case OpStatus.NMI:
-                    Log.LogDebug(string.Format("Read Sector Done OK: Track {0:X2} Sector {1:X2}", TrackRegister, SectorRegister));
+                    Log.LogDebug($"Read Sector Done OK: Track {TrackRegister:X2} Sector {SectorRegister:X2}");
                     opStatus = OpStatus.OpDone;
                     DoNmi();
                     break;
@@ -554,7 +552,7 @@ namespace Sharp80
                 case OpStatus.CheckingWriteProtectStatus:
                     if (CurrentDrive.WriteProtected)
                     {
-                        Log.LogDebug(string.Format("Cancelling due to Write Protect: Command: {0} OpStatus: {1}", command, opStatus));
+                        Log.LogDebug($"Cancelling due to Write Protect: Command: {command} OpStatus: {opStatus}");
 
                         writeProtected = true;
                         opStatus = OpStatus.NMI;
@@ -583,7 +581,7 @@ namespace Sharp80
                 case OpStatus.DrqCheck:
                     if (Drq)
                     {
-                        Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1}", command, opStatus));
+                        Log.LogDebug($"Error: Lost Data. Command: {command} OpStatus: {opStatus}");
                         LostData = true;
                         opStatus = OpStatus.NMI;
                         delayTime = NMI_DELAY_IN_USEC;
@@ -624,7 +622,7 @@ namespace Sharp80
                 case OpStatus.WritingData:
                     if (Drq)
                     {
-                        Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1}", command, opStatus));
+                        Log.LogDebug($"Error: Lost Data. Command: {command} OpStatus: {opStatus}");
                         LostData = true;
                         WriteByte(0x00, false);
                     }
@@ -752,7 +750,7 @@ namespace Sharp80
                 case OpStatus.CheckingWriteProtectStatus:
                     if (CurrentDrive.WriteProtected)
                     {
-                        Log.LogDebug(string.Format("Cancelling due to Write Protect: Command: {0} OpStatus: {1}", command, opStatus));
+                        Log.LogDebug($"Cancelling due to Write Protect: Command: {command} OpStatus: {opStatus}");
 
                         writeProtected = true;
                         opStatus = OpStatus.NMI;
@@ -769,7 +767,7 @@ namespace Sharp80
                 case OpStatus.DrqCheck:
                     if (Drq)
                     {
-                        Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1}", command, opStatus));
+                        Log.LogDebug($"Error: Lost Data. Command: {command} OpStatus: {opStatus}");
                         LostData = true;
                         opStatus = OpStatus.NMI;
                         delayTime = NMI_DELAY_IN_USEC;
@@ -790,7 +788,7 @@ namespace Sharp80
                     bool allowCrcReset = true;
                     if (Drq)
                     {
-                        Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1}", command, opStatus));
+                        Log.LogDebug($"Error: Lost Data. Command: {command} OpStatus: {opStatus}");
                         LostData = true;
                         b = 0x00;
                     }
@@ -898,7 +896,7 @@ namespace Sharp80
                     DataRegister = b;
                     if (Drq)
                     {
-                        Log.LogDebug(string.Format("Error: Lost Data. Command: {0} OpStatus: {1}", command, opStatus));
+                        Log.LogDebug($"Error: Lost Data. Command: {command} OpStatus: {opStatus}");
                         LostData = true;
                     }
                     SetDRQ();
@@ -943,7 +941,7 @@ namespace Sharp80
                 case OpStatus.SeekingIDAM:
                     if (IndexesFound >= 5)
                     {
-                        Log.LogDebug(string.Format("Error: Seek Error / Record Not Found. Command: {0} OpStatus: {1} Track Register: {2:X2} Sector Register: {3:X2} Side Sel Verify: {4} Indexes Found: {5}", command, opStatus, TrackRegister, SectorRegister, sideSelectVerify, IndexesFound));
+                        Log.LogDebug($"Error: Seek Error / Record Not Found. Command: {command} OpStatus: {opStatus} Track Register: {TrackRegister:X2} Sector Register: {SectorRegister:X2} Side Sel Verify: {sideSelectVerify} Indexes Found: {IndexesFound}");
                         SeekError = true;
                         opStatus = OpStatus.NMI;
                     }
@@ -954,7 +952,7 @@ namespace Sharp80
                             case Floppy.IDAM:
                                 if (track?.HasIdamAt(TrackDataIndex, DoubleDensitySelected) ?? false)
                                 {
-                                    Log.LogDebug(string.Format("IDAM Found. Command: {0} OpStatus: {1} Trk Register: {2:X2} Physical Trk: {3:X2} Sec Register: {4:X2} Side Sel Verify: {5} Indexes Found: {5}", command, opStatus, TrackRegister, PhysicalTrackNum, SectorRegister, sideSelectVerify, IndexesFound));
+                                    Log.LogDebug($"IDAM Found. Command: {command} OpStatus: {opStatus} Trk Register: {TrackRegister:X2} Physical Trk: {PhysicalTrackNum:X2} Sec Register: {SectorRegister:X2} Side Sel Verify: {sideSelectVerify} Indexes Found: {IndexesFound}");
                                     readAddressIndex = 0;
                                     ResetCRC();
                                     crc = Lib.Crc(crc, ByteRead);
@@ -969,7 +967,7 @@ namespace Sharp80
                     }
                     break;
                 case OpStatus.ReadingAddressData:
-                    Log.LogDebug(String.Format("Reading address data byte {0}: {1:X2}", readAddressIndex, ByteRead));
+                    Log.LogDebug($"Reading address data byte {readAddressIndex}: {ByteRead:X2}");
                     readAddressData[readAddressIndex] = ByteRead;
                     if (readAddressIndex == ADDRESS_DATA_CRC_HIGH_BYTE - 1)
                     {
@@ -989,7 +987,7 @@ namespace Sharp80
                                      (SectorRegister == readAddressData[ADDRESS_DATA_SECTOR_REGISTER_BYTE]));
 
                         if (readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE] != PhysicalTrackNum)
-                            Log.LogDebug(string.Format("Track Mismatch! Read {0:X2} on physical track {1:X2} (CRC Error: {2})", readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE], PhysicalTrackNum, CrcError));
+                            Log.LogDebug($"Track Mismatch! Read {readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE]:X2} on physical track {PhysicalTrackNum:X2} (CRC Error: {CrcError})");
 
                         if (Check && !match)
                         {
@@ -1056,8 +1054,7 @@ namespace Sharp80
                 if (CurrentDrive.OnTrackZero)
                     TrackRegister = 0;
 
-                Log.LogDebug(string.Format("Drive {0} Physical Track Step to {1:X2}",
-                                                CurrentDriveNumber, CurrentDrive.PhysicalTrackNumber));
+                Log.LogDebug($"Drive {CurrentDriveNumber} Physical Track Step to {PhysicalTrackNum:X2}");
             }
         }
         internal static bool IsDAM(byte b, out bool SectorDeleted)
@@ -1115,7 +1112,7 @@ namespace Sharp80
             else
             {
                 // Time based delay
-                Log.LogDebug(string.Format("Callback Request. Command: {0} Opstatus: {1}", command, opStatus));
+                Log.LogDebug($"Callback Request. Command: {command} Opstatus: {opStatus}");
                 commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, DelayInUsec, Callback, false);
                 computer.Activate(commandPulseReq);
             }
@@ -1388,7 +1385,7 @@ namespace Sharp80
         {
             UpdateStatus();
 
-            Log.LogDebug(string.Format("Get status register: {0:X2}", statusRegister));
+            Log.LogDebug($"Get status register: {statusRegister:X2}");
 
             if (Enabled)
                 ports.SetPortDirect(0xF0, statusRegister);
@@ -1401,16 +1398,16 @@ namespace Sharp80
         private void GetTrackRegister()
         {
             ports.SetPortDirect(0xF1, Enabled ? TrackRegister : (byte)0xFF);
-            Log.LogDebug(string.Format("Get track register: {0:X2}", TrackRegister));
+            Log.LogDebug($"Get track register: {TrackRegister:X2}");
         }
         private void GetSectorRegister()
         {
             ports.SetPortDirect(0xF2, Enabled ? SectorRegister : (byte)0xFF);
-            Log.LogDebug(string.Format("Get sector register: {0:X2}", SectorRegister));
+            Log.LogDebug($"Get sector register: {SectorRegister:X2}");
         }
         private void GetDataRegister()
         {
-            Log.LogDebug(string.Format("Read data register: {0:X2}", DataRegister));
+            Log.LogDebug($"Read data register: {DataRegister:X2}");
             ports.SetPortDirect(0xF3, Enabled ? DataRegister : (byte)0xFF);
             Drq = false;
         }
@@ -1418,8 +1415,7 @@ namespace Sharp80
         {
             command = GetCommand(value);
 
-            Log.LogDebug(string.Format("Setting command register: FDC Command {0} - Drv {1} [{2:X2}]",
-                                            command, CurrentDriveNumber, value));
+            Log.LogDebug($"Setting command register: FDC Command {command} - Drv {CurrentDriveNumber} [{value:X2}]");
 
             try
             {
@@ -1493,9 +1489,7 @@ namespace Sharp80
                         opStatus = OpStatus.OpDone;
                         break;
                     case Command.ForceInterrupt:
-                        Log.LogDebug(string.Format("Unimplemented FDC Command: {0} [{1}]",
-                                                        command.ToString(),
-                                                        CommandRegister.ToHexString()));
+                        Log.LogDebug($"Unimplemented FDC Command: {command} [{CommandRegister:X2}]");
                         DoNmi();
                         opStatus = OpStatus.OpDone;
                         break;
@@ -1513,29 +1507,29 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                ex.Data["ExtraMessage"] = string.Format("Error setting command register: FDC Command: Drv {0} - {1} [{2}]", CurrentDriveNumber, command, value.ToHexString());
+                ex.Data["ExtraMessage"] = $"Error setting command register: FDC Command: Drv {CurrentDriveNumber} - {command} [{value:X2}]";
                 Log.LogException(ex, ExceptionHandlingOptions.InformUser);
             }
         }
         private void SetTrackRegister(byte value)
         {
             TrackRegister = value;
-            Log.LogDebug(string.Format("Set track register: {0:X2}", TrackRegister));
+            Log.LogDebug($"Set track register: {TrackRegister:X2}");
         }
         private void SetSectorRegister(byte value)
         {
             SectorRegister = value;
-            Log.LogDebug(string.Format("Set sector register: {0:X2}", SectorRegister));
+            Log.LogDebug($"Set sector register: {SectorRegister:X2}");
         }
         private void SetDataRegister(byte value)
         {
             DataRegister = value;
             Drq = false;
-            Log.LogDebug(string.Format("Set data register: {0:X2}", DataRegister));
+            Log.LogDebug($"Set data register: {DataRegister:X2}");
         }
         private void FdcDiskSelect(byte Value)
         {
-            Log.LogDebug("Disk select: " + Value.ToHexString());
+            Log.LogDebug($"Disk select: {Value:X2}");
 
             byte? floppyNum = null;
 
@@ -1549,10 +1543,7 @@ namespace Sharp80
                 floppyNum = 3;
 
             if (floppyNum.HasValue && CurrentDriveNumber != floppyNum.Value)
-            {
-                Log.LogDebug(string.Format("FDC Disk select: {0}", floppyNum.Value.ToHexString()));
                 CurrentDriveNumber = floppyNum.Value;
-            }
 
             bool sideOne = Value.IsBitSet(4);
             if (SideOneSelected != sideOne)
@@ -1733,7 +1724,7 @@ namespace Sharp80
 
         private void DoNmi()
         {
-            Log.LogDebug(string.Format("NMI requested. Command: {0} Opstatus: {1}", command, opStatus));
+            Log.LogDebug($"NMI requested. Command: {command} Opstatus: {opStatus}");
             Drq = false;
             Busy = false;
             IntMgr.FdcNmiLatch.Latch();

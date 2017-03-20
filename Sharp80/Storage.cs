@@ -74,7 +74,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                ex.Data["ExtraMessage"] = string.Format("Exception saving file {0}", FilePath);
+                ex.Data["ExtraMessage"] = $"Exception saving file {FilePath}";
 
                 if (ex is IOException && MainForm.IsUiThread)
                     Dialogs.AlertUser(string.Format("File \"{0}\" already is use.", Path.GetFileName(FilePath)));
@@ -199,7 +199,7 @@ namespace Sharp80
         {
             return SaveFloppies(Computer) && SaveTapeIfRequired(Computer);
         }
-        private static bool SaveFloppies(Computer Computer)
+        public static bool SaveFloppies(Computer Computer)
         {
             // returns true on user cancel
             for (byte b = 0; b < 4; b++)
@@ -214,7 +214,7 @@ namespace Sharp80
             bool? save = false;
 
             if (Computer.DiskHasChanged(DriveNum))
-                save = Dialogs.AskYesNoCancel(string.Format("Drive {0} has changed. Save it?", DriveNum));
+                save = Dialogs.AskYesNoCancel($"Drive {DriveNum} has changed. Save it?");
 
             if (!save.HasValue)
                 return false;

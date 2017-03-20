@@ -190,7 +190,7 @@ namespace Sharp80
 
             string line1;
             if (d == null)
-                line1 = string.Format("Drive #{0}: Unloaded", DiskNum);
+                line1 = $"Drive #{DiskNum}: Unloaded";
             else
                 line1 = string.Format("Drive #{0}: {1}  {2} Tks  {3} {4}",
                                       DiskNum,
@@ -259,7 +259,7 @@ namespace Sharp80
 
             if (IsEmpty)
             {
-                WriteToByteArray(cells, 0x006, string.Format("Drive {0} is empty.", DriveNum));
+                WriteToByteArray(cells, 0x006, $"Drive {DriveNum} is empty.");
             }
             else if (sd == null || numBytes == 0)
             {
@@ -317,7 +317,7 @@ namespace Sharp80
                 {
                     bool selectFile = true;
                     
-                    path = Storage.GetFloppyFilePath(Prompt: string.Format("Select floppy file to load in drive {0}", DriveNumber.Value),
+                    path = Storage.GetFloppyFilePath(Prompt: $"Select floppy file to load in drive {DriveNumber.Value}",
                                              DefaultPath: path,
                                              Save: false,
                                              SelectFileInDialog: selectFile,
@@ -376,26 +376,30 @@ namespace Sharp80
         }
         private void ToggleFloppyEnable()
         {
-            bool restart = false;
-            if (Computer.HasRunYet)
+            if (!Settings.DiskEnabled || Storage.SaveFloppies(Computer))
             {
-                string caption = (Settings.DiskEnabled ? "Disabling" : "Enabling") + " the floppy controller requires a restart. Continue?";
-                if (!Dialogs.AskYesNo(caption))
-                    return;
-                if (Computer.IsRunning)
-                    restart = true;
-                Settings.DiskEnabled = !Settings.DiskEnabled;
-                InvokeUserCommand(UserCommand.HardReset);
-            }
-            else
-            {
-                Settings.DiskEnabled = !Settings.DiskEnabled;
-            }
-            MessageCallback("Floppy Controller " + (Settings.DiskEnabled ? "Enabled" : "Disabled"));
-            if (restart)
-            {
-                Computer.Start();
-                RevertMode();
+                bool restart = false;
+
+                if (Computer.HasRunYet)
+                {
+                    string caption = (Settings.DiskEnabled ? "Disabling" : "Enabling") + " the floppy controller requires a restart. Continue?";
+                    if (!Dialogs.AskYesNo(caption))
+                        return;
+                    if (Computer.IsRunning)
+                        restart = true;
+                    Settings.DiskEnabled = !Settings.DiskEnabled;
+                    InvokeUserCommand(UserCommand.HardReset);
+                }
+                else
+                {
+                    Settings.DiskEnabled = !Settings.DiskEnabled;
+                }
+                MessageCallback("Floppy Controller " + (Settings.DiskEnabled ? "Enabled" : "Disabled"));
+                if (restart)
+                {
+                    Computer.Start();
+                    RevertMode();
+                }
             }
         }
         private void ToggleWriteProtection()

@@ -234,11 +234,7 @@ namespace Sharp80.Assembler
                         comment = String.Empty;
                         foreach (var o in lp.Operands)
                         {
-                            AddLine(string.Format("{0}\t{1}\t{2}\t{3}",
-                                                  label,
-                                                  lp.Mnemonic,
-                                                  o.RawText,
-                                                  comment),
+                            AddLine($"{label}\t{lp.Mnemonic}\t{o.RawText}\t{comment}",
                                     SourceFileLine,
                                     linesToAdd);
                             label = String.Empty;
@@ -260,9 +256,7 @@ namespace Sharp80.Assembler
                             if (lp.Mnemonic == "DEFW" && msg.Length == 1)
                             {
                                 // pad with zero byte
-                                AddLine(string.Format("{0}\tDEFB\t00H{1}",
-                                                       label,
-                                                       comment),
+                                AddLine($"{label}\tDEFB\t00H{comment}",
                                         SourceFileLine,
                                         linesToAdd);
                                 label = comment = String.Empty;
@@ -282,10 +276,7 @@ namespace Sharp80.Assembler
                     }
                     else if (lp.Mnemonic == "DEFM")
                     {
-                        AddLine(string.Format("{0}\tDEFB\t{1}{2}",
-                                                label,
-                                                lp.Operand0.RawText,
-                                                comment),
+                        AddLine($"{label}\tDEFB\t{lp.Operand0.RawText}{comment}",
                                 SourceFileLine,
                                 linesToAdd);
                         lp.Suppress();
@@ -297,9 +288,7 @@ namespace Sharp80.Assembler
                         int bytes = lp.Operand0.NumericValue.Value;
                         for (int i = 0; i < bytes; i++)
                         {
-                            AddLine(string.Format("{0}\tDEFB\t00H\t{1}",
-                                                label,
-                                                comment),
+                            AddLine($"{label}\tDEFB\t00H\t{comment}",
                                     SourceFileLine,
                                     linesToAdd);
                             label = comment = String.Empty;
@@ -391,7 +380,7 @@ namespace Sharp80.Assembler
                     }
                 }
 
-                lp.SetError(string.Format("Instruction not found: {0}", lp.RawLine));
+                lp.SetError($"Instruction not found: {lp.RawLine}");
             }
             return false;
         }
@@ -705,7 +694,7 @@ namespace Sharp80.Assembler
                 }
                 else if (symbolLine.HasError)
                 {
-                    CurrentLP?.SetError(string.Format("Symbol {0} defined on line {1} which has an error.", Symbol, CurrentLP.SourceFileLine));
+                    CurrentLP?.SetError($"Symbol {Symbol} defined on line {CurrentLP.SourceFileLine} which has an error.");
                 }
                 else
                 {
@@ -716,7 +705,7 @@ namespace Sharp80.Assembler
         
             if (!ret.HasValue && CurrentLP != null)
             {
-                string err = string.Format("Symbol {0} not found [Line {1}].", s, CurrentLP.SourceFileLine);
+                string err = $"Symbol {s} not found [Line {CurrentLP.SourceFileLine}].";
                 Log.LogDebug(err);
                 CurrentLP.SetError(err);
             }

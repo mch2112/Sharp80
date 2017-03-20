@@ -544,7 +544,7 @@ namespace Sharp80
                 if (Storage.SaveBinaryFile(path, f.Serialize(ForceDMK: true)))
                     Dialogs.InformUser("Created floppy OK.");
                 else
-                    Dialogs.AlertUser(string.Format("Failed to create floppy with filename {0}.", path),
+                    Dialogs.AlertUser($"Failed to create floppy with filename {path}.",
                                       "Create floppy failed");
             }
         }
