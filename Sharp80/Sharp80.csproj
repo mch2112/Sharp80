@@ -130,6 +130,7 @@
     <Compile Include="Clock.cs" />
     <Compile Include="CmdFile.cs" />
     <Compile Include="Computer.cs" />
+    <Compile Include="ExceptionHandler.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="FloppyController.DriveState.cs" />
     <Compile Include="IFloppyControllerStatus.cs" />

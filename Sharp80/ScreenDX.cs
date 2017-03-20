@@ -464,7 +464,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogException(ex);
+                ExceptionHandler.Handle(ex);
             }
             CreateBackBuffer();
             CreateRenderTarget(Format.Unknown);
@@ -567,8 +567,7 @@ namespace Sharp80
                     }
                     catch (Exception ex)
                     {
-                        ex.Data.Add("ExtraMessage", "Exception in D3D Render Loop");
-                        Log.LogException(ex);
+                        ExceptionHandler.Handle(ex, ExceptionHandlingOptions.Terminate, "Exception in D3D Render Loop");
                     }
                     finally
                     {

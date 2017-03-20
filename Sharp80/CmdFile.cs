@@ -86,8 +86,7 @@ namespace Sharp80
                 }
                 catch (Exception ex)
                 {
-                    ex.Data["ExtraMessage"] = "Error loading CMD File " + FilePath;
-                    Log.LogException(ex, ExceptionHandlingOptions.InformUser);
+                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, "Error loading CMD File " + FilePath);
                 }
             }
             Finalize(false);

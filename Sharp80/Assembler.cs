@@ -72,8 +72,7 @@ namespace Sharp80.Assembler
                 }
                 catch (Exception ex)
                 {
-                    ex.Data["ExtraMessage"] = string.Format("Failed to assemble {0}.", Path.GetFileName(originalFilePath));
-                    Log.LogException(ex, ExceptionHandlingOptions.InformUser);
+                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"Failed to assemble {Path.GetFileName(originalFilePath)}.");
                 }
             }
             return cmdFilePath;
@@ -941,8 +940,7 @@ namespace Sharp80.Assembler
             }
             catch (Exception ex)
             {
-                ex.Data["ExtraMessage"] = "Failed to save CMD file from assembler.";
-                Log.LogException(ex);
+                ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, "Failed to save CMD file from assembler.");
             }
             return cmdFilePath;
         }

@@ -153,8 +153,8 @@ namespace Sharp80.Processor
 
                 foreach (var j in iter2)
                 {
-                    instructionSet.Add(new Instruction(string.Format("SET {0}, ({1}+d)",i, rxyi[j].Proxy.Name), (byte)(0xDD + j * 0x20),0xCB, (byte)(0xC6 + i * 0x08), 23, () => set(rxyi[j], i)));
-                    instructionSet.Add(new Instruction(string.Format("RES {0}, ({1}+d)",i, rxyi[j].Proxy.Name), (byte)(0xDD + j * 0x20),0xCB, (byte)(0x86 + i * 0x08), 23, () => res(rxyi[j], i)));
+                    instructionSet.Add(new Instruction($"SET {i}, ({rxyi[j].Proxy.Name}+d)", (byte)(0xDD + j * 0x20),0xCB, (byte)(0xC6 + i * 0x08), 23, () => set(rxyi[j], i)));
+                    instructionSet.Add(new Instruction($"RES {i}, ({rxyi[j].Proxy.Name}+d)", (byte)(0xDD + j * 0x20),0xCB, (byte)(0x86 + i * 0x08), 23, () => res(rxyi[j], i)));
                 }
 
                 foreach (var j in iter8)
@@ -166,17 +166,17 @@ namespace Sharp80.Processor
 
                     tStates = (byte)(i == HLMIndex ? 12 : 8);
 
-                    instructionSet.Add(new Instruction(string.Format("BIT {0}, {1}", j, r8[i].Name), 0xCB, (byte)(0x40 + j * 0x08 + i), tStates, 
+                    instructionSet.Add(new Instruction($"BIT {j}, {r8[i].Name}", 0xCB, (byte)(0x40 + j * 0x08 + i), tStates, 
                         i == HLMIndex ? (Instruction.InstDelegate)(() => bitHLM(j)) 
                                       : (Instruction.InstDelegate)(() => bit(r8[i], j))));
 
-                    instructionSet.Add(new Instruction(string.Format("SET {0}, {1}", j, r8[i].Name), 0xCB, (byte)(0xC0 + j * 0x08 + i), tStates, () => set(r8[i], j)));
-                    instructionSet.Add(new Instruction(string.Format("RES {0}, {1}", j, r8[i].Name), 0xCB, (byte)(0x80 + j * 0x08 + i), tStates, () => res(r8[i], j)));
+                    instructionSet.Add(new Instruction($"SET {j}, {r8[i].Name}", 0xCB, (byte)(0xC0 + j * 0x08 + i), tStates, () => set(r8[i], j)));
+                    instructionSet.Add(new Instruction($"RES {j}, {r8[i].Name}", 0xCB, (byte)(0x80 + j * 0x08 + i), tStates, () => res(r8[i], j)));
                     
                     foreach (var k in iter2)
                     {
                         // redundant opcodes
-                        instructionSet.Add(new Instruction(string.Format("BIT {0}, ({1}+d)", i, rxyi[k].Proxy.Name), (byte)(0xDD + k * 0x20), 0xCB, (byte)(0x40 + i * 8 + j), 20, () => bit(rxyi[k], i)));
+                        instructionSet.Add(new Instruction($"BIT {i}, ({rxyi[k].Proxy.Name}+d)", (byte)(0xDD + k * 0x20), 0xCB, (byte)(0x40 + i * 8 + j), 20, () => bit(rxyi[k], i)));
                     }
                 }
             }

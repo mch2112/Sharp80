@@ -18,7 +18,6 @@ namespace Sharp80
         /// because showing dialogs can only be done in that thread.
         /// </summary>
 
-        public static Queue<(Exception Exception, ExceptionHandlingOptions Option)> ExceptionQueue = new Queue<(Exception Exception, ExceptionHandlingOptions Option)>();
         public static List<(ulong Tick, string Message)> LLog = new List<(ulong Tick, string Message)>();
 
         public static bool DebugLogOn { get; set; } = false;
@@ -28,7 +27,6 @@ namespace Sharp80
 
         private static List<(ulong Tick, string Message)> log = new List<(ulong Tick, string Message)>();
         private static GetTickDelegate tickFn = () => 0;
-        private static bool terminating = false;
         
         public static void Initalize(GetTickDelegate Callback)
         {
@@ -48,16 +46,8 @@ namespace Sharp80
             if (DebugLogOn)
                 LogItem(Message);
         }
-        public static void LogException(Exception Ex, ExceptionHandlingOptions Option = ExceptionHandlingOptions.Terminate)
-        {
-            LogDebug(Ex.ToReport());
-            if (!terminating && Option != ExceptionHandlingOptions.LogOnly)
-            {
-                ExceptionQueue.Enqueue((Ex, Option));
-                if (Option == ExceptionHandlingOptions.Terminate)
-                    terminating = true;
-            }
-        }
+            
+        
         public static bool Save(bool Flush, out string Path)
         {
             if (log.Count > 0)

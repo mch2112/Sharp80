@@ -129,8 +129,7 @@ namespace Sharp80
             {
                 AnyInitFail = true;
                 Initialized = enabled = false;
-                Log.LogException(Ex, ExceptionHandlingOptions.LogOnly);
-                Dialogs.AlertUser("Failed to start XAudio2. Please update your DirectX drivers from Microsoft. Sharp 80 will continue without sound.");
+                ExceptionHandler.Handle(Ex, ExceptionHandlingOptions.InformUser, "Failed to start XAudio2. Please update your DirectX drivers from Microsoft. Sharp 80 will continue without sound.");
             }
         }
         
@@ -203,7 +202,7 @@ namespace Sharp80
             catch (Exception ex)
             {
                 Mute = true;
-                Log.LogException(ex);
+                ExceptionHandler.Handle(ex, ExceptionHandlingOptions.Terminate);
             }
         }
         private void DisposeXAudio()

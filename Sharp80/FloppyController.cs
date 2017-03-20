@@ -241,8 +241,7 @@ namespace Sharp80
                 }
                 catch (Exception ex)
                 {
-                    ex.Data["ExtraMessage"] = "Failed to load flopy from " + FilePath;
-                    Log.LogException(ex);
+                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, "Failed to load flopy from " + FilePath);
                     ret = false;
                 }
                 if (f == null)
@@ -269,8 +268,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                ex.Data["ExtraMessage"] = $"Error saving drive number: {DriveNum}";
-                Log.LogException(ex, ExceptionHandlingOptions.InformUser);
+                ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"Error saving drive number: {DriveNum}");
             }
         }
         private void LoadDrive(byte DriveNum, Floppy Floppy)
@@ -1507,8 +1505,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                ex.Data["ExtraMessage"] = $"Error setting command register: FDC Command: Drv {CurrentDriveNumber} - {command} [{value:X2}]";
-                Log.LogException(ex, ExceptionHandlingOptions.InformUser);
+                ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"Error setting command register: FDC Command: Drv {CurrentDriveNumber} - {command} [{value:X2}]");
             }
         }
         private void SetTrackRegister(byte value)

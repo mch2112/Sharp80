@@ -22,6 +22,7 @@ namespace Sharp80
 
         private Task ScreenTask;
         private Task KeyboardPollTask;
+        private System.Windows.Forms.Timer CheckExceptionsTimer;
         private CancellationTokenSource StopToken;
 
         private bool isDisposing = false;
@@ -80,10 +81,16 @@ namespace Sharp80
 
                 ScreenTask = screen.Start(UI_REFRESH_SLEEP, StopToken.Token);
                 KeyboardPollTask = keyboard.Start(UI_REFRESH_SLEEP, ProcessKey, StopToken.Token);
+                CheckExceptionsTimer = new System.Windows.Forms.Timer()
+                {
+                    Interval = 100
+                };
+                CheckExceptionsTimer.Tick += (o,ee) => ExceptionHandler.HandleExceptions();
+                CheckExceptionsTimer.Start();
             }
             catch (Exception ex)
             {
-                Log.LogException(ex);
+                ExceptionHandler.Handle(ex);
             }
         }
         private void SetupClientArea()
@@ -168,7 +175,7 @@ namespace Sharp80
                 Settings.WindowHeight = ClientSize.Height;
                 Settings.Save();
                 Log.Save(true, out string _);
-                Stop();
+                Task.Run(Stop);
             }
             else
             {
@@ -194,9 +201,8 @@ namespace Sharp80
                 }
                 catch (Exception ex)
                 {
-                    Log.LogException(ex, ExceptionHandlingOptions.Terminate);
+                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.Terminate);
                 }
-                HandleExceptions();
             }
         }
         private void SyncKeyboard()
@@ -250,10 +256,8 @@ namespace Sharp80
         private void Form_Activated(object sender, EventArgs e)
         {
             SyncKeyboard();
-
             IsActive = true;
         }
-
         private void Form_Deactivate(object sender, EventArgs e)
         {
             IsActive = false;
@@ -367,7 +371,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                Log.LogException(ex);
+                ExceptionHandler.Handle(ex);
             }
         }
         private void AutoStart()
@@ -386,24 +390,6 @@ namespace Sharp80
             startTimer.Start();
         }
 
-        private void HandleExceptions()
-        {
-            while (Log.ExceptionQueue.Count > 0)
-            {
-                var q = Log.ExceptionQueue.Dequeue();
-
-                if (Dialogs.AskYesNo("An error has been detected in your application. Please click Yes to copy the details to your Windows clipboard." +
-                    Environment.NewLine +
-                    Environment.NewLine +
-                    "Please copy and email these results to mchamilton2112@gmail.com for followup."))
-                {
-                    Clipboard.SetText(q.Exception.ToReport());
-                    if (q.Option == ExceptionHandlingOptions.Terminate)
-                        Application.Exit();
-                }
-            }
-        }
-        
         // CURSOR & DIALOG MANAGEMENT
 
         private static bool suppressCursor = false;
@@ -457,6 +443,7 @@ namespace Sharp80
         {
             try
             {
+                CheckExceptionsTimer.Stop();
                 StopToken.Cancel();
                 await Task.WhenAll(ScreenTask, KeyboardPollTask);
                 Dispose();
@@ -465,11 +452,12 @@ namespace Sharp80
             {
                 foreach (var ee in e.InnerExceptions)
                     if (!(ee is TaskCanceledException))
-                        Log.LogException(ee);
+                        ExceptionHandler.Handle(ee);
             }
             finally
             {
                 StopToken.Dispose();
+                ExceptionHandler.HandleExceptions();
             }
         }
     }

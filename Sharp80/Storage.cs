@@ -50,12 +50,12 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                if (ex is IOException && MainForm.IsUiThread)
-                    Dialogs.AlertUser(string.Format("File \"{0}\" already is use.", Path.GetFileName(FilePath)));
-                else if (ex is FileNotFoundException && MainForm.IsUiThread)
-                    Dialogs.AlertUser(string.Format("File \"{0}\" not found.", Path.GetFileName(FilePath)));
+                if (ex is IOException)
+                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"File \"{Path.GetFileName(FilePath)}\" already is use.");
+                else if (ex is FileNotFoundException)
+                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"File \"{Path.GetFileName(FilePath)}\" not found.");
                 else
-                    Log.LogException(ex, ExceptionHandlingOptions.LogOnly);
+                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser);
 
                 Bytes = null;
                 return false;
@@ -76,12 +76,12 @@ namespace Sharp80
             {
                 ex.Data["ExtraMessage"] = $"Exception saving file {FilePath}";
 
-                if (ex is IOException && MainForm.IsUiThread)
-                    Dialogs.AlertUser(string.Format("File \"{0}\" already is use.", Path.GetFileName(FilePath)));
-                else if (ex is FileNotFoundException && MainForm.IsUiThread)
-                    Dialogs.AlertUser(string.Format("File \"{0}\" not found.", Path.GetFileName(FilePath)));
+                if (ex is IOException)
+                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"File \"{Path.GetFileName(FilePath)}\" already is use.");
+                else if (ex is FileNotFoundException)
+                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"File \"{Path.GetFileName(FilePath)}\" not found.");
                 else
-                    Log.LogException(ex, ExceptionHandlingOptions.InformUser);
+                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser);
 
                 return false;
             }

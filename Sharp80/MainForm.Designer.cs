@@ -36,7 +36,7 @@ namespace Sharp80
                 }
                 catch (Exception ex)
                 {
-                    Log.LogException(ex);
+                    ExceptionHandler.Handle(ex);
                 }
             }
         }

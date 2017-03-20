@@ -415,8 +415,7 @@ namespace Sharp80
             }
             catch (Exception ex)
             {
-                ex.Data["ExtraMessage"] = "Error deserializing DMK Disk";
-                Log.LogException(ex);
+                ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, "Error deserializing DMK Disk");
                 Reset();
             }
         }

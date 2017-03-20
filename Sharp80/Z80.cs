@@ -344,7 +344,7 @@ namespace Sharp80.Processor
             }
             catch (Exception ex)
             {
-                Log.LogException(ex);
+                ExceptionHandler.Handle(ex);
             }
             if (RecordExtraTicks)
             {
