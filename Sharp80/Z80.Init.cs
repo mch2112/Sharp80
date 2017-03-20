@@ -87,8 +87,8 @@ namespace Sharp80.Processor
                 instructionSet.Add(new Instruction($"SBC {r8[i].Name}", (byte)(0x98 + i), tStates, () => sbc(r8[i])));
                 instructionSet.Add(new Instruction($"AND {r8[i].Name}", (byte)(0xA0 + i), tStates, () => and(r8[i])));
                 instructionSet.Add(new Instruction($"XOR {r8[i].Name}", (byte)(0xA8 + i), tStates, () => xor(r8[i])));
-                instructionSet.Add(new Instruction($"OR {r8[i].Name}",  (byte)(0xB0 + i), tStates, () => or(r8[i])));
-                instructionSet.Add(new Instruction($"CP {r8[i].Name}",  (byte)(0xB8 + i), tStates, () => cp(r8[i])));
+                instructionSet.Add(new Instruction($"OR  {r8[i].Name}",  (byte)(0xB0 + i), tStates, () => or(r8[i])));
+                instructionSet.Add(new Instruction($"CP  {r8[i].Name}",  (byte)(0xB8 + i), tStates, () => cp(r8[i])));
 
                 tStates = (byte)(i == HLMIndex ? 11 : 4);
 
@@ -99,8 +99,8 @@ namespace Sharp80.Processor
 
                 instructionSet.Add(new Instruction($"RLC {r8[i].Name}", 0xCB, i,                tStates, () => rlc(r8[i])));
                 instructionSet.Add(new Instruction($"RRC {r8[i].Name}", 0xCB, (byte)(i + 0x08), tStates, () => rrc(r8[i])));
-                instructionSet.Add(new Instruction($"RL {r8[i].Name}",  0xCB, (byte)(i + 0x10), tStates, () => rl(r8[i])));
-                instructionSet.Add(new Instruction($"RR {r8[i].Name}",  0xCB, (byte)(i + 0x18), tStates, () => rr(r8[i])));
+                instructionSet.Add(new Instruction($"RL  {r8[i].Name}",  0xCB, (byte)(i + 0x10), tStates, () => rl(r8[i])));
+                instructionSet.Add(new Instruction($"RR  {r8[i].Name}",  0xCB, (byte)(i + 0x18), tStates, () => rr(r8[i])));
                 instructionSet.Add(new Instruction($"SLA {r8[i].Name}", 0xCB, (byte)(i + 0x20), tStates, () => sla(r8[i])));
                 instructionSet.Add(new Instruction($"SRA {r8[i].Name}", 0xCB, (byte)(i + 0x28), tStates, () => sra(r8[i])));
                 instructionSet.Add(new Instruction($"SLL {r8[i].Name}", 0xCB, (byte)(i + 0x30), tStates, () => sll(r8[i])));
@@ -325,7 +325,7 @@ namespace Sharp80.Processor
             instructionSet.Add(new Instruction("JP P, NN",    0xC2 + 0x30, 10, () => jp(!SF)));
             instructionSet.Add(new Instruction("JP M, NN",    0xC2 + 0x38, 10, () => jp(SF)));
 
-            instructionSet.Add(new Instruction("JP (HL)",     0xE9,         4, () => jp(HL)));
+            instructionSet.Add(new Instruction("JP (HL)",     0xE9,        4, () => jp(HL)));
             instructionSet.Add(new Instruction("JP (IX)",     0xDD, 0xE9,  8, () => jp(IX)));
             instructionSet.Add(new Instruction("JP (IY)",     0xFD, 0xE9,  8, () => jp(IY)));
             instructionSet.Add(new Instruction("JR e",        0x18,       12, jr));

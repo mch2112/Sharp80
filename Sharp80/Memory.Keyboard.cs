@@ -79,7 +79,7 @@ namespace Sharp80
             AddKey(VirtualKey.Z, 0x3808, 0x04, KeyCode.Z);
 
             AddKey(VirtualKey.D0, 0x3810, 0x01, KeyCode.NumberPad0);
-            AddKey(VirtualKey.D1, 0x3810, 0x02, KeyCode.D1);
+            AddKey(VirtualKey.D1, 0x3810, 0x02, KeyCode.NumberPad1, KeyCode.D1);
             AddKey(VirtualKey.D2, 0x3810, 0x04, KeyCode.NumberPad2);
             AddKey(VirtualKey.D3, 0x3810, 0x08, KeyCode.NumberPad3, KeyCode.D3);
             AddKey(VirtualKey.D4, 0x3810, 0x10, KeyCode.NumberPad4, KeyCode.D4);
@@ -93,7 +93,7 @@ namespace Sharp80
             AddKey(VirtualKey.SEMICOLON, 0x3820, 0x08);
             AddKey(VirtualKey.COMMA,     0x3820, 0x10, KeyCode.Comma);
             AddKey(VirtualKey.MINUS,     0x3820, 0x20);
-            AddKey(VirtualKey.PERIOD,    0x3820, 0x40, KeyCode.Period);
+            AddKey(VirtualKey.PERIOD,    0x3820, 0x40, KeyCode.Decimal, KeyCode.Period);
             AddKey(VirtualKey.SLASH,     0x3820, 0x80, KeyCode.Slash);
 
             AddKey(VirtualKey.ENTER,      0x3840, 0x01, KeyCode.Return, KeyCode.NumberPadEnter);

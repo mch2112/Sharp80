@@ -12,7 +12,7 @@ namespace Sharp80
 {
     internal delegate void KeyPressedDelegate(KeyState KeyState);
 
-    internal sealed class KeyboardDX : IDisposable, IKeyboard
+    internal sealed class KeyboardDX : IKeyboard, IDisposable
     {
         private Keyboard keyboard;
 
@@ -27,9 +27,7 @@ namespace Sharp80
         private bool rightControlPressed = false;
         private bool leftAltPressed = false;
         private bool rightAltPressed = false;
-
-        private CancellationTokenSource CancelToken;
-
+        
         private KeyCode repeatKey = KeyCode.None;
         private uint repeatKeyCount = 0;
 
@@ -44,70 +42,65 @@ namespace Sharp80
             keyboard.Acquire();
         }
 
-        public async Task Start(float RefreshRateHz, KeyPressedDelegate Callback)
+        public async Task Start(float RefreshRateHz, KeyPressedDelegate Callback, CancellationToken StopToken)
         {
-            CancelToken = new CancellationTokenSource();
             var delay = TimeSpan.FromTicks((int)(10_000_000f / RefreshRateHz));
-            await Poll(delay, Callback, (int)(RefreshRateHz / 2));
+            await Poll(delay, Callback, (int)(RefreshRateHz / 2), StopToken);
         }
-        private async Task Poll(TimeSpan Delay, KeyPressedDelegate Callback, int RepeatThreshold)
+        private async Task Poll(TimeSpan Delay, KeyPressedDelegate Callback, int RepeatThreshold, CancellationToken StopToken)
         {
-            try
+            while (!StopToken.IsCancellationRequested)
             {
-                while (!CancelToken.IsCancellationRequested)
+                await Task.Delay(Delay, StopToken);
+
+                var data = keyboard.GetBufferedData();
+                foreach (var d in data)
                 {
-                    await Task.Delay(Delay, CancelToken.Token);
-
-                    var data = keyboard.GetBufferedData();
-                    foreach (var d in data)
+                    switch (d.Key)
                     {
-                        switch (d.Key)
-                        {
-                            case Key.LeftShift: LeftShiftPressed = d.IsPressed; break;
-                            case Key.RightShift: RightShiftPressed = d.IsPressed; break;
-                            case Key.LeftControl: leftControlPressed = d.IsPressed; break;
-                            case Key.RightControl: rightControlPressed = d.IsPressed; break;
-                            case Key.LeftAlt: leftAltPressed = d.IsPressed; break;
-                            case Key.RightAlt: rightAltPressed = d.IsPressed; break;
-                        }
-                        if (Enabled)
-                        {
-                            var keyCode = (KeyCode)d.Key;
-                            if (d.IsPressed)
-                            {
-                                switch (keyCode)
-                                {
-                                    case KeyCode.Up:
-                                    case KeyCode.Down:
-                                    case KeyCode.Left:
-                                    case KeyCode.Right:
-                                    case KeyCode.PageUp:
-                                    case KeyCode.PageDown:
-                                    case KeyCode.F8:
-                                    case KeyCode.F9:
-                                    case KeyCode.F10:
-                                        if (repeatKey != keyCode)
-                                        {
-                                            repeatKey = keyCode;
-                                            repeatKeyCount = 0;
-                                        }
-                                        break;
-                                }
-                            }
-                            else if (keyCode == repeatKey)
-                            {
-                                // repeat key is released
-                                repeatKey = KeyCode.None;
-                            }
-
-                            Callback(new KeyState(keyCode, IsShifted, IsControlPressed, IsAltPressed, d.IsPressed));
-                        }
+                        case Key.LeftShift: LeftShiftPressed = d.IsPressed; break;
+                        case Key.RightShift: RightShiftPressed = d.IsPressed; break;
+                        case Key.LeftControl: leftControlPressed = d.IsPressed; break;
+                        case Key.RightControl: rightControlPressed = d.IsPressed; break;
+                        case Key.LeftAlt: leftAltPressed = d.IsPressed; break;
+                        case Key.RightAlt: rightAltPressed = d.IsPressed; break;
                     }
-                    if (repeatKey != KeyCode.None && ++repeatKeyCount > RepeatThreshold)
-                        Callback(new KeyState(repeatKey, IsShifted, IsControlPressed, IsAltPressed, true, true));
+                    if (Enabled)
+                    {
+                        var keyCode = (KeyCode)d.Key;
+                        if (d.IsPressed)
+                        {
+                            switch (keyCode)
+                            {
+                                case KeyCode.Up:
+                                case KeyCode.Down:
+                                case KeyCode.Left:
+                                case KeyCode.Right:
+                                case KeyCode.PageUp:
+                                case KeyCode.PageDown:
+                                case KeyCode.F8:
+                                case KeyCode.F9:
+                                case KeyCode.F10:
+                                    if (repeatKey != keyCode)
+                                    {
+                                        repeatKey = keyCode;
+                                        repeatKeyCount = 0;
+                                    }
+                                    break;
+                            }
+                        }
+                        else if (keyCode == repeatKey)
+                        {
+                            // repeat key is released
+                            repeatKey = KeyCode.None;
+                        }
+
+                        Callback(new KeyState(keyCode, IsShifted, IsControlPressed, IsAltPressed, d.IsPressed));
+                    }
                 }
+                if (repeatKey != KeyCode.None && ++repeatKeyCount > RepeatThreshold)
+                    Callback(new KeyState(repeatKey, IsShifted, IsControlPressed, IsAltPressed, true, true));
             }
-            catch (OperationCanceledException) { }
         }
         public bool Enabled { get { return enabled; }
         set
@@ -135,10 +128,6 @@ namespace Sharp80
             rightAltPressed =     cs.IsPressed(Key.RightAlt);
             leftControlPressed =  cs.IsPressed(Key.LeftControl);
             rightControlPressed = cs.IsPressed(Key.RightControl);
-        }
-        public void Stop()
-        {
-            CancelToken.Cancel();
         }
         public void Dispose()
         {

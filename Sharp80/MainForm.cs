@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Sharp80
@@ -16,7 +17,13 @@ namespace Sharp80
         private Computer computer;
         private IScreen screen;
         private IKeyboard keyboard;
+
         private int resizing = 0;
+
+        private Task ScreenTask;
+        private Task KeyboardPollTask;
+        private CancellationTokenSource StopToken;
+
         private bool isDisposing = false;
 
         private int previousClientHeight;
@@ -69,8 +76,10 @@ namespace Sharp80
 
                 UpdateDialogLevel();
 
-                screen.Start(UI_REFRESH_SLEEP);
-                keyboard.Start(UI_REFRESH_SLEEP, ProcessKey);
+                StopToken = new CancellationTokenSource();
+
+                ScreenTask = screen.Start(UI_REFRESH_SLEEP, StopToken.Token);
+                KeyboardPollTask = keyboard.Start(UI_REFRESH_SLEEP, ProcessKey, StopToken.Token);
             }
             catch (Exception ex)
             {
@@ -160,7 +169,6 @@ namespace Sharp80
                 Settings.Save();
                 Log.Save(true, out string _);
                 Stop();
-                Dispose();
             }
             else
             {
@@ -445,10 +453,24 @@ namespace Sharp80
             keyboard.Enabled = dialogLevel == 0;
         }
 
-        private void Stop()
+        private async Task Stop()
         {
-            keyboard?.Stop();
-            screen?.Stop();
+            try
+            {
+                StopToken.Cancel();
+                await Task.WhenAll(ScreenTask, KeyboardPollTask);
+                Dispose();
+            }
+            catch (AggregateException e)
+            {
+                foreach (var ee in e.InnerExceptions)
+                    if (!(ee is TaskCanceledException))
+                        Log.LogException(ee);
+            }
+            finally
+            {
+                StopToken.Dispose();
+            }
         }
     }
 }

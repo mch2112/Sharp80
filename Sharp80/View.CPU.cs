@@ -23,14 +23,14 @@ namespace Sharp80
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Sharp 80 Z80 Register Status") +
                 Format() +
-                Indent(string.Format("PC  {0}  SP  {1}", Status.PcVal.ToHexString(), Status.SpVal.ToHexString())) +
+                Indent($"PC  {Status.PcVal:X4}  SP  {Status.SpVal:X4}") +
                 Format() +
-                Indent(string.Format("AF  {0}  AF' {1}", Status.AfVal.ToHexString(), Status.AfpVal.ToHexString())) +
-                Indent(string.Format("BC  {0}  BC' {1}", Status.BcVal.ToHexString(), Status.BcpVal.ToHexString())) +
-                Indent(string.Format("DE  {0}  DE' {1}", Status.DeVal.ToHexString(), Status.DepVal.ToHexString())) +
-                Indent(string.Format("HL  {0}  HL' {1}", Status.HlVal.ToHexString(), Status.HlpVal.ToHexString())) +
+                Indent($"AF  {Status.AfVal:X4}  AF' {Status.AfpVal:X4}") +
+                Indent($"BC  {Status.BcVal:X4}  BC' {Status.BcpVal:X4}") +
+                Indent($"DE  {Status.DeVal:X4}  DE' {Status.DepVal:X4}") +
+                Indent($"HL  {Status.HlVal:X4}  HL' {Status.HlpVal:X4}") +
                 Format() +
-                Indent(string.Format("IX  {0}  IY  {1}", Status.IxVal.ToHexString(), Status.IyVal.ToHexString()))));
+                Indent($"IX  {Status.IxVal:X4}  IY' {Status.IyVal:X4}")));
         }
     }
 }

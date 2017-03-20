@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Sharp80
@@ -11,8 +12,7 @@ namespace Sharp80
     /// </summary>
     internal interface IKeyboard : IDisposable
     {
-        Task Start(float PollRateInHz, KeyPressedDelegate Callback);
-        void Stop();
+        Task Start(float PollRateInHz, KeyPressedDelegate Callback, CancellationToken StopToken);
         bool Enabled { get; set; }
         bool IsShifted { get; }
         bool LeftShiftPressed { get; }

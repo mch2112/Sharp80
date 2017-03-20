@@ -27,8 +27,9 @@ namespace Sharp80
 
                     base.Dispose(disposing);
 
-                    screen.Dispose();
                     computer.Dispose();
+                    
+                    screen.Dispose();
                     keyboard.Dispose();
 
                     isDisposing = false;
