@@ -34,9 +34,9 @@ namespace Sharp80
 
                     isDisposing = false;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    ExceptionHandler.Handle(ex);
+                    // To late to do anything about it
                 }
             }
         }

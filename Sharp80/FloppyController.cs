@@ -131,7 +131,7 @@ namespace Sharp80
             sound = Sound;
             this.Enabled = Enabled;
 
-            TicksPerDiskRev = clock.TicksPerSec / DISK_REV_PER_SEC;
+            TicksPerDiskRev = Clock.TICKS_PER_SECOND / DISK_REV_PER_SEC;
 
             stepRates = new ulong[4] {  6 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ,
                                        12 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ,

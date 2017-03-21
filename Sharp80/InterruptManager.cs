@@ -88,42 +88,28 @@ namespace Sharp80
             ports = Ports;
             tape = Tape;
         }
-        
-        public bool NmiTriggered
-        {
-            get
-            {
-                return FdcNmiLatch.Triggered || FdcMotorOffNmiLatch.Triggered || ResetButtonLatch.Triggered;
-            }
-        }
+
         public void ResetNmiTriggers()
         {
             FdcNmiLatch.ResetTrigger();
             FdcMotorOffNmiLatch.ResetTrigger();
             ResetButtonLatch.ResetTrigger();
         }
-        
+
+        public bool Nmi => FdcNmiLatch.Triggered || FdcMotorOffNmiLatch.Triggered || ResetButtonLatch.Triggered;
+        public bool Irq => RtcIntLatch.Triggered || CasFallingEdgeIntLatch.Triggered || CasRisingEdgeIntLatch.Triggered;
         public byte InterruptEnableStatus
         {
             set
             {
-                bool oldNmiEnabled =           FdcNmiLatch.Enabled;
+                bool oldNmiEnabled = FdcNmiLatch.Enabled;
                 bool oldMotorOrDrqNmiEnabled = FdcMotorOffNmiLatch.Enabled;
 
-                FdcNmiLatch.Enabled =         value.IsBitSet(7);
+                FdcNmiLatch.Enabled = value.IsBitSet(7);
                 FdcMotorOffNmiLatch.Enabled = value.IsBitSet(6);
 
                 Log.LogDebug(string.Format("FDC NMI Enable: {0} -> {1}", oldNmiEnabled, FdcNmiLatch.Enabled));
                 Log.LogDebug(string.Format("Motor / DRQ NMI Enable: {0} -> {1}", oldMotorOrDrqNmiEnabled, FdcMotorOffNmiLatch.Enabled));
-            }
-        }
-        public bool InterruptReq
-        {
-            get
-            {
-                return RtcIntLatch.Triggered ||
-                       CasFallingEdgeIntLatch.Triggered ||
-                       CasRisingEdgeIntLatch.Triggered;
             }
         }
 

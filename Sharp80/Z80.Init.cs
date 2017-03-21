@@ -1,5 +1,5 @@
 /// Sharp 80 (c) Matthew Hamilton
-/// Licensed Under GPL v3. See license.txt for details.
+/// Licensed Under GPL v3. See license.txt for details. 
 
 using System;
 
@@ -167,8 +167,8 @@ namespace Sharp80.Processor
                     tStates = (byte)(i == HLMIndex ? 12 : 8);
 
                     instructionSet.Add(new Instruction($"BIT {j}, {r8[i].Name}", 0xCB, (byte)(0x40 + j * 0x08 + i), tStates, 
-                        i == HLMIndex ? (Instruction.InstDelegate)(() => bitHLM(j)) 
-                                      : (Instruction.InstDelegate)(() => bit(r8[i], j))));
+                        i == HLMIndex ? (Instruction.InstructionDelegate)(() => bitHLM(j)) 
+                                      : (Instruction.InstructionDelegate)(() => bit(r8[i], j))));
 
                     instructionSet.Add(new Instruction($"SET {j}, {r8[i].Name}", 0xCB, (byte)(0xC0 + j * 0x08 + i), tStates, () => set(r8[i], j)));
                     instructionSet.Add(new Instruction($"RES {j}, {r8[i].Name}", 0xCB, (byte)(0x80 + j * 0x08 + i), tStates, () => res(r8[i], j)));

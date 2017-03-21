@@ -316,7 +316,7 @@ namespace Sharp80.Processor
             }
             catch (Exception ex)
             {
-                ExceptionHandler.Handle(ex);
+                ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser);
             }
             if (RecordExtraTicks)
             {

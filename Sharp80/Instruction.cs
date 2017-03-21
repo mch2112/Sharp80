@@ -6,9 +6,9 @@ using System.Diagnostics;
 
 namespace Sharp80.Processor
 {
-    internal sealed class Instruction
+    internal class Instruction
     {
-        public delegate void InstDelegate();
+        public delegate void InstructionDelegate();
 
         private readonly byte size;
         private readonly byte opSize;
@@ -16,7 +16,7 @@ namespace Sharp80.Processor
         private readonly byte[] op = new byte[4];
         private readonly bool isPrefix = false;
 
-        private readonly InstDelegate exec;
+        private readonly InstructionDelegate exec;
 
         private readonly bool hasReplaceableTokens = false;
 
@@ -34,7 +34,7 @@ namespace Sharp80.Processor
         private string operand2 = null;
         private int? numOperands = null;
 
-        public InstDelegate Execute { get { return exec; } }
+        public InstructionDelegate Execute { get { return exec; } }
 
         public byte RIncrement => rIncrement;
         public bool IsPrefix => isPrefix;
@@ -48,11 +48,11 @@ namespace Sharp80.Processor
         public byte Op1 => op[1];
         public byte Op3 => op[3];
 
-        public Instruction(string Name, byte Op0, byte TStates, InstDelegate exec)
+        public Instruction(string Name, byte Op0, byte TStates, InstructionDelegate exec)
             : this(Name, Op0, null, null, TStates, exec, 0)
         {
         }
-        public Instruction(string Name, byte Op0, byte TStates, InstDelegate exec, bool IsPrefix) : this(Name, Op0, 4, exec)
+        public Instruction(string Name, byte Op0, byte TStates, InstructionDelegate exec, bool IsPrefix) : this(Name, Op0, 4, exec)
         {
             // Don't "ADD" this instruction, just call this constructor
 
@@ -61,23 +61,23 @@ namespace Sharp80.Processor
 
             this.rIncrement = 1;
         }
-        public Instruction(string Name, byte Op0, byte TStates, InstDelegate exec, byte TStatesAlt)
+        public Instruction(string Name, byte Op0, byte TStates, InstructionDelegate exec, byte TStatesAlt)
             : this(Name, Op0, null, null, TStates, exec, TStatesAlt)
         {
         }
-        public Instruction(string Name, byte Op0, byte? Op1, byte TStates, InstDelegate exec)
+        public Instruction(string Name, byte Op0, byte? Op1, byte TStates, InstructionDelegate exec)
             : this(Name, Op0, Op1, null, TStates, exec, 0)
         {
         }
-        public Instruction(string Name, byte Op0, byte? Op1, byte TStates, InstDelegate exec, byte TStatesAlt)
+        public Instruction(string Name, byte Op0, byte? Op1, byte TStates, InstructionDelegate exec, byte TStatesAlt)
             : this(Name, Op0, Op1, null, TStates, exec, TStatesAlt)
         {
         }
-        public Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstDelegate exec)
+        public Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstructionDelegate exec)
             : this(Name, Op0, Op1, Op3, TStates, exec, 0)
         {
         }
-        private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstDelegate exec, byte TStatesAlt)
+        private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstructionDelegate exec, byte TStatesAlt)
         {
             this.Name = Name;            
             Mnemonic = Name.FirstText();

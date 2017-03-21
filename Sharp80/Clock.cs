@@ -8,21 +8,29 @@ using System.Threading.Tasks;
 
 namespace Sharp80
 {
-    internal sealed class Clock : ISerializable
+    internal class Clock : ISerializable
     {
         public event EventHandler SpeedChanged;
         public delegate void ClockCallback();
 
+        public const ulong CLOCK_RATE = 2027520;
         public const ushort TICKS_PER_TSTATE = 1000;
-        private const int MSEC_PER_SLEEP = 1;
+        public const ulong TICKS_PER_SECOND = CLOCK_RATE * TICKS_PER_TSTATE;
+
+        /// <summary>
+        /// This is near 30 hz but not exactly since we don't want to sync with Floppy disk
+        /// angle. If sync'd, IRQs occur at exactly six disk angles rather than being mostly
+        /// random. LDOS which has interupts enabled when reading sectors which when causes
+        /// certain sectors to become unreadable, because an interrupt always dirupts reading
+        /// those sectors.
+        /// </summary>
+        public const ulong TICKS_PER_IRQ = TICKS_PER_SECOND * 100 / 3001; 
 
         // Internal State
 
         private static double realTimeTicksPerSec;
         private static long realTimeElapsedTicksOffset;
         private static double z80TicksPerRealtimeTick;
-
-        private readonly ulong ticksPerIRQ;
 
         private ulong emuSpeedInHz;
         private ulong z80TicksOnLastMeasure;
@@ -33,7 +41,7 @@ namespace Sharp80
         private bool normalSpeed;
         private bool stopReq = false;
 
-        private Task ExecThread { get; set; }
+        private Task execThread;
 
         private Computer computer;
         private Processor.Z80 z80;
@@ -41,6 +49,7 @@ namespace Sharp80
 
         private List<PulseReq> pulseReqs = new List<PulseReq>();
         private ulong nextPulseReqTick = UInt64.MaxValue;
+        private ulong nextRtcIrqTick;
 
         private SoundEventCallback soundCallback;
         private ulong nextSoundSampleTick;
@@ -49,15 +58,11 @@ namespace Sharp80
         private Trigger waitTrigger;
 
         private long cyclesUntilNextSyncCheck = 0;
-        private long cyclesUntilNextThrottleSleep = 0;
 
         // CONSTRUCTOR
 
-        public Clock(Computer Computer, Processor.Z80 Processor, InterruptManager InterruptManager, ulong FrequencyInHz, ulong TicksPerIrq, ulong TicksPerSoundSample, SoundEventCallback SoundCallback, bool NormalSpeed)
+        public Clock(Computer Computer, Processor.Z80 Processor, InterruptManager InterruptManager, ulong TicksPerSoundSample, SoundEventCallback SoundCallback, bool NormalSpeed)
         {
-            TicksPerSec = FrequencyInHz * TICKS_PER_TSTATE;
-            ticksPerIRQ = TicksPerIrq;
-
             CalRealTimeClock();
 
             TickCount = 0;
@@ -69,9 +74,7 @@ namespace Sharp80
             ticksPerSoundSample = TicksPerSoundSample;            
             soundCallback = SoundCallback;
             normalSpeed = NormalSpeed;
-            NextRtcIrqTick = ticksPerIRQ;
-
-            PulseReq.SetTicksPerSec(TicksPerSec);
+            nextRtcIrqTick = TICKS_PER_IRQ;
 
             ResetTriggers();
 
@@ -86,72 +89,7 @@ namespace Sharp80
 
         public bool IsRunning { get; private set; }
         public ulong ElapsedTStates => TickCount / TICKS_PER_TSTATE;
-        public ulong TicksPerSec { get; private set; }
         public ulong TickCount { get; private set; }
-        private ulong NextRtcIrqTick { get; set; }
-
-        public bool NormalSpeed
-        {
-            get => normalSpeed;
-            set
-            {
-                if (normalSpeed != value)
-                {
-                    ResetTriggers();
-                    normalSpeed = value;
-                    SpeedChanged?.Invoke(this, EventArgs.Empty);
-                    SyncRealTimeOffset();
-                }
-            }
-        }
-        public void Start()
-        {
-            if (!IsRunning)
-            {
-                ResetTriggers();
-                ExecThread = Task.Run((Action)Exec);
-                SyncRealTimeOffset();
-            }
-        }
-        public void Stop()
-        {
-            if (IsRunning)
-                stopReq = true;
-        }
-        
-        // PUBLIC METHODS
-
-        public void Step()
-        {
-            if (!IsRunning)
-                ExecOne();
-        }
-        public void Wait()
-        {
-            if (!waitTrigger.Latched)
-            {
-                waitTimeout = TickCount + (TicksPerSec * 1024ul / 1000000ul); // max 1024 usec
-                Log.LogDebug("Waiting @ " + computer.FloppyControllerStatus.DiskAngleDegrees);
-            }
-            else
-            {
-                Log.LogDebug("Already Waiting");
-            }
-            waitTrigger.Latch();
-        }
-        public void ActivatePulseReq(PulseReq Req)
-        {
-            Req.SetTrigger(BaselineTicks: TickCount);
-            AddPulseReq(Req);
-        }
-        public void AddPulseReq(PulseReq Req)
-        {
-            if (!pulseReqs.Contains(Req))
-                pulseReqs.Add(Req);
-
-            SetNextPulseReqTick();
-        }
-
         public string GetInternalsReport()
         {
             var s = new StringBuilder();
@@ -185,16 +123,56 @@ namespace Sharp80
 
             return s.ToString();
         }
-        
-        private void ResetTriggers()
+
+        // CPU CONTROL
+
+        public void Start()
         {
-            nextEmuSpeedMeasureTicks = TickCount;
-            nextSoundSampleTick = TickCount;
-            z80TicksOnLastMeasure = TickCount;
-            realTimeElapsedTicksOffset = realTimeTicksOnLastMeasure = RealTimeTicks;
-            
-            emuSpeedInHz = 0;
+            if (!IsRunning)
+            {
+                ResetTriggers();
+                execThread = Task.Run((Action)Exec);
+            }
         }
+        public void Stop() => stopReq = true;
+        public void Step()
+        {
+            if (!IsRunning)
+                ExecOne();
+        }
+        public void Wait()
+        {
+            if (!waitTrigger.Latched)
+            {
+                waitTimeout = TickCount + (TICKS_PER_SECOND * 1024ul / 1000000ul); // max 1024 usec
+                Log.LogDebug("Waiting @ " + computer.FloppyControllerStatus.DiskAngleDegrees);
+            }
+            else
+            {
+                Log.LogDebug("Already Waiting");
+            }
+            waitTrigger.Latch();
+        }
+        public bool NormalSpeed
+        {
+            get => normalSpeed;
+            set
+            {
+                if (normalSpeed != value)
+                {
+                    ResetTriggers();
+                    normalSpeed = value;
+                    SpeedChanged?.Invoke(this, EventArgs.Empty);
+                    SyncRealTimeOffset();
+                }
+            }
+        }
+
+        // CPU THREAD
+
+        /// <summary>
+        /// The main CPU exec loop
+        /// </summary>
         private void Exec()
         {
             if (!IsRunning)
@@ -202,20 +180,29 @@ namespace Sharp80
                 IsRunning = true;
                 stopReq = false;
 
-                while (!stopReq)
-                    ExecOne();
+                SyncRealTimeOffset();
 
+                while (!stopReq)
+                {
+                    ExecOne();
+                    if (NormalSpeed)
+                        Throttle();
+                }
                 IsRunning = false;
             }
         }
+        
+        /// <summary>
+        /// Execute a single instruction
+        /// </summary>
         private void ExecOne()
         {
             // Check triggers
 
-            if (TickCount > NextRtcIrqTick)
+            if (TickCount > nextRtcIrqTick)
             {
-                while (TickCount > NextRtcIrqTick)
-                    NextRtcIrqTick += ticksPerIRQ;
+                while (TickCount > nextRtcIrqTick)
+                    nextRtcIrqTick += TICKS_PER_IRQ;
                 IntMgr.RtcIntLatch.Latch();
             }
 
@@ -223,7 +210,7 @@ namespace Sharp80
             {
                 if (TickCount >= waitTimeout ||
                     computer.FloppyControllerDrq ||
-                    IntMgr.FdcNmiLatch.Latched || 
+                    IntMgr.FdcNmiLatch.Latched ||
                     IntMgr.ResetButtonLatch.Latched)
                 {
                     Log.LogDebug("Stop Waiting @ " + computer.FloppyControllerStatus.DiskAngleDegrees +
@@ -235,7 +222,7 @@ namespace Sharp80
 
             // Execute something
 
-            if (IntMgr.NmiTriggered && z80.CanNmi)
+            if (IntMgr.Nmi && z80.CanNmi)
             {
                 IntMgr.ResetNmiTriggers();
 
@@ -246,7 +233,7 @@ namespace Sharp80
             {
                 TickCount += TICKS_PER_TSTATE;
             }
-            else if (IntMgr.InterruptReq && z80.CanInterrupt)
+            else if (IntMgr.Irq && z80.CanInterrupt)
             {
                 IntMgr.RtcIntLatch.ResetTrigger();
                 TickCount += z80.Interrupt();
@@ -268,31 +255,77 @@ namespace Sharp80
                 pulseReqs.RemoveAll(r => r.Inactive);
                 SetNextPulseReqTick();
             }
-            if (NormalSpeed)
+        }
+        private void Throttle()
+        {
+            System.Diagnostics.Debug.Assert(NormalSpeed);
+
+            if (TickCount > nextSoundSampleTick)
             {
-                if (TickCount > nextSoundSampleTick)
+                soundCallback();
+                nextSoundSampleTick += ticksPerSoundSample;
+            }
+            if (--cyclesUntilNextSyncCheck <= 0)
+            {
+                SyncRealTimeOffset();
+                cyclesUntilNextSyncCheck = 200000;   // couple times a second
+            }
+            else
+            {
+                // at z80 speed, how many ticks should have elapsed by now?
+                ulong virtualTicksReal = (ulong)((RealTimeTicks - realTimeElapsedTicksOffset) * z80TicksPerRealtimeTick);
+
+                // Are we ahead? Slow down if so
+                if (TickCount > virtualTicksReal)
                 {
-                    soundCallback();
-                    nextSoundSampleTick += ticksPerSoundSample;
-                }
-                if (--cyclesUntilNextSyncCheck <= 0)
-                {
-                    SyncRealTimeOffset();
-                    cyclesUntilNextSyncCheck = 250000;   // couple times a second
-                }
-                else if (--cyclesUntilNextThrottleSleep <= 0)
-                {
-                    long ticks = 0;
-                    NativeMethods.QueryPerformanceCounter(ref ticks);
-                    var realTimeTicks = ticks - realTimeElapsedTicksOffset;
-                    var virtualTicksReal = realTimeTicks * z80TicksPerRealtimeTick;
-                    if (virtualTicksReal < TickCount)
-                        System.Threading.Thread.Sleep(MSEC_PER_SLEEP);
-                    cyclesUntilNextThrottleSleep = 10;
+                    // How far ahead are we?
+                    ulong virtualTicksAhead = TickCount - virtualTicksReal;
+
+                    // Sleep
+                    if (virtualTicksAhead > 0)
+                        if (virtualTicksAhead > TICKS_PER_SECOND / 1000) // 1 msec
+                            System.Threading.Thread.Sleep(1);
+                        else
+                            System.Threading.Thread.Sleep(0);
                 }
             }
         }
 
+        // PULSE REQ CALLBACKS
+
+        public void ActivatePulseReq(PulseReq Req)
+        {
+            Req.SetTrigger(BaselineTicks: TickCount);
+            AddPulseReq(Req);
+        }
+        public void AddPulseReq(PulseReq Req)
+        {
+            if (!pulseReqs.Contains(Req))
+                pulseReqs.Add(Req);
+
+            SetNextPulseReqTick();
+        }
+
+        // TIME MEASUREMENT AND UTILITIES
+
+        /// <summary>
+        /// Ask windows for a tick count
+        /// </summary>
+        private static long RealTimeTicks
+        {
+            get
+            {
+                long ticks = 0;
+                NativeMethods.QueryPerformanceCounter(ref ticks);
+                return ticks;
+            }
+        }
+        private static long ElapsedMicroseconds => (long)(1000000 * RealTimeTicks / realTimeTicksPerSec);
+        
+        /// <summary>
+        /// This zeroes the difference between the virtual and realtime clocks
+        /// in case of large differences (like when starting or changing speeds)
+        /// </summary>
         private void SyncRealTimeOffset()
         {
             long realTicks = RealTimeTicks;
@@ -306,9 +339,25 @@ namespace Sharp80
         private void SetNextPulseReqTick()
         {
             if (pulseReqs.Count == 0)
-                nextPulseReqTick = UInt64.MaxValue;
+                nextPulseReqTick = UInt64.MaxValue; // no need to check until a pulseReq is added
             else
-                nextPulseReqTick = 0;// pulseReqs.Min(r => r.Trigger); <-- causes threading issue 
+                nextPulseReqTick = 0; // check asap
+        }
+        private void CalRealTimeClock()
+        {
+            long rtTicksPerSec = 0;
+            NativeMethods.QueryPerformanceFrequency(ref rtTicksPerSec);
+            realTimeTicksPerSec = rtTicksPerSec;
+            z80TicksPerRealtimeTick = TICKS_PER_SECOND / (double)rtTicksPerSec;
+        }
+        private void ResetTriggers()
+        {
+            nextEmuSpeedMeasureTicks = TickCount;
+            nextSoundSampleTick = TickCount;
+
+            z80TicksOnLastMeasure = TickCount;
+            realTimeElapsedTicksOffset = realTimeTicksOnLastMeasure = RealTimeTicks;
+            emuSpeedInHz = 0;
         }
 
         // SNAPSHOTS
@@ -316,10 +365,10 @@ namespace Sharp80
         public void Serialize(System.IO.BinaryWriter Writer)
         {
             Writer.Write(TickCount);
-            Writer.Write(NextRtcIrqTick);
+            Writer.Write(nextRtcIrqTick);
             Writer.Write(stopReq);
             Writer.Write(nextPulseReqTick);
-            Writer.Write(nextSoundSampleTick);           
+            Writer.Write(nextSoundSampleTick);
             Writer.Write(waitTimeout);
 
             waitTrigger.Serialize(Writer);
@@ -327,30 +376,13 @@ namespace Sharp80
         public void Deserialize(System.IO.BinaryReader Reader)
         {
             TickCount = Reader.ReadUInt64();
-            NextRtcIrqTick = Reader.ReadUInt64();
+            nextRtcIrqTick = Reader.ReadUInt64();
             stopReq = Reader.ReadBoolean();
             nextPulseReqTick = Reader.ReadUInt64();
             nextSoundSampleTick = Reader.ReadUInt64();
             waitTimeout = Reader.ReadUInt64();
 
             waitTrigger.Deserialize(Reader);
-        }
-        
-        private void CalRealTimeClock()
-        {
-            long rtTicksPerSec = 0;
-            NativeMethods.QueryPerformanceFrequency(ref rtTicksPerSec);
-            realTimeTicksPerSec = rtTicksPerSec;
-            z80TicksPerRealtimeTick = (double)this.TicksPerSec / (double)rtTicksPerSec;
-        }
-        private static long RealTimeTicks
-        {
-            get
-            {
-                long ticks = 0;
-                NativeMethods.QueryPerformanceCounter(ref ticks);
-                return ticks;
-            }
         }
     }
 }

@@ -9,21 +9,15 @@ namespace Sharp80
     {
         public enum DelayBasis { Microseconds, Ticks }
 
-        public ulong Trigger { get; private set; }
         public bool Active { get; private set; }
+        public ulong Trigger { get; private set; }
 
         private ulong delay;
         private DelayBasis delayBasis;
         private Clock.ClockCallback callback;
 
-        private static ulong ticksPerMillisecond;
-        private const ulong MICROSECONDS_PER_MILLISECOND = 1000;
-        private const ulong MILLISECONDS_PER_SECOND = 1000;
+        private const ulong MICROSECONDS_PER_SECOND = 1000000;
 
-        public static void SetTicksPerSec(ulong TicksPerSec)
-        {
-            ticksPerMillisecond = TicksPerSec / MILLISECONDS_PER_SECOND;
-        }
         public PulseReq(DelayBasis DelayBasis, ulong Delay, Clock.ClockCallback Callback, bool Active = false)
         {
             delayBasis = DelayBasis;
@@ -31,6 +25,9 @@ namespace Sharp80
             callback = Callback;
             this.Active = Active;
         }
+        /// <summary>
+        /// Empty PulseReq to be deserialized
+        /// </summary>
         public PulseReq() : this(DelayBasis.Ticks, 0, null, true) { }
         public void Execute()
         {
@@ -48,7 +45,7 @@ namespace Sharp80
                     Trigger = BaselineTicks + delay;
                     break;
                 case DelayBasis.Microseconds:
-                    Trigger = BaselineTicks + delay * ticksPerMillisecond / MICROSECONDS_PER_MILLISECOND;
+                    Trigger = BaselineTicks + delay * Clock.TICKS_PER_SECOND / MICROSECONDS_PER_SECOND;
                     break;
             }
             Active = true;

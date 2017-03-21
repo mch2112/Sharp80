@@ -432,7 +432,7 @@ namespace Sharp80
         {
             // Wait for draw done
             while (isDrawing)
-                System.Threading.Thread.Sleep(0);
+                Thread.Sleep(0);
 
             if (!renderTarget.IsDisposed)
                 renderTarget.Dispose();
