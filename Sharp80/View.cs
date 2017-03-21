@@ -28,10 +28,7 @@ namespace Sharp80
 
         protected static ulong FrameReqNum { get; private set; }
         
-        public View()
-        {
-            views.Add(Mode, this);
-        }
+        public View() => views.Add(Mode, this);
         
         public static ViewMode CurrentMode
         {
@@ -46,14 +43,14 @@ namespace Sharp80
                 }
             }
         }
+
         public static bool ProcessKey(KeyState Key)
         {
             return views[CurrentMode].processKey(Key);
         }
-        public static byte[] GetViewData()
-        {
-            return views[CurrentMode].GetViewBytes();
-        }
+
+        public static byte[] GetViewData() => views[CurrentMode].GetViewBytes();
+
         public static bool Invalid
         {
             get
@@ -61,12 +58,9 @@ namespace Sharp80
                 FrameReqNum++;
                 return invalid || views[CurrentMode].ForceRedraw;
             }
-            private set
-            {
-                invalid = value;
-            }
+            private set => invalid = value;
         }
-        public static void Validate() { invalid = false; }
+        public static void Validate() => invalid = false;
         public static void Initialize(Computer Computer, MessageDelegate MessageCallback)
         {
             View.Computer = Computer;
@@ -96,17 +90,12 @@ namespace Sharp80
         protected static Computer Computer { get; private set; }
         protected static byte? DriveNumber { get; set; } = null;
         protected static CmdFile CmdFile { get; set; } = null;
-        protected static void Invalidate() { invalid = true; }
-        protected static void RevertMode()
-        {
-            if (Computer.HasRunYet)
-                CurrentMode = ViewMode.Normal;
-            else
-                CurrentMode = ViewMode.Splash;
-        }
-        protected static void InvokeUserCommand(UserCommand Command) { OnUserCommand?.Invoke(Command); }
         protected static MessageDelegate MessageCallback { get; private set; }
 
+        protected static void Invalidate() => invalid = true;
+        protected static void RevertMode() => CurrentMode = Computer.HasRunYet ? ViewMode.Normal : ViewMode.Splash;
+        protected static void InvokeUserCommand(UserCommand Command) => OnUserCommand?.Invoke(Command);
+        
         protected abstract ViewMode Mode { get; }
         protected abstract bool ForceRedraw { get; }
         protected abstract bool CanSendKeysToEmulation { get; }
@@ -394,14 +383,11 @@ namespace Sharp80
             return Input.PadLeft((ScreenMetrics.NUM_SCREEN_CHARS_X + Input.Length) / 2).PadRight(ScreenMetrics.NUM_SCREEN_CHARS_X);
         }
 
-        protected static string Format(string Input)
-        {
-            return Format(Input, 0);
-        }
+        protected static string Format(string Input) => Format(Input, 0);
+        protected static string Format() => Format("");
         protected static string Format(string Input, int Indent)
         {
             Debug.Assert((Input.Length + Indent) <= ScreenMetrics.NUM_SCREEN_CHARS_X);
-
             return (new String(' ', Indent) + Input).PadRight(ScreenMetrics.NUM_SCREEN_CHARS_X);
         }
         protected static string Format(string[] Input, bool Indent)
@@ -450,28 +436,9 @@ namespace Sharp80
                     return sb.ToString();
             }
         }
-        protected static string Format()
-        {
-            return Format("");
-        }
-        protected static string Indent(string Input)
-        {
-            return Format(Input, STANDARD_INDENT);
-        }
-        protected static string Separator(char Char = '=')
-        {
-            return new String(Char, ScreenMetrics.NUM_SCREEN_CHARS_X);
-        }
-        protected static void WriteToByteArray(byte[] Array, int Start, string Input)
-        {
-            for (int i = 0; i < Input.Length; i++)
-                Array[i + Start] = (byte)Input[i];
-        }
-        protected static void WriteToByteArrayHex(byte[] Array, int Start, byte Input)
-        {
-            Array[Start]     = (Input >> 4)  .ToHexCharByte();
-            Array[Start + 1] = (Input & 0x0F).ToHexCharByte();
-        }
+
+        protected static string Indent(string Input) => Format(Input, STANDARD_INDENT);
+        protected static string Separator(char Char = '=') => new String(Char, ScreenMetrics.NUM_SCREEN_CHARS_X);
         protected static string FitFilePath(string FilePath, int Size)
         {
             if (string.IsNullOrWhiteSpace(FilePath))
@@ -483,6 +450,17 @@ namespace Sharp80
                        FilePath.Substring(FilePath.Length - Size + 23);
         }
 
+        protected static void WriteToByteArray(byte[] Array, int Start, string Input)
+        {
+            for (int i = 0; i < Input.Length; i++)
+                Array[i + Start] = (byte)Input[i];
+        }
+        protected static void WriteToByteArrayHex(byte[] Array, int Start, byte Input)
+        {
+            Array[Start]     = (Input >> 4)  .ToHexCharByte();
+            Array[Start + 1] = (Input & 0x0F).ToHexCharByte();
+        }
+        
         // MISC
         
         private static void Disassemble(bool FromPc)

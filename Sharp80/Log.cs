@@ -35,14 +35,13 @@ namespace Sharp80
             }
         }
 
-        //[Conditional("LOGDEBUG")]
+        [Conditional("LOGDEBUG")]
         public static void LogDebug(string Message)
         {
             if (DebugLogOn)
                 LogItem(Message);
         }
             
-        
         public static bool Save(bool Flush, out string Path)
         {
             if (log.Count > 0)

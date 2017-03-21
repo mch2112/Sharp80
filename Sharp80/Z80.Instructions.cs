@@ -24,7 +24,6 @@ namespace Sharp80.Processor
         }
         private void load<T>(IRegister<T> r1, T Val) where T:struct => r1.val = Val;
         private void load_reg_nn(IRegister<byte> r) => r.val = ByteAtPCPlusInitialOpCodeLength;
-        
         private void load_ixy_nn(IRegisterIndexed r)
         {
             r.val = ByteAtPCPlusOpCodeInitialLengthPlusOne;
@@ -84,6 +83,7 @@ namespace Sharp80.Processor
             F.val = (byte)((F.val & S_CF) | SZ53(A.val));
             VF = IFF2;
         }
+
         private void ldi()
         {
             ldx();
@@ -138,8 +138,10 @@ namespace Sharp80.Processor
                 WZ.inc();
             }
         }
+
         private void push(IRegister<ushort> r) => PushWord(r.val);
         private void pop(IRegister<ushort> r) => r.val = PopWord();
+
         private void cpir()
         {
             cpi();
@@ -205,6 +207,7 @@ namespace Sharp80.Processor
             F5 = diff.IsBitSet(1);
             F3 = diff.IsBitSet(3);
         }
+
         private void halt()
         {
             // TODO: Push the address of the next instruction after the halt.
@@ -289,6 +292,7 @@ namespace Sharp80.Processor
             F5 = (A.val & S_F5) == S_F5;
             F3 = (A.val & S_F3) == S_F3;
         }
+
         private void bitHLM(int shift)
         {
             bit(HLM.val, shift);
@@ -344,14 +348,11 @@ namespace Sharp80.Processor
             CF = sum > 0xFF;
             HF = ((a & 0x0F) + (val & 0x0F)) > 0x0F;
 
-            Debug.Assert(HF == (((a ^ sum ^ val) & S_HF) == S_HF));
-
             VF = ((a ^ val ^ 0x80) & (val ^ sum) & 0x80) == 0x80;
 
             A.val = (byte)sum;
         }
         private void add_n() => add(ByteAtPCPlusInitialOpCodeLength);
-        
         private void add(IRegister<ushort> r1, IRegister<ushort> r2)
         {
             WZ.val = r1.val;
@@ -363,14 +364,13 @@ namespace Sharp80.Processor
 
             HF = ((r1.val & 0x0FFF) + (r2.val & 0x0FFF)) > 0x0FFF;
 
-            Debug.Assert(HF == ((((r1.val ^ sum ^ r2.val) >> 8) & S_HF) == S_HF));
-
             F5 = ((sum >> 8) & S_F5) == S_F5;
             F3 = ((sum >> 8) & S_F3) == S_F3;
             CF = sum > 0xFFFF;
             
             r1.val = (ushort)sum;
         }
+
         private void adc(IRegister<byte> r) => adc(r.val);
         private void adc(IRegisterIndexed r)
         {
@@ -421,14 +421,6 @@ namespace Sharp80.Processor
             WZ.val = r.OffsetAddress;
         }
         private void sub_n() => sub(ByteAtPCPlusInitialOpCodeLength);
-        private void sbc(IRegister<byte> r) => sbc(r.val);
-        private void sbc(IRegisterIndexed r)
-        {
-            sbc(r.val);
-            WZ.val = r.OffsetAddress;
-        }
-        private void sbc_n() => sbc(ByteAtPCPlusInitialOpCodeLength);
-        
         private void sub(byte val)
         {
             int a = A.val;
@@ -444,6 +436,14 @@ namespace Sharp80.Processor
             CF = diff < 0;
             VF = ((val ^ a) & (a ^ diff) & 0x80) == 0x80;
         }
+
+        private void sbc(IRegister<byte> r) => sbc(r.val);
+        private void sbc(IRegisterIndexed r)
+        {
+            sbc(r.val);
+            WZ.val = r.OffsetAddress;
+        }
+        private void sbc_n() => sbc(ByteAtPCPlusInitialOpCodeLength);
         private void sbc(byte val)
         {
             int a = A.val;
@@ -481,6 +481,7 @@ namespace Sharp80.Processor
 
             r1.val = (ushort)diff;
         }
+
         private void inc(IRegister<byte> r)
         {
             r.inc();
@@ -513,7 +514,6 @@ namespace Sharp80.Processor
             WZ.val = r.OffsetAddress;
         }
         private void and_n() => and(ByteAtPCPlusInitialOpCodeLength);
-        
         private void and(byte b)
         {
             A.val &= b;
@@ -521,7 +521,6 @@ namespace Sharp80.Processor
         }
         
         private void or(IRegister<byte> r) => or(r.val);
-        
         private void or(IRegisterIndexed r)
         {
             or(r.val);
@@ -533,6 +532,7 @@ namespace Sharp80.Processor
             A.val |= b;
             F.val = SZ53P(A.val);
         }
+
         private void xor(IRegister<byte> r) => xor(r.val);
         private void xor(IRegisterIndexed r)
         {
@@ -545,6 +545,7 @@ namespace Sharp80.Processor
             A.val ^= b;
             F.val = SZ53P(A.val);
         }
+
         private void cp(IRegister<byte> r) => cp(r.val);
         private void cp(IRegisterIndexed r)
         {
@@ -641,7 +642,7 @@ namespace Sharp80.Processor
         {
             // Same for RETI and RETN because apparently RETI also copies IFF2 to IFF1.
 
-            Log.LogDebug(string.Format("Return from Interrupt, IFF1 {0} -> {1}", IFF1, IFF2));
+            Log.LogDebug($"Return from Interrupt, IFF1 {IFF1} -> {IFF2}");
 
             IFF1 = IFF2;
             ret();
@@ -653,6 +654,7 @@ namespace Sharp80.Processor
             
             WZ.val = NextPC;
         }
+
         private void jp()
         {
             ushort addr = WordAtPCPlusInitialOpcodeLength;
@@ -674,6 +676,7 @@ namespace Sharp80.Processor
             }
         }
         private void jp(IRegister<ushort> r) => NextPC = r.val;
+
         private void jr()
         {
             NextPC = PC.val.Offset(2 + ByteAtPCPlusInitialOpCodeLength.TwosComp());
@@ -687,6 +690,7 @@ namespace Sharp80.Processor
                 jr();
             }
         }
+
         private void djnz()
         {
             B.dec();
@@ -697,6 +701,7 @@ namespace Sharp80.Processor
                 WZ.val = NextPC;
             }
         }
+
         private void rlca()
         {
             A.val = (byte)((A.val << 1) | (A.val >> 7));
@@ -873,6 +878,7 @@ namespace Sharp80.Processor
             WZ.val = HL.val;
             WZ.inc();
         }
+
         private void exx()
         {
             ex(BC, BCp);
@@ -892,6 +898,7 @@ namespace Sharp80.Processor
             r2.val = temp;
             WZ.val = r2.val;
         }
+
         private void inir()
         {
             ini();
@@ -943,6 +950,7 @@ namespace Sharp80.Processor
 
             VF = P((k & 0x07) ^ B.val) != 0;
         }
+
         private void otir()
         {
             outi();
@@ -967,7 +975,6 @@ namespace Sharp80.Processor
             WZ.val = BC.val;
             WZ.inc();
         }
-        
         private void outd()
         {
             outx(false);
@@ -997,6 +1004,7 @@ namespace Sharp80.Processor
         }
         
         // COMPOUND INSTRUCTIONS
+
         private void rlc_compound(IRegister<byte> r1, IRegister<byte> r2)
         {
             load(r2, r1); rlc(r2); load(r1, r2);
