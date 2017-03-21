@@ -155,11 +155,13 @@ namespace Sharp80.Processor
         private void cpxr()
         {
             /*
-            WZ: when BC=1 or A=(HL): exactly as CPI/R
-	        In other cases WZ = PC + 1 on each step, where PC = instruction address.
-	        Note* since at the last execution BC=1 or A=(HL), resulting MEMPTR = PC + 1 + 1 
-	        (if there were not interrupts during the execution) 
-            */
+             * https://www.omnimaga.org/asm-language/bit-n-(hl)-flags/5/?wap2
+             * 
+             * WZ: when BC=1 or A=(HL): exactly as CPI/R
+	         * In other cases WZ = PC + 1 on each step, where PC = instruction address.
+	         * Note since at the last execution BC=1 or A=(HL), resulting MEMPTR = PC + 1 + 1 
+	         * (if there were not interrupts during the execution) 
+             */
 
             if (BC.NZ && !ZF)
             {
@@ -186,14 +188,12 @@ namespace Sharp80.Processor
         {
             BC.dec();
 
-            byte hlMem = HLM.val;
-
-            byte diff = (byte)((A.val - hlMem) & 0xFF);
-            bool carry = CF;
+            byte diff = (byte)((A.val - HLM.val) & 0xFF);
+            bool cf = CF;
 
             F.val = SZ(diff);
             NF = true;
-            CF = carry;
+            CF = cf;
             VF = BC.NZ;
 
             if ((A.val & 0x0F) < (diff & 0x0F))
@@ -202,8 +202,6 @@ namespace Sharp80.Processor
                 diff--;
             }
             
-            Debug.Assert(HF == (((A.val ^ hlMem ^ diff) & S_HF) == S_HF));
-           
             F5 = diff.IsBitSet(1);
             F3 = diff.IsBitSet(3);
         }

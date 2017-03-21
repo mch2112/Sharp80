@@ -118,7 +118,7 @@ namespace Sharp80
                 options
                 ));
         }
-        private void Import()
+        private bool Import()
         {
             string Path = Dialogs.GetCommandFile(Settings.LastCmdFile);
 
@@ -127,29 +127,53 @@ namespace Sharp80
                 CmdFile = new CmdFile(Path);
 
                 if (CmdFile.Valid)
+                {
                     Settings.LastCmdFile = Path;
+                    return true;
+                }
                 else
+                {
                     Dialogs.AlertUser("CMD File import failed: file not valid");
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
             }
         }
-        private void Load()
+        private bool Load()
         {
-            if (CmdFile?.Valid ?? false)
+            if (!(CmdFile is null) || Import())
             {
-                loaded = true;
-                Computer.LoadCMDFile(CmdFile);
+                if (CmdFile?.Valid ?? false)
+                {
+                    loaded = Computer.LoadCMDFile(CmdFile);
+                    return loaded;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
             }
         }
         private void Run()
         {
-            if (CmdFile == null)
-                Import();
-
-            if (CmdFile?.Valid ?? false)
+            if (!(CmdFile is null) || Import())
             {
-                Computer.LoadCMDFile(CmdFile);
-                Computer.Start();
-                CurrentMode = ViewMode.Normal;
+                if (Load())
+                {
+                    Computer.Start();
+                    CurrentMode = ViewMode.Normal;
+                }
+                else
+                {
+                    MessageCallback("Failed to run CMD file");
+                }
             }
         }
         private void Clear()
