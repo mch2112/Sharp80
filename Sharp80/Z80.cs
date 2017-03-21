@@ -53,14 +53,9 @@ namespace Sharp80.Processor
         private PortSet ports;
         private IMemory memory;
 
-        public IMemory Memory { get { return memory; } }
-
+        public IMemory Memory => memory;
         public Instruction CurrentInstruction { get; private set; }
-        
-        public string Assemble()
-        {
-            return new Assembler.Assembler(instructionSet.Instructions.Values).Assemble();
-        }
+        public string Assemble() => new Assembler.Assembler(instructionSet.Instructions.Values).Assemble();
 
         // INTERRUPTS
 
@@ -70,7 +65,6 @@ namespace Sharp80.Processor
         private bool RecordExtraTicks { get; set; }
         public ushort NextPC { get; private set; }
 
-        private byte interruptMode;
         private bool restoreInterruptsNow;
         private byte im2Vector = 0xFF;         // For IM2 only
         private bool halted;
@@ -80,7 +74,7 @@ namespace Sharp80.Processor
 
         public ushort BreakPoint
         {
-            get { return breakPoint; }
+            get => breakPoint;
             set
             {
                 if (breakPoint != value)
@@ -102,7 +96,9 @@ namespace Sharp80.Processor
         private int historyBufferCursor = 0;
         private ulong instructionCount = 0;
 
-        // CONSTRUCTOR
+        // CONSTRUCTORS
+
+        static Z80() => InitFlagsString();
 
         public Z80(Computer Computer, PortSet Ports)
         {
@@ -163,41 +159,14 @@ namespace Sharp80.Processor
 
             CurrentInstruction = instructionSet.NOP; // NOP
         }
-        static Z80()
-        {
-            InitFlagsString();
-        }
-
+        
         // PROPERTIES
 
-        public byte InterruptMode
-        {
-            get { return interruptMode; }
-            set { interruptMode = value; }
-        }
+        public byte InterruptMode { get; private set; }
         public bool HistoricDisassemblyMode { get; set; }
-        public byte ByteAtPCPlusInitialOpCodeLength
-        {
-            get
-            {
-                return Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialLength)];
-            }
-        }
-        public byte ByteAtPCPlusOpCodeInitialLengthPlusOne
-        {
-            get
-            {
-                return Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialLength + 1)];
-            }
-        }
-        public ushort WordAtPCPlusInitialOpcodeLength
-        {
-            get
-            {
-                Debug.Assert(CurrentInstruction.OpcodeInitialLength == CurrentInstruction.OpcodeLength);
-                return Memory.GetWordAt(PC.val.Offset(CurrentInstruction.OpcodeInitialLength));
-            }
-        }
+        public byte ByteAtPCPlusInitialOpCodeLength => Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialLength)];
+        public byte ByteAtPCPlusOpCodeInitialLengthPlusOne => Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialLength + 1)];
+        public ushort WordAtPCPlusInitialOpcodeLength => Memory.GetWordAt(PC.val.Offset(CurrentInstruction.OpcodeInitialLength));
 
         // MAIN EXECUTION CONTROL
 
@@ -206,7 +175,7 @@ namespace Sharp80.Processor
             // During reset time, the address bus and data bus go to a high impadance state and all control
             // output signals go to the inactive state.
 
-            interruptMode = 0;
+            InterruptMode = 0;
             IFF1 = false;
             IFF2 = false;
             RestoreInterrupts = false;
@@ -360,10 +329,7 @@ namespace Sharp80.Processor
             }
         }
 
-        private Instruction GetInstructionAt(ushort Address)
-        {
-            return instructionSet.GetInstruction(memory, Address);
-        }
+        private Instruction GetInstructionAt(ushort Address) => instructionSet.GetInstruction(memory, Address);
 
         // INTERRUPTS
 
@@ -388,7 +354,7 @@ namespace Sharp80.Processor
                     PushWord(PC.val);
                 }
 
-                switch (interruptMode)
+                switch (InterruptMode)
                 {
                     case 1:
                         WZ.val = PC.val = 0x0038;
@@ -397,7 +363,7 @@ namespace Sharp80.Processor
                         WZ.val = PC.val = (ushort)(I.val * 0x100 + im2Vector);
                         return 19000;
                     default:
-                        Log.LogDebug(string.Format("Interrupt Mode {0} Not Supported", interruptMode));
+                        Log.LogDebug(string.Format("Interrupt Mode {0} Not Supported", InterruptMode));
                         return 0;
                 }
             }
@@ -406,14 +372,9 @@ namespace Sharp80.Processor
                 return 0;
             }
         }
-        public bool CanInterrupt
-        {
-            get { return IFF1 && !CurrentInstruction.IsPrefix; }
-        }
-        public bool CanNmi
-        {
-            get { return !CurrentInstruction.IsPrefix; }
-        }
+        public bool CanInterrupt => IFF1 && !CurrentInstruction.IsPrefix;
+        public bool CanNmi => !CurrentInstruction.IsPrefix;
+
         public void NonMaskableInterrupt()
         {
             Log.LogDebug("Non Maskable Interrupt exec, IFF1 False");
@@ -480,7 +441,7 @@ namespace Sharp80.Processor
             Writer.Write(WZ.val);
             Writer.Write(NextPC);
 
-            Writer.Write(interruptMode);
+            Writer.Write(InterruptMode);
             Writer.Write(IFF1);
             Writer.Write(IFF2);
             Writer.Write(RestoreInterrupts);
@@ -526,7 +487,7 @@ namespace Sharp80.Processor
             WZ.val = Reader.ReadUInt16();
             NextPC = Reader.ReadUInt16();
 
-            interruptMode = Reader.ReadByte();
+            InterruptMode = Reader.ReadByte();
             IFF1 = Reader.ReadBoolean();
             IFF2 = Reader.ReadBoolean();
             RestoreInterrupts = Reader.ReadBoolean();
@@ -562,18 +523,9 @@ namespace Sharp80.Processor
             SetupInstructionObjects();
             instructionSet.LoadTables();
         }
-        private void OutPort(byte pornNum, byte value) 
-        {
-            ports[pornNum] = value;
-        }
-        private void OutPortR(IRegister<byte> r)
-        {
-            OutPort(C.val, r.val);
-        }
-        private void OutPortZero()
-        {
-            OutPort(C.val, (byte)0);
-        }
+        private void OutPort(byte pornNum, byte value) => ports[pornNum] = value;
+        private void OutPortR(IRegister<byte> r) => OutPort(C.val, r.val);
+        private void OutPortZero() => OutPort(C.val, (byte)0);
         private void OutPortN()
         {
             byte aVal = A.val;
@@ -592,25 +544,15 @@ namespace Sharp80.Processor
             WZ.inc();
         }
         
-        private byte InPort(byte pornNum)
-        {
-            byte inp = ports[pornNum];
-            return inp;
-        }
+        private byte InPort(byte pornNum) => ports[pornNum];
         private byte InPortC()
         {
             byte b = InPort(C.val);
             F.val = (byte)((F.val & S_CF) | SZ53P(b));
             return b;
         }
-        private void InPortR(IRegister<byte> r)
-        {
-            r.val = InPortC();
-        }
-        private void InPortZero() 
-        {
-            InPortC();
-        }
+        private void InPortR(IRegister<byte> r) => r.val = InPortC();
+        private void InPortZero() => InPortC();
         private void InPortN()
         {
             byte aVal = A.val;
@@ -639,10 +581,7 @@ namespace Sharp80.Processor
             SP.val += 2;
             return val;
         }
-        private ushort PeekWord()
-        {
-            return SPM.val;
-        }
+        
         private bool IsSteppable(Instruction i)
         {
             return i.Mnemonic == "CALL" ||
@@ -657,16 +596,16 @@ namespace Sharp80.Processor
                    i.Mnemonic == "INDR" ||
                    i.Mnemonic == "DJNZ";
         }
-        private byte SZ(byte input)    { return Lib.SZ[input]; }
-        private byte SZ53P(byte input) { return Lib.SZ53P[input]; }
-        private byte SZ53(byte input)  { return Lib.SZ53[input]; }
-        private byte F53(byte input)   { return Lib.F53[input]; }
-        private byte P(byte input)     { return Lib.P[input]; }
+        private byte SZ(byte input)    => Lib.SZ[input];
+        private byte SZ53P(byte input) => Lib.SZ53P[input];
+        private byte SZ53(byte input)  => Lib.SZ53[input];
+        private byte F53(byte input)   => Lib.F53[input];
+        private byte P(byte input)     => Lib.P[input];
 
-        private byte SZ(int input)    { return Lib.SZ[input & 0xFF]; }
-        private byte SZ53P(int input) { return Lib.SZ53P[input & 0xFF]; }
-        private byte SZ53(int input)  { return Lib.SZ53[input & 0xFF]; }
-        private byte F53(int input)   { return Lib.F53[input & 0xFF]; }
-        private byte P(int input)     { return Lib.P[input & 0xFF]; }
+        private byte SZ(int input)     => Lib.SZ[input & 0xFF];
+        private byte SZ53P(int input)  => Lib.SZ53P[input & 0xFF];
+        private byte SZ53(int input)   => Lib.SZ53[input & 0xFF];
+        private byte F53(int input)    => Lib.F53[input & 0xFF];
+        private byte P(int input)      => Lib.P[input & 0xFF];
     }
 }
