@@ -18,18 +18,21 @@ namespace Sharp80
         private const int MAX_TRACK_LENGTH_WITH_HEADER = MAX_TRACK_LENGTH + TRACK_HEADER_LEN;
         private const ushort OFFSET_MASK = 0x3FFF;
         private const ushort DOUBLE_DENSITY_MASK = 0x8000;
+
         private const byte WRITE_PROTECT_BYTE = 0x00;
-        private const byte NO_WRITE_PROTECT_BYTE = 0x00;
         private const byte NUM_TRACKS_BYTE = 0x01;
         private const byte TRACK_LEN_LOW_BYTE = 0x02;
         private const byte TRACK_LEN_HIGH_BYTE = 0x03;
         private const byte FLAGS_BYTE = 0x04;
+
+        private const byte WRITE_PROTECT_VAL = 0xFF;
+        private const byte NO_WRITE_PROTECT_VAL = 0x00;
         private const byte ZERO_BYTE = 0x00;
+
         private const byte DISK_HEADER_LENGTH = 0x10;
         private const byte SINGLE_SIDED_FLAG = 0x10;
         private const byte SING_DENS_SING_BYTE_FLAG = 0x40;
         private const byte IGNORE_SING_DENS_FLAG = 0x80;
-        private const byte WRITE_PROTECT_VAL = 0xFF;
         
         public DMK(byte[] DiskData)
         {
@@ -279,7 +282,7 @@ namespace Sharp80
 
             byte[] bytes = new byte[Track.MAX_LENGTH_WITH_HEADER * 80 * 2 + DISK_HEADER_LENGTH];
 
-            bytes[0] = WriteProtected ? WRITE_PROTECT_BYTE : ZERO_BYTE; // Not write protected
+            bytes[0] = WriteProtected ? WRITE_PROTECT_VAL : NO_WRITE_PROTECT_VAL; // Not write protected
             bytes[1] = numTracks;
             ((ushort)(STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN)).Split(out bytes[2], out bytes[3]);
 
@@ -314,7 +317,7 @@ namespace Sharp80
 
             byte[] data = new byte[DISK_HEADER_LENGTH + NumTracks * numSides * (STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN)];
 
-            data[0] = NO_WRITE_PROTECT_BYTE; // Not write Protected
+            data[0] = NO_WRITE_PROTECT_VAL; // Not write Protected
             data[1] = NumTracks;
             ((ushort)(STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN)).Split(out data[2], out data[3]);
             data[4] = DoubleSided ? ZERO_BYTE : SINGLE_SIDED_FLAG;    // assumes double density
@@ -330,7 +333,7 @@ namespace Sharp80
 
             byte[] diskData = new byte[DISK_HEADER_LENGTH + numTracks * numSides * trackLength * 2];
 
-            diskData[WRITE_PROTECT_BYTE] = writeProtected ? WRITE_PROTECT_VAL : NO_WRITE_PROTECT_BYTE;
+            diskData[WRITE_PROTECT_BYTE] = writeProtected ? WRITE_PROTECT_VAL : NO_WRITE_PROTECT_VAL;
             diskData[NUM_TRACKS_BYTE] = numTracks;
             ((ushort)trackLength).Split(out diskData[TRACK_LEN_LOW_BYTE], out diskData[TRACK_LEN_HIGH_BYTE]);
             if (numSides == 1)

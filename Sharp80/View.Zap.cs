@@ -121,7 +121,7 @@ namespace Sharp80
                 WriteToByteArray(cells, 0x200, sd.DoubleDensity ? "DD" : "SD");
 
                 if (sd.TrackNumber != trackNum)
-                    WriteToByteArrayHex(cells, 0x140, sd.TrackNumber);
+                    WriteToByteArray(cells, 0x140, $"({sd.TrackNumber:X2})");
 
                 switch (sd.DAM)
                 {

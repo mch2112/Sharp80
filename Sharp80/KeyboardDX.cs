@@ -51,8 +51,6 @@ namespace Sharp80
         {
             while (!StopToken.IsCancellationRequested)
             {
-                await Task.Delay(Delay, StopToken);
-
                 var data = keyboard.GetBufferedData();
                 foreach (var d in data)
                 {
@@ -100,6 +98,8 @@ namespace Sharp80
                 }
                 if (repeatKey != KeyCode.None && ++repeatKeyCount > RepeatThreshold)
                     Callback(new KeyState(repeatKey, IsShifted, IsControlPressed, IsAltPressed, true, true));
+
+                await Task.Delay(Delay, StopToken);
             }
         }
         public bool Enabled { get { return enabled; }
@@ -113,10 +113,8 @@ namespace Sharp80
             }
         }
 
-        public bool IsPressed(KeyCode Key)
-        {
-            return keyboard.GetCurrentState().IsPressed((Key)Key);
-        }
+        public bool IsPressed(KeyCode Key) => keyboard.GetCurrentState().IsPressed((Key)Key);
+        
         public void Refresh()
         {
             repeatKey = KeyCode.None;

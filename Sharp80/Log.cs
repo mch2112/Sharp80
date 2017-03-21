@@ -12,12 +12,7 @@ namespace Sharp80
     internal static class Log
     {
         public delegate ulong GetTickDelegate();
-
-        /// <summary>
-        /// We save exception events in a queue that can be processed by the main form's ui thread,
-        /// because showing dialogs can only be done in that thread.
-        /// </summary>
-
+        
         public static List<(ulong Tick, string Message)> LLog = new List<(ulong Tick, string Message)>();
 
         public static bool DebugLogOn { get; set; } = false;
@@ -40,7 +35,7 @@ namespace Sharp80
             }
         }
 
-        [Conditional("LOGDEBUG")]
+        //[Conditional("LOGDEBUG")]
         public static void LogDebug(string Message)
         {
             if (DebugLogOn)

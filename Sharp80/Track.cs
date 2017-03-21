@@ -50,7 +50,7 @@ namespace Sharp80
             densityMap = null;
 
 #if DEBUG
-//           RebuildHeader();
+    //      RebuildHeader();
   //         Changed = true;
 #endif
         }

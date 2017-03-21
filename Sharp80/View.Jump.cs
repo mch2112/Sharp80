@@ -59,7 +59,7 @@ namespace Sharp80
                                 Indent("Type [0]-[9] or [A]-[F] to enter a hexadecimal") +
                                 Indent("jump location.") +
                                 Format() +
-                                Indent("[Escape] when done.")));
+                                Indent("[Esc] when done.")));
         }
     }
 }

@@ -8,6 +8,10 @@ namespace Sharp80
     {
         private static bool terminating = false;
 
+        /// <summary>
+        /// We save exception events in a queue that can be processed by the main form's ui thread,
+        /// because showing dialogs can only be done in that thread.
+        /// </summary>
         private static Queue<(Exception Exception, ExceptionHandlingOptions Option, string Message)> ExceptionQueue = new Queue<(Exception Exception, ExceptionHandlingOptions Option, string Message)>();
 
         public static void Handle(Exception Ex, ExceptionHandlingOptions Option = ExceptionHandlingOptions.Terminate, string Message = "")

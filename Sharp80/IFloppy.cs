@@ -13,6 +13,7 @@ namespace Sharp80
         byte NumTracks { get; }
         byte SectorCount(byte TrackNum, bool SideOne);
         string FilePath { get; set; }
+        string FileDisplayName { get; }
         bool WriteProtected { get; set; }
         bool Formatted { get; }
         SectorDescriptor GetSectorDescriptor(byte TrackNum, bool SideOne, byte SectorIndex);

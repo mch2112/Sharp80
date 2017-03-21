@@ -16,7 +16,7 @@ namespace Sharp80
         public const int SAMPLE_RATE = 16000;
 
         private static bool AnyInitFail { get; set; } = false;
-        public bool Initialized { get; private set; }
+        public bool Stopped { get; private set; }
         
         private XAudio2 xaudio;
         private MasteringVoice masteringVoice;
@@ -85,11 +85,11 @@ namespace Sharp80
 
         public SoundX(GetSampleCallback GetSampleCallback)
         {
+            Stopped = true;
+
             if (AnyInitFail)
-            {
-                Initialized = false;
                 return;
-            }
+            
             try
             {
                 frameBuffer = new FrameBuffer<short>(FRAME_SIZE_SAMPLES, FRAMES_PER_SECOND / 10);
@@ -123,12 +123,14 @@ namespace Sharp80
                 
                 playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
 
-                Initialized = enabled = true;
+                enabled = true;
+                Stopped = false;
             }
             catch (Exception Ex)
             {
                 AnyInitFail = true;
-                Initialized = enabled = false;
+                enabled = false;
+                Stopped = true;
                 ExceptionHandler.Handle(Ex, ExceptionHandlingOptions.InformUser, "Failed to start XAudio2. Please update your DirectX drivers from Microsoft. Sharp 80 will continue without sound.");
             }
         }
@@ -148,23 +150,12 @@ namespace Sharp80
                 frameBuffer.Sample(outputLevel);
             }
         }
-        
-        public void Dispose()
-        {
-            if (!isDisposed)
-            {
-                isDisposed = true;
-                enabled = false;
-                Initialized = false;
-                DisposeXAudio();
-            }
-        }
 
         private void UpdateEnabled()
         {
-            if (enabled != (On && !Mute && Initialized))
+            if (enabled != (On && !Mute && !Stopped))
             {
-                enabled = On && !Mute && Initialized;
+                enabled = On && !Mute && !Stopped;
                 if (enabled)
                 {
                     frameBuffer.Reset();
@@ -176,7 +167,7 @@ namespace Sharp80
         {
             try
             {
-                while (Initialized)
+                while (!Stopped)
                 {
                     if (sourceVoice.State.BuffersQueued >= RING_SIZE)
                     {
@@ -203,6 +194,17 @@ namespace Sharp80
             {
                 Mute = true;
                 ExceptionHandler.Handle(ex, ExceptionHandlingOptions.Terminate);
+            }
+        }
+        public async void Dispose()
+        {
+            if (!isDisposed)
+            {
+                isDisposed = true;
+                enabled = false;
+                Stopped = true;
+                await playingTask;
+                DisposeXAudio();
             }
         }
         private void DisposeXAudio()

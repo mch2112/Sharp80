@@ -27,12 +27,12 @@ namespace Sharp80
         private static Dictionary<ViewMode, View> views = new Dictionary<ViewMode, View>();
 
         protected static ulong FrameReqNum { get; private set; }
-
+        
         public View()
         {
             views.Add(Mode, this);
         }
-
+        
         public static ViewMode CurrentMode
         {
             get { return currentMode; }
@@ -197,10 +197,12 @@ namespace Sharp80
                     // SHIFT-ALT
                     switch (Key.Key)
                     {
-                        //case KeyCode.B:
-                        //    Log.DebugLogOn = !Log.DebugLogOn;
-                        //    MessageCallback("Debug Log: " + (Log.DebugLogOn ? "On" : "Off"));
-                        //    break;
+#if DEBUG
+                        case KeyCode.B:
+                            Log.DebugLogOn = !Log.DebugLogOn;
+                            MessageCallback("Debug Log: " + (Log.DebugLogOn ? "On" : "Off"));
+                            break;
+#endif
                         case KeyCode.E:
                             // start the disassembly at the current PC location
                             Disassemble(true);
@@ -229,6 +231,7 @@ namespace Sharp80
                             InvokeUserCommand(UserCommand.Exit);
                             return true;
                         case KeyCode.End:
+                            MessageCallback("Hard Reset...");
                             InvokeUserCommand(UserCommand.HardReset);
                             // don't just leave a blank screen
                             if (!Computer.IsRunning)
@@ -245,6 +248,7 @@ namespace Sharp80
                             InvokeUserCommand(UserCommand.ToggleFullScreen);
                             return true;
                            case KeyCode.End:
+                            MessageCallback("Reset...");
                             Computer.Reset();
                             return true;
                         case KeyCode.A:

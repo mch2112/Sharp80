@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 
 namespace Sharp80
@@ -143,7 +142,7 @@ namespace Sharp80
         /// <summary>
         /// Should be called when the floppy is put in the drive. Note that the
         /// floppy's file path may be empty but we may want to save a token
-        /// value like {{BLANK}}
+        /// value like {NEW}
         /// </summary>
         public static void SaveDefaultDriveFileName(byte DriveNum, string FilePath)
         {
@@ -193,8 +192,18 @@ namespace Sharp80
         {
             return Path == FILE_NAME_UNFORMATTED || Path == FILE_NAME_NEW || Path == FILE_NAME_TRSDOS;
         }
+        private static string libraryPath = null;
+        public static string LibraryPath
+        {
+            get
+            {
+                libraryPath = libraryPath ?? Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), @"Library");
+                return libraryPath;
+            }
+        }
+        public static bool IsLibraryFile(string Path) => Path.StartsWith(LibraryPath);
 
-        // returns false if the user cancelled a needed save
+        /// returns false if the user cancelled a needed save
         public static bool SaveChangedStorage(Computer Computer)
         {
             return SaveFloppies(Computer) && SaveTapeIfRequired(Computer);
@@ -222,9 +231,13 @@ namespace Sharp80
             if (save.Value)
             {
                 var path = Computer.GetFloppyFilePath(DriveNum);
-                if (string.IsNullOrWhiteSpace(path) || IsFileNameToken(path))
+                if (string.IsNullOrWhiteSpace(path) || IsFileNameToken(path) || IsLibraryFile(path))
                 {
-                    path = GetFloppyFilePath("Choose path to save floppy", Settings.DefaultFloppyDirectory, true, false, true);
+                    if (IsLibraryFile(path))
+                        path = GetFloppyFilePath("Choose path to save floppy", Path.Combine(Settings.DefaultFloppyDirectory, Path.GetFileName(path)), true, true, true);
+                    else
+                        path = GetFloppyFilePath("Choose path to save floppy", Settings.DefaultFloppyDirectory, true, false, true);
+
                     if (string.IsNullOrWhiteSpace(path))
                     {
                         return false;

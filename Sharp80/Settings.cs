@@ -43,48 +43,28 @@ namespace Sharp80
 
         public static bool AdvancedView
         {
-            get
-            {
-                advancedView = advancedView ?? Properties.Settings.Default.advanced_view;
-                return advancedView.Value;
-            }
-            set { advancedView = value; }
+            get => advancedView ?? (advancedView = Properties.Settings.Default.advanced_view).Value;
+            set => advancedView = value;
         }
         public static bool AltKeyboardLayout
         {
-            get
-            {
-                altKeyboardLayout = altKeyboardLayout ?? Properties.Settings.Default.alt_keyboard_layout;
-                return altKeyboardLayout.Value;
-            }
-            set { altKeyboardLayout = value; }
+            get => altKeyboardLayout ?? (altKeyboardLayout = Properties.Settings.Default.alt_keyboard_layout).Value;
+            set => altKeyboardLayout = value;
         }
         public static bool AutoStartOnReset
         {
-            get
-            {
-                autoStartOnReset = autoStartOnReset ?? Properties.Settings.Default.auto_start_on_reset;
-                return autoStartOnReset.Value;
-            }
-            set { autoStartOnReset = value; }
+            get => autoStartOnReset ?? (autoStartOnReset = Properties.Settings.Default.auto_start_on_reset).Value;
+            set => autoStartOnReset = value;
         }
         public static ushort Breakpoint
         {
-            get
-            {
-                breakpoint = breakpoint ?? Properties.Settings.Default.breakpoint;
-                return breakpoint.Value;
-            }
-            set { breakpoint = value; }
+            get => breakpoint ?? (breakpoint = Properties.Settings.Default.breakpoint).Value;
+            set => breakpoint = value;
         }
         public static bool BreakpointOn
         {
-            get
-            {
-                breakpointOn = breakpointOn ?? Properties.Settings.Default.breakpoint_on;
-                return breakpointOn.Value;
-            }
-            set { breakpointOn = value; }
+            get => breakpointOn ?? (breakpointOn = Properties.Settings.Default.breakpoint_on).Value;
+            set => breakpointOn = value;
         }
         public static string DefaultFloppyDirectory
         {
@@ -92,12 +72,12 @@ namespace Sharp80
             {
                 defaultFloppyDirectory = defaultFloppyDirectory ?? Properties.Settings.Default.default_floppy_directory;
 
-                if (String.IsNullOrWhiteSpace(defaultFloppyDirectory))
-                    defaultFloppyDirectory = System.IO.Path.Combine(Storage.AppDataPath, @"Disks\");
+                if (String.IsNullOrWhiteSpace(defaultFloppyDirectory) || !System.IO.Directory.Exists(defaultFloppyDirectory))
+                    defaultFloppyDirectory = Storage.DocsPath;
 
                 return defaultFloppyDirectory;
             }
-            set { defaultFloppyDirectory = value; }
+            set => defaultFloppyDirectory = value;
         }
         public static string Disk0Filename
         {
@@ -153,30 +133,18 @@ namespace Sharp80
         }
         public static bool DiskEnabled
         {
-            get
-            {
-                diskEnabled = diskEnabled ?? Properties.Settings.Default.disk_enabled;
-                return diskEnabled.Value;
-            }
-            set { diskEnabled = value; }
+            get => diskEnabled ?? (diskEnabled = Properties.Settings.Default.disk_enabled).Value;
+            set => diskEnabled = value;
         }
         public static bool DriveNoise
         {
-            get
-            {
-                driveNoise = driveNoise ?? Properties.Settings.Default.drive_noise;
-                return driveNoise.Value;
-            }
-            set { driveNoise = value; }
+            get => driveNoise ?? (driveNoise = Properties.Settings.Default.drive_noise).Value;
+            set => driveNoise = value;
         }
         public static bool GreenScreen
         {
-            get
-            {
-                greenScreen = greenScreen ?? Properties.Settings.Default.green_screen;
-                return greenScreen.Value;
-            }
-            set { greenScreen = value; }
+            get => greenScreen ?? (greenScreen = Properties.Settings.Default.green_screen).Value;
+            set => greenScreen = value;
         }
         public static string LastAsmFile
         {
@@ -206,12 +174,8 @@ namespace Sharp80
         }
         public static string LastSnapshotFile
         {
-            get
-            {
-                lastSnapshotFile = lastSnapshotFile ?? Properties.Settings.Default.last_snapshot_file;
-                return lastSnapshotFile;
-            }
-            set { lastSnapshotFile = value; }
+            get => lastSnapshotFile ?? (lastSnapshotFile = Properties.Settings.Default.last_snapshot_file);
+            set => lastSnapshotFile = value;
         }
         public static string LastTapeFile
         {
@@ -228,66 +192,38 @@ namespace Sharp80
         }
         public static bool SoundOn
         {
-            get
-            {
-                soundOn = soundOn ?? Properties.Settings.Default.sound;
-                return soundOn.Value;
-            }
-            set { soundOn = value; }
+            get => soundOn ?? (soundOn = Properties.Settings.Default.sound).Value;
+            set => soundOn = value;
         }
         public static bool NormalSpeed
         {
-            get
-            {
-                normalSpeed = normalSpeed ?? Properties.Settings.Default.normal_speed;
-                return normalSpeed.Value;
-            }
-            set { normalSpeed = value; }
+            get => normalSpeed ?? (normalSpeed = Properties.Settings.Default.normal_speed).Value;
+            set => normalSpeed = value;
         }
         public static bool FullScreen
         {
-            get
-            {
-                fullScreen = fullScreen ?? Properties.Settings.Default.full_screen;
-                return fullScreen.Value;
-            }
-            set { fullScreen = value; }
+            get => fullScreen ?? (fullScreen = Properties.Settings.Default.full_screen).Value;
+            set => fullScreen = value;
         }
         public static int WindowX
         {
-            get
-            {
-                windowX = windowX ?? Properties.Settings.Default.window_x;
-                return windowX.Value;
-            }
-            set { windowX = value; }
+            get => windowX ?? (windowX = Properties.Settings.Default.window_x).Value;
+            set => windowX = value;
         }
         public static int WindowY
         {
-            get
-            {
-                windowY = windowY ?? Properties.Settings.Default.window_y;
-                return windowY.Value;
-            }
-            set { windowY = value; }
+            get => windowY ?? (windowY = Properties.Settings.Default.window_y).Value;
+            set => windowY = value;
         }
         public static int WindowWidth
         {
-            get
-            {
-                windowWidth = windowWidth ?? Properties.Settings.Default.window_width;
-                return windowWidth.Value;
-            }
-            set { windowWidth = value; }
+            get => windowWidth ?? (windowWidth = Properties.Settings.Default.window_width).Value;
+            set => windowWidth = value;
         }
         public static int WindowHeight
         {
-            get
-            {
-                windowHeight = windowHeight ?? Properties.Settings.Default.window_height;
-                return windowHeight.Value;
-            }
-            set { windowHeight = value; }
+            get => windowHeight ?? (windowHeight = Properties.Settings.Default.window_height).Value;
+            set => windowHeight = value;
         }
         public static void Save()
         {

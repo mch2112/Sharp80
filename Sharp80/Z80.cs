@@ -95,9 +95,12 @@ namespace Sharp80.Processor
         private bool skipOneBreakpoint = false;
 
         // Circular history buffer
-        private ushort[] historyBuffer = new ushort[NUM_DISASSEMBLY_LINES];
+        // There's an extra element because threading issue, the cursor may sometimes
+        // point past the last item in the ++ %= non-atomic sequence; we don't want 
+        // to allow this to cause an exception.
+        private ushort[] historyBuffer = new ushort[NUM_DISASSEMBLY_LINES + 1];
         private int historyBufferCursor = 0;
-        private ulong historyInstructionCount = 0;
+        private ulong instructionCount = 0;
 
         // CONSTRUCTOR
 
@@ -234,7 +237,7 @@ namespace Sharp80.Processor
 
             ZF = true;
 
-            historyInstructionCount = 0;
+            instructionCount = 0;
             UpdatePCHistory();
         }
         
@@ -291,7 +294,7 @@ namespace Sharp80.Processor
                 }
             }
             UpdatePCHistory();
-            historyInstructionCount++;
+            instructionCount++;
             return retVal;
         }
 
@@ -431,7 +434,7 @@ namespace Sharp80.Processor
             WZ.val = 0x0066;
             IncrementR(1);
             UpdatePCHistory();
-            historyInstructionCount++;
+            instructionCount++;
         }
  
         // REFRESH REGISTER
@@ -492,7 +495,7 @@ namespace Sharp80.Processor
             Writer.Write(systemBreakPoint ?? 0);
 
             Writer.Write(historyBufferCursor);
-            Writer.Write(historyInstructionCount);
+            Writer.Write(instructionCount);
             for (int i = 0; i < NUM_DISASSEMBLY_LINES; i++)
                 Writer.Write(historyBuffer[i]);
 
@@ -545,7 +548,7 @@ namespace Sharp80.Processor
             }
 
             historyBufferCursor = Reader.ReadInt32();
-            historyInstructionCount = Reader.ReadUInt64();
+            instructionCount = Reader.ReadUInt64();
             for (int i = 0; i < NUM_DISASSEMBLY_LINES; i++)
                 historyBuffer[i] = Reader.ReadUInt16();
 

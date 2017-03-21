@@ -46,7 +46,7 @@ namespace Sharp80
             // If sound fails to initialize there might be a driver issue,
             // but it's not fatal: we can continue without sound
             Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut));
-            if (!Sound.Initialized)
+            if (Sound.Stopped)
             {
                 Sound.Dispose();
                 Sound = new SoundNull();
@@ -264,6 +264,7 @@ namespace Sharp80
         {
             bool running = IsRunning;
             bool ret = false;
+
             if (running)
                 Stop(WaitForStop: true);
 

@@ -547,14 +547,13 @@ namespace Sharp80
         public async Task Start(float RefreshRateHz, CancellationToken StopToken)
         {
             var delay = TimeSpan.FromTicks((int)(10_000_000f / RefreshRateHz));
-            await RenderLoop(delay, StopToken);           
+            await RenderLoop(delay, StopToken);
         }
         public bool Suspend { private get; set; }
         private async Task RenderLoop(TimeSpan Delay, CancellationToken StopToken)
         {
             while (!StopToken.IsCancellationRequested)
             {
-                await Task.Delay(Delay, StopToken);
                 if (DrawOK)
                 {
                     try
@@ -574,6 +573,7 @@ namespace Sharp80
                         isDrawing = false;
                     }
                 }
+                await Task.Delay(Delay, StopToken);
             }
         }
         public void Invalidate() => invalid = true;

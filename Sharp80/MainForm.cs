@@ -457,7 +457,6 @@ namespace Sharp80
             finally
             {
                 StopToken.Dispose();
-                ExceptionHandler.HandleExceptions();
             }
         }
     }

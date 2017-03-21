@@ -45,11 +45,30 @@ namespace Sharp80
             FilePath = Reader.ReadString();
         }
         public string FilePath { get; set; }
-        public bool Formatted { get { return tracks.Any(t => t.Formatted); } }
+        public string FileDisplayName
+        {
+            get
+            {
+                switch (FilePath)
+                {
+                    case Storage.FILE_NAME_NEW:
+                        return "<NEW>";
+                    case Storage.FILE_NAME_UNFORMATTED:
+                        return "<UNFORMATTED>";
+                    case Storage.FILE_NAME_TRSDOS:
+                        return "<TRSDOS>";
+                    default:
+                        if (Storage.IsLibraryFile(FilePath))
+                            return Path.GetFileNameWithoutExtension(FilePath).ToUpper();
+                        else
+                            return FilePath;
+                }
+            }
+        }
+        public bool Formatted => tracks.Any(t => t.Formatted);
 
         private bool changed = false;
-        public bool Changed
-        { get { return changed || tracks.Any(t => t.Changed); } }
+        public bool Changed => changed || tracks.Any(t => t.Changed);
 
         public bool WriteProtected
         {

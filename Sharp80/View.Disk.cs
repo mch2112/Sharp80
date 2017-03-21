@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -13,10 +14,24 @@ namespace Sharp80
         protected override bool ForceRedraw => false;
         protected override bool CanSendKeysToEmulation => false;
 
+        private List<(string Name, string Path, bool IsDir)> libraryMenu = null;
+        private List<(string Name, string Path, bool IsDir)> LibraryMenu => libraryMenu ?? (libraryMenu = GetLibraryMenu());
+        private static DirectoryInfo BaseLibraryDir { get; set; }
+        private DirectoryInfo LibraryDir { get; set; }
+
+        private string header = Header("Sharp 80 Floppy Disk Manager");
+
+        static ViewDisk()
+        {
+            BaseLibraryDir = new DirectoryInfo(Path.Combine(Storage.LibraryPath, @"Disks"));
+        }
+
         protected override void Activate()
         {
             DriveNumber = null;
+            LibraryDir = null;
         }
+
         protected override bool processKey(KeyState Key)
         {
             Invalidate();
@@ -30,11 +45,11 @@ namespace Sharp80
                     {
                         case KeyCode.F:
                             if (Settings.DiskEnabled)
-                                LoadFloppy(false);
+                                LoadFloppy();
                             break;
                         case KeyCode.L:
-                            if (Settings.DiskEnabled)
-                                LoadFloppy(true);
+                            if (DriveNumber.HasValue && LibraryDir is null)
+                                LibraryDir = BaseLibraryDir;
                             break;
                         default:
                             return base.processKey(Key);
@@ -46,20 +61,52 @@ namespace Sharp80
                     {
                         switch (Key.Key)
                         {
+                            case KeyCode.NumberPad0:
                             case KeyCode.D0:
-                                DriveNumber = DriveNumber ?? 0;
+                                if (!SelectLibrary(0))
+                                    DriveNumber = DriveNumber ?? 0;
                                 break;
+                            case KeyCode.NumberPad1:
                             case KeyCode.D1:
-                                DriveNumber = DriveNumber ?? 1;
+                                if (!SelectLibrary(1))
+                                    DriveNumber = DriveNumber ?? 1;
                                 break;
+                            case KeyCode.NumberPad2:
                             case KeyCode.D2:
-                                DriveNumber = DriveNumber ?? 2;
+                                if (!SelectLibrary(2))
+                                    DriveNumber = DriveNumber ?? 2;
                                 break;
+                            case KeyCode.NumberPad3:
                             case KeyCode.D3:
-                                DriveNumber = DriveNumber ?? 3;
+                                if (!SelectLibrary(3))
+                                    DriveNumber = DriveNumber ?? 3;
+                                break;
+                            case KeyCode.NumberPad4:
+                            case KeyCode.D4:
+                                SelectLibrary(4);
+                                break;
+                            case KeyCode.NumberPad5:
+                            case KeyCode.D5:
+                                SelectLibrary(5);
+                                break;
+                            case KeyCode.NumberPad6:
+                            case KeyCode.D6:
+                                SelectLibrary(6);
+                                break;
+                            case KeyCode.NumberPad7:
+                            case KeyCode.D7:
+                                SelectLibrary(7);
+                                break;
+                            case KeyCode.NumberPad8:
+                            case KeyCode.D8:
+                                SelectLibrary(8);
+                                break;
+                            case KeyCode.NumberPad9:
+                            case KeyCode.D9:
+                                SelectLibrary(9);
                                 break;
                             case KeyCode.B:
-                                LoadFloppy(false, Storage.FILE_NAME_NEW);
+                                LoadFloppy(Storage.FILE_NAME_NEW);
                                 break;
                             case KeyCode.D:
                                 ToggleFloppyEnable();
@@ -68,10 +115,10 @@ namespace Sharp80
                                 EjectFloppy();
                                 break;
                             case KeyCode.T:
-                                LoadFloppy(false, Storage.FILE_NAME_TRSDOS);
+                                LoadFloppy(Storage.FILE_NAME_TRSDOS);
                                 break;
                             case KeyCode.U:
-                                LoadFloppy(false, Storage.FILE_NAME_UNFORMATTED);
+                                LoadFloppy(Storage.FILE_NAME_UNFORMATTED);
                                 break;
                             case KeyCode.W:
                                 ToggleWriteProtection();
@@ -87,10 +134,11 @@ namespace Sharp80
                                     return base.processKey(Key);
                                 break;
                             case KeyCode.Escape:
-                                if (DriveNumber.HasValue)
-                                    DriveNumber = null;
-                                else
-                                    RevertMode();
+                                if (!EscapeLibrary())
+                                    if (DriveNumber.HasValue)
+                                        DriveNumber = null;
+                                    else
+                                        RevertMode();
                                 break;
                             case KeyCode.F8:
                                 if (!Computer.IsRunning)
@@ -127,63 +175,122 @@ namespace Sharp80
         }
         protected override byte[] GetViewBytes()
         {
-            string s = Header("Sharp 80 Floppy Disk Manager");
+            string ret = header;
 
             if (Settings.DiskEnabled)
             {
                 if (DriveNumber.HasValue)
                 {
-                    bool diskLoaded = !Computer.DriveIsUnloaded(DriveNumber.Value);
-                    s += DrawDisk(DriveNumber.Value) +
-                            Format() +
-                            Separator('-') +
-                            Format() +
-                            Format();
-
-                    if (diskLoaded)
-                    {
-                        s += Format("[E] Eject floppy") +
-                             Format(string.Format("[W] Toggle write protection {0}", (Computer.GetFloppy(DriveNumber.Value)?.WriteProtected ?? false) ? "[ON] /  OFF " : " ON  / [OFF]")) +
-                             Format("[Z] Disk zap (view sectors)") +
-                             Format() +
-                             Format();
-                    }
+                    if (LibraryDir is null)
+                        ret += GetViewForDisk();
                     else
-                    {
-                        s += Format("[F] Load floppy from file") +
-                             Format("[L] Load floppy from included library") +
-                             Format("[T] Load TRSDOS floppy") +
-                             Format("[B] Insert blank formatted floppy") +
-                             Format("[U] Insert unformatted floppy");
-                    }
-                    s += Format() +
-                         Format() +
-                         Format("[Escape] Back to all drives");
+                        ret += GetViewForLibrary();
                 }
                 else
                 {
-                    for (byte i = 0; i < FloppyController.NUM_DRIVES; i++)
-                    {
-                        s += DrawDisk(i);
-                        if (i < FloppyController.NUM_DRIVES - 1)
-                            s += Format();
-                    }
-                    s += Separator() +
-                         Format("Choose a floppy drive [0] to [3].") +
-                         Format("[D] to disable drives and operate in Basic only.");
+                    ret += GetView();
                 }
             }
             else
             {
-                s += Format() +
-                     Format() +
-                     Center("FLOPPY DRIVES DISABLED") +
-                     Format() +
-                     Format() +
-                     Indent("[D] to enable drives.");
+                ret = Format() +
+                      Format() +
+                      Center("FLOPPY DRIVES DISABLED") +
+                      Format() +
+                      Format() +
+                      Indent("[D] to enable drives.");
             }
-            return PadScreen(Encoding.ASCII.GetBytes(s));
+            return PadScreen(Encoding.ASCII.GetBytes(ret));
         }
+
+        private string GetView()
+        {
+            string s = String.Empty;
+            for (byte i = 0; i < FloppyController.NUM_DRIVES; i++)
+            {
+                s += DrawDisk(i);
+                if (i < FloppyController.NUM_DRIVES - 1)
+                    s += Format();
+            }
+            s += Separator() +
+                 Format("Choose a floppy drive [0] to [3].") +
+                 Format("[D] to disable drives and operate in Basic only.");
+            return s;
+        }
+
+        private string GetViewForLibrary()
+        {
+            bool isTop = LibraryDir.FullName == BaseLibraryDir.FullName;
+
+            if (LibraryDir is null)
+            {
+                LibraryDir = BaseLibraryDir;
+                libraryMenu = null;
+            }
+
+            string ret = Format(isTop ? String.Empty : LibraryDir.Name) +
+                         Format();
+
+            for (int i = 0; i < LibraryMenu.Count; i++)
+                ret += Format($"[{(i + 1) % 10}] {LibraryMenu[i].Name}");
+
+            ret += Format().Repeat(11 - LibraryMenu.Count);
+
+            if (isTop)
+                ret += "[Esc] to exit library.";
+            else
+                ret += "[Esc] to go back.";
+
+            return ret;
+        }
+        private List<(string Name, string Path, bool IsDir)> GetLibraryMenu()
+        {
+            var ld = new List<(string Name, string Path, bool IsDir)>();
+
+            foreach (var d in LibraryDir.GetDirectories())
+                ld.Add((d.Name, d.FullName, true));
+
+            foreach (var d in LibraryDir.GetFiles())
+                ld.Add((Path.GetFileNameWithoutExtension(d.Name), d.FullName, false));
+
+            System.Diagnostics.Debug.Assert(ld.Count <= 10);
+
+            return ld;
+        }
+        private static string GetViewForDisk()
+        {
+            string s;
+
+            bool diskLoaded = !Computer.DriveIsUnloaded(DriveNumber.Value);
+
+            s = DrawDisk(DriveNumber.Value) +
+                    Format() +
+                    Separator('-') +
+                    Format() +
+                    Format();
+
+            if (diskLoaded)
+            {
+                s += Format("[E] Eject floppy") +
+                     Format(string.Format("[W] Toggle write protection {0}", (Computer.GetFloppy(DriveNumber.Value)?.WriteProtected ?? false) ? "[ON] /  OFF " : " ON  / [OFF]")) +
+                     Format("[Z] Disk zap (view sectors)") +
+                     Format() +
+                     Format();
+            }
+            else
+            {
+                s += Format("[F] Load floppy from file") +
+                     Format("[L] Load floppy from included library") +
+                     Format("[T] Load TRSDOS floppy") +
+                     Format("[B] Insert blank formatted floppy") +
+                     Format("[U] Insert unformatted floppy");
+            }
+            s += Format() +
+                 Format() +
+                 Format("[Esc] Back to all drives");
+            return s;
+        }
+
         private static string DrawDisk(byte DiskNum)
         {
             var d = Computer.GetFloppy(DiskNum);
@@ -203,7 +310,7 @@ namespace Sharp80
             if (d == null)
                 line2 = String.Empty;
             else
-                line2 = FitFilePath(d.FilePath, ScreenMetrics.NUM_SCREEN_CHARS_X);
+                line2 = FitFilePath(d.FileDisplayName, ScreenMetrics.NUM_SCREEN_CHARS_X);
 
             return Format(line1) + Format(line2);
         }
@@ -306,12 +413,11 @@ namespace Sharp80
             }
             return cells;
         }
-        private void LoadFloppy(bool FromLibrary, string Path = null)
+        private void LoadFloppy()
         {
             if (DriveNumber.HasValue)
             {
-                string path = Path ?? (FromLibrary ? System.IO.Path.Combine(Storage.AppDataPath, @"Disks\")
-                                                   : Storage.GetDefaultDriveFileName(DriveNumber.Value));
+                string path = Storage.GetDefaultDriveFileName(DriveNumber.Value);
 
                 if (!Storage.IsFileNameToken(path))
                 {
@@ -324,43 +430,46 @@ namespace Sharp80
                                              DskOnly: false);
                 }
                 if (path.Length > 0 && (Storage.IsFileNameToken(path) || File.Exists(path)))
+                    LoadFloppy(path);
+            }
+        }
+        private void LoadFloppy(string Path)
+        {
+            if (Storage.SaveFloppyIfRequired(Computer, DriveNumber.Value))
+            {
+                switch (Path)
                 {
-                    if (Storage.SaveFloppyIfRequired(Computer, DriveNumber.Value))
-                    {
-                        switch (path)
-                        {
-                            case Storage.FILE_NAME_NEW:
-                                Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted: true));
-                                break;
-                            case Storage.FILE_NAME_UNFORMATTED:
-                                Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted: false));
-                                break;
-                            case Storage.FILE_NAME_TRSDOS:
-                                Computer.LoadTrsDosFloppy(DriveNumber.Value);
-                                break;
-                            default:
-                                Computer.LoadFloppy(DriveNumber.Value, path);
-                                Settings.DefaultFloppyDirectory = System.IO.Path.GetDirectoryName(path);
-                                break;
-                        }
+                    case Storage.FILE_NAME_NEW:
+                        Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted: true));
+                        break;
+                    case Storage.FILE_NAME_UNFORMATTED:
+                        Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted: false));
+                        break;
+                    case Storage.FILE_NAME_TRSDOS:
+                        Computer.LoadTrsDosFloppy(DriveNumber.Value);
+                        break;
+                    default:
+                        if (Computer.LoadFloppy(DriveNumber.Value, Path))
+                            if (!Storage.IsLibraryFile(Path))
+                                Settings.DefaultFloppyDirectory = System.IO.Path.GetDirectoryName(Path);
+                        break;
+                }
 
-                        Storage.SaveDefaultDriveFileName(DriveNumber.Value, path);
-                        
-                        if (DriveNumber == 0 && !Computer.DiskEnabled && Computer.HasRunYet)
-                        {
-                            if (Dialogs.AskYesNo("You have inserted a disk but the computer is in tape only mode. Hard reset to disk mode?"))
-                            {
-                                bool running = Computer.IsRunning;
-                                if (running)
-                                    Computer.Stop(true);
-                                InvokeUserCommand(UserCommand.HardReset);
-                                if (running)
-                                    Computer.Start();
-                            }
-                        }
-                        Invalidate();
+                Storage.SaveDefaultDriveFileName(DriveNumber.Value, Path);
+
+                if (DriveNumber == 0 && !Computer.DiskEnabled && Computer.HasRunYet)
+                {
+                    if (Dialogs.AskYesNo("You have inserted a disk but the computer is in tape only mode. Hard reset to disk mode?"))
+                    {
+                        bool running = Computer.IsRunning;
+                        if (running)
+                            Computer.Stop(true);
+                        InvokeUserCommand(UserCommand.HardReset);
+                        if (running)
+                            Computer.Start();
                     }
                 }
+                Invalidate();
             }
         }
         private void EjectFloppy()
@@ -410,6 +519,38 @@ namespace Sharp80
                 if (f != null)
                     f.WriteProtected = !f.WriteProtected;
             }
+        }
+        private bool SelectLibrary(int Index)
+        {
+            if (LibraryDir is null)
+                return false;
+
+            var item = LibraryMenu[(Index + 9) % 10];
+            if (item.IsDir)
+            {
+                LibraryDir = new DirectoryInfo(item.Path);
+            }
+            else
+            {
+                LoadFloppy(item.Path);
+                LibraryDir = null;
+            }
+            libraryMenu = null;
+            Invalidate();
+            return true;
+        }
+        private bool EscapeLibrary()
+        {
+            if (LibraryDir is null)
+                return false;
+
+            if (LibraryDir.FullName == BaseLibraryDir.FullName)
+                LibraryDir = null;
+            else
+                LibraryDir = LibraryDir.Parent;
+            libraryMenu = null;
+            Invalidate();
+            return true;
         }
     }
 }
