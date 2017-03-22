@@ -44,6 +44,8 @@ namespace Sharp80
                 Reset();
             }
 
+            private int Latency => (writeCursor + bufferSize - readCursor) % bufferSize;
+
             public void Sample(T Val)
             {
                 if (Latency < minLatency / 2)
@@ -57,7 +59,7 @@ namespace Sharp80
                 {
                     // Double some of the samples
                     WriteToBuffer(Val);
-                    if (writeCursor % 2 == 0)
+                    if (writeCursor % 3 == 0)
                         WriteToBuffer(Val);
                 }
                 else if (Latency > maxLatency)
@@ -74,8 +76,15 @@ namespace Sharp80
 
             private void WriteToBuffer(T Val)
             {
-                buffer[writeCursor++] = Val;
-                ZeroWriteCursor();
+                buffer[writeCursor] = Val;
+                if (++writeCursor >= bufferSize)
+                {
+                    writeCursor = 0;
+                    if (writeWrap)
+                        Reset();  // Overwrite: the write cursor has completely lapped the read cursor: punt
+                    else
+                        writeWrap = true;
+                }
             }
 
             public void ReadSilentFrame(DataPointer Buffer)
@@ -106,21 +115,7 @@ namespace Sharp80
                 Array.Clear(buffer, 0, writeCursor);
                 writeWrap = false;
             }
-            private int Latency
-            {
-                get { return (writeCursor + bufferSize - readCursor) % bufferSize; }
-            }
-            private void ZeroWriteCursor()
-            {
-                if (writeCursor >= bufferSize)
-                {
-                    writeCursor = 0;
-                    if (writeWrap)
-                        Reset();  // Overwrite: the write cursor has completely lapped the read cursor: punt
-                    else
-                        writeWrap = true;
-                }
-            }
+            
             private void CheckOverread()
             {
                 if ((writeWrap && writeCursor > readCursor) || (!writeWrap && writeCursor < readCursor + frameSize))
