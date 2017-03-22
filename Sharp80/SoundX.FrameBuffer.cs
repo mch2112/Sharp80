@@ -28,12 +28,12 @@ namespace Sharp80
             private T[] buffer;
             private T[] silentFrame;
 
-            public FrameBuffer(int FrameSize, int MinLatencyFrames)
+            public FrameBuffer(int FrameSize, int MinLatencySamples)
             {
                 frameSize = FrameSize;
                 
-                minLatency = MinLatencyFrames * frameSize;
-                maxLatency = minLatency * 2;
+                minLatency = MinLatencySamples;
+                maxLatency = minLatency * 3;
 
                 // don't skimp
                 bufferSize = 10 * maxLatency;
@@ -43,17 +43,22 @@ namespace Sharp80
 
                 Reset();
             }
-            
+
             public void Sample(T Val)
             {
-                if (Latency < minLatency)
+                if (Latency < minLatency / 2)
                 {
                     // Samples not fast enough, so
                     // double this sample
-                    buffer[writeCursor++] = Val;
-                    ZeroWriteCursor();
-                    buffer[writeCursor++] = Val;
-                    ZeroWriteCursor();
+                    WriteToBuffer(Val);
+                    WriteToBuffer(Val);
+                }
+                else if (Latency < minLatency)
+                {
+                    // Double some of the samples
+                    WriteToBuffer(Val);
+                    if (writeCursor % 2 == 0)
+                        WriteToBuffer(Val);
                 }
                 else if (Latency > maxLatency)
                 {
@@ -62,11 +67,17 @@ namespace Sharp80
                 else
                 {
                     // Normal 
-                    buffer[writeCursor++] = Val;
-                    ZeroWriteCursor();
+                    WriteToBuffer(Val);
                 }
                 CheckOverread();
             }
+
+            private void WriteToBuffer(T Val)
+            {
+                buffer[writeCursor++] = Val;
+                ZeroWriteCursor();
+            }
+
             public void ReadSilentFrame(DataPointer Buffer)
             {
                 Buffer.CopyFrom(silentFrame, 0, frameSize);

@@ -219,7 +219,7 @@ namespace Sharp80
                     waitTrigger.ResetTrigger();
                 }
             }
-
+                
             // Execute something
 
             if (IntMgr.Nmi && z80.CanNmi)

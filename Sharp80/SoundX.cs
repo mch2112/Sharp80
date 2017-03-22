@@ -92,7 +92,7 @@ namespace Sharp80
             
             try
             {
-                frameBuffer = new FrameBuffer<short>(FRAME_SIZE_SAMPLES, FRAMES_PER_SECOND / 10);
+                frameBuffer = new FrameBuffer<short>(FRAME_SIZE_SAMPLES, SAMPLE_RATE / 20);
                 noise = new Noise(SAMPLE_RATE);
                 getSampleCallback = GetSampleCallback;
 
