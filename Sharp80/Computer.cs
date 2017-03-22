@@ -26,7 +26,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Computer(IAppWindow MainForm, IScreen Screen, ulong DisplayRefreshRateInHz, bool FloppyEnabled, bool NormalSpeed, bool SoundOn)
+        public Computer(IAppWindow MainForm, IScreen Screen, bool FloppyEnabled, bool NormalSpeed, bool SoundOn)
         {
             ulong ticksPerSoundSample = Clock.TICKS_PER_SECOND / SoundX.SAMPLE_RATE;
 

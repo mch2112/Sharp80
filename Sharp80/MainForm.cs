@@ -29,10 +29,10 @@ namespace Sharp80
 
         private int previousClientHeight;
 
-        public const uint UI_REFRESH_RATE = 60;
-        private const int UI_REFRESH_SLEEP = (int)(1000 / UI_REFRESH_RATE);
-        private const uint DISPLAY_MESSAGE_CYCLE_DURATION = UI_REFRESH_RATE;  // 1 seconds
-
+        private const uint SCREEN_REFRESH_RATE_HZ = 30;
+        private const uint KEYBOARD_REFRESH_RATE_HZ = 40;
+        private const uint DISPLAY_MESSAGE_CYCLE_DURATION = SCREEN_REFRESH_RATE_HZ;  // 1 second
+        
         public static bool IsUiThread => Thread.CurrentThread == uiThread;
         public bool IsMinimized => WindowState == FormWindowState.Minimized;
 
@@ -79,8 +79,8 @@ namespace Sharp80
 
                 StopToken = new CancellationTokenSource();
 
-                ScreenTask = screen.Start(UI_REFRESH_SLEEP, StopToken.Token);
-                KeyboardPollTask = keyboard.Start(UI_REFRESH_SLEEP, ProcessKey, StopToken.Token);
+                ScreenTask = screen.Start(SCREEN_REFRESH_RATE_HZ, StopToken.Token);
+                KeyboardPollTask = keyboard.Start(KEYBOARD_REFRESH_RATE_HZ, ProcessKey, StopToken.Token);
                 CheckExceptionsTimer = new System.Windows.Forms.Timer()
                 {
                     Interval = 100
@@ -349,7 +349,7 @@ namespace Sharp80
 
                     computer.Dispose();
                 }
-                computer = new Computer(this, screen, UI_REFRESH_RATE, Settings.DiskEnabled, Settings.NormalSpeed, Settings.SoundOn)
+                computer = new Computer(this, screen, Settings.DiskEnabled, Settings.NormalSpeed, Settings.SoundOn)
                 {
                     DriveNoise = Settings.DriveNoise,
                     BreakPoint = Settings.Breakpoint,

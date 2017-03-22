@@ -7,7 +7,7 @@ namespace Sharp80
 {
     internal class ViewNormal : View
     {
-        protected override bool ForceRedraw => false;
+        protected override bool ForceRedraw => true;
         protected override ViewMode Mode => ViewMode.Normal;
         protected override bool CanSendKeysToEmulation => true;
 

@@ -614,11 +614,11 @@ namespace Sharp80
                 else
                     renderTarget.FillEllipse(driveLightEllipse, backgroundBrush);
 
-                if (--cyclesForMessageRemaining <= 0)
+                if (--cyclesForMessageRemaining == 0)
                     invalid = true;
 
                 // Draw the screen
-                if (View.CurrentMode == ViewMode.Normal || invalid)
+                if (invalid)
                     DrawView(View.GetViewData(), erase);
 
                 // Used to debug layout issues: frames the virtual screen
@@ -640,7 +640,7 @@ namespace Sharp80
                 View.Validate();
             }
         }
-        private void DrawView(IEnumerable<byte> View, bool ForceRedraw)
+        private void DrawView(IEnumerable<byte> ViewBytes, bool ForceRedraw)
         {
             bool stdWidth;
             DXBitmap[] charGen;
@@ -670,9 +670,9 @@ namespace Sharp80
 
             // Figure out what we are displaying and which char set to use
 
-            if (View == null)
+            if (ViewBytes == null)
             {
-                View = computer.Memory.VideoMemory;
+                ViewBytes = computer.Memory.VideoMemory;
                 stdWidth = !isWideCharMode;
                 if (stdWidth)
                     charGen = isKanjiCharMode ? charGenKanji : charGenNormal;
@@ -691,7 +691,7 @@ namespace Sharp80
             // and draw it
 
             int i = 0;
-            foreach (byte v in View)
+            foreach (byte v in ViewBytes)
             {
                 byte b = (i < end) ? v : (byte)msg[(i - end) / (stdWidth ? 1 : 2)];
 
