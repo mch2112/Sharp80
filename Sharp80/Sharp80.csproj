@@ -127,6 +127,7 @@
     <Compile Include="Assembler.LineInfo.cs" />
     <Compile Include="Assembler.Macro.cs" />
     <Compile Include="Assembler.Operand.cs" />
+    <Compile Include="Basic.cs" />
     <Compile Include="Clock.cs" />
     <Compile Include="CmdFile.cs" />
     <Compile Include="Computer.cs" />

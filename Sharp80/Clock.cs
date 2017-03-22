@@ -179,7 +179,6 @@ namespace Sharp80
             {
                 IsRunning = true;
                 stopReq = false;
-
                 SyncRealTimeOffset();
 
                 while (!stopReq)

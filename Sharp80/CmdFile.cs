@@ -17,6 +17,7 @@ namespace Sharp80
         public int NumBlocks {  get { return blocks.Count; } }
         public ushort LowAddress { get; private set; }
         public ushort HighAddress { get; private set; }
+        public bool IsLoaded { get; private set; }
         public CmdFile(string Path)
         {
             byte code;
@@ -98,10 +99,12 @@ namespace Sharp80
                 foreach (var b in blocks)
                     for (int i = 0; i < b.Bytes.Length; i++)
                         Memory[(ushort)(i + b.SegmentAddress)] = b.Bytes[i];
+                IsLoaded = true;
                 return true;
             }
             else
             {
+                IsLoaded = false;
                 return false;
             }
         }

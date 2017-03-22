@@ -14,7 +14,9 @@ namespace Sharp80
         public bool Pressed { get; }
         public bool Released => !Pressed;
         public bool Repeat { get; }
-        public bool IsUnmodified => !Alt && !Control; 
+        public bool IsUnmodified => !Alt && !Control;
+
+        public bool SyntheticShift { get; private set; }
 
         public KeyState(KeyCode Key, bool Shift, bool Control, bool Alt, bool Pressed, bool Repeat = false)
         {
@@ -24,8 +26,19 @@ namespace Sharp80
             this.Alt = Alt;
             this.Pressed = Pressed;
             this.Repeat = Repeat;
+            SyntheticShift = false;
+        }
+        public KeyState(char c, bool Pressed)
+        {
+            var cc = c.ToKeyCode();
 
-            System.Diagnostics.Debug.Assert(Pressed == !Released);
+            Key = cc.Code;
+            Shift = cc.Shifted;
+            Control = false;
+            Alt = false;
+            this.Pressed = Pressed;
+            Repeat = false;
+            SyntheticShift = true;
         }
         public bool TryGetNum(out byte Value)
         {
@@ -134,6 +147,6 @@ namespace Sharp80
                    (Shift ? " Shft" : "") +
                    (Alt ? " Alt" : "") +
                    (Control ? " Ctrl" : "");
-        }
+        }        
     }
 }

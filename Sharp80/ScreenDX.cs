@@ -615,7 +615,10 @@ namespace Sharp80
                     renderTarget.FillEllipse(driveLightEllipse, backgroundBrush);
 
                 if (--cyclesForMessageRemaining == 0)
+                {
                     invalid = true;
+                    StatusMessage = String.Empty;
+                }
 
                 // Draw the screen
                 if (invalid)

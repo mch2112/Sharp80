@@ -54,7 +54,7 @@ namespace Sharp80
                             Environment.NewLine +
                             "Please copy and email these results to mchamilton2112@gmail.com for followup."))
                         {
-                            Clipboard.SetText(q.Exception.ToReport());
+                            Dialogs.ClipboardText = q.Exception.ToReport();
                             if (q.Option == ExceptionHandlingOptions.Terminate)
                                 Application.Exit();
                         }

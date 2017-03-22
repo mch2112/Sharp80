@@ -1,4 +1,4 @@
-/// Sharp 80 (c) Matthew Hamilton
+/// Sharp 80 (c) Matthew Hamiltonxx
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
@@ -79,7 +79,7 @@ namespace Sharp80.Assembler
         }
         private string Assemble(out int ErrCount)
         {
-            Log.LogDebug("Assembling " + originalFilePath + "...");
+            Log.LogDebug($"Assembling {originalFilePath}...");
 
             LoadAssemblyFile(originalFilePath);
 
@@ -504,7 +504,7 @@ namespace Sharp80.Assembler
             {
                 for (int i = 0; i < lp.Operands.Count; i++)
                     if (lp.Operands[i].IsNumeric)
-                        if (lp.Operands[i].NumericValue == null)
+                        if (lp.Operands[i].NumericValue is null)
                             lp.SetError("Cannot resolve operand: " + lp.Operands[i].RawText);
             }
         }

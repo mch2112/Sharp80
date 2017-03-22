@@ -21,6 +21,8 @@ namespace Sharp80
             Dialogs.Parent = Parent;
         }
 
+        // MESSAGE BOXES
+
         public static bool AskYesNo(string Question, string Caption = "Sharp 80")
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
@@ -76,6 +78,9 @@ namespace Sharp80
             MessageBox.Show(Parent, Alert, Caption, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             AfterShowDialog?.Invoke();
         }
+
+        // PATHS AND FILE DIALOGS
+
         public static string UserSelectFile(bool Save, string DefaultPath, string Title, string Filter, string DefaultExtension, bool SelectFileInDialog)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
@@ -131,7 +136,7 @@ namespace Sharp80
                                   DefaultExtension: "cmd",
                                   SelectFileInDialog: true);
         }
-        public static string GetCommandFile(string DefaultPath)
+        public static string GetCommandFilePath(string DefaultPath)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
@@ -182,6 +187,14 @@ namespace Sharp80
         {
             if (Path.ToUpper().EndsWith(".TXT"))
                 System.Diagnostics.Process.Start(Path);
+        }
+
+        // CLIPBOARD
+
+        public static string ClipboardText
+        {
+            get => Clipboard.GetText(TextDataFormat.Text);
+            set => Clipboard.SetText(value, TextDataFormat.Text);
         }
     }
 }

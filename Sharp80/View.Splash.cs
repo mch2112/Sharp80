@@ -16,7 +16,7 @@ namespace Sharp80
         {
             return PadScreen(Encoding.ASCII.GetBytes(
                                 Header("Sharp 80 - TRS-80 Model III Emulator", 
-                                    string.Format("Version {0}  (c) Matthew Hamilton 2016 - {1}", System.Windows.Forms.Application.ProductVersion.ToString(), DateTime.Now.Year)) +
+                                    string.Format("Version {0}        (c) Matthew Hamilton {1}", System.Windows.Forms.Application.ProductVersion.ToString(), DateTime.Now.Year)) +
                                 Format() + 
                                 Indent("[F8] Start Emulator") +
                                 Format() +

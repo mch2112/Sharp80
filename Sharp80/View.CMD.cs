@@ -12,7 +12,14 @@ namespace Sharp80
         protected override bool ForceRedraw => false;
         protected override bool CanSendKeysToEmulation => false;
 
-        private bool loaded = false;
+        protected override void Activate()
+        {
+            if ((!CmdFile?.IsLoaded) ?? false)
+            {
+                Load();
+            }
+            base.Activate();
+        }
 
         private string runWarning = Format("WARNING: The computer hasn't started yet.") +
                                     Format("Some CMD files could fail. Hit [F8] to start.") +
@@ -20,7 +27,7 @@ namespace Sharp80
 
         protected override bool processKey(KeyState Key)
         {
-            if (Key.Pressed)
+            if (Key.Pressed && Key.IsUnmodified)
             {
                 Invalidate();
                 switch (Key.Key)
@@ -32,14 +39,13 @@ namespace Sharp80
                         if (CmdFile?.Valid ?? false)
                             MakeFloppyFromFile(out string _, CmdFile.FilePath);
                         return true;
-                    case KeyCode.I:
-                        Import();
-                        return true;
                     case KeyCode.L:
                         Load();
-                        break;
+                        Invalidate();
+                        return true;
                     case KeyCode.R:
                         Run();
+                        Invalidate();
                         return true;
                     case KeyCode.F8:
                         if (!Computer.HasRunYet)
@@ -56,7 +62,7 @@ namespace Sharp80
             string options;
             string warning = Format();
 
-            if (CmdFile == null)
+            if (CmdFile is null)
             {
                 fileInfo = Format() +
                            Indent("No CMD File Imported.") +
@@ -64,7 +70,7 @@ namespace Sharp80
 
                 options = Format("[R] Run CMD file") +
                           Format() +
-                          Format("[I] Import CMD file without running");
+                          Format("[L] Load CMD file without running");
 
                 if (!Computer.HasRunYet)
                     warning = runWarning;
@@ -93,21 +99,13 @@ namespace Sharp80
                     warning = runWarning;
                 }
 
-                if (CmdFile.ExecAddress.HasValue)
-                    options = Format("[R] Run CMD file") + 
-                              Format();
-                else
-                    options = String.Empty;
-
-                if (loaded)
-                    options += Format("[L] Reload CMD file into memory without running");
-                else
-                    options += Format("[L] Load CMD file into memory without running");
-
-                options += Format() +
-                           Format("[C] Clear this CMD file") +
-                           Format() +
-                           Format("[F] Create a floppy and write this CMD file to it");
+               options = Format("[R] Run CMD file") +
+                         Format() +
+                         Format("[L] Reload CMD file") +
+                         Format() +
+                         Format("[C] Clear this CMD file") +
+                         Format() +
+                         Format("[F] Create a floppy and write this CMD file to it");
             }
 
             return PadScreen(Encoding.ASCII.GetBytes(
@@ -120,7 +118,7 @@ namespace Sharp80
         }
         private bool Import()
         {
-            string Path = Dialogs.GetCommandFile(Settings.LastCmdFile);
+            string Path = Dialogs.GetCommandFilePath(Settings.LastCmdFile);
 
             if (Path.Length > 0)
             {
@@ -147,14 +145,9 @@ namespace Sharp80
             if (!(CmdFile is null) || Import())
             {
                 if (CmdFile?.Valid ?? false)
-                {
-                    loaded = Computer.LoadCMDFile(CmdFile);
-                    return loaded;
-                }
+                    return Computer.LoadCMDFile(CmdFile);
                 else
-                {
                     return false;
-                }
             }
             else
             {
@@ -179,7 +172,6 @@ namespace Sharp80
         private void Clear()
         {
             CmdFile = null;
-            loaded = false;
         }
     }
 }

@@ -43,10 +43,11 @@ namespace Sharp80
                                         Format() +
                                         Indent("[Alt]+[P]             Manage Printer Output") +
                                         Format() +
+                                        Indent("[Ctrl]+[V]            Paste from Windows Clipboard") +
+                                        Format() + 
                                         Indent("[Alt]+[End]           Reset Button") +
                                         Indent("[Alt]+[Shift]+[End]   Hard Reset (Power Cycle)") +
                                         Indent("[Alt]+[Shift]+[X]     Exit") +
-                                        Format() +
                                         Format() +
                                         Footer(footerText)));
                 case 2:

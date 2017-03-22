@@ -326,7 +326,10 @@ namespace Sharp80
                             if (!String.IsNullOrWhiteSpace(cmdFilePath) && System.IO.File.Exists(cmdFilePath))
                             {
                                 CmdFile = new CmdFile(cmdFilePath);
-                                CurrentMode = ViewMode.CmdFile;
+                                if (CmdFile.Valid)
+                                    CurrentMode = ViewMode.CmdFile;
+                                else
+                                    Dialogs.AlertUser("Assembled CMD file not valid.");
                             }
                             return true;
                         case KeyCode.Z:

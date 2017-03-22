@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Sharp80
 {
@@ -42,6 +43,8 @@ namespace Sharp80
         private KeyCode fakedInputKey = KeyCode.None;
         private VirtualKey fakedVirtualKey = VirtualKey.NONE;
         private bool fakedKeyIsShifted;
+
+        private List<KeyState> PressedKeys = new List<KeyState>();
 
         private void SetupDXKeyboardMatrix()
         {
@@ -167,79 +170,54 @@ namespace Sharp80
                     Key = new KeyState(KeyCode.Down, false, false, false, Key.Pressed);
             }
 
-            switch (Key.Key)
+            PressedKeys.RemoveAll(k => k.Key == Key.Key);
+            if (Key.Pressed)
             {
-                case KeyCode.LeftShift:
-                    if (isLeftShifted != Key.Pressed)
-                        isLeftShifted = Key.Pressed;
-                    if (fakedVirtualKey != VirtualKey.NONE)
-                        ClearFakedKey();
-                    else
-                        DoKeyChange(isLeftShifted, VirtualKey.LEFTSHIFT);
-                    return true;
-                case KeyCode.RightShift:
-                    if (isRightShifted != Key.Pressed)
-                        isRightShifted = Key.Pressed;
-                    if (fakedVirtualKey != VirtualKey.NONE)
-                        ClearFakedKey();
-                    else
-                        DoKeyChange(isRightShifted, VirtualKey.RIGHTSHIFT);
-                    return true;
-                case KeyCode.Capital:
-                    if (Key.Released)
-                        TurnCapsLockOff();
-                    break;
+                PressedKeys.Add(Key);
             }
+            UpdateVirtualKeyboard();
+            return true;
+        }
+        private void UpdateVirtualKeyboard()
+        {
+            ResetVirtualKeyboard();
 
-            var k = VirtualKey.NONE;
-
-            if (!basicMappings.TryGetValue(Key.Key, out k))
+            if (PressedKeys.Any(k => k.SyntheticShift))
             {
-                if (!complexMappings.TryGetValue((Key.Key, IsShiftedPhysical), out (VirtualKey VirtualKey, bool Shifted, bool ShiftInverted) cm))
-                    return false;
+                // only one of these at a time
 
-                // can we treat this like a normal key?
-                if (!cm.ShiftInverted)
-                {
-                    ClearFakedKey();
-                    DoKeyChange(Key.Pressed, cm.VirtualKey);
-                }
-                else
-                {
-                    // nope, there's a shift mismatch so we gotta fake it
-                    if (Key.Pressed)
-                    {
-                        ClearFakedKey();
-                        if (cm.Shifted && !IsShiftedPhysical)
-                        {
-                            // we need a shift key and don't have it, so fake it:
-                            DoKeyChange(cm.Shifted, VirtualKey.RIGHTSHIFT);
-                        }
-                        else if (!cm.Shifted)
-                        {
-                            // we can't have a shift key but we have one, so fake releasing it:
-                            DoKeyChange(false, VirtualKey.LEFTSHIFT);
-                            DoKeyChange(false, VirtualKey.RIGHTSHIFT);
-                        }
-                        else
-                        {
-                            throw new Exception();
-                        }
-                        SetFakedKey(Key, cm);
-                    }
-                    else
-                    {
-                        ClearFakedKey();
-                    }
-                }
+                var kk = PressedKeys.First(k => k.SyntheticShift);
+                SetShiftState(kk.Shift, isRightShifted, false);
+                ProcessKey(kk);
             }
             else
             {
-                DoKeyChange(Key.Pressed, k);
-            }
-            return true;
-        }
+                if (PressedKeys.Any(k => k.Key == KeyCode.LeftShift))
+                    isLeftShifted = true;
+                if (PressedKeys.Any(k => k.Key == KeyCode.RightShift))
+                    isRightShifted = true;
 
+                SetShiftState(isLeftShifted, isRightShifted, false);
+
+                foreach (var k in PressedKeys)
+                {
+                    if (k.Key != KeyCode.LeftShift && k.Key != KeyCode.RightShift)
+                        ProcessKey(k);
+                }
+            }
+        }
+        private void ProcessKey(KeyState k)
+        {
+            System.Diagnostics.Debug.Assert(k.Pressed);
+            if (basicMappings.TryGetValue(k.Key, out VirtualKey kk))
+            {
+                DoKeyChange(true, kk);
+            }
+            else
+            {
+                DoComplexKeyChange(k);
+            }
+        }
         private void SetFakedKey(KeyState Key, (VirtualKey VirtualKey, bool Shifted, bool ShiftInverted) Mapping)
         {
             System.Diagnostics.Debug.Assert(Key.Shift == Mapping.Shifted ^ Mapping.ShiftInverted);
@@ -248,22 +226,42 @@ namespace Sharp80
             fakedKeyIsShifted = Mapping.Shifted;
             DoKeyChange(Key.Pressed, Mapping.VirtualKey);
         }
-
-        private void ClearFakedKey()
+        private bool DoComplexKeyChange(KeyState Key)
         {
-            if (fakedVirtualKey != VirtualKey.NONE)
+            if (!complexMappings.TryGetValue((Key.Key, Key.Shift), out (VirtualKey VirtualKey, bool Shifted, bool ShiftInverted) cm))
+                return false;
+
+            // can we treat this like a normal key?
+            if (!cm.ShiftInverted)
             {
-                DoKeyChange(false, fakedVirtualKey);
-                fakedVirtualKey = VirtualKey.NONE;
+                DoKeyChange(Key.Pressed, cm.VirtualKey);
             }
-            fakedInputKey = KeyCode.None;
-            DoKeyChange(isLeftShifted, VirtualKey.LEFTSHIFT);
-            DoKeyChange(isRightShifted, VirtualKey.RIGHTSHIFT);
+            else
+            {
+                // nope, there's a shift mismatch so we gotta fake it
+                if (cm.Shifted && !IsShiftedPhysical)
+                {
+                    // we need a shift key and don't have it, so fake it:
+                    SetShiftState(true, true, false);
+                }
+                else if (!cm.Shifted)
+                {
+                    System.Diagnostics.Debug.Assert(IsShiftedPhysical);
+                    // we can't have a shift key but we have one, so fake releasing it:
+                    SetShiftState(false, false, false);
+                }
+                SetFakedKey(Key, cm);
+            }
+            return true;
         }
-
-        private void DoKeyChange(bool IsPressed, VirtualKey k)
+        private bool DoKeyChange(bool IsPressed, VirtualKey k)
         {
-            if (k != VirtualKey.NONE)
+            System.Diagnostics.Debug.WriteLine($"Virtual Key {k} Pressed: {IsPressed} KeyboardShiftState {mem[0x3880]}");
+            if (k == VirtualKey.NONE)
+            {
+                return false;
+            }
+            else
             {
                 var m = keyAddresses[k];
 
@@ -271,11 +269,48 @@ namespace Sharp80
                     mem[m.Address] |= m.KeyMask;
                 else
                     mem[m.Address] &= m.InverseMask;
+                return true;
             }
         }
 
-        public void ResetKeyboard(bool LeftShift, bool RightShift)
+        public void ResetKeyboard(bool LeftShiftPressed, bool RightShiftPressed)
         {
+            ResetVirtualKeyboard();
+            PressedKeys.Clear();
+            SetShiftState(LeftShiftPressed, RightShiftPressed, true);
+        }
+        private void SetShiftState(bool LeftShiftPressed, bool RightShiftPressed, bool UpdatePressedKeys)
+        {
+            if (UpdatePressedKeys)
+            {
+                if (LeftShiftPressed)
+                {
+                    if (!PressedKeys.Any(k => k.Key == KeyCode.LeftShift))
+                        PressedKeys.Add(new KeyState(KeyCode.LeftShift, false, false, false, true));
+                }
+                else
+                {
+                    PressedKeys.RemoveAll(k => k.Key == KeyCode.LeftShift);
+                }
+                if (RightShiftPressed)
+                {
+                    PressedKeys.Add(new KeyState(KeyCode.RightShift, false, false, false, true));
+                }
+                else
+                {
+                    PressedKeys.RemoveAll(k => k.Key == KeyCode.RightShift);
+                }
+            }
+            isLeftShifted = LeftShiftPressed;
+            isRightShifted = RightShiftPressed;
+            DoKeyChange(LeftShiftPressed, VirtualKey.LEFTSHIFT);
+            DoKeyChange(RightShiftPressed, VirtualKey.RIGHTSHIFT);
+        }
+        private void ResetVirtualKeyboard()
+        {
+            isLeftShifted = false;
+            isRightShifted = false;
+
             mem[0x3801] =
             mem[0x3802] =
             mem[0x3804] =
@@ -284,11 +319,6 @@ namespace Sharp80
             mem[0x3820] =
             mem[0x3840] =
             mem[0x3880] = 0;
-
-            if (LeftShift)
-                mem[0x3880] |= 0x01;
-            if (RightShift)
-                mem[0x3880] |= 0x02;
         }
 
         private void TurnCapsLockOff()

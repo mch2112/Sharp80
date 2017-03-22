@@ -296,6 +296,10 @@ namespace Sharp80
         {
             return Value >= Min && Value <= Max;
         }
+        public static bool IsBetween(this char Value, char Min, char Max)
+        {
+            return Value >= Min && Value <= Max;
+        }
         public static string ToReport(this Exception Ex)
         {
             string exMsg;
@@ -382,6 +386,107 @@ namespace Sharp80
             else
                 return Input;
         }
+        public static (KeyCode Code, bool Shifted) ToKeyCode(this char c)
+        {
+            switch (c)
+            {
+                case '\n': return (KeyCode.Return, false);
 
+                case ' ': return (KeyCode.Space, false);
+
+                case 'a': return (KeyCode.A, false);
+                case 'A': return (KeyCode.A, true);
+                case 'b': return (KeyCode.B, false);
+                case 'B': return (KeyCode.B, true);
+                case 'c': return (KeyCode.C, false);
+                case 'C': return (KeyCode.C, true);
+                case 'd': return (KeyCode.D, false);
+                case 'D': return (KeyCode.D, true);
+                case 'e': return (KeyCode.E, false);
+                case 'E': return (KeyCode.E, true);
+                case 'f': return (KeyCode.F, false);
+                case 'F': return (KeyCode.F, true);
+                case 'g': return (KeyCode.G, false);
+                case 'G': return (KeyCode.G, true);
+                case 'h': return (KeyCode.H, false);
+                case 'H': return (KeyCode.H, true);
+                case 'i': return (KeyCode.I, false);
+                case 'I': return (KeyCode.I, true);
+                case 'j': return (KeyCode.J, false);
+                case 'J': return (KeyCode.J, true);
+                case 'k': return (KeyCode.K, false);
+                case 'K': return (KeyCode.K, true);
+                case 'l': return (KeyCode.L, false);
+                case 'L': return (KeyCode.L, true);
+                case 'm': return (KeyCode.M, false);
+                case 'M': return (KeyCode.M, true);
+                case 'n': return (KeyCode.N, false);
+                case 'N': return (KeyCode.N, true);
+                case 'o': return (KeyCode.O, false);
+                case 'O': return (KeyCode.O, true);
+                case 'p': return (KeyCode.P, false);
+                case 'P': return (KeyCode.P, true);
+                case 'q': return (KeyCode.Q, false);
+                case 'Q': return (KeyCode.Q, true);
+                case 'r': return (KeyCode.R, false);
+                case 'R': return (KeyCode.R, true);
+                case 's': return (KeyCode.S, false);
+                case 'S': return (KeyCode.S, true);
+                case 't': return (KeyCode.T, false);
+                case 'T': return (KeyCode.T, true);
+                case 'u': return (KeyCode.U, false);
+                case 'U': return (KeyCode.U, true);
+                case 'v': return (KeyCode.V, false);
+                case 'V': return (KeyCode.V, true);
+                case 'w': return (KeyCode.W, false);
+                case 'W': return (KeyCode.W, true);
+                case 'x': return (KeyCode.X, false);
+                case 'X': return (KeyCode.X, true);
+                case 'y': return (KeyCode.Y, false);
+                case 'Y': return (KeyCode.Y, true);
+                case 'z': return (KeyCode.Z, false);
+                case 'Z': return (KeyCode.Z, true);
+
+                case '.': return (KeyCode.Period, false);
+                case '>': return (KeyCode.Period, true);
+                case ',': return (KeyCode.Comma, false);
+                case '<': return (KeyCode.Comma, true);
+                case '/': return (KeyCode.Slash, false);
+                case '?': return (KeyCode.Slash, true);
+                case '!': return (KeyCode.D1, true);
+                case '@': return (KeyCode.D2, true);
+                case '#': return (KeyCode.D3, true);
+                case '$': return (KeyCode.D4, true);
+                case '%': return (KeyCode.D5, true);
+                case '^': return (KeyCode.D6, true);
+                case '&': return (KeyCode.D7, true);
+                case '*': return (KeyCode.D8, true);
+                case '(': return (KeyCode.D9, true);
+                case ')': return (KeyCode.D0, true);
+                case '-': return (KeyCode.Minus, false);
+                case '_': return (KeyCode.Minus, true);
+                case '=': return (KeyCode.Equals, false);
+                case '+': return (KeyCode.Equals, true);
+                case ';': return (KeyCode.Semicolon, false);
+                case ':': return (KeyCode.Semicolon, true);
+                case '\'': return (KeyCode.Apostrophe, false);
+                case '"': return (KeyCode.Apostrophe, true);
+
+                // these aren't consumable by the trs80, so we change them to keys that are:
+                case '[': return (KeyCode.D9, true);
+                case '{': return (KeyCode.D9, true);
+                case ']': return (KeyCode.D0, true);
+                case '}': return (KeyCode.D0, true);
+                case '\\': return (KeyCode.Slash, false);
+                case '|': return (KeyCode.Slash, true);
+
+                case '0': return (KeyCode.D0, false);
+                default:
+                    if (c.IsBetween('1', '9'))
+                        return (KeyCode.D1 + (c - '1'), false);
+                    break;
+            }
+            return (KeyCode.None, false);
+        }
     }
 }

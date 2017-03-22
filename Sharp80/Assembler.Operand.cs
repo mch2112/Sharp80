@@ -109,10 +109,7 @@ namespace Sharp80.Assembler
                            RawText == "IY";
                 }
             }
-            public bool IsFlagState
-            {
-                get { return flagStates.Contains(this.RawText); }
-            }
+            public bool IsFlagState => flagStates.Contains(this.RawText);
 
             private byte? _indexDisplacement = null; // for IX and IY displacements
             private string indexDisplacementRaw = String.Empty;
@@ -171,13 +168,9 @@ namespace Sharp80.Assembler
                     }
                 }
             }
-            public bool IsNumeric
-            {
-                get
-                {
-                    return !IsRegister && !IsFlagState && !IsIndexedRegister;
-                }
-            }
+
+            public bool IsNumeric => !IsRegister && !IsFlagState && !IsIndexedRegister;
+
             public ushort? NumericValue
             {
                 get

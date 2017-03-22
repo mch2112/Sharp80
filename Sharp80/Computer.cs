@@ -152,13 +152,18 @@ namespace Sharp80
 
         public void Start()
         {
+            Init();
+            Clock.Start();
+        }
+        private void Init()
+        {
             if (!HasRunYet)
+            {
                 if (!Settings.DiskEnabled || !FloppyController.Available)
                     FloppyController.Disable();
 
-            HasRunYet = true;
-
-            Clock.Start();
+                HasRunYet = true;
+            }
             Sound.Mute = !Clock.NormalSpeed;
         }
         public void Stop(bool WaitForStop)
@@ -194,14 +199,8 @@ namespace Sharp80
         public void Step()
         {
             if (!HasRunYet)
-            {
-                Start();
-                Stop(true);
-            }
-            else
-            {
-                Clock.Step();
-            }
+                Init();
+            Clock.Step();
         }
         public void Jump(ushort Address)
         {
@@ -425,6 +424,8 @@ namespace Sharp80
             {
                 if (File.ExecAddress.HasValue)
                     Processor.Jump(File.ExecAddress.Value);
+                else
+                    Processor.Jump(File.LowAddress);
                 return true;
             }
             else
@@ -432,43 +433,20 @@ namespace Sharp80
                 return false;
             }
         }
-        public string Disassemble(bool RelativeAddressesAsComments, bool FromPC)
-        {
-            return Processor.Disassemble(RelativeAddressesAsComments, FromPC);
-        }
-        public string GetInstructionSetReport()
-        {
-            return Processor.GetInstructionSetReport();
-        }
-        public string Assemble()
-        {
-            return Processor.Assemble();
-        }
+        public string Disassemble(bool RelativeAddressesAsComments, bool FromPC) => Processor.Disassemble(RelativeAddressesAsComments, FromPC);
+        public string GetInstructionSetReport() => Processor.GetInstructionSetReport();
+        public string Assemble() => Processor.Assemble();
+
         public bool HistoricDisassemblyMode
         {
-            get { return Processor.HistoricDisassemblyMode; }
-            set { Processor.HistoricDisassemblyMode = value; }
+            get => Processor.HistoricDisassemblyMode;
+            set => Processor.HistoricDisassemblyMode = value;
         }
-        public string GetInternalsReport()
-        {
-            return Processor.GetInternalsReport();
-        }
-        public string GetClockReport()
-        {
-            return Clock.GetInternalsReport();
-        }
-        public string GetDisassembly()
-        {
-            return Processor.GetDisassembly();
-        }
-        public bool NotifyKeyboardChange(KeyState Key)
-        {
-            return Processor.Memory.NotifyKeyboardChange(Key);
-        }
-        public void ResetKeyboard(bool LeftShift, bool RightShift)
-        {
-            Processor.Memory.ResetKeyboard(LeftShift, RightShift);
-        }
+        public string GetInternalsReport() => Processor.GetInternalsReport();
+        public string GetClockReport() => Clock.GetInternalsReport();
+        public string GetDisassembly() => Processor.GetDisassembly();
+        public bool NotifyKeyboardChange(KeyState Key) => Processor.Memory.NotifyKeyboardChange(Key);
+        public void ResetKeyboard(bool LeftShift, bool RightShift) => Processor.Memory.ResetKeyboard(LeftShift, RightShift);
 
         public void Dispose()
         {
