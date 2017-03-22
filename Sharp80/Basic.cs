@@ -1,4 +1,7 @@
-﻿using System;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3. See license.txt for details.
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -7,29 +10,28 @@ using System.Threading.Tasks;
 
 namespace Sharp80
 {
+    /// <summary>
+    /// This is broken; don't use it yet
+    /// </summary>
     internal class Basic
     {
-        private string[] token = {
-        "END", "FOR", "RESET", "SET", "CLS", "CMD", "RANDOM", "NEXT", "DATA",
-"INPUT", "DIM", "READ", "LET", "GOTO", "RUN", "IF", "RESTORE", "GOSUB",
-"RETURN", "REM", "STOP", "ELSE", "TRON", "TROFF", "DEFSTR", "DEFINT", "DEFSNG",
-        "DEFDBL", "LINE", "EDIT", "ERROR", "RESUME", "OUT", "ON", "OPEN",
-        "FIELD", "GET", "PUT", "CLOSE", "LOAD", "MERGE", "NAME", "KILL",
-"LSET", "RSET", "SAVE", "SYSTEM", "LPRINT", "DEF", "POKE", "PRINT", "CONT",
-        "LIST", "LLIST", "DELETE", "AUTO", "CLEAR", "CLOAD", "CSAVE", "NEW",
-        "TAB(", "TO", "FN", "USING", "VARPTR", "USR", "ERL", "ERR", "STRING$", "INSTR", "POINT", "TIME$", "MEM", "INKEY$", "THEN", "NOT", "STEP",
-        "+", "-", "*", "/", "[", "AND", "OR", ">", "=", "<", "SGN", "INT",
-        "ABS", "FRE", "INP", "POS", "SQR", "RND", "LOG", "EXP", "COS", "SIN",
-        "TAN", "ATN", "PEEK", "CVI", "CVS", "CVD", "EOF", "LOC", "LOF", "MKI$",
-        "MKS$", "MKD$", "CINT", "CSNG", "CDBL", "FIX", "LEN", "STR$", "VAL",
-        "ASC", "CHR$", "LEFT$", "RIGHT$", "MID$" };
-
-        byte REM = 147;
-        byte DATA = 136;
-        byte REMQUOT = 251;
-        byte ELSE = 149;
-
-        byte EOF = 0;
+        
+        private string[] Tokens =
+        {
+            "END", "FOR", "RESET", "SET", "CLS", "CMD", "RANDOM", "NEXT", "DATA",
+            "INPUT", "DIM", "READ", "LET", "GOTO", "RUN", "IF", "RESTORE", "GOSUB",
+            "RETURN", "REM", "STOP", "ELSE", "TRON", "TROFF", "DEFSTR", "DEFINT", "DEFSNG",
+            "DEFDBL", "LINE", "EDIT", "ERROR", "RESUME", "OUT", "ON", "OPEN",
+            "FIELD", "GET", "PUT", "CLOSE", "LOAD", "MERGE", "NAME", "KILL",
+            "LSET", "RSET", "SAVE", "SYSTEM", "LPRINT", "DEF", "POKE", "PRINT", "CONT",
+            "LIST", "LLIST", "DELETE", "AUTO", "CLEAR", "CLOAD", "CSAVE", "NEW",
+            "TAB(", "TO", "FN", "USING", "VARPTR", "USR", "ERL", "ERR", "STRING$", "INSTR", "POINT", "TIME$", "MEM", "INKEY$", "THEN", "NOT", "STEP",
+            "+", "-", "*", "/", "[", "AND", "OR", ">", "=", "<", "SGN", "INT",
+            "ABS", "FRE", "INP", "POS", "SQR", "RND", "LOG", "EXP", "COS", "SIN",
+            "TAN", "ATN", "PEEK", "CVI", "CVS", "CVD", "EOF", "LOC", "LOF", "MKI$",
+            "MKS$", "MKD$", "CINT", "CSNG", "CDBL", "FIX", "LEN", "STR$", "VAL",
+            "ASC", "CHR$", "LEFT$", "RIGHT$", "MID$"
+        };
 
         public string Listing { get; private set; } = "";
 
@@ -60,7 +62,7 @@ namespace Sharp80
                     byte b;
                     while ((b = file[cursor++]) > 0)
                     {
-                        if (b > 0x7F && b < token.Length + 0x80)
+                        if (b > 0x7F && b < Tokens.Length + 0x80)
                         {
                             switch (b)
                             {
@@ -71,7 +73,7 @@ namespace Sharp80
                                     mode = Mode.Rem;
                                     break;
                             }
-                            sb.Append(token[b - 0x80]);
+                            sb.Append(Tokens[b - 0x80]);
                         }
                         else
                         {
