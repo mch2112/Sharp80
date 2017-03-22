@@ -96,6 +96,7 @@ namespace Sharp80
         F12 = 88,
         NumberPadEnter = 156,
         RightControl = 157,
+        Divide = 181,
         RightAlt = 184,
         Pause = 197,
         Home = 199,

@@ -11,15 +11,15 @@ namespace Sharp80
         const int KEYEVENTF_EXTENDEDKEY = 0x01;
         const int KEYEVENTF_KEYUP = 0x02;
 
-        private bool altKeyboardLayouot = false;
+        private bool altKeyboardLayout = false;
         public bool AltKeyboardLayout
         {
-            get => altKeyboardLayouot;
+            get => altKeyboardLayout;
             set
             {
-                if (altKeyboardLayouot != value)
+                if (altKeyboardLayout != value)
                 {
-                    altKeyboardLayouot = value;
+                    altKeyboardLayout = value;
                     ResetKeyboard(false, false);
                 }
             }
@@ -78,22 +78,22 @@ namespace Sharp80
             AddKey(VirtualKey.Y, 0x3808, 0x02, KeyCode.Y);
             AddKey(VirtualKey.Z, 0x3808, 0x04, KeyCode.Z);
 
-            AddKey(VirtualKey.D0, 0x3810, 0x01, KeyCode.NumberPad0);
-            AddKey(VirtualKey.D1, 0x3810, 0x02, KeyCode.NumberPad1, KeyCode.D1);
-            AddKey(VirtualKey.D2, 0x3810, 0x04, KeyCode.NumberPad2);
-            AddKey(VirtualKey.D3, 0x3810, 0x08, KeyCode.NumberPad3, KeyCode.D3);
-            AddKey(VirtualKey.D4, 0x3810, 0x10, KeyCode.NumberPad4, KeyCode.D4);
-            AddKey(VirtualKey.D5, 0x3810, 0x20, KeyCode.NumberPad5, KeyCode.D5);
-            AddKey(VirtualKey.D6, 0x3810, 0x40, KeyCode.NumberPad6);
-            AddKey(VirtualKey.D7, 0x3810, 0x80, KeyCode.NumberPad7);
+            AddKey(VirtualKey.D0, 0x3810, 0x01);
+            AddKey(VirtualKey.D1, 0x3810, 0x02, KeyCode.D1);
+            AddKey(VirtualKey.D2, 0x3810, 0x04);
+            AddKey(VirtualKey.D3, 0x3810, 0x08, KeyCode.D3);
+            AddKey(VirtualKey.D4, 0x3810, 0x10, KeyCode.D4);
+            AddKey(VirtualKey.D5, 0x3810, 0x20, KeyCode.D5);
+            AddKey(VirtualKey.D6, 0x3810, 0x40);
+            AddKey(VirtualKey.D7, 0x3810, 0x80);
 
-            AddKey(VirtualKey.D8,        0x3820, 0x01, KeyCode.NumberPad8);
-            AddKey(VirtualKey.D9,        0x3820, 0x02, KeyCode.NumberPad9);
+            AddKey(VirtualKey.D8,        0x3820, 0x01);
+            AddKey(VirtualKey.D9,        0x3820, 0x02);
             AddKey(VirtualKey.COLON,     0x3820, 0x04);
             AddKey(VirtualKey.SEMICOLON, 0x3820, 0x08);
             AddKey(VirtualKey.COMMA,     0x3820, 0x10, KeyCode.Comma);
             AddKey(VirtualKey.MINUS,     0x3820, 0x20);
-            AddKey(VirtualKey.PERIOD,    0x3820, 0x40, KeyCode.Decimal, KeyCode.Period);
+            AddKey(VirtualKey.PERIOD,    0x3820, 0x40, KeyCode.Period);
             AddKey(VirtualKey.SLASH,     0x3820, 0x80, KeyCode.Slash);
 
             AddKey(VirtualKey.ENTER,      0x3840, 0x01, KeyCode.Return, KeyCode.NumberPadEnter);
@@ -116,11 +116,32 @@ namespace Sharp80
             AddComplexMapping(KeyCode.D0,         VirtualKey.D0,        false, VirtualKey.D9,        true);
             AddComplexMapping(KeyCode.Apostrophe, VirtualKey.D7,        true,  VirtualKey.D2,        true);
             AddComplexMapping(KeyCode.Semicolon,  VirtualKey.SEMICOLON, false, VirtualKey.COLON,     false);
-            AddComplexMapping(KeyCode.Minus,      VirtualKey.MINUS,     false, VirtualKey.NONE,      false);
+            AddComplexMapping(KeyCode.Minus,      VirtualKey.MINUS,     false, VirtualKey.MINUS,     false);
             AddComplexMapping(KeyCode.Equals,     VirtualKey.MINUS,     true,  VirtualKey.SEMICOLON, true);
             AddComplexMapping(KeyCode.Capital,    VirtualKey.D0,        true,  VirtualKey.D0,        true);
+
+            AddComplexMapping(KeyCode.Decimal,    VirtualKey.PERIOD,    false, VirtualKey.PERIOD,    false);
+            AddComplexMapping(KeyCode.Add,        VirtualKey.SEMICOLON, true,  VirtualKey.SEMICOLON, true);
+            AddComplexMapping(KeyCode.Subtract,   VirtualKey.MINUS,     false, VirtualKey.MINUS,     false);
+            AddComplexMapping(KeyCode.Multiply,   VirtualKey.COLON,     true,  VirtualKey.COLON,     true);
+            AddComplexMapping(KeyCode.Divide,     VirtualKey.SLASH,     false, VirtualKey.SLASH,     false);
+
+            AddComplexMapping(KeyCode.NumberPad0, VirtualKey.D0,        false, VirtualKey.D0,        false);
+            AddComplexMapping(KeyCode.NumberPad1, VirtualKey.D1,        false, VirtualKey.D1,        false);
+            AddComplexMapping(KeyCode.NumberPad2, VirtualKey.D2,        false, VirtualKey.D2,        false);
+            AddComplexMapping(KeyCode.NumberPad3, VirtualKey.D3,        false, VirtualKey.D3,        false);
+            AddComplexMapping(KeyCode.NumberPad4, VirtualKey.D4,        false, VirtualKey.D4,        false);
+            AddComplexMapping(KeyCode.NumberPad5, VirtualKey.D5,        false, VirtualKey.D5,        false);
+            AddComplexMapping(KeyCode.NumberPad6, VirtualKey.D6,        false, VirtualKey.D6,        false);
+            AddComplexMapping(KeyCode.NumberPad7, VirtualKey.D7,        false, VirtualKey.D7,        false);
+            AddComplexMapping(KeyCode.NumberPad8, VirtualKey.D8,        false, VirtualKey.D8,        false);
+            AddComplexMapping(KeyCode.NumberPad9, VirtualKey.D9,        false, VirtualKey.D9,        false);
         }
 
+        /// <summary>
+        /// For a given PC Key (the "Physical Key") we can choose which virtual key it maps to when shifted or unshifted, and whether
+        /// that virtual key itself is shifted or unshifted.
+        /// </summary>
         private void AddComplexMapping(KeyCode PhysicalKey, VirtualKey VirtualKeyUnshifted, bool VirtualShiftUnshifted, VirtualKey VirtualKeyShifted, bool VirtualShiftShifted)
         {
             complexMappings.Add((PhysicalKey, false), (VirtualKeyUnshifted, VirtualShiftUnshifted, VirtualShiftUnshifted));
@@ -151,7 +172,7 @@ namespace Sharp80
                 case KeyCode.LeftShift:
                     if (isLeftShifted != Key.Pressed)
                         isLeftShifted = Key.Pressed;
-                    if (fakedVirtualKey != VirtualKey.NONE /* && fakedKeyIsShifted != IsShiftedPhysical */)
+                    if (fakedVirtualKey != VirtualKey.NONE)
                         ClearFakedKey();
                     else
                         DoKeyChange(isLeftShifted, VirtualKey.LEFTSHIFT);
@@ -159,7 +180,7 @@ namespace Sharp80
                 case KeyCode.RightShift:
                     if (isRightShifted != Key.Pressed)
                         isRightShifted = Key.Pressed;
-                    if (fakedVirtualKey != VirtualKey.NONE /* && fakedKeyIsShifted != IsShiftedPhysical */)
+                    if (fakedVirtualKey != VirtualKey.NONE)
                         ClearFakedKey();
                     else
                         DoKeyChange(isRightShifted, VirtualKey.RIGHTSHIFT);

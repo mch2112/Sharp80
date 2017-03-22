@@ -14,10 +14,11 @@ namespace Sharp80
 
         bool IsFullScreen { get; set; }
         bool AdvancedView { get; }
+        bool WideCharMode { get; set; }
+        bool AltCharMode { get; set; }
         string StatusMessage { set; }
         
         void Reset();
-        void SetVideoMode(bool? WideCharMode, bool? KanjiCharMode);
         void Initialize(IAppWindow Parent);
         void Reinitialize(Computer Computer);
     }

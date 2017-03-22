@@ -86,18 +86,22 @@ namespace Sharp80
 
         // EVENT HANDLING
 
-        public void SetVideoMode(bool? IsWide, bool? IsKanji)
+        /// <summary>
+        /// In BASIC, "PRINT CHR$(23)" (or Shift-RightArrow) will set wide character mode
+        /// and the CLEAR key will revert to normal width.
+        /// </summary>
+        public bool WideCharMode
         {
-            // In basic, "PRINT CHR$(23)" (or Shift-RightArrow) will set wide character mode
-            // The CLEAR key will revert to normal width
-            // And "PRINT CHR$(22)" will toggle the normal and Kanji sets
-
-            if (IsWide.HasValue)
-                isWideCharMode = IsWide.Value;
-            if (IsKanji.HasValue)
-                isKanjiCharMode = IsKanji.Value;
-            
-            Invalidate();
+            get => isWideCharMode;
+            set { isWideCharMode = value; erase = true; Invalidate(); }
+        }
+        /// <summary>
+        /// In BASIC, "PRINT CHR$(22)" will toggle the normal and Kanji sets
+        /// </summary>
+        public bool AltCharMode
+        {
+            get => isKanjiCharMode;
+            set { isKanjiCharMode = value; erase = true; Invalidate(); }
         }
         public string StatusMessage
         {
@@ -152,7 +156,8 @@ namespace Sharp80
 
             LoadCharGen();
 
-            SetVideoMode(false, false);
+            WideCharMode = false;
+            AltCharMode = false;
 
             initialized = true;
             Invalidate();
@@ -164,8 +169,8 @@ namespace Sharp80
         }
         public void Reset()
         {
-            if (isWideCharMode || isKanjiCharMode)
-                SetVideoMode(false, false);
+            WideCharMode = false;
+            AltCharMode = false;
         }
 
         // PUBLIC PROPERTIES
@@ -723,7 +728,8 @@ namespace Sharp80
         }
         public void Deserialize(System.IO.BinaryReader Reader)
         {
-            SetVideoMode(Reader.ReadBoolean(), Reader.ReadBoolean());
+            WideCharMode = Reader.ReadBoolean();
+            AltCharMode = Reader.ReadBoolean();
         }
 
         // CLEANUP

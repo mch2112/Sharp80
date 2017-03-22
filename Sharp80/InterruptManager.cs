@@ -18,6 +18,7 @@ namespace Sharp80
         public Trigger CasMotorOnLatch { get; private set; }
         public Trigger CasRisingEdgeIntLatch { get; private set; }
         public Trigger CasFallingEdgeIntLatch { get; private set; }
+
         private Trigger vidAltCharLatch;
         private Trigger vidWideCharLatch;
 
@@ -67,13 +68,13 @@ namespace Sharp80
                 Enabled = false
             };
 
-            vidAltCharLatch = new Trigger(() => { computer.SetVideoMode(null, true);},
-                                          () => { computer.SetVideoMode(null, false); })
+            vidAltCharLatch = new Trigger(() => { computer.AltCharMode = true;},
+                                          () => { computer.AltCharMode = false; })
             {
                 Enabled = true
             };
-            vidWideCharLatch = new Trigger(() => { computer.SetVideoMode(true, null); },
-                                           () => { computer.SetVideoMode(false, null); })
+            vidWideCharLatch = new Trigger(() => { computer.WideCharMode = true; },
+                                           () => { computer.WideCharMode = false; })
             {
                 Enabled = true
             };
@@ -198,6 +199,7 @@ namespace Sharp80
             vidWideCharLatch.LatchIf(b.IsBitSet(2));
             vidAltCharLatch.LatchIf(!b.IsBitSet(3)); // seems to be an error in the Tech Ref manual that says 1=enable alt set
             extIoIntLatch.LatchIf(b.IsBitSet(4));
+            vidWaitLatch.LatchIf(b.IsBitSet(5));
         }
         public void FFout(byte b)
         {

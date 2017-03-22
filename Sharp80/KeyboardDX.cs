@@ -2,8 +2,6 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpDX.DirectInput;

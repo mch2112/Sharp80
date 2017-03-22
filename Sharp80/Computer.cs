@@ -153,7 +153,7 @@ namespace Sharp80
         public void Start()
         {
             if (!HasRunYet)
-                if (!FloppyController.Available)
+                if (!Settings.DiskEnabled || !FloppyController.Available)
                     FloppyController.Disable();
 
             HasRunYet = true;
@@ -221,9 +221,15 @@ namespace Sharp80
                 Screen.Reset();
             }
         }
-        public void SetVideoMode(bool? Wide, bool? Kanji)
+        public bool WideCharMode
         {
-            Screen.SetVideoMode(Wide, Kanji);
+            get => Screen.WideCharMode;
+            set => Screen.WideCharMode = value;
+        }
+        public bool AltCharMode
+        {
+            get => Screen.AltCharMode;
+            set => Screen.AltCharMode = value;
         }
 
         // CALLBACK MANAGEMENT
@@ -243,7 +249,6 @@ namespace Sharp80
 
         // FLOPPY SUPPORT
 
-        public bool FloppyEnabled { get; set; }
         public void StartupInitializeStorage()
         {
             for (byte i = 0; i < 4; i++)
