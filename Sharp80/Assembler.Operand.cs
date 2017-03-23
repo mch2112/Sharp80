@@ -6,24 +6,13 @@ namespace Sharp80.Assembler
 {
     internal partial class Assembler
     {
-        private class Operand
+        internal class Operand
         {
             public LineInfo LineInfo { get; private set; }
             public string RawText { get; private set; }
-            public bool Exists
-            {
-                get { return RawText.Length > 0; }
-            }
-
+            public bool Exists =>RawText.Length > 0;
             public bool IsIndirect { get; private set; }
-            public bool IsPseudoIndirect
-            {
-                get
-                {
-                    return IsIndirect &&
-                        LineInfo.Mnemonic == "JP" || LineInfo.Mnemonic == "OUT" || LineInfo.Mnemonic == "IN";
-                }
-            }
+            public bool IsPseudoIndirect => IsIndirect && LineInfo.Mnemonic == "JP" || LineInfo.Mnemonic == "OUT" || LineInfo.Mnemonic == "IN";
 
             public Operand()
             {
@@ -89,14 +78,8 @@ namespace Sharp80.Assembler
                 }
             }
 
-            public bool IsRegister
-            {
-                get { return registers.Contains(RawText); }
-            }
-            public bool IsAccumulator
-            {
-                get { return RawText == "A"; }
-            }
+            public bool IsRegister => registers.Contains(RawText);
+            public bool IsAccumulator => RawText == "A";
             public bool IsIndexedRegister
             {
                 get
@@ -220,7 +203,7 @@ namespace Sharp80.Assembler
                 }
                 else if (IsNumeric)
                 {
-                    if (LineInfo.Operand0 == this && SingleDigitArg(LineInfo.Mnemonic))
+                    if (LineInfo.Operand0 == this && IsSingleDigitArg(LineInfo.Mnemonic))
                     {
                         text = NumericValue.Value.ToHexChar();
                     }

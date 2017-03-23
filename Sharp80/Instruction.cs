@@ -297,7 +297,7 @@ namespace Sharp80.Processor
             {
                 byte b = Memory[PC.Offset(OpcodeInitialLength)];
                 sbyte x = b.TwosComp();
-                s = s.Replace(" e", " " + b.ToTwosCompHexString() + " {" + PC.Offset(size + x).ToHexString() + "}");
+                s = s.Replace(" e", " " + PC.Offset(size + x).ToHexString() + " {" + b.ToTwosCompHexString() + "}");
             }
 
             return s;

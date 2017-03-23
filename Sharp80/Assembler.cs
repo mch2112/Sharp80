@@ -4,15 +4,15 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
-using System.Windows.Forms;
 
 namespace Sharp80.Assembler
 {
     internal partial class Assembler
     {
+        private Assembly Assembly = null;
+        private string Title { get; set; } = null;
         private List<Processor.Instruction> instructionSet;
 
         private readonly List<LineInfo> unit = new List<LineInfo>();
@@ -35,7 +35,7 @@ namespace Sharp80.Assembler
                                                        "(HL)", "(BC)", "(DE)", "(AF)" };
 
         private static string[] sixteenBitRegisters = new string[] { "AF", "BC", "DE", "HL", "IX", "IY", "SP" };
-        private static string[] metaInstructions = new string[] { "ORG", "EQU", "DEFB", "DB", "DEFW", "DW", "DEFM", "DM", "DEFS", "DS", "END" };
+        private static string[] metaInstructions = new string[] { "ORG", "TITLE", "EQU", "DEFB", "DB", "DEFW", "DW", "DEFM", "DM", "DEFS", "DS", "END" };
         private static string[] flagStates = new string[] { "C", "NC", "Z", "NZ", "PO", "PE", "P", "M" };
         private static string[] instructionNames = new string[] { "ADC", "ADD", "AND", "BIT", "CALL", "CCF", "CP", "CPD", "CPDR", "CPI", "CPIR", "CPL", "DAA",
                                                                   "DEC", "DI", "DJNZ", "EI", "EX", "EXX", "HALT", "IM", "IN", "INC", "IND", "INDR", "INI", "INIR", "JP", "JR",
@@ -43,80 +43,45 @@ namespace Sharp80.Assembler
                                                                   "POP", "PUSH", "RES", "RET", "RETI", "RETN", "RL", "RLA", "RLC", "RLCA", "RLD", "RR", "RRC", "RRCA",
                                                                   "RRD", "RST", "SBC", "SCF", "SET", "SLA", "SRA", "SRL", "SUB", "XOR" };
 
-        private string originalFilePath;
-        private string intermediateFile = String.Empty;
-
         private List<Macro> macros = new List<Macro>();
         private ushort? execAddress = null;
+
+        // CONSTRUCTORS
 
         public Assembler(IEnumerable<Processor.Instruction> InstructionSet)
         {
             instructionSet = InstructionSet.ToList();
         }
-
-        public string Assemble()
+        public Assembly Assemble(string SourceText)
         {
-            string cmdFilePath = string.Empty;
-
-            if (GetFilePath())
+            Assembly = new Assembly(SourceText);
+            try
             {
-                try
-                {
-                    cmdFilePath = Assemble(out int errs);
-                    if (errs == 0)
-                        Dialogs.InformUser(string.Format("Assembled {0} to {1}.", Path.GetFileName(originalFilePath), cmdFilePath));
-                    else if (Dialogs.AskYesNo(string.Format("{0} error{1} found during assembly. Open intermediate file?",
-                                                            errs,
-                                                            errs == 1 ? String.Empty : "s")))
-                            Dialogs.ShowTextFile(intermediateFile);
-                }
-                catch (Exception ex)
-                {
-                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"Failed to assemble {Path.GetFileName(originalFilePath)}.");
-                }
+                Assemble();
             }
-            return cmdFilePath;
+            catch (Exception ex)
+            {
+                ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, "Failed to assemble.");
+            }
+            return Assembly;
         }
-        private string Assemble(out int ErrCount)
-        {
-            Log.LogDebug($"Assembling {originalFilePath}...");
 
-            LoadAssemblyFile(originalFilePath);
+        // MAIN PROCESS
+
+        private void Assemble()
+        {
+            Load();
 
             DetermineOpcodes();
             CalcAddresses();
             ResolveSymbols();
             DetermineData();
-            SaveIntermediateFile();
-
-            ErrCount = unit.Count(l => l.HasError);
-
-            if (ErrCount == 0)
-                return SaveAsCMD(unit);
-            else
-                return string.Empty;
+            
+            Assembly.Finalize(Title, unit, symbolTable, GetSymbolValue(symbolTable, null, "ENTRY") ?? execAddress);
         }
-
-        private bool GetFilePath()
+        private void Load()
         {
-            string path = Settings.LastAsmFile;
-
-            path = Dialogs.GetAssemblyFile(path, false);
-
-            if (path.Length > 0)
-            {
-                Settings.LastAsmFile = originalFilePath = path;
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        private void LoadAssemblyFile(string Filename)
-        {
-            var lines = Storage.LoadTextFile(Filename);
+            var lines = Assembly.SourceLines.ToList();
 
             int sourceFileLine = 0;
             Macro m = null;
@@ -157,54 +122,6 @@ namespace Sharp80.Assembler
                 }
             }
         }
-        private static string RemoveSpaces(string Input) { return Input.Trim(new char[] { ' ' }); }
-
-        private static string GetCol(string Line, int ColNum)
-        {
-            string[] lines = Line.Split('\t');
-
-            if (ColNum < lines.Length)
-                return lines[ColNum].Trim();
-            else
-                return String.Empty;
-        }
-        private static string[] GetCSV(string Str, int MaxCols)
-        {
-            bool quoting = false;
-            List<string> vals = new List<string>();
-            char c;
-            int stringStart = 0;
-            bool escaping = false;
-
-            for (int i = 0; i < Str.Length && vals.Count < MaxCols; i++)
-            {
-                c = Str[i];
-
-                if (c == '\\')
-                {
-                    escaping = !escaping;
-                    if (escaping)
-                        continue;
-                }
-                if (c == SINGLE_QUOTE && !escaping)
-                {
-                    quoting = !quoting;
-                }
-                if (c == ',')
-                {
-                    if (!quoting)
-                    {
-                        vals.Add(Str.Substring(stringStart, i - stringStart));
-                        stringStart = i + 1;
-                    }
-                }
-            }
-
-            vals.Add(Str.Substring(stringStart));
-
-            return vals.Select(v => v.Trim()).ToArray();
-        }
-
         private void AddLine(string rawLine, int SourceFileLine, List<LineInfo> Lines = null, string Error = null)
         {
             Lines = Lines ?? unit;
@@ -225,6 +142,16 @@ namespace Sharp80.Assembler
             string comment = String.IsNullOrWhiteSpace(lp.Comment) ? String.Empty : ("\t; " + lp.Comment);
             switch (lp.Mnemonic)
             {
+                case "TITLE":
+                    var title = lp.Operand0.RawText;
+                    if (!(Title is null))
+                        lp.SetError("Title already defined.");
+                    else if (IsValidTitle(ref title))
+                        Title = title;
+                    else
+                        lp.SetError("Invalid Title");
+                    lp.Suppress();
+                    break;
                 case "DEFB":
                 case "DEFW":
                 case "DEFM":
@@ -322,7 +249,6 @@ namespace Sharp80.Assembler
                 }
             }
         }
-
         private bool CalcAddresses()
         {
             ushort address = 0;
@@ -352,135 +278,6 @@ namespace Sharp80.Assembler
                 }
             }
             return true;
-        }
-
-        private bool GetMatchingInstruction(LineInfo lp)
-        {
-            if (!lp.IsMetaInstruction)
-            {
-                if (lp.Mnemonic.Length == 0)
-                    return false;               // Not an instruction
-
-                foreach (var i in instructionSet.Where(ii => ii.Mnemonic == lp.Mnemonic && ii.NumOperands == lp.NumOperands))
-                {
-                    bool ok = true;
-                    for (int j = 0; j < lp.NumOperands; j++)
-                    {
-                        if (!DoOperandsMatch(lp, i, j))
-                        {
-                            ok = false;
-                            break;
-                        }
-                    }
-                    if (ok)
-                    {
-                        lp.Instruction = i;
-                        return true;
-                    }
-                }
-
-                lp.SetError($"Instruction not found: {lp.RawLine}");
-            }
-            return false;
-        }
-
-        private string GetLabel(string line)
-        {
-            string s = line;
-
-            if (s.StartsWith("."))
-                s = s.Substring(1);
-
-            return GetCol(s, 0).Replace(":", String.Empty).Trim();
-        }
-
-        private static bool IsRegister(string s)           { return registers.Contains(s); }
-        private static bool IsMetaInstruction(string inst) { return metaInstructions.Contains(inst); }
-        private static bool IsInstruction(string inst)     { return instructionNames.Contains(inst); }
-        private static bool IsFlagState(string s)          { return flagStates.Contains(s); }
-
-        private string PreprocessLine(string Input)
-        {
-            string line = RemoveSpaces(Input.Substring(0, Math.Min(256, Input.Length)));
-
-            var sb = new StringBuilder();
-            bool commenting = false;
-            bool quoting = false;
-            bool escaping = false;
-
-            // keep quoting from messing these up
-            
-            for (int i = 0; i < line.Length; i++)
-            {
-                var c = line[i];
-
-                if (c == ';' && !quoting)
-                {
-                    commenting = true;
-                }
-                if (!commenting && c == SINGLE_QUOTE && !escaping)
-                {
-                    // AF', BC', DE', HL' aren't quoted
-                    if (c >= 2 && !IsPrimableRegister(line.Substring(i - 2, 2)))
-                        quoting = !quoting;
-                }
-
-                if (quoting || commenting)
-                    sb.Append(c);
-                else
-                    sb.Append(char.ToUpper(c));
-
-                escaping = c == '\\';
-            }
-
-            if (quoting)
-                sb.Append(SINGLE_QUOTE);
-
-            return sb.ToString();
-        }
-        private bool IsPrimableRegister(string RegName)
-        {
-            Debug.Assert(RegName.Length == 2);
-            switch (RegName.ToUpper())
-            {
-                case "AF":
-                case "BC":
-                case "DE":
-                case "HL":
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        private Macro GetMacro(string Name)
-        {
-            return macros.FirstOrDefault(m => m.Name == Name);
-        }
-        /// <summary>
-        /// These instructions have arguments but they are specified by
-        /// the opcode itself and don't need to be augmented with
-        /// additional bytes
-        /// </summary>
-        private static bool ArgImpliedInOpcode(string Mnemonic)
-        {
-            switch (Mnemonic)
-            {
-                case "BIT":
-                case "RES":
-                case "SET":
-                case "RST":
-                case "IM":
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        private static bool SingleDigitArg(string Mnemonic)
-        {
-            return Mnemonic == "BIT" ||
-                   Mnemonic == "RES" ||
-                   Mnemonic == "SET" ||
-                   Mnemonic == "IM";
         }
         private void DetermineOpcodes()
         {
@@ -632,6 +429,79 @@ namespace Sharp80.Assembler
                 }
             }
         }
+
+        // AUXILIARY PROCESSES
+
+        private bool GetMatchingInstruction(LineInfo lp)
+        {
+            if (!lp.IsMetaInstruction)
+            {
+                if (lp.Mnemonic.Length == 0)
+                    return false;               // Not an instruction
+
+                foreach (var i in instructionSet.Where(ii => ii.Mnemonic == lp.Mnemonic && ii.NumOperands == lp.NumOperands))
+                {
+                    bool ok = true;
+                    for (int j = 0; j < lp.NumOperands; j++)
+                    {
+                        if (!DoOperandsMatch(lp, i, j))
+                        {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    if (ok)
+                    {
+                        lp.Instruction = i;
+                        return true;
+                    }
+                }
+
+                lp.SetError($"Instruction not found: {lp.RawLine}");
+            }
+            return false;
+        }
+        private string PreprocessLine(string Input)
+        {
+            string line = RemoveSpaces(Input.Substring(0, Math.Min(256, Input.Length)));
+
+            var sb = new StringBuilder();
+            bool commenting = false;
+            bool quoting = false;
+            bool escaping = false;
+
+            // keep quoting from messing these up
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                var c = line[i];
+
+                if (c == ';' && !quoting)
+                {
+                    commenting = true;
+                }
+                if (!commenting && c == SINGLE_QUOTE && !escaping)
+                {
+                    // AF', BC', DE', HL' aren't quoted
+                    if (c >= 2 && !IsPrimableRegister(line.Substring(i - 2, 2)))
+                        quoting = !quoting;
+                }
+
+                if (quoting || commenting)
+                    sb.Append(c);
+                else
+                    sb.Append(char.ToUpper(c));
+
+                escaping = c == '\\';
+            }
+
+            if (quoting)
+                sb.Append(SINGLE_QUOTE);
+
+            return sb.ToString();
+        }
+        private Macro GetMacro(string Name) => macros.FirstOrDefault(m => m.Name == Name);
+
         private static ushort? GetSymbolValue(Dictionary<string, LineInfo> SymbolTable, LineInfo CurrentLP, string Symbol, ushort Offset = 0, bool ForceHex = false)
         {
             string displacement;
@@ -710,35 +580,6 @@ namespace Sharp80.Assembler
             }
             return ret;
         }
-        private static string RemoveParentheses(string s)
-        {
-            if (IsInParentheses(s))
-                return s.Substring(1, s.Length - 2).Trim();
-            else
-                return s.Trim();
-        }
-        private static string Parenthesize(string s)
-        {
-            if (!IsInParentheses(s))
-                return '(' + s + ')';
-            else
-                return s;
-        }
-        private static bool IsInParentheses(string s)
-        {
-            return (s.Length >= 2 && s[0] == '(' && s[s.Length - 1] == ')');
-        }
-        private static bool IsInSingleQuotes(string s)
-        {
-            return (s.Length >= 2 && s[0] == '\'' && s[s.Length - 1] == '\'');
-        }
-        private static string Unquote(string Input)
-        {
-            if (IsInSingleQuotes(Input) && Input.Length > 1)
-                return Input.Substring(1, Input.Length - 2);
-            else
-                return Input;
-        }
         private static ushort? GetNumericValue(string Input, bool ForceHex = false)
         {
             string s = Input;
@@ -780,8 +621,7 @@ namespace Sharp80.Assembler
             // nonnumeric
             return null;
         }
-
-        private bool DoOperandsMatch(LineInfo Line, Processor.Instruction Inst, int OperandIndex)
+        private static bool DoOperandsMatch(LineInfo Line, Processor.Instruction Inst, int OperandIndex)
         {
             string opB = Inst.GetOperand(OperandIndex);
 
@@ -848,147 +688,97 @@ namespace Sharp80.Assembler
             return true;
         }
 
-        private void SaveIntermediateFile()
-        {
-            intermediateFile = Path.Combine(Path.GetDirectoryName(originalFilePath),
-                                            Path.GetFileNameWithoutExtension(originalFilePath)) + ".int.txt";
+        // HELPER METHODS
 
-            Storage.SaveTextFile(intermediateFile,
-                                 string.Join(Environment.NewLine,
-                                             unit.Select(lp => string.Format("{0:00000} {1}", lp.SourceFileLine, lp.FullNameWithOriginalLineAsCommentWithErrorIfAny))) +
-                                 Environment.NewLine +
-                                 Environment.NewLine +
-                                 SymbolTableToString());
-        }
-        private string SymbolTableToString()
+        private static string GetCol(string Line, int ColNum)
         {
-            return "SYMBOL TABLE" + Environment.NewLine +
-                   "==================================" + Environment.NewLine +
-                   String.Join(Environment.NewLine,
-                               symbolTable.OrderBy(kv => kv.Key)
-                                          .Select(kv => kv.Key.PadRight(15) +
-                                                        kv.Value.Address.ToHexString() +
-                                                        string.Format(" (Line {0}, {1})", kv.Value.SourceFileLine, kv.Value.Mnemonic)));
-        }
-        private bool LoadToBuffer(ref int LineNumber, byte[] Buffer, out ushort lowAddress, out ushort highAddress)
-        {
-            lowAddress  = 0xFFFF;
-            highAddress = 0x0000;
-            bool any = false;
+            string[] lines = Line.Split('\t');
 
-            while (LineNumber < unit.Count)
+            if (ColNum < lines.Length)
+                return lines[ColNum].Trim();
+            else
+                return String.Empty;
+        }
+        private static string[] GetCSV(string Str, int MaxCols)
+        {
+            bool quoting = false;
+            List<string> vals = new List<string>();
+            char c;
+            int stringStart = 0;
+            bool escaping = false;
+
+            for (int i = 0; i < Str.Length && vals.Count < MaxCols; i++)
             {
-                var lp = unit[LineNumber++];
+                c = Str[i];
 
-                if (lp.IsOrg && any)
+                if (c == '\\')
                 {
-                    LineNumber--;
-                    break;
+                    escaping = !escaping;
+                    if (escaping)
+                        continue;
                 }
-                if (lp.Size > 0)
+                if (c == SINGLE_QUOTE && !escaping)
                 {
-                    any = true;
-                    lowAddress = Math.Min(lowAddress, lp.Address);
-                    highAddress = Math.Max(highAddress, lp.Address.Offset(lp.Size));
+                    quoting = !quoting;
                 }
-
-                if (lp.Size > 0)
-                    Debug.Assert(lp.Byte0.HasValue);
-                if (lp.Size > 1)
-                    Debug.Assert(lp.Byte1.HasValue);
-                else
-                    Debug.Assert(!lp.Byte1.HasValue);
-                if (lp.Size > 2)
-                    Debug.Assert(lp.Byte2.HasValue);
-                else
-                    Debug.Assert(!lp.Byte2.HasValue);
-                if (lp.Size > 3)
-                    Debug.Assert(lp.Byte3.HasValue);
-                else
-                    Debug.Assert(!lp.Byte3.HasValue);
-
-                if (lp.Byte0.HasValue) Buffer[lp.Address] = lp.Byte0.Value;
-                if (lp.Byte1.HasValue) Buffer[lp.Address + 1] = lp.Byte1.Value;
-                if (lp.Byte2.HasValue) Buffer[lp.Address + 2] = lp.Byte2.Value;
-                if (lp.Byte3.HasValue) Buffer[lp.Address + 3] = lp.Byte3.Value;
-            }
-            return any;
-        }
-        private string SaveAsCMD(List<LineInfo> Unit)
-        {
-            string cmdFilePath = string.Empty;
-            try
-            {
-                byte[] buffer = new byte[0x10000];
-
-                var data = new List<(ushort SegmentAddress, byte[] Bytes)>();
-                int lineNum = 0;
-                ushort lowestAddress = 0xFFFF;
-
-                string title = Path.GetFileNameWithoutExtension(originalFilePath);
-                cmdFilePath = Path.Combine(Path.GetDirectoryName(originalFilePath), title + ".cmd");
-
-                while (LoadToBuffer(ref lineNum, buffer, out ushort lowAddress, out ushort highAddress))
+                if (c == ',')
                 {
-                    var segment = new byte[highAddress - lowAddress + 1];
-                    Array.Copy(buffer, lowAddress, segment, 0, highAddress - lowAddress);
-
-                    data.Add((lowAddress, segment));
-                    lowestAddress = Math.Min(lowAddress, lowestAddress);
-                }
-                SaveCMDFile(title, cmdFilePath, data, GetSymbolValue(symbolTable, null, "ENTRY") ?? execAddress ?? lowestAddress);
-            }
-            catch (Exception ex)
-            {
-                ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, "Failed to save CMD file from assembler.");
-            }
-            return cmdFilePath;
-        }
-        private static void SaveCMDFile(string Title, string FilePath, List<(ushort SegmentAddress, byte[] Bytes)> Data, ushort TransferAddress)
-        {
-            var writer = new BinaryWriter(File.Open(FilePath, FileMode.Create));
-
-            ushort dest;
-            int cursor;
-            byte lowDest;
-            byte highDest;
-            int segmentSize;
-            int blockSize;
-
-            writer.Write((byte)0x05);
-            writer.Write((byte)Title.Length);
-            for (int i = 0; i < Title.Length; i++)
-                writer.Write((byte)Title[i]);
-
-            foreach (var d in Data)
-            {
-                dest = d.SegmentAddress;
-                cursor = 0;
-
-                segmentSize = d.Bytes.Length;
-
-                while (cursor < segmentSize)
-                {
-                    blockSize = Math.Min(0x100, d.Bytes.Length - cursor);
-                    writer.Write((byte)0x01);   // block marker
-                    writer.Write((byte)(blockSize + 2)); // 0x02 == 256 bytes
-                    dest.Split(out lowDest, out highDest);
-                    writer.Write(lowDest);
-                    writer.Write(highDest);
-                    while (blockSize-- > 0)
+                    if (!quoting)
                     {
-                        writer.Write(d.Bytes[cursor++]);
-                        dest++;
+                        vals.Add(Str.Substring(stringStart, i - stringStart));
+                        stringStart = i + 1;
                     }
                 }
             }
-            writer.Write((byte)0x02);  // transfer address marker
-            writer.Write((byte)0x02);  // transfer address length
-            TransferAddress.Split(out lowDest, out highDest);
-            writer.Write(lowDest);
-            writer.Write(highDest);
 
-            writer.Close();
+            vals.Add(Str.Substring(stringStart));
+
+            return vals.Select(v => v.Trim()).ToArray();
         }
+        private static string GetLabel(string line)
+        {
+            string s = line;
+
+            if (s.StartsWith("."))
+                s = s.Substring(1);
+
+            return GetCol(s, 0).Replace(":", String.Empty).Trim();
+        }
+        private static bool IsRegister(string s) => registers.Contains(s);
+        private static bool IsMetaInstruction(string inst) => metaInstructions.Contains(inst);
+        private static bool IsInstruction(string inst) => instructionNames.Contains(inst);
+        private static bool IsFlagState(string s) => flagStates.Contains(s);
+        private static bool IsValidTitle(ref string Input)
+        {
+            Input = Unquote(Input).ToUpper();
+            return Input.Length.IsBetween(1, CmdFile.MAX_TITLE_LENGTH) && Input.All(i => i.IsBetween('A', 'Z'));
+        }
+        private static bool IsPrimableRegister(string RegName)
+        {
+            Debug.Assert(RegName.Length == 2);
+            switch (RegName.ToUpper())
+            {
+                case "AF":
+                case "BC":
+                case "DE":
+                case "HL":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        private static bool IsSingleDigitArg(string Mnemonic) => Mnemonic == "BIT" || Mnemonic == "RES" || Mnemonic == "SET" || Mnemonic == "IM";
+        /// <summary>
+        /// These instructions have arguments but they are specified by
+        /// the opcode itself and don't need to be augmented with
+        /// additional bytes
+        /// </summary>
+        private static bool ArgImpliedInOpcode(string Mnemonic) => Mnemonic == "BIT" || Mnemonic == "RES" || Mnemonic == "SET" || Mnemonic == "IM" || Mnemonic == "RST";
+        private static string RemoveParentheses(string s) => IsInParentheses(s) ? s.Substring(1, s.Length - 2).Trim() : s.Trim();
+        private static string Parenthesize(string s) => IsInParentheses(s) ? s : ('(' + s + ')');
+        private static bool IsInParentheses(string s) => s.Length >= 2 && s[0] == '(' && s[s.Length - 1] == ')';
+        private static bool IsInSingleQuotes(string s) => s.Length >= 2 && s[0] == '\'' && s[s.Length - 1] == '\'';
+        private static string RemoveSpaces(string Input) => Input.Trim(new char[] { ' ' });
+        private static string Unquote(string Input) => IsInSingleQuotes(Input) ? Input.Substring(1, Input.Length - 2) : Input;
     }
 }

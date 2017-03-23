@@ -60,9 +60,18 @@ namespace Sharp80
                 return false;
             }
         }
-        public static List<string> LoadTextFile(string FilePath)
+        public static bool LoadTextFile(string FilePath, out string Text)
         {
-            return new List<string>(File.ReadAllLines(FilePath));
+            try
+            {
+                Text = File.ReadAllText(FilePath);
+                return true;
+            }
+            catch
+            {
+                Text = null;
+                return false;
+            }
         }
         public static bool SaveBinaryFile(string FilePath, byte[] Data)
         {
@@ -187,7 +196,22 @@ namespace Sharp80
                                           DefaultExtension: ext,
                                           SelectFileInDialog: SelectFileInDialog);
         }
+        public static bool GetAsmFilePath(out string Path)
+        {
+            Path = Settings.LastAsmFile;
 
+            Path = Dialogs.GetAssemblyFile(Path, false);
+
+            if (Path.Length > 0)
+            {
+                Settings.LastAsmFile = Path;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
         public static bool IsFileNameToken(string Path)
         {
             return Path == FILE_NAME_UNFORMATTED || Path == FILE_NAME_NEW || Path == FILE_NAME_TRSDOS;

@@ -123,6 +123,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assembler.Assembly.cs" />
     <Compile Include="Assembler.cs" />
     <Compile Include="Assembler.LineInfo.cs" />
     <Compile Include="Assembler.Macro.cs" />

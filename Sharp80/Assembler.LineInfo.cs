@@ -10,45 +10,55 @@ namespace Sharp80.Assembler
 {
     internal partial class Assembler
     {
-        private class LineInfo
+        internal class LineInfo
         {
             public string RawLine { get; private set; }
             public string Label { get; private set; }
             public string Mnemonic { get; private set; }
             public string Comment { get; private set; }
 
-            public List<Operand> Operands = new List<Operand>();
+            public List<Operand> Operands { get; private set; } = new List<Operand>();
 
-            public Operand Operand0 { get { return Operands.Count > 0 ? Operands[0] : new Operand(); } }
-            public Operand Operand1 { get { return Operands.Count > 1 ? Operands[1] : new Operand(); } }
+            public Operand Operand0 => Operands.Count > 0 ? Operands[0] : new Operand();
+            public Operand Operand1 => Operands.Count > 1 ? Operands[1] : new Operand();
 
-            public bool IsMultiline { get { return IsMetaInstruction && NumOperands > 1; } }
+            public bool IsMultiline => IsMetaInstruction && NumOperands > 1;
             public bool IsOrg { get; set; } = false;
-            public int NumOperands { get { return Operands.Count(o => o.Exists); } }
+            public int NumOperands => Operands.Count(o => o.Exists);
 
-            public ushort Address = 0x0000;
-            public byte? Byte0 = null;
-            public byte? Byte1 = null;
-            public byte? Byte2 = null;
-            public byte? Byte3 = null;
+            public ushort Address { get; set; } = 0x0000;
+            public byte? Byte0 { get; set; } = null;
+            public byte? Byte1 { get; set; } = null;
+            public byte? Byte2 { get; set; } = null;
+            public byte? Byte3 { get; set; } = null;
 
             public int SourceFileLine { get; private set; }
             public bool IsSuppressed { get; private set; } = false;
-            public string Error { get; private set; } = null;
-            public void SetError(string ErrMsg)
+
+            private List<string> errors = null;
+            public string Error
             {
-                if (String.IsNullOrWhiteSpace(Error))
-                    Error = ErrMsg;
-                else
-                    Error += Environment.NewLine + ErrMsg;
+                get
+                {
+                    if (errors == null)
+                        return String.Empty;
+                    else
+                        return String.Join(Environment.NewLine, errors.Distinct());
+                }
             }
 
-            public bool Valid { get { return !IsSuppressed && !HasError && (HasLabel || HasMnemonic); } }
-            public bool Empty {  get { return !HasLabel && !HasMnemonic && !HasComment; } }
-            public bool HasLabel { get { return Label.Length > 0; } }
-            public bool HasMnemonic { get { return Mnemonic.Length > 0; } }
-            public bool HasComment { get { return Comment.Length > 0; } }
-            public bool CommentOnly { get { return HasComment || !Valid; } }
+            public void SetError(string ErrMsg)
+            {
+                errors = errors ?? new List<string>();
+                errors.Add(ErrMsg);
+            }
+
+            public bool Valid =>       !IsSuppressed && !HasError && (HasLabel || HasMnemonic);
+            public bool Empty =>       !HasLabel && !HasMnemonic && !HasComment;
+            public bool HasLabel =>    Label.Length > 0;
+            public bool HasMnemonic => Mnemonic.Length > 0;
+            public bool HasComment =>  Comment.Length > 0;
+            public bool CommentOnly => HasComment || !Valid;
 
             public Processor.Instruction Instruction { get; set; } = null;
             public Dictionary<string, LineInfo> SymbolTable { get; private set; }
@@ -90,7 +100,7 @@ namespace Sharp80.Assembler
                 }
                 else
                 {
-                    Error = "Invalid Label: " + label;
+                    SetError("Invalid Label: " + label);
                     return;
                 }
 
@@ -108,7 +118,7 @@ namespace Sharp80.Assembler
                     }
                     else
                     {
-                        Error = "Invalid Mnemonic: " + mnemonic;
+                        SetError("Invalid Mnemonic: " + mnemonic);
                         return;
                     }
                 }
@@ -132,7 +142,7 @@ namespace Sharp80.Assembler
                         case "DEFM":
                             break;
                         default:
-                            Error = "Unexpected number of operands";
+                            SetError("Unexpected number of operands");
                             break;
                     }
                 }
@@ -162,21 +172,16 @@ namespace Sharp80.Assembler
                     if (IsSuppressed && !String.IsNullOrWhiteSpace(Error))
                         throw new Exception("Suppressed lines should never have errors.");
 #endif
-                    return !String.IsNullOrWhiteSpace(Error); }
+                    return !(errors is null || errors.Count == 0);
+                }
             }
             private void TrimAccumlatorOperand(int OpNum)
             {
                 if (NumOperands == 2 && Operands[OpNum].IsAccumulator)
                     Operands.Remove(Operands[OpNum]);
             }
-            public bool IsMetaInstruction
-            {
-                get { return metaInstructions.Contains(Mnemonic); }
-            }
-            public bool IsInstruction
-            {
-                get { return instructionNames.Contains(Mnemonic); }
-            }
+            public bool IsMetaInstruction => metaInstructions.Contains(Mnemonic);
+            public bool IsInstruction => instructionNames.Contains(Mnemonic);
             public string FullName
             {
                 get
@@ -242,6 +247,7 @@ namespace Sharp80.Assembler
                             case "ORG":
                             case "EQU":
                             case "END":
+                            case "TITLE":
                                 return 0;
                             case "DEFB":
                                 return 1;
@@ -259,28 +265,13 @@ namespace Sharp80.Assembler
                         }
                 }
             }
-            public int OpcodeSize
-            {
-                get
-                {
-                    if (Instruction != null)
-                        return Instruction.OpcodeLength;
-                    else
-                        return 0;
-                }
-            }
-            public int DataSize
-            {
-                get
-                {
-                    return Size - OpcodeSize;
-                }
-            }
+            public int OpcodeSize => Instruction?.OpcodeLength ?? 0;
+            public int DataSize => Size - OpcodeSize;
 
             /// <summary>
             /// Suppressed lines show up in intermediate files but aren't compiled
             /// </summary>
-            public void Suppress() { IsSuppressed = true; }
+            public void Suppress() => IsSuppressed = true;
 
             private bool ValidateLabel(ref string Label)
             {
@@ -292,11 +283,9 @@ namespace Sharp80.Assembler
                 if (Label.EndsWith(":"))
                     Label = Label.Substring(0, Label.Length - 1);
 
-                return Label.Length < MAX_LABEL_LENGTH &&
-                        Label.Length >= MIN_LABEL_LENGTH &&
-                        Label[0] >= 'A' &&
-                        Label[0] <= 'Z' &&
-                        Label.All(c => (c >= 'A' && c <= 'Z') || (c >= '0' || c <= '9') || c == '_');
+                return Label.Length.IsBetween(MIN_LABEL_LENGTH, MAX_LABEL_LENGTH) &&
+                       Label[0].IsBetween('A', 'Z') &&
+                       Label.All(c => c.IsBetween('A', 'Z') || c.IsBetween('0', '9') || c == '_');
             }
             private bool ValidateMnemonic(ref string Mnemonic)
             {

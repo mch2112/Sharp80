@@ -435,7 +435,7 @@ namespace Sharp80
         }
         public string Disassemble(bool RelativeAddressesAsComments, bool FromPC) => Processor.Disassemble(RelativeAddressesAsComments, FromPC);
         public string GetInstructionSetReport() => Processor.GetInstructionSetReport();
-        public string Assemble() => Processor.Assemble();
+        public Assembler.Assembly Assemble(string SourceText) => Processor.Assemble(SourceText);
 
         public bool HistoricDisassemblyMode
         {

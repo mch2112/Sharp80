@@ -296,6 +296,10 @@ namespace Sharp80
         {
             return Value >= Min && Value <= Max;
         }
+        public static bool IsBetween(this int Value, int Min, int Max)
+        {
+            return Value >= Min && Value <= Max;
+        }
         public static bool IsBetween(this char Value, char Min, char Max)
         {
             return Value >= Min && Value <= Max;
@@ -470,7 +474,11 @@ namespace Sharp80
                 case ';': return (KeyCode.Semicolon, false);
                 case ':': return (KeyCode.Semicolon, true);
                 case '\'': return (KeyCode.Apostrophe, false);
-                case '"': return (KeyCode.Apostrophe, true);
+
+                case '"':
+                case (char)0x201C:
+                case (char)0x201D:
+                    return (KeyCode.Apostrophe, true);
 
                 // these aren't consumable by the trs80, so we change them to keys that are:
                 case '[': return (KeyCode.D9, true);

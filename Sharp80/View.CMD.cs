@@ -27,30 +27,43 @@ namespace Sharp80
 
         protected override bool processKey(KeyState Key)
         {
-            if (Key.Pressed && Key.IsUnmodified)
+            if (Key.Pressed)
             {
                 Invalidate();
-                switch (Key.Key)
+                if (Key.IsUnmodified)
                 {
-                    case KeyCode.C:
-                        Clear();
-                        return true;
-                    case KeyCode.F:
-                        if (CmdFile?.Valid ?? false)
-                            MakeFloppyFromFile(out string _, CmdFile.FilePath);
-                        return true;
-                    case KeyCode.L:
-                        Load();
-                        Invalidate();
-                        return true;
-                    case KeyCode.R:
-                        Run();
-                        Invalidate();
-                        return true;
-                    case KeyCode.F8:
-                        if (!Computer.HasRunYet)
-                            CurrentMode = ViewMode.Normal;
-                        return base.processKey(Key);
+                    switch (Key.Key)
+                    {
+                        case KeyCode.C:
+                            Clear();
+                            return true;
+                        case KeyCode.F:
+                            if (CmdFile?.Valid ?? false)
+                                MakeFloppyFromFile(out string _, CmdFile.FilePath);
+                            return true;
+                        case KeyCode.L:
+                            Load();
+                            Invalidate();
+                            return true;
+                        case KeyCode.R:
+                            Run();
+                            Invalidate();
+                            return true;
+                        case KeyCode.F8:
+                            if (!Computer.HasRunYet)
+                                CurrentMode = ViewMode.Normal;
+                            return base.processKey(Key);
+                    }
+                }
+                else if (Key.Alt)
+                {
+                    switch(Key.Key)
+                    {
+                        case KeyCode.Y:
+                            var ret = base.processKey(Key);
+                            Activate(); // since we're already here it won't happen.
+                            return ret;
+                    }
                 }
             }
             return base.processKey(Key);
@@ -92,7 +105,7 @@ namespace Sharp80
                                                 CmdFile.NumBlocks == 1 ? String.Empty : "s",
                                                 CmdFile.LowAddress.ToHexString(),
                                                 CmdFile.HighAddress.ToHexString())) +
-                           Format(CmdFile.ExecAddress.HasValue ? ("Execution Address: " + CmdFile.ExecAddress.Value.ToHexString()) : "NO EXECUTION ADDRESS!");
+                           Format($"Title: {CmdFile.Title}  " + (CmdFile.ExecAddress.HasValue ? ("Execution Address: " + CmdFile.ExecAddress.Value.ToHexString()) : "NO EXECUTION ADDRESS!"));
 
                 if (!Computer.HasRunYet)
                 {

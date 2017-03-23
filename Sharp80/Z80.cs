@@ -55,7 +55,7 @@ namespace Sharp80.Processor
 
         public IMemory Memory => memory;
         public Instruction CurrentInstruction { get; private set; }
-        public string Assemble() => new Assembler.Assembler(instructionSet.Instructions.Values).Assemble();
+        public Assembler.Assembly Assemble(string SourceText) => new Assembler.Assembler(instructionSet.Instructions.Values).Assemble(SourceText);
 
         // INTERRUPTS
 

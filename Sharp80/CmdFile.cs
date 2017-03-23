@@ -8,18 +8,25 @@ namespace Sharp80
 {
     internal class CmdFile
     {
-        public ushort? ExecAddress { get; private set; } = null;
+        public const int MAX_TITLE_LENGTH = 6;
 
+        public string Title { get; private set; } = "UNTITLED";
+        public ushort? ExecAddress { get; private set; } = null;
         public bool Valid { get; private set; } = false;
         public string FilePath { get; private set; }
-        private List<(ushort SegmentAddress, byte[] Bytes)> blocks = new List<(ushort SegmentAddress, byte[] Bytes)>();
         public int Size { get; private set; }
         public int NumBlocks {  get { return blocks.Count; } }
         public ushort LowAddress { get; private set; }
         public ushort HighAddress { get; private set; }
         public bool IsLoaded { get; private set; }
+
+        private List<(ushort SegmentAddress, byte[] Bytes)> blocks = new List<(ushort SegmentAddress, byte[] Bytes)>();
+
         public CmdFile(string Path)
         {
+            // http://www.tim-mann.org/trs80/doc/ldosq1-4.txt has some
+            // good information on the CMD file format
+
             byte code;
             int length;
 
@@ -70,7 +77,11 @@ namespace Sharp80
                                     Finalize(true);
                                     return;
                                 case 0x04: break;   // end of partitioned data set member
-                                case 0x05: break;   // load module header
+                                case 0x05:
+                                    Title = String.Empty;
+                                    for (int j = 0; j < length; j++)
+                                        Title += (char)b[i + j];
+                                    break;
                                 case 0x06: break;   // partitioned data set header
                                 case 0x07: break;   // patch name header
                                 case 0x08: break;   // ISAM directory entry

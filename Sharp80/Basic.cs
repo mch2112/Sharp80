@@ -95,6 +95,8 @@ namespace Sharp80
                 }
                 Listing = sb.ToString();
             }
+            if (mode == Mode.Normal)
+                return;
         }
     }
 }

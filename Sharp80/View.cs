@@ -322,14 +322,45 @@ namespace Sharp80
                             }
                             return true;
                         case KeyCode.Y:
-                            var cmdFilePath = Computer.Assemble();
-                            if (!String.IsNullOrWhiteSpace(cmdFilePath) && System.IO.File.Exists(cmdFilePath))
+                            if (Storage.GetAsmFilePath(out string sourcePath))
                             {
-                                CmdFile = new CmdFile(cmdFilePath);
-                                if (CmdFile.Valid)
-                                    CurrentMode = ViewMode.CmdFile;
+                                if (Storage.LoadTextFile(sourcePath, out string source))
+                                {
+                                    var assembly = Computer.Assemble(source);
+                                    assembly.Write(System.IO.Path.ChangeExtension(sourcePath, ".cmd"));
+                                    if (assembly.CmdFIleWritten)
+                                    {
+                                        Dialogs.InformUser(string.Format("Assembled {0} to {1}.", System.IO.Path.GetFileName(sourcePath), System.IO.Path.GetFileName(assembly.CmdFilePath)));
+                                        CmdFile = assembly.ToCmdFile();
+                                        if (CmdFile?.Valid ?? false)
+                                            CurrentMode = ViewMode.CmdFile;
+                                        else
+                                            Dialogs.AlertUser("Assembled CMD file not valid."); // should never happen?
+                                    }
+                                    else if (assembly.NumErrors == 0)
+                                    {
+                                        // not sure what the problem is
+                                        Dialogs.AlertUser("Error assembling file.");
+                                    }
+                                    else if (assembly.IntFileWritten)
+                                    {
+                                        if (Dialogs.AskYesNo(string.Format("{0} error{1} found during assembly. Open intermediate file?",
+                                                                           assembly.NumErrors,
+                                                                           assembly.NumErrors == 1 ? String.Empty : "s")))
+                                        {
+                                            Dialogs.ShowTextFile(assembly.IntFilePath);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Dialogs.AlertUser("Assembly failed.");
+                                    }
+                                }
                                 else
-                                    Dialogs.AlertUser("Assembled CMD file not valid.");
+                                {
+                                    Dialogs.AlertUser("Could not open source file.");
+                                }
+                                Invalidate();
                             }
                             return true;
                         case KeyCode.Z:
