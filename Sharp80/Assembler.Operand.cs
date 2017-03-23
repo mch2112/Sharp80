@@ -165,7 +165,7 @@ namespace Sharp80.Assembler
                 }
             }
             public string Text
-            {
+            {   
                 get
                 {
                     if (IsNumeric)

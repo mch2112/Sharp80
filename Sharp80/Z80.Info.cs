@@ -34,6 +34,10 @@ namespace Sharp80.Processor
         {
             return string.Format("{0}\r\nPC   {1}\r\nSP   {2}\r\n\r\nAF   {3}\r\nBC   {4}\r\nDE   {5}\r\nHL   {6}\r\n\r\nIX   {7}\r\nIY   {8}\r\n\r\nAF'  {9}\r\nBC'  {10}\r\nDE'  {11}\r\nHL'  {12}\r\n\r\nIR   {13}{14}\r\nWZ   {15}\r\n\r\n(HL) {16}\r\n(SP) {17}", flagsToString[F.val], PC, SP, AF, BC, DE, HL, IX, IY, AFp, BCp, DEp, HLp, I, R, WZ, HLM, SPM);
         }
+        public string Disassemble(bool FromPC)
+        {
+            return Disassembler.Disassemble(Memory, FromPC ? PC.val : (ushort)0);
+        }
         public string GetDisassembly()
         {
             if (HistoricDisassemblyMode)
@@ -75,11 +79,11 @@ namespace Sharp80.Processor
         }
         public string GetLineInfo(string Prefix, ushort PC, Instruction inst)
         {
-            return string.Format("{0}{1}  {2,-11} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(memory, PC));
+            return string.Format("{0}{1}  {2} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(memory, PC));
         }
         public string GetLineInfo(string Prefix, ref ushort PC, Instruction inst)
         {
-            var s = string.Format("{0}{1}  {2,-11} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(memory, PC));
+            var s = string.Format("{0}{1}  {2} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(memory, PC));
             PC += inst.Size;
             return s;
         }
@@ -91,43 +95,13 @@ namespace Sharp80.Processor
         {
             return instructionSet.GetInstructionSetReport();
         }
-        public string Disassemble(bool FromPC)
-        {
-            int PC = FromPC ? this.PC.val : 0;
-            Instruction inst;
-
-            // Eliminate trailing NOPs
-            ushort lastAddress = 0xFFFF;
-            while (memory[lastAddress] == 0 && lastAddress > 0) // NOP
-                lastAddress--;
-            int end = lastAddress + 1;
-
-            if (end > 0xFFF0)
-                end = 0x10000;
-
-            var sb = new StringBuilder(500000);
-
-            var li = new Dictionary<ushort, Instruction>();
-
-            while (PC < end)
-            {
-                li.Add((ushort)PC, inst = GetInstructionAt((ushort)PC));
-                PC += inst.Size;
-            }
-
-            return string.Join(Environment.NewLine, li.Select(i => string.Format("{0}  {1,-11} {2}",
-                                                                                 i.Key.ToHexString(),
-                                                                                 Lib.GetSpacedHex(Memory, i.Key, i.Value.Size),
-                                                                                 i.Value.FullName(memory, i.Key)
-                                                                                 )));
-        }
-
+        
         public string GetHistoricDisassembly(ushort[] History, int historyCursor, ushort HighLight)
         {
             return string.Join(Environment.NewLine,
                                Enumerable.Range(historyCursor, History.Length - historyCursor)
                                .Select(i => new { idx = i, addr = History[i], inst = GetInstructionAt(History[i]) })
-                               .Select(n => string.Format("{0}{1} {2,-11} {3}",
+                               .Select(n => string.Format("{0}{1} {2} {3}",
                                                            (n.idx == History.Length - 1) ? ">" : " ",
                                                            n.addr.ToHexString(),
                                                            Lib.GetSpacedHex(Memory, n.addr, n.inst.Size),

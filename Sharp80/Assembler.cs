@@ -40,7 +40,7 @@ namespace Sharp80.Assembler
         private static string[] instructionNames = new string[] { "ADC", "ADD", "AND", "BIT", "CALL", "CCF", "CP", "CPD", "CPDR", "CPI", "CPIR", "CPL", "DAA",
                                                                   "DEC", "DI", "DJNZ", "EI", "EX", "EXX", "HALT", "IM", "IN", "INC", "IND", "INDR", "INI", "INIR", "JP", "JR",
                                                                   "LD", "LDD", "LDDR", "LDI", "LDIR", "NEG", "NOP", "OR", "OTDR", "OTIR", "OUT", "OUTD", "OUTI", "OUTR",
-                                                                  "POP", "PUSH", "RES", "RET", "RETI", "RETN", "RL", "RLA", "RLC", "RLCA", "RLD", "RR", "RRC", "RRCA",
+                                                                  "POP", "PUSH", "RES", "RET", "RETI", "RETN", "RL", "RLA", "RLC", "RLCA", "RLD", "RR", "RRA", "RRC", "RRCA",
                                                                   "RRD", "RST", "SBC", "SCF", "SET", "SLA", "SRA", "SRL", "SUB", "XOR" };
 
         private List<Macro> macros = new List<Macro>();
@@ -463,32 +463,62 @@ namespace Sharp80.Assembler
         }
         private string PreprocessLine(string Input)
         {
-            string line = RemoveSpaces(Input.Substring(0, Math.Min(256, Input.Length)));
+            string line = Input.TrimEnd().Truncate(0x100);
 
             var sb = new StringBuilder();
             bool commenting = false;
             bool quoting = false;
+            bool whitespace = false;
             bool escaping = false;
+            int colNum = 0;
 
-            // keep quoting from messing these up
-
-            for (int i = 0; i < line.Length; i++)
+            // skip leading colons on labels
+            for (int i = line.StartsWith(":") ? 1 : 0; i < line.Length; i++)
             {
                 var c = line[i];
 
-                if (c == ';' && !quoting)
+                if (quoting)
                 {
-                    commenting = true;
+                    if (c == SINGLE_QUOTE)
+                        quoting = false;
                 }
-                if (!commenting && c == SINGLE_QUOTE && !escaping)
+                else
                 {
-                    // AF', BC', DE', HL' aren't quoted
-                    if (c >= 2 && !IsPrimableRegister(line.Substring(i - 2, 2)))
-                        quoting = !quoting;
+                    switch (c)
+                    {
+                        case ';':
+                            commenting = true;
+                            whitespace = false;
+                            break;
+                        case SINGLE_QUOTE:
+                            if (!escaping)
+                                // AF', BC', DE', HL' aren't quoted
+                                if (c >= 2 && !IsPrimableRegister(line.Substring(i - 2, 2)))
+                                    quoting = true;
+                            whitespace = false;
+                            break;
+                        case ' ':
+                        case '\t':
+                            if (whitespace)
+                            {
+                                continue;
+                            }
+                            else if (colNum <= 1)
+                            {
+                                colNum++;
+                                c = '\t';
+                                whitespace = true;
+                            }
+                            break;
+                        default:
+                            whitespace = false;
+                            break;
+                    }
                 }
-
                 if (quoting || commenting)
                     sb.Append(c);
+                else if (whitespace)
+                    sb.Append('\t');
                 else
                     sb.Append(char.ToUpper(c));
 

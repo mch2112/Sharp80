@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Sharp80.Processor
@@ -169,7 +170,7 @@ namespace Sharp80.Processor
         }
         public byte[] Bytes => op;
 
-        public string FullName(IMemory Memory, ushort PC)
+        public string FullName(IReadOnlyList<byte> Memory, ushort PC)
         {
             if (hasReplaceableTokens)
                 return Mnemonic + LiteralSub(Memory, PC, Name.Substring(Mnemonic.Length));
@@ -262,7 +263,7 @@ namespace Sharp80.Processor
             }
         }
         
-        private string LiteralSub(IMemory Memory, ushort PC, string s)
+        private string LiteralSub(IReadOnlyList<byte> Memory, ushort PC, string s)
         {
             if (s.Contains("NN"))
             {

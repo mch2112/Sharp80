@@ -4,6 +4,7 @@
 //#define NOROM
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
@@ -11,6 +12,7 @@ namespace Sharp80
 {
     internal sealed partial class Memory : IMemory
     {
+        public const int MEMORY_SIZE = 0x10000;
         public const ushort VIDEO_MEMORY_BLOCK = 0x3C00;
 
         private const ushort KEYBOARD_MEMORY_BLOCK = 0x3800;
@@ -20,7 +22,7 @@ namespace Sharp80
         
         public Memory()
         {
-            mem = new byte[0x10000];
+            mem = new byte[MEMORY_SIZE];
 
 #if NOROM
             firstRAMByte = 0;
@@ -38,6 +40,16 @@ namespace Sharp80
         }
 
         // RAM ACCESS
+
+        public int Count => MEMORY_SIZE;
+        public byte this[int Location] => this[(ushort)Location];
+        public IEnumerator<byte> GetEnumerator()
+        {
+            int i = 0;
+            if (i < MEMORY_SIZE)
+                yield return mem[i++];
+        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public byte this[ushort Location]
         {
@@ -89,14 +101,7 @@ namespace Sharp80
             }
         }
 
-        public IEnumerable<byte> VideoMemory
-        {
-            get
-            {
-                for (int i = VIDEO_MEMORY_BLOCK; i < VIDEO_MEMORY_BLOCK + 0x400; i++)
-                    yield return mem[i];
-            }
-        }
+        public byte[] VideoMemory => mem.Slice(VIDEO_MEMORY_BLOCK, VIDEO_MEMORY_BLOCK + 0x400);
 
         public void SetWordAt(ushort Location, ushort Value)
         {
@@ -116,7 +121,10 @@ namespace Sharp80
                                         this[Location]);
             }
         }
-
+        public IReadOnlyCollection<byte> ToArray()
+        {
+            return Array.AsReadOnly(mem);
+        }
         // SNAPSHOTS
 
         public void Serialize(BinaryWriter Writer)
@@ -126,7 +134,7 @@ namespace Sharp80
         }
         public void Deserialize(BinaryReader Reader)
         {
-            Array.Copy(Reader.ReadBytes(0x10000), mem, 0x10000);
+            Array.Copy(Reader.ReadBytes(MEMORY_SIZE), mem, MEMORY_SIZE);
             firstRAMByte = Reader.ReadUInt16();
         }
         private void LoadRom()

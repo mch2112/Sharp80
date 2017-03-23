@@ -89,16 +89,18 @@ namespace Sharp80.Processor
         private bool skipOneBreakpoint = false;
 
         // Circular history buffer
-        // There's an extra element because threading issue, the cursor may sometimes
-        // point past the last item in the ++ %= non-atomic sequence; we don't want 
-        // to allow this to cause an exception.
         private ushort[] historyBuffer = new ushort[NUM_DISASSEMBLY_LINES];
         private int historyBufferCursor = 0;
         private ulong instructionCount = 0;
 
         // CONSTRUCTORS
 
-        static Z80() => InitFlagsString();
+        static Z80()
+        {
+            InitFlagsString();
+            instructionSet = new InstructionSet();
+            Disassembler.Initialize(instructionSet);
+        }
 
         public Z80(Computer Computer, PortSet Ports)
         {

@@ -124,7 +124,7 @@ namespace Sharp80.Assembler
             {
                 try
                 {
-                    byte[] buffer = new byte[0x10000];
+                    byte[] buffer = new byte[Memory.MEMORY_SIZE];
                     var data = new List<(ushort SegmentAddress, byte[] Bytes)>();
                     int lineNum = 0;
 

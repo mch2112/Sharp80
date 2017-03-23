@@ -7,7 +7,7 @@ namespace Sharp80.Processor
 {
     internal partial class Z80 : IZ80_Status
     {
-        private readonly InstructionSet instructionSet = new InstructionSet();
+        private static readonly InstructionSet instructionSet;
 
         private void SetupInstructionObjects()
         {

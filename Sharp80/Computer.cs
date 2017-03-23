@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Sharp80
@@ -9,6 +10,7 @@ namespace Sharp80
     internal class Computer : IDisposable
     {
         private const int SERIALIZATION_VERSION = 8;
+        private const ushort TAPE_SPEED_SELECT_RAM_LOCATION = 0x4211;
 
         public bool Ready { get; private set; }
         public bool HasRunYet { get; private set; }
@@ -74,26 +76,15 @@ namespace Sharp80
         /// This may vary from Settings.DiskEnabled because we'll disable
         /// the floppy contoller on start if no disk is in drive 0
         /// </summary>
-        public bool DiskEnabled
-        {
-            get => FloppyController.Enabled;
-        }
-        public bool IsRunning
-        {
-            get => Clock.IsRunning;
-        }
-        public ushort ProgramCounter
-        {
-            get => Processor.PcVal;
-        }
-        public ulong GetElapsedTStates()
-        {
-            return Clock.ElapsedTStates;
-        }
-        public IMemory Memory
-        {
-            get => Processor.Memory;
-        }
+        public bool DiskEnabled => FloppyController.Enabled;
+        public bool IsRunning => Clock.IsRunning;
+        public ushort ProgramCounter => Processor.PcVal;
+        public ulong GetElapsedTStates() =>Clock.ElapsedTStates;
+
+        public IReadOnlyList<byte> Memory => Processor.Memory;
+
+        public byte[] VideoMemory => Processor.Memory.VideoMemory;
+
         public ushort BreakPoint
         {
             get => Processor.BreakPoint;
@@ -106,8 +97,8 @@ namespace Sharp80
         }
         public bool AltKeyboardLayout
         {
-            get => Memory.AltKeyboardLayout;
-            set => Memory.AltKeyboardLayout = value;
+            get => Processor.Memory.AltKeyboardLayout;
+            set => Processor.Memory.AltKeyboardLayout = value;
         }
         public bool SoundOn
         {
@@ -343,9 +334,11 @@ namespace Sharp80
         /// Backdoor to get or change the initial user selection at
         /// the "Cass?" prompt
         /// </summary>
-
-        public Baud TapeUserSelectedSpeed { get => Tape.UserSelectedSpeed; set => Tape.UserSelectedSpeed = value; }
-
+        public Baud TapeUserSelectedSpeed
+        {
+            get => Processor.Memory[TAPE_SPEED_SELECT_RAM_LOCATION] == 0x00 ? Baud.Low : Baud.High;
+            set => Processor.Memory[TAPE_SPEED_SELECT_RAM_LOCATION] = (value == Baud.High ? (byte)0xFF : (byte)0x00);
+        }
         // PRINTER
 
         public bool PrinterHasContent => Printer.HasContent;
@@ -420,7 +413,7 @@ namespace Sharp80
         {
             Stop(WaitForStop: true);
 
-            if (File.Valid && File.Load(Memory))
+            if (File.Valid && File.Load(Processor.Memory))
             {
                 if (File.ExecAddress.HasValue)
                     Processor.Jump(File.ExecAddress.Value);

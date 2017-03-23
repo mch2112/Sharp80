@@ -200,6 +200,10 @@ namespace Sharp80
                             Log.Clear();
                             MessageCallback("Log Cleared");
                             return true;
+                        case KeyCode.M:
+                            DumpMemory();
+                            MessageCallback("Memory Dumped");
+                            break;
                         case KeyCode.N:
                             bool wasRunning = Computer.IsRunning;
                             Computer.Stop(true);
@@ -563,6 +567,10 @@ namespace Sharp80
                     Dialogs.AlertUser($"Failed to create floppy with filename {path}.",
                                       "Create floppy failed");
             }
+        }
+        private void DumpMemory()
+        {
+            Storage.SaveBinaryFile(System.IO.Path.Combine(Storage.AppDataPath, "Memory.bin"), Computer.Memory.ToArray());
         }
     }
 }

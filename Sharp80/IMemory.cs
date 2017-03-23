@@ -6,11 +6,11 @@ using System.Collections.Generic;
 
 namespace Sharp80
 {
-    internal interface IMemory : ISerializable
+    internal interface IMemory : IReadOnlyList<byte>, ISerializable
     {
         byte this[ushort Location] { get; set; }
 
-        IEnumerable<byte> VideoMemory { get; }
+        byte[] VideoMemory { get; }
 
         ushort GetWordAt(ushort Address);
         void SetWordAt(ushort Address, ushort Value);

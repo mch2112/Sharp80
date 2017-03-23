@@ -14,8 +14,7 @@ namespace Sharp80
     {
         private const int DEFAULT_BLANK_TAPE_LENGTH = 0x0800;
         private const int MAX_TAPE_LENGTH = 0x12000;
-        private const ushort TAPE_SPEED_SELECT_RAM_LOCATION = 0x4211;
-
+        
         // Values in ticks (1 tstate = 1000 ticks)
         // All determined empirically by M3 ROM write timing
         // Ranges and thresholds are positive to positive, so about twice
@@ -174,12 +173,7 @@ namespace Sharp80
         public float Percent { get { return (float)byteCursor / data.Length; } }
 
         // USER CONTROLS
-
-        public Baud UserSelectedSpeed
-        {
-            get => computer.Memory[TAPE_SPEED_SELECT_RAM_LOCATION] == 0x00 ? Baud.Low : Baud.High;
-            set => computer.Memory[TAPE_SPEED_SELECT_RAM_LOCATION] = (value == Baud.High ? (byte)0xFF : (byte)0x00);
-        }
+        
         public bool LoadBlank()
         {
             return Load(String.Empty);

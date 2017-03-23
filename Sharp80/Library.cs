@@ -2,26 +2,33 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
-using System.Text;
+using System.Collections.Generic;
 
 namespace Sharp80
 {
-	internal static partial class Lib
-	{
-        public static string GetSpacedHex(IMemory memory, ushort index, int count)
+    internal static partial class Lib
+    {
+        /// <summary>
+        /// Returns up to four bytes of hex values separated by spaces and right padded
+        /// </summary>
+        public static string GetSpacedHex(IReadOnlyList<byte> memory, ushort index, int count)
         {
-            string s = String.Empty;
-
-            for (int i = 0; i < count; i++)
+            switch (count)
             {
-                if (i > 0)
-                    s += " ";
-                s += memory[index++].ToHexString();
+                case 0:
+                    return "           ";
+                case 1:
+                    return $"{memory[index]:X2}         ";
+                case 2:
+                    return $"{memory[index]:X2} {memory[index + 1]:X2}      ";
+                case 3:
+                    return $"{memory[index]:X2} {memory[index + 1]:X2} {memory[index + 2]:X2}   ";
+                case 4:
+                    return $"{memory[index]:X2} {memory[index + 1]:X2} {memory[index + 2]:X2} {memory[index + 3]:X2}";
+                default:
+                    throw new Exception();
             }
-
-            return s;
         }
-
         public static ushort HexToUShort(string input) => ushort.Parse(input,
                                                                        System.Globalization.NumberStyles.AllowHexSpecifier,
                                                                        System.Globalization.CultureInfo.InvariantCulture);

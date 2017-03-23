@@ -132,6 +132,7 @@
     <Compile Include="Clock.cs" />
     <Compile Include="CmdFile.cs" />
     <Compile Include="Computer.cs" />
+    <Compile Include="Disassembler.cs" />
     <Compile Include="ExceptionHandler.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="FloppyController.DriveState.cs" />
@@ -165,6 +166,7 @@
     <Compile Include="ISerializable.cs" />
     <Compile Include="SoundX.FrameBuffer.cs" />
     <Compile Include="SoundX.Noise.cs" />
+    <Compile Include="SubArray.cs" />
     <Compile Include="Tape.cs" />
     <Compile Include="Tape.Transition.cs" />
     <Compile Include="Trigger.cs" />

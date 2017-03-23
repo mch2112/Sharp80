@@ -669,7 +669,7 @@ namespace Sharp80
 
             if (ViewBytes == null)
             {
-                ViewBytes = computer.Memory.VideoMemory;
+                ViewBytes = computer.VideoMemory;
                 stdWidth = !isWideCharMode;
                 if (stdWidth)
                     charGen = isKanjiCharMode ? charGenKanji : charGenNormal;

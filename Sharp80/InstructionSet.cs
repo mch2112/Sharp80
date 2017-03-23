@@ -73,7 +73,7 @@ namespace Sharp80.Processor
                 return i ?? NOP;
             }
 
-            public Instruction GetInstruction(IMemory Memory, ushort Address)
+            public Instruction GetInstruction(IReadOnlyList<byte> Memory, ushort Address)
             {
                 byte b = Memory[Address++];
 
