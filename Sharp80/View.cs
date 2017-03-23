@@ -500,7 +500,7 @@ namespace Sharp80
         private static void Disassemble(bool FromPc)
         {
             string path = System.IO.Path.Combine(Storage.AppDataPath, "Disassembly.txt");
-            Storage.SaveTextFile(path, Computer.Disassemble(true, FromPc));
+            Storage.SaveTextFile(path, Computer.Disassemble(FromPc));
             InvokeUserCommand(UserCommand.Window);
             Dialogs.ShowTextFile(path);
         }

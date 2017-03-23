@@ -176,18 +176,7 @@ namespace Sharp80.Processor
             else
                 return Name;
         }
-        public string NameWithRelativeAddressesAsComments(IMemory Memory, ushort PC)
-        {
-            string s = FullName(Memory, PC);
-
-            int i = s.IndexOf(" {");
-
-            if (i > 0)
-                s = s.Substring(0, i).PadRight(12) + "; " + s.Substring(i + 2, 4); 
-
-            return s;
-        }
-        
+       
         public int NumOperands
         {
             get
@@ -297,9 +286,8 @@ namespace Sharp80.Processor
             {
                 byte b = Memory[PC.Offset(OpcodeInitialLength)];
                 sbyte x = b.TwosComp();
-                s = s.Replace(" e", " " + PC.Offset(size + x).ToHexString() + " {" + b.ToTwosCompHexString() + "}");
+                s = s.Replace(" e", $" {PC.Offset(size + x):X4}");
             }
-
             return s;
         }
 

@@ -157,7 +157,7 @@ namespace Sharp80
 
             Log.LogDebug("Key Event: " + Key.ToString());
 
-            if (Key.Key == KeyCode.Capital)
+            if (Key.Key == KeyCode.Capital && Key.Released)
                 TurnCapsLockOff();
 
             if (AltKeyboardLayout)

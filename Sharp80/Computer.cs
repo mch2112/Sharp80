@@ -433,7 +433,7 @@ namespace Sharp80
                 return false;
             }
         }
-        public string Disassemble(bool RelativeAddressesAsComments, bool FromPC) => Processor.Disassemble(RelativeAddressesAsComments, FromPC);
+        public string Disassemble(bool FromPC) => Processor.Disassemble(FromPC);
         public string GetInstructionSetReport() => Processor.GetInstructionSetReport();
         public Assembler.Assembly Assemble(string SourceText) => Processor.Assemble(SourceText);
 

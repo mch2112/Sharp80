@@ -92,7 +92,7 @@ namespace Sharp80.Processor
         // There's an extra element because threading issue, the cursor may sometimes
         // point past the last item in the ++ %= non-atomic sequence; we don't want 
         // to allow this to cause an exception.
-        private ushort[] historyBuffer = new ushort[NUM_DISASSEMBLY_LINES + 1];
+        private ushort[] historyBuffer = new ushort[NUM_DISASSEMBLY_LINES];
         private int historyBufferCursor = 0;
         private ulong instructionCount = 0;
 
@@ -410,8 +410,12 @@ namespace Sharp80.Processor
 
         private void UpdatePCHistory()
         {
-            ++historyBufferCursor;
-            historyBufferCursor %= NUM_DISASSEMBLY_LINES;
+            // Atomic for thread safety
+            if (historyBufferCursor == NUM_DISASSEMBLY_LINES - 1)
+                historyBufferCursor = 0;
+            else
+                ++historyBufferCursor;
+
             historyBuffer[historyBufferCursor] = PC.val;
         }
 

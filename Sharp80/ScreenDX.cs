@@ -50,7 +50,7 @@ namespace Sharp80
         private readonly uint messageDisplayDuration;
 
         private DXBitmap[] charGenNormal, charGenWide, charGenKanji, charGenKanjiWide;
-        private RawRectangleF infoRect, z80Rect, disassemRect, statusMsgRect;
+        private RawRectangleF infoRect, z80Rect, disassemRect;
         private RawRectangleF[] cellsNormal, cellsWide;
 
         private byte[] shadowScreen;
@@ -424,12 +424,6 @@ namespace Sharp80
                                          yOrigin + ScreenMetrics.VIRTUAL_SCREEN_HEIGHT - ScreenMetrics.INFO_RECT_HEIGHT,
                                          z80Rect.Left + ScreenMetrics.ADV_INFO_WIDTH,
                                          yOrigin + ScreenMetrics.VIRTUAL_SCREEN_HEIGHT);
-
-            // Bottom right corner
-            statusMsgRect = new RawRectangleF(Size.Width - 175,
-                                              Size.Height - 30,
-                                              Size.Width - ScreenMetrics.SPACING,
-                                              Size.Height);
 
             erase = true;
         }

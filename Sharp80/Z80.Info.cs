@@ -91,7 +91,7 @@ namespace Sharp80.Processor
         {
             return instructionSet.GetInstructionSetReport();
         }
-        public string Disassemble(bool AddressAsComment, bool FromPC)
+        public string Disassemble(bool FromPC)
         {
             int PC = FromPC ? this.PC.val : 0;
             Instruction inst;
@@ -118,8 +118,7 @@ namespace Sharp80.Processor
             return string.Join(Environment.NewLine, li.Select(i => string.Format("{0}  {1,-11} {2}",
                                                                                  i.Key.ToHexString(),
                                                                                  Lib.GetSpacedHex(Memory, i.Key, i.Value.Size),
-                                                                                 AddressAsComment ? i.Value.NameWithRelativeAddressesAsComments(memory, i.Key)
-                                                                                                  : i.Value.FullName(memory, i.Key)
+                                                                                 i.Value.FullName(memory, i.Key)
                                                                                  )));
         }
 

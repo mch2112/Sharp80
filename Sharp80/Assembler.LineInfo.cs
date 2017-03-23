@@ -12,10 +12,10 @@ namespace Sharp80.Assembler
     {
         internal class LineInfo
         {
-            public string RawLine { get; private set; }
-            public string Label { get; private set; }
+            public string RawLine  { get; private set; }
+            public string Label    { get; private set; }
             public string Mnemonic { get; private set; }
-            public string Comment { get; private set; }
+            public string Comment  { get; private set; }
 
             public List<Operand> Operands { get; private set; } = new List<Operand>();
 
@@ -32,21 +32,16 @@ namespace Sharp80.Assembler
             public byte? Byte2 { get; set; } = null;
             public byte? Byte3 { get; set; } = null;
 
+            public Processor.Instruction Instruction { get; set; } = null;
+            public Dictionary<string, LineInfo> SymbolTable { get; private set; }
+
             public int SourceFileLine { get; private set; }
             public bool IsSuppressed { get; private set; } = false;
+            public bool IsMetaInstruction => metaInstructions.Contains(Mnemonic);
+            public bool IsInstruction => instructionNames.Contains(Mnemonic);
 
             private List<string> errors = null;
-            public string Error
-            {
-                get
-                {
-                    if (errors == null)
-                        return String.Empty;
-                    else
-                        return String.Join(Environment.NewLine, errors.Distinct());
-                }
-            }
-
+            public string Error => (errors is null) ? String.Empty : String.Join(Environment.NewLine, errors.Distinct());
             public void SetError(string ErrMsg)
             {
                 errors = errors ?? new List<string>();
@@ -58,10 +53,7 @@ namespace Sharp80.Assembler
             public bool HasLabel =>    Label.Length > 0;
             public bool HasMnemonic => Mnemonic.Length > 0;
             public bool HasComment =>  Comment.Length > 0;
-            public bool CommentOnly => HasComment || !Valid;
-
-            public Processor.Instruction Instruction { get; set; } = null;
-            public Dictionary<string, LineInfo> SymbolTable { get; private set; }
+            public bool CommentOnly => HasComment && !Valid;
 
             public LineInfo(string RawLine, int SourceFileLine, Dictionary<string, LineInfo> SymbolTable)
             {
@@ -180,8 +172,6 @@ namespace Sharp80.Assembler
                 if (NumOperands == 2 && Operands[OpNum].IsAccumulator)
                     Operands.Remove(Operands[OpNum]);
             }
-            public bool IsMetaInstruction => metaInstructions.Contains(Mnemonic);
-            public bool IsInstruction => instructionNames.Contains(Mnemonic);
             public string FullName
             {
                 get
@@ -227,7 +217,7 @@ namespace Sharp80.Assembler
 
                     var s = new StringBuilder();
                     if (RawLine.Length > 0)
-                        s.Append(FullName.PadRight(51) + "; " + RawLine);
+                        s.Append(FullName.PadRight(51) + "; " + RawLine.Replace("\t", "  "));
                     else
                         s.Append(FullName);
                     return s.ToString();

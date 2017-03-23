@@ -22,7 +22,7 @@ namespace Sharp80
         public const float VIRTUAL_SCREEN_HEIGHT = NUM_SCREEN_CHARS_Y * CHAR_PIXELS_Y;
         public const float VIRTUAL_SCREEN_ASPECT_RATIO = VIRTUAL_SCREEN_WIDTH / VIRTUAL_SCREEN_HEIGHT;
         public const float DISPLAY_SPACING = 10f;
-        public const float ADV_INFO_WIDTH = 310f;
+        public const float ADV_INFO_WIDTH = 285f;
         public const float INFO_RECT_HEIGHT = 40f;
         public const float SPACING = 10f;
         public const float Z80WIDTH = 70f;
