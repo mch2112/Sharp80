@@ -83,7 +83,7 @@ namespace Sharp80
 
         public IReadOnlyList<byte> Memory => Processor.Memory;
 
-        public byte[] VideoMemory => Processor.Memory.VideoMemory;
+        public SubArray<byte> VideoMemory => Processor.Memory.VideoMemory;
 
         public ushort BreakPoint
         {
@@ -311,7 +311,7 @@ namespace Sharp80
 
         // TAPE DRIVE
 
-        public bool TapeLoad(string Path) { return Tape.Load(Path); }
+        public bool TapeLoad(string Path) => Tape.Load(Path);
         public string TapeFilePath { get => Tape.FilePath; set => Tape.FilePath = value; }
         public void TapeLoadBlank() => Tape.LoadBlank();
         public void TapePlay() => Tape.Play();
@@ -426,7 +426,7 @@ namespace Sharp80
                 return false;
             }
         }
-        public string Disassemble(bool FromPC) => Processor.Disassemble(FromPC);
+        public string Disassemble(ushort Start, ushort End, bool MakeAssemblable) => Processor.Disassemble(Start, End, MakeAssemblable);
         public string GetInstructionSetReport() => Processor.GetInstructionSetReport();
         public Assembler.Assembly Assemble(string SourceText) => Processor.Assemble(SourceText);
 

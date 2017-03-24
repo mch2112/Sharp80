@@ -15,12 +15,12 @@ namespace Sharp80
         public bool Valid { get; private set; } = false;
         public string FilePath { get; private set; }
         public int Size { get; private set; }
-        public int NumBlocks {  get { return blocks.Count; } }
+        public int NumBlocks {  get { return segments.Count; } }
         public ushort LowAddress { get; private set; }
         public ushort HighAddress { get; private set; }
         public bool IsLoaded { get; private set; }
 
-        private List<(ushort SegmentAddress, byte[] Bytes)> blocks = new List<(ushort SegmentAddress, byte[] Bytes)>();
+        private List<(ushort SegmentAddress, byte[] Bytes)> segments = new List<(ushort SegmentAddress, byte[] Bytes)>();
 
         public CmdFile(string Path)
         {
@@ -61,7 +61,7 @@ namespace Sharp80
                                         length -= 0x02;
                                     var data = new byte[length];
                                     Array.Copy(b, i, data, 0, length);
-                                    blocks.Add((addr, data));
+                                    segments.Add((addr, data));
                                     break;
                                 case 0x02:          // transfer address
                                     if (length == 0x01)
@@ -103,11 +103,11 @@ namespace Sharp80
             }
             Finalize(false);
         }
-        internal bool Load(IMemory Memory)
+        public bool Load(IMemory Memory)
         {
             if (Valid)
             {
-                foreach (var b in blocks)
+                foreach (var b in segments)
                     for (int i = 0; i < b.Bytes.Length; i++)
                         Memory[(ushort)(i + b.SegmentAddress)] = b.Bytes[i];
                 IsLoaded = true;
@@ -119,30 +119,33 @@ namespace Sharp80
                 return false;
             }
         }
+
+        public IEnumerable<(ushort Address, IList<byte> Bytes)> Segments => segments.Select(s => (s.SegmentAddress, (IList<byte>)s.Bytes));
+
         private void Finalize(bool Valid)
         {
-            this.Valid = Valid && blocks.Count > 0;
+            this.Valid = Valid && segments.Count > 0;
             if (Valid)
             {
-                blocks = blocks.OrderBy(b => b.SegmentAddress).ToList();
-                for (int i = 0; i < blocks.Count - 1; i++)
+                segments = segments.OrderBy(b => b.SegmentAddress).ToList();
+                for (int i = 0; i < segments.Count - 1; i++)
                 {
                     // are these adjoining blocks?
-                    if (blocks[i].SegmentAddress + blocks[i].Bytes.Length == blocks[i + 1].SegmentAddress)
+                    if (segments[i].SegmentAddress + segments[i].Bytes.Length == segments[i + 1].SegmentAddress)
                     {
                         // if so, combine them
-                        byte[] data = new byte[blocks[i].Bytes.Length + blocks[i + 1].Bytes.Length];
-                        Array.Copy(blocks[i].Bytes, 0, data, 0, blocks[i].Bytes.Length);
-                        Array.Copy(blocks[i + 1].Bytes, 0, data, blocks[i].Bytes.Length, blocks[i + 1].Bytes.Length);
-                        blocks[i] = (blocks[i].SegmentAddress, data);
-                        blocks.RemoveAt(i + 1);
+                        byte[] data = new byte[segments[i].Bytes.Length + segments[i + 1].Bytes.Length];
+                        Array.Copy(segments[i].Bytes, 0, data, 0, segments[i].Bytes.Length);
+                        Array.Copy(segments[i + 1].Bytes, 0, data, segments[i].Bytes.Length, segments[i + 1].Bytes.Length);
+                        segments[i] = (segments[i].SegmentAddress, data);
+                        segments.RemoveAt(i + 1);
                         i--;
                     }
                 }
-                Size = blocks.Sum(b => b.Bytes.Length);
+                Size = segments.Sum(b => b.Bytes.Length);
                 Valid &= Size > 0;
-                LowAddress = blocks[0].SegmentAddress;
-                HighAddress = (ushort)(blocks.Last().SegmentAddress + blocks.Last().Bytes.Length - 1);
+                LowAddress = segments[0].SegmentAddress;
+                HighAddress = (ushort)(segments.Last().SegmentAddress + segments.Last().Bytes.Length - 1);
             }
             else
             {

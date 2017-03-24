@@ -288,9 +288,9 @@ namespace Sharp80.Assembler
                 if (lp.Instruction != null)
                 {
                     lp.Byte0 = lp.Instruction.Op0;
-                    if (lp.Instruction.OpcodeLength > 1)
+                    if (lp.Instruction.OpcodeSize > 1)
                         lp.Byte1 = lp.Instruction.Op1;
-                    if (lp.Instruction.OpcodeLength > 2)
+                    if (lp.Instruction.OpcodeSize > 2)
                         lp.Byte3 = lp.Instruction.Op3;
                 }
             }

@@ -86,8 +86,8 @@ namespace Sharp80
                                         Format() +
                                         Indent("[F6] Jump to Address") +
                                         Format() +
-                                        Indent("[Alt]+[Y] Invoke Z80 Assembler") +
-                                        Indent("[Alt]+[E] Dump Memory Disassembly to File") +
+                                        Indent("[Alt]+[Y] Invoke Assembler") +
+                                        Indent("[Alt]+[E] Invoke Disassembler") +
                                         Format() +
                                         Format(new string[] { "[Alt]+[M] Memory Viewer" }, true) +
                                         Format(new string[] { "[Alt]+[I] Instruction Set Report" }, true) +

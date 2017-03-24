@@ -18,11 +18,13 @@ namespace Sharp80
         private const ushort KEYBOARD_MEMORY_BLOCK = 0x3800;
 
         private byte[] mem;            // The entire memory space of the TRS80
+        private SubArray<byte> videoMemory;
         public ushort firstRAMByte;    // 1 + the last ROM byte
         
         public Memory()
         {
             mem = new byte[MEMORY_SIZE];
+            videoMemory = new SubArray<byte>(mem, 0x3C00, 0x4000);
 
 #if NOROM
             firstRAMByte = 0;
@@ -101,7 +103,7 @@ namespace Sharp80
             }
         }
 
-        public byte[] VideoMemory => mem.Slice(VIDEO_MEMORY_BLOCK, VIDEO_MEMORY_BLOCK + 0x400);
+        public SubArray<byte> VideoMemory => videoMemory;
 
         public void SetWordAt(ushort Location, ushort Value)
         {

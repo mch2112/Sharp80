@@ -188,6 +188,7 @@
     <Compile Include="SoundX.cs" />
     <Compile Include="View.Breakpoint.cs" />
     <Compile Include="View.Cmd.cs" />
+    <Compile Include="View.Disassembler.cs" />
     <Compile Include="View.Tape.cs" />
     <Compile Include="View.cs" />
     <Compile Include="View.Disk.cs" />

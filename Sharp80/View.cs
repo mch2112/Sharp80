@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Sharp80
 {
-    public enum ViewMode { Breakpoint, CmdFile, Cpu, Disk, FloppyController, Help, Jump, Memory, Normal, Options, Printer, Splash, Tape, Zap }
+    public enum ViewMode { Breakpoint, CmdFile, Cpu, Disassembler, Disk, FloppyController, Help, Jump, Memory, Normal, Options, Printer, Splash, Tape, Zap }
     public enum UserCommand { ToggleAdvancedView, ShowAdvancedView, ToggleFullScreen, Window, GreenScreen, ZoomIn, ZoomOut, HardReset, Exit }
 
     internal abstract class View
@@ -71,6 +71,7 @@ namespace Sharp80
                 new ViewBreakpoint();
                 new ViewCmdFile();
                 new ViewCpu();
+                new ViewDisassembler();
                 new ViewDisk();
                 new ViewFloppyController();
                 new ViewHelp();
@@ -192,10 +193,6 @@ namespace Sharp80
                             MessageCallback("Debug Log: " + (Log.DebugLogOn ? "On" : "Off"));
                             break;
 #endif
-                        case KeyCode.E:
-                            // start the disassembly at the current PC location
-                            Disassemble(true);
-                            return true;
                         case KeyCode.L:
                             Log.Clear();
                             MessageCallback("Log Cleared");
@@ -258,7 +255,7 @@ namespace Sharp80
                             CurrentMode = ViewMode.FloppyController;
                             return true;
                         case KeyCode.E:
-                            Disassemble(false);
+                            CurrentMode = ViewMode.Disassembler;
                             return true;
                         case KeyCode.G:
                             InvokeUserCommand(UserCommand.GreenScreen);
@@ -326,46 +323,7 @@ namespace Sharp80
                             }
                             return true;
                         case KeyCode.Y:
-                            if (Storage.GetAsmFilePath(out string sourcePath))
-                            {
-                                if (Storage.LoadTextFile(sourcePath, out string source))
-                                {
-                                    var assembly = Computer.Assemble(source);
-                                    assembly.Write(System.IO.Path.ChangeExtension(sourcePath, ".cmd"));
-                                    if (assembly.CmdFIleWritten)
-                                    {
-                                        Dialogs.InformUser(string.Format("Assembled {0} to {1}.", System.IO.Path.GetFileName(sourcePath), System.IO.Path.GetFileName(assembly.CmdFilePath)));
-                                        CmdFile = assembly.ToCmdFile();
-                                        if (CmdFile?.Valid ?? false)
-                                            CurrentMode = ViewMode.CmdFile;
-                                        else
-                                            Dialogs.AlertUser("Assembled CMD file not valid."); // should never happen?
-                                    }
-                                    else if (assembly.NumErrors == 0)
-                                    {
-                                        // not sure what the problem is
-                                        Dialogs.AlertUser("Error assembling file.");
-                                    }
-                                    else if (assembly.IntFileWritten)
-                                    {
-                                        if (Dialogs.AskYesNo(string.Format("{0} error{1} found during assembly. Open intermediate file?",
-                                                                           assembly.NumErrors,
-                                                                           assembly.NumErrors == 1 ? String.Empty : "s")))
-                                        {
-                                            Dialogs.ShowTextFile(assembly.IntFilePath);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        Dialogs.AlertUser("Assembly failed.");
-                                    }
-                                }
-                                else
-                                {
-                                    Dialogs.AlertUser("Could not open source file.");
-                                }
-                                Invalidate();
-                            }
+                            InvokeAssembler();
                             return true;
                         case KeyCode.Z:
                             if (Computer.AnyDriveLoaded)
@@ -389,7 +347,50 @@ namespace Sharp80
             }
             return false;
         }
-        
+        protected static void InvokeAssembler()
+        {
+            if (Storage.GetAsmFilePath(out string sourcePath))
+            {
+                if (Storage.LoadTextFile(sourcePath, out string source))
+                {
+                    var assembly = Computer.Assemble(source);
+                    assembly.Write(System.IO.Path.ChangeExtension(sourcePath, ".cmd"));
+                    if (assembly.CmdFIleWritten)
+                    {
+                        Dialogs.InformUser(string.Format("Assembled {0} to {1}.", System.IO.Path.GetFileName(sourcePath), System.IO.Path.GetFileName(assembly.CmdFilePath)));
+                        CmdFile = assembly.ToCmdFile();
+                        if (CmdFile?.Valid ?? false)
+                            CurrentMode = ViewMode.CmdFile;
+                        else
+                            Dialogs.AlertUser("Assembled CMD file not valid."); // should never happen?
+                    }
+                    else if (assembly.NumErrors == 0)
+                    {
+                        // not sure what the problem is
+                        Dialogs.AlertUser("Error assembling file.");
+                    }
+                    else if (assembly.IntFileWritten)
+                    {
+                        if (Dialogs.AskYesNo(string.Format("{0} error{1} found during assembly. Open intermediate file?",
+                                                           assembly.NumErrors,
+                                                           assembly.NumErrors == 1 ? String.Empty : "s")))
+                        {
+                            Dialogs.ShowTextFile(assembly.IntFilePath);
+                        }
+                    }
+                    else
+                    {
+                        Dialogs.AlertUser("Assembly failed.");
+                    }
+                }
+                else
+                {
+                    Dialogs.AlertUser("Could not open source file.");
+                }
+                Invalidate();
+            }
+        }
+
         // SCREEN FORMATTING HELPERS
 
         protected static byte[] PadScreen(byte[] Screen)
@@ -501,13 +502,6 @@ namespace Sharp80
         
         // MISC
         
-        private static void Disassemble(bool FromPc)
-        {
-            string path = System.IO.Path.Combine(Storage.AppDataPath, "Disassembly.txt");
-            Storage.SaveTextFile(path, Computer.Disassemble(FromPc));
-            InvokeUserCommand(UserCommand.Window);
-            Dialogs.ShowTextFile(path);
-        }
         private static bool SaveLog(bool Flush)
         {
             bool isRunning = Computer.IsRunning;

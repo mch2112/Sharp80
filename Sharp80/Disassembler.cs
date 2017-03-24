@@ -18,13 +18,13 @@ namespace Sharp80.Processor
         {
             Disassembler.InstructionSet = InstructionSet;
         }
-        public static string Disassemble(IReadOnlyList<byte> Memory, ushort Start = 0, ushort End = 0xFFFF)
+        public static string Disassemble(IReadOnlyList<byte> Memory, ushort Start, ushort End, bool MakeAssemblable)
         {
             ushort PC = Start;
             Instruction inst;
 
             // Eliminate trailing NOPs
-            while (Memory[End] == 0 && End > 0) // NOP
+            while (Memory[End] == 0 && End > Start) // NOP
                 End--;
             if (End < 0xFFFF)
                 End++;
@@ -42,11 +42,19 @@ namespace Sharp80.Processor
                 PC += inst.Size;
             }
 
-            return string.Join(Environment.NewLine, li.Select(i => string.Format("{0:X4}  {1}  {2}",
-                                                                                 i.Key,
-                                                                                 Lib.GetSpacedHex(Memory, i.Key, i.Value.Size),
-                                                                                 i.Value.FullName(Memory, i.Key)
-                                                                                 )));
+            var header = $"; Disassembly from memory {Start:X4}H to {End:X4}H" +
+                           Environment.NewLine;
+
+            if (MakeAssemblable)
+                return header +
+                       string.Join(Environment.NewLine, li.Select(i => i.Value.AssemblableName(Memory, i.Key)));
+            else
+                return header +
+                           string.Join(Environment.NewLine, li.Select(i => string.Format("{0}  {1}  {2}",
+                                                                                         i.Key.ToHexString(),
+                                                                                         Lib.GetSpacedHex(Memory, i.Key, i.Value.Size),
+                                                                                         i.Value.FullName(Memory, i.Key)
+                                                                                         )));
         }
     }
 }

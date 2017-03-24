@@ -255,7 +255,7 @@ namespace Sharp80.Assembler
                         }
                 }
             }
-            public int OpcodeSize => Instruction?.OpcodeLength ?? 0;
+            public int OpcodeSize => Instruction?.OpcodeSize ?? 0;
             public int DataSize => Size - OpcodeSize;
 
             /// <summary>

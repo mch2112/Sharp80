@@ -117,9 +117,9 @@ namespace Sharp80.Processor
                 {
                     sb.AppendFormat("| {0} {1} {2} {3} | {4,-18}|    {5:0#}    |   {6}   |   \r\n",
                                      i.Op0.ToHexString(),
-                                     i.Size < 2 ? "  " : i.OpcodeLength < 2 ? "XX" : i.Op1.ToHexString(),
+                                     i.Size < 2 ? "  " : i.OpcodeSize < 2 ? "XX" : i.Op1.ToHexString(),
                                      i.Size < 3 ? "  " : "XX",
-                                     i.Size < 4 ? "  " : i.OpcodeLength < 3 ? "XX" : i.Op3.ToHexString(),
+                                     i.Size < 4 ? "  " : i.OpcodeSize < 3 ? "XX" : i.Op3.ToHexString(),
                                      i.Name,
                                      i.TStates,
                                      ((i.TStatesAlt > 0) ? (i.TStates + i.TStatesAlt).ToString("0#") : "  "));

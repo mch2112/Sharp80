@@ -10,7 +10,7 @@ namespace Sharp80
     {
         byte this[ushort Location] { get; set; }
 
-        byte[] VideoMemory { get; }
+        SubArray<byte> VideoMemory { get; }
 
         ushort GetWordAt(ushort Address);
         void SetWordAt(ushort Address, ushort Value);

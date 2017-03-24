@@ -62,9 +62,9 @@ namespace Sharp80.Processor
         public bool IFF1 { get; set; }
         public bool IFF2 { get; set; }
         public bool RestoreInterrupts { get; set; }
-        private bool RecordExtraTicks { get; set; }
         public ushort NextPC { get; private set; }
 
+        private bool RecordExtraTicks { get; set; }
         private bool restoreInterruptsNow;
         private byte im2Vector = 0xFF;         // For IM2 only
         private bool halted;
@@ -98,12 +98,13 @@ namespace Sharp80.Processor
         static Z80()
         {
             InitFlagsString();
-            instructionSet = new InstructionSet();
-            Disassembler.Initialize(instructionSet);
         }
 
         public Z80(Computer Computer, PortSet Ports)
         {
+            instructionSet = new InstructionSet();
+            Disassembler.Initialize(instructionSet);
+
             computer = Computer;
 
             memory = new Memory();
@@ -166,9 +167,9 @@ namespace Sharp80.Processor
 
         public byte InterruptMode { get; private set; }
         public bool HistoricDisassemblyMode { get; set; }
-        public byte ByteAtPCPlusInitialOpCodeLength => Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialLength)];
-        public byte ByteAtPCPlusOpCodeInitialLengthPlusOne => Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialLength + 1)];
-        public ushort WordAtPCPlusInitialOpcodeLength => Memory.GetWordAt(PC.val.Offset(CurrentInstruction.OpcodeInitialLength));
+        public byte ByteAtPCPlusInitialOpCodeLength => Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialSize)];
+        public byte ByteAtPCPlusOpCodeInitialLengthPlusOne => Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialSize + 1)];
+        public ushort WordAtPCPlusInitialOpcodeLength => Memory.GetWordAt(PC.val.Offset(CurrentInstruction.OpcodeInitialSize));
 
         // MAIN EXECUTION CONTROL
 

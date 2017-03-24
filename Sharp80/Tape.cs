@@ -71,6 +71,8 @@ namespace Sharp80
 
         public Baud Speed { get; private set; }
         public bool Changed { get; private set; }
+        public float Counter => byteCursor + ((7f - bitCursor) / 10);
+        public float Percent => (float)byteCursor / data.Length;
 
         // CONSTRUCTOR
 
@@ -108,11 +110,11 @@ namespace Sharp80
             {
                 if (MotorOn)
                 {
-                    return string.Format(@"{0:0000.0} {1:00.0%} {2} {3}", Counter, Percent, Speed == Baud.High ? "H" : "L", Status);
+                    return string.Format(@"{0:0000.0} {1:00.0%} {2} {3}", Counter, Percent, recordInvoked ? "Wr" : "Rd", Speed == Baud.High ? "H" : "L");
                 }
                 else if (MotorOnSignal)
                 {
-                    return string.Format(@"{0:0000.0} {1:00.0%} {2} Waiting", Counter, Percent);
+                    return string.Format(@"{0:0000.0} {1:00.0%} {2} Wait", Counter, Percent);
                 }
                 else
                 {
@@ -169,15 +171,11 @@ namespace Sharp80
                 MotorOn = MotorEngaged && MotorOnSignal;
             }
         }
-        public float Counter { get { return byteCursor + ((7f - bitCursor) / 10); } }
-        public float Percent { get { return (float)byteCursor / data.Length; } }
-
+       
         // USER CONTROLS
         
-        public bool LoadBlank()
-        {
-            return Load(String.Empty);
-        }
+        public bool LoadBlank() => Load(String.Empty);
+        
         public bool Load(string Path)
         {
             Stop();
@@ -231,10 +229,8 @@ namespace Sharp80
             MotorEngaged = false;
             recordInvoked = false;
         }
-        public void Eject()
-        {
-            InitTape();
-        }
+        public void Eject() => InitTape();
+        
         public void Rewind()
         {
             bitCursor = 7;

@@ -11,15 +11,10 @@ namespace Sharp80.Processor
     {
         public delegate void InstructionDelegate();
 
-        private readonly byte size;
-        private readonly byte opSize;
-        private readonly byte opInitSize;
         private readonly byte[] op = new byte[4];
         private readonly bool isPrefix = false;
 
         private readonly InstructionDelegate exec;
-
-        private readonly bool hasReplaceableTokens = false;
 
         private readonly byte rIncrement;
         private readonly byte tStates;
@@ -80,25 +75,25 @@ namespace Sharp80.Processor
         }
         private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstructionDelegate exec, byte TStatesAlt)
         {
-            this.Name = Name;            
+            this.Name = Name;
             Mnemonic = Name.FirstText();
-            
+
             op[0] = Op0;
             op[1] = Op1 ?? 0x00;
             op[2] = 0x00;
             op[3] = Op3 ?? 0x00;
 
-            opInitSize = (byte)(1 + (Op1.HasValue ? 1 : 0));
-            opSize = (byte)(opInitSize + (Op3.HasValue ? 1 : 0));
+            OpcodeInitialSize = (byte)(1 + (Op1.HasValue ? 1 : 0));
+            OpcodeSize = (byte)(OpcodeInitialSize + (Op3.HasValue ? 1 : 0));
 
-            size = opSize;
+            Size = OpcodeSize;
 
-            if (opSize == 1)
+            if (OpcodeSize == 1)
             {
                 signature = Op0;
                 paddedSig = (uint)(op[0] << 16);
             }
-            else if (opSize == 2)
+            else if (OpcodeSize == 2)
             {
                 signature = (uint)((op[0] << 8) | op[1]);
                 paddedSig = signature << 8;
@@ -109,24 +104,24 @@ namespace Sharp80.Processor
                 paddedSig = signature;
             }
 
-            bool hasDisp =      Name.Contains("+d");
+            bool hasDisp = Name.Contains("+d");
             bool hasLiteral16 = Name.Contains("NN");
-            bool hasLiteral8 =  !hasLiteral16 && Name.Contains(" N") && !Name.Contains(" NZ") & !Name.Contains(" NC");
-            bool hasRelJump =   Name.Contains(" e");
-            bool hasPortRefNum = Name.Contains("(N)"); 
+            bool hasLiteral8 = !hasLiteral16 && Name.Contains(" N") && !Name.Contains(" NZ") & !Name.Contains(" NC");
+            bool hasRelJump = Name.Contains(" e");
+            bool hasPortRefNum = Name.Contains("(N)");
 
             if (hasDisp)
-                size++;
+                Size++;
             if (hasLiteral16)
-                size += 2;
+                Size += 2;
             if (hasLiteral8)
-                size++;
+                Size++;
             if (hasRelJump)
-                size++;
+                Size++;
             if (hasPortRefNum)
-                size++;
+                Size++;
 
-            hasReplaceableTokens = hasDisp || hasLiteral8 || hasLiteral16 || hasRelJump || hasPortRefNum;
+            bool hasReplaceableTokens = hasDisp || hasLiteral8 || hasLiteral16 || hasRelJump || hasPortRefNum;
 
             tStates = TStates;
             tStatesAlt = TStatesAlt;
@@ -140,44 +135,31 @@ namespace Sharp80.Processor
             if ((op[0] == 0xDD) || (op[0] == 0xFD) || (op[0] == 0xCB) || (op[0] == 0xED))
                 rIncrement++;
 
+            Debug.Assert(Size > 0 && Size <= 4);
+            Debug.Assert(OpcodeSize > 0 && OpcodeSize <= Size);
 
-            Debug.Assert(size > 0 && size <= 4);
-            Debug.Assert(opSize > 0 && opSize <= size);
-
-            Debug.Assert(!hasReplaceableTokens || size > opSize);
+            Debug.Assert(!hasReplaceableTokens || Size > OpcodeSize);
 
             Debug.Assert(Op1 != null || Op3 == null);
-            Debug.Assert(Op1 == null || size >= 2); 
-            Debug.Assert(Op3 == null || size == 4);
+            Debug.Assert(Op1 == null || Size >= 2);
+            Debug.Assert(Op3 == null || Size == 4);
+
+            PostMnemonic = Name.Substring(Mnemonic.Length);
+
+            InitNameFn(hasReplaceableTokens);
         }
 
+        public Func<IReadOnlyList<byte>, ushort, string> FullName;
+        public Func<IReadOnlyList<byte>, ushort, string> AssemblableName;
 
         public string Name { get; private set; }
         public string Mnemonic { get; private set; }
+        private string PostMnemonic { get; set; }
 
-        public byte Size
-        {
-            get {return this.size; }
-        }
-
-        public byte OpcodeLength
-        {
-            get { return this.opSize; }
-        }
-        public byte OpcodeInitialLength
-        {
-            get { return this.opInitSize; }
-        }
-        public byte[] Bytes => op;
-
-        public string FullName(IReadOnlyList<byte> Memory, ushort PC)
-        {
-            if (hasReplaceableTokens)
-                return Mnemonic + LiteralSub(Memory, PC, Name.Substring(Mnemonic.Length));
-            else
-                return Name;
-        }
-       
+        public byte Size { get; private set; }
+        public byte OpcodeSize { get; private set; }
+        public byte OpcodeInitialSize { get; private set; }
+ 
         public int NumOperands
         {
             get
@@ -262,36 +244,77 @@ namespace Sharp80.Processor
                 }
             }
         }
-        
-        private string LiteralSub(IReadOnlyList<byte> Memory, ushort PC, string s)
-        {
-            if (s.Contains("NN"))
-            {
-                s = s.Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeInitialLength)], Memory[PC.Offset(OpcodeInitialLength + 1)]).ToHexString());
-            }
-            else if (s.Contains("(N)"))
-            {
-                s = s.Replace("(N)", "(" + (Memory[PC.Offset(size - 1)]).ToHexString() + ")");
-            }
-            else if (s.Contains(" N") && (!s.Contains(" NZ")) & (!s.Contains(" NC")))
-            {
-                s = s.Replace(" N", " " + (Memory[PC.Offset(size - 1)]).ToHexString());
-            }
 
-            if (s.Contains("+d"))
-            {
-                byte b = Memory[PC.Offset(OpcodeInitialLength)];
-                s = s.Replace("+d", b.ToTwosCompHexString());
-            }
-            else if (s.Contains(" e"))
-            {
-                byte b = Memory[PC.Offset(OpcodeInitialLength)];
-                sbyte x = b.TwosComp();
-                s = s.Replace(" e", $" {PC.Offset(size + x):X4}");
-            }
-            return s;
-        }
+        // RENDERING
+
+        private string NameNN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeInitialSize)], Memory[PC.Offset(OpcodeInitialSize + 1)]).ToHexString());
+        private string NameMM(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("(N)", "(" + (Memory[PC.Offset(Size - 1)]).ToHexString() + ")");
+        private string NameN(IReadOnlyList<byte> Memory, ushort PC) =>  Mnemonic + PostMnemonic.Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString());
+        private string NameD(IReadOnlyList<byte> Memory, ushort PC) =>  Mnemonic + PostMnemonic.Replace("+d", Memory[PC.Offset(OpcodeInitialSize)].ToTwosCompHexString());
+        private string NameE(IReadOnlyList<byte> Memory, ushort PC) =>  Mnemonic + PostMnemonic.Replace(" e", " " + PC.Offset(Size + Memory[PC.Offset(OpcodeInitialSize)].TwosComp()).ToHexString());
+        private string NameDN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("+d", Memory[PC.Offset(OpcodeInitialSize)].ToTwosCompHexString()).Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString());
+
+        private string NameA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("\t ", "\t");
+        private string NameNNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeInitialSize)], Memory[PC.Offset(OpcodeInitialSize + 1)]).ToHexString() + "H").Replace("\t ", "\t");
+        private string NameMMA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("(N)", "(" + (Memory[PC.Offset(Size - 1)]).ToHexString() + "H)").Replace("\t ", "\t");
+        private string NameNA(IReadOnlyList<byte> Memory, ushort PC) =>  ("\t" + Mnemonic + "\t" + PostMnemonic).Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString() + "H").Replace("\t ", "\t");
+        private string NameDA(IReadOnlyList<byte> Memory, ushort PC) =>  ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("+d", Memory[PC.Offset(OpcodeInitialSize)].ToTwosCompHexString() + "H").Replace("\t ", "\t");
+        private string NameEA(IReadOnlyList<byte> Memory, ushort PC) =>  ("\t" + Mnemonic + "\t" + PostMnemonic).Replace(" e", " " + PC.Offset(Size + Memory[PC.Offset(OpcodeInitialSize)].TwosComp()).ToHexString() + "H").Replace("\t ", "\t");
+        private string NameDNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("+d", Memory[PC.Offset(OpcodeInitialSize)].ToTwosCompHexString() + "H").Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString() + "H").Replace("\t ", "\t");
 
         public override string ToString() => Name;
+
+        private void InitNameFn(bool HasReplaceableTokens)
+        {
+            if (HasReplaceableTokens)
+            {
+                if (PostMnemonic.Contains("NN"))
+                {
+                    FullName = NameNN;
+                    AssemblableName = NameNNA;
+                }
+                else if (PostMnemonic.Contains("(N)"))
+                {
+                    FullName = NameMM;
+                    AssemblableName = NameMMA;
+                }
+                else if (PostMnemonic.Contains(" e"))
+                {
+                    FullName = NameE;
+                    AssemblableName = NameEA;
+                }
+                else if (PostMnemonic.Contains(" N"))
+                {
+                    if (PostMnemonic.Contains("+d"))
+                    {
+                        FullName = NameDN;
+                        AssemblableName = NameDNA;
+                    }
+                    else
+                    {
+                        FullName = NameN;
+                        AssemblableName = NameNA;
+                    }
+                }
+                else if (PostMnemonic.Contains("+d"))
+                {
+                    FullName = NameD;
+                    AssemblableName = NameDA;
+                }
+            }
+            else
+            {
+                FullName = (a, b) => Name;
+                if (PostMnemonic.Length == 0)
+                    AssemblableName = (a, b) => "\t" + Name;
+                else if (Mnemonic == "RST")
+                    AssemblableName = (a, b) => "\t" + Mnemonic + "\t" + PostMnemonic + "H";
+                else
+                    AssemblableName = NameA;
+            }
+
+            Debug.Assert(!(FullName is null));
+            Debug.Assert(!(AssemblableName is null));
+        }
     }
 }
