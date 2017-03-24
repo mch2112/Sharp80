@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Sharp80
 {
-    public enum ViewMode { Breakpoint, CmdFile, Cpu, Disassembler, Disk, FloppyController, Help, Jump, Memory, Normal, Options, Printer, Splash, Tape, Zap }
+    public enum ViewMode { Assembler, Breakpoint, CmdFile, Cpu, Disassembler, Disk, FloppyController, Help, Jump, Memory, Normal, Options, Printer, Splash, Tape, Zap }
     public enum UserCommand { ToggleAdvancedView, ShowAdvancedView, ToggleFullScreen, Window, GreenScreen, ZoomIn, ZoomOut, HardReset, Exit }
 
     internal abstract class View
@@ -68,6 +68,7 @@ namespace Sharp80
 
             if (!initialized)
             {
+                new ViewAssembler();
                 new ViewBreakpoint();
                 new ViewCmdFile();
                 new ViewCpu();
@@ -324,7 +325,7 @@ namespace Sharp80
                             }
                             return true;
                         case KeyCode.Y:
-                            InvokeAssembler();
+                            CurrentMode = ViewMode.Assembler;
                             return true;
                         case KeyCode.Z:
                             if (Computer.AnyDriveLoaded)
@@ -348,7 +349,7 @@ namespace Sharp80
             }
             return false;
         }
-        protected static void InvokeAssembler()
+        protected static bool InvokeAssembler()
         {
             if (Storage.GetAsmFilePath(out string sourcePath))
             {
@@ -356,14 +357,18 @@ namespace Sharp80
                 {
                     var assembly = Computer.Assemble(source);
                     assembly.Write(System.IO.Path.ChangeExtension(sourcePath, ".cmd"));
-                    if (assembly.CmdFIleWritten)
+                    if (assembly.CmdFileWritten)
                     {
                         Dialogs.InformUser(string.Format("Assembled {0} to {1}.", System.IO.Path.GetFileName(sourcePath), System.IO.Path.GetFileName(assembly.CmdFilePath)));
                         CmdFile = assembly.ToCmdFile();
                         if (CmdFile?.Valid ?? false)
-                            CurrentMode = ViewMode.CmdFile;
+                        {
+                            return true;
+                        }
                         else
+                        {
                             Dialogs.AlertUser("Assembled CMD file not valid."); // should never happen?
+                        }
                     }
                     else if (assembly.NumErrors == 0)
                     {
@@ -390,6 +395,7 @@ namespace Sharp80
                 }
                 Invalidate();
             }
+            return false;
         }
 
         // SCREEN FORMATTING HELPERS

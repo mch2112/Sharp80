@@ -24,7 +24,7 @@ namespace Sharp80.Assembler
 
         public bool AssembledOK => Status == Status.AssembleDone || Status == Status.IntWriteFailed || Status == Status.CmdWriteFailed || Status == Status.Complete || Status == Status.CompleteOK;
         public bool IntFileWritten => Status == Status.Complete || Status == Status.CompleteOK;
-        public bool CmdFIleWritten => Status == Status.CompleteOK;
+        public bool CmdFileWritten => Status == Status.CompleteOK;
 
         private Status Status { get; set; }
 

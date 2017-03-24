@@ -186,6 +186,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SoundX.cs" />
+    <Compile Include="View.Assembler.cs" />
     <Compile Include="View.Breakpoint.cs" />
     <Compile Include="View.Cmd.cs" />
     <Compile Include="View.Disassembler.cs" />

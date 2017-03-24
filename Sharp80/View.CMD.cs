@@ -24,9 +24,9 @@ namespace Sharp80
             base.Activate();
         }
 
-        private string runWarning = Format("WARNING: The computer hasn't started yet.") +
-                                    Format("Some CMD files could fail. Hit [F8] to start.") +
-                                    Separator();
+        private string runWarning = Format("Note: Some CMD files need the TRS-80 to be started first.") +
+                                    Separator() +
+                                    Format();
 
         protected override bool processKey(KeyState Key)
         {
@@ -120,9 +120,7 @@ namespace Sharp80
                            Format($"Title: {CmdFile.Title.Truncate(20)}  " + (CmdFile.ExecAddress.HasValue ? ("Execution Address: " + CmdFile.ExecAddress.Value.ToHexString()) : "NO EXECUTION ADDRESS!"));
 
                 if (!Computer.HasRunYet)
-                {
                     warning = runWarning;
-                }
 
                 options = Format("[R] Run CMD file") +
                           Format("[L] Reload CMD file") +
