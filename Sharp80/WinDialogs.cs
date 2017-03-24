@@ -112,6 +112,8 @@ namespace Sharp80
             dialog.Filter = Filter;
             dialog.AddExtension = true;
             dialog.DefaultExt = DefaultExtension;
+            dialog.CheckFileExists = !Save;
+            dialog.CheckPathExists = true;
 
             BeforeShowDialog?.Invoke();
             var dr = dialog.ShowDialog(Parent);
@@ -156,7 +158,7 @@ namespace Sharp80
                                   Title: Save ? "Save Snapshot File" : "Load Snapshot File",
                                   Filter: "TRS-80 Snapshot Files (*.snp)|*.snp|All Files (*.*)|*.*",
                                   DefaultExtension: "snp",
-                                  SelectFileInDialog: true);
+                                  SelectFileInDialog: !Save);
         }
         public static string GetAssemblyFile(string DefaultPath, bool Save)
         {

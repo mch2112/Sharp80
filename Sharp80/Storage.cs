@@ -320,6 +320,8 @@ namespace Sharp80
             NewPath = String.Empty;
             return false;
         }
+        public static string DefaultSnapshotDir => Path.Combine(AppDataPath, @"Snapshots\");
+        public static string DefaultPrintDir => Path.Combine(AppDataPath, @"Print\");
     }
 }
 

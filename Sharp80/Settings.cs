@@ -37,7 +37,7 @@ namespace Sharp80
         static Settings()
         {
 #if DEBUG
-        //    Properties.Settings.Default.Reset();
+            Properties.Settings.Default.Reset();
 #endif
         }
 

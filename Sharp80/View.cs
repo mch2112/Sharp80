@@ -204,7 +204,8 @@ namespace Sharp80
                         case KeyCode.N:
                             bool wasRunning = Computer.IsRunning;
                             Computer.Stop(true);
-                            string path = Dialogs.GetSnapshotFile(Settings.LastSnapshotFile, true);
+                            System.IO.Directory.CreateDirectory(Storage.DefaultSnapshotDir);
+                            string path = Dialogs.GetSnapshotFile(Storage.DefaultSnapshotDir, true);
                             if (path.Length > 0)
                             {
                                 Computer.SaveSnapshotFile(path);
