@@ -103,11 +103,9 @@ namespace Sharp80
         public bool Enabled { get { return enabled; }
         set
             {
-                enabled = value;
-
                 // Throw away strays that may have accumulated
-                if (enabled)
-                    keyboard.GetBufferedData();
+                keyboard.GetBufferedData();
+                enabled = value;
             }
         }
 

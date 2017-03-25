@@ -372,16 +372,23 @@ namespace Sharp80
 
             waitTrigger.Serialize(Writer);
         }
-        public void Deserialize(System.IO.BinaryReader Reader)
+        public bool Deserialize(System.IO.BinaryReader Reader, int DeserializationVersion)
         {
-            TickCount = Reader.ReadUInt64();
-            nextRtcIrqTick = Reader.ReadUInt64();
-            stopReq = Reader.ReadBoolean();
-            nextPulseReqTick = Reader.ReadUInt64();
-            nextSoundSampleTick = Reader.ReadUInt64();
-            waitTimeout = Reader.ReadUInt64();
+            try
+            {
+                TickCount = Reader.ReadUInt64();
+                nextRtcIrqTick = Reader.ReadUInt64();
+                stopReq = Reader.ReadBoolean();
+                nextPulseReqTick = Reader.ReadUInt64();
+                nextSoundSampleTick = Reader.ReadUInt64();
+                waitTimeout = Reader.ReadUInt64();
 
-            waitTrigger.Deserialize(Reader);
+                return waitTrigger.Deserialize(Reader, DeserializationVersion);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

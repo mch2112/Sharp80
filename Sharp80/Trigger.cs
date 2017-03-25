@@ -52,13 +52,21 @@ namespace Sharp80
             Writer.Write(canLatchBeforeEnabled);
             Writer.Write(Triggered);
         }
-        public void Deserialize(System.IO.BinaryReader Reader)
+        public bool Deserialize(System.IO.BinaryReader Reader, int DeserilizationVersion)
         {
-            enabled = Reader.ReadBoolean();
-            latched = Reader.ReadBoolean();
-            triggerLock = Reader.ReadBoolean();
-            canLatchBeforeEnabled = Reader.ReadBoolean();
-            Triggered = Reader.ReadBoolean();
+            try
+            {
+                enabled = Reader.ReadBoolean();
+                latched = Reader.ReadBoolean();
+                triggerLock = Reader.ReadBoolean();
+                canLatchBeforeEnabled = Reader.ReadBoolean();
+                Triggered = Reader.ReadBoolean();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void Update(bool? Enabled, bool? Latched)

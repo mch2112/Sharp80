@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Sharp 80")]
-[assembly: AssemblyCopyright("Copyright © 2016 - 2017 Matthew Hamilton")]
+[assembly: AssemblyCopyright("Copyright © 2017 Matthew Hamilton")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

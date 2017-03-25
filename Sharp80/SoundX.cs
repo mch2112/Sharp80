@@ -131,7 +131,7 @@ namespace Sharp80
                 AnyInitFail = true;
                 enabled = false;
                 Stopped = true;
-                ExceptionHandler.Handle(Ex, ExceptionHandlingOptions.InformUser, "Failed to start XAudio2. Please update your DirectX drivers from Microsoft. Sharp 80 will continue without sound.");
+                ExceptionHandler.Handle(Ex, ExceptionHandlingOptions.InformUser, $"Failed to start XAudio2. Please update your DirectX drivers from Microsoft. {ProductInfo.PRODUCT_NAME} will continue without sound.");
             }
         }
         

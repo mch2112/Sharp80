@@ -723,10 +723,18 @@ namespace Sharp80
             Writer.Write(isWideCharMode);
             Writer.Write(isKanjiCharMode);
         }
-        public void Deserialize(System.IO.BinaryReader Reader)
+        public bool Deserialize(System.IO.BinaryReader Reader, int DeserializationVersion)
         {
-            WideCharMode = Reader.ReadBoolean();
-            AltCharMode = Reader.ReadBoolean();
+            try
+            {
+                WideCharMode = Reader.ReadBoolean();
+                AltCharMode = Reader.ReadBoolean();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // CLEANUP

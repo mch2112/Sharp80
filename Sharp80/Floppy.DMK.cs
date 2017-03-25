@@ -40,7 +40,7 @@ namespace Sharp80
         }
         public DMK(System.IO.BinaryReader Reader)
         {
-            Deserialize(Reader);
+            Deserialize(Reader, Computer.SERIALIZATION_VERSION);
         }
         public override Track GetTrack(int TrackNum, bool SideOne)
         {
@@ -367,11 +367,19 @@ namespace Sharp80
             Array.Copy(diskData, 0, ret, 0, ret.Length);
             return ret;
         }
-        public override void Deserialize(System.IO.BinaryReader Reader)
+        public override bool Deserialize(System.IO.BinaryReader Reader, int DeserializationVersion)
         {
-            int dataLength = Reader.ReadInt32();
-            Deserialize(Reader.ReadBytes(dataLength));
-            FilePath = Reader.ReadString();
+            try
+            {
+                int dataLength = Reader.ReadInt32();
+                Deserialize(Reader.ReadBytes(dataLength));
+                FilePath = Reader.ReadString();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
         private void Deserialize(byte[] DiskData)
         {

@@ -571,7 +571,9 @@ namespace Sharp80
         }
         private void DumpMemory()
         {
-            Storage.SaveBinaryFile(System.IO.Path.Combine(Storage.AppDataPath, "Memory.bin"), Computer.Memory.ToArray());
+            string path = System.IO.Path.Combine(Storage.AppDataPath, "Memory.bin");
+            Storage.SaveBinaryFile(path, Computer.Memory.ToArray());
+            Dialogs.InformUser($"Memory dumped to {path}.");
         }
     }
 }

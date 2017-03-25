@@ -37,44 +37,35 @@ namespace Sharp80.Processor
 
         public string Disassemble(ushort Start, ushort End, bool MakeAssemblable) => Disassembler.Disassemble(Memory, Start, End, MakeAssemblable);
 
-        public string GetDisassembly()
-        {
-            if (HistoricDisassemblyMode)
-            {
-                var history = new ushort[NUM_DISASSEMBLY_LINES];
-                
-                for (int i = 0; i < historyBuffer.Length; i++)
-                    history[(i - historyBufferCursor + NUM_DISASSEMBLY_LINES - 1) % NUM_DISASSEMBLY_LINES] = historyBuffer[i];
+        public string GetDisassembly() => HistoricDisassemblyMode ? GetDisassemblyHistoric() : GetDisassemblyNormal();
 
-                if (instructionCount < NUM_DISASSEMBLY_LINES)
-                {
-                    return GetHistoricDisassembly(history,
-                                                  history.Length - (int)instructionCount - 1,
-                                                  PC.val);
-                }
-                else
-                {
-                    return GetHistoricDisassembly(history, 0, PC.val);
-                }
-            }
-            else
-            {
-                return GetDisassembly(PC.val, PC.val);
-            }
-        }
-
-        public string GetDisassembly(ushort StartLocation, ushort HighLight)
+        public string GetDisassemblyNormal()
         {
+            ushort startLocation = PC.val;
+
             const int MAX_HIGHLIGHT_LINE = NUM_DISASSEMBLY_LINES - 4;
 
             int idx;
-            if ((idx = Array.IndexOf(disassemblyAddresses, StartLocation)) > 0)
-                StartLocation = disassemblyAddresses[(idx > MAX_HIGHLIGHT_LINE) ? MAX_HIGHLIGHT_LINE : 0];
+            if ((idx = Array.IndexOf(disassemblyAddresses, startLocation)) > 0)
+                startLocation = disassemblyAddresses[(idx > MAX_HIGHLIGHT_LINE) ? MAX_HIGHLIGHT_LINE : 0];
+
+            int j = 0;
 
             return string.Join(Environment.NewLine,
-                               Enumerable.Range(0, NUM_DISASSEMBLY_LINES)
-                                         .Select(i => new { addr = disassemblyAddresses[i] = StartLocation })
-                                         .Select(n => GetLineInfo((n.addr == HighLight) ? ">" : " ", ref StartLocation, GetInstructionAt(n.addr))));
+                               disassemblyAddresses
+                                         .Select(i => 
+                                         new { addr = disassemblyAddresses[j++] = startLocation })
+                                         .Select(n => GetLineInfo((n.addr == PC.val) ? ">" : " ", ref startLocation, GetInstructionAt(n.addr))));
+        }
+        public string GetDisassemblyHistoric()
+        {
+            return string.Join(Environment.NewLine,
+                               historyBuffer.Select(i => new { addr = i, inst = GetInstructionAt(i) })
+                                            .Select(n => string.Format("{0}{1} {2} {3}",
+                                                                        (PC.val == n.addr) ? ">" : " ",
+                                                                        n.addr.ToHexString(),
+                                                                        Lib.GetSpacedHex(Memory, n.addr, n.inst.Size),
+                                                                        n.inst.FullName(memory, n.addr))));
         }
         public string GetLineInfo(string Prefix, ushort PC, Instruction inst)
         {
@@ -86,26 +77,10 @@ namespace Sharp80.Processor
             PC += inst.Size;
             return s;
         }
-        public string GetLineInfo(ushort PC)
-        {
-            return GetLineInfo(string.Empty, PC, GetInstructionAt(PC));
-        }
-        public string GetInstructionSetReport()
-        {
-            return instructionSet.GetInstructionSetReport();
-        }
+        public string GetLineInfo(ushort PC) => GetLineInfo(string.Empty, PC, GetInstructionAt(PC));
+
+        public string GetInstructionSetReport() => instructionSet.GetInstructionSetReport();
         
-        public string GetHistoricDisassembly(ushort[] History, int historyCursor, ushort HighLight)
-        {
-            return string.Join(Environment.NewLine,
-                               Enumerable.Range(historyCursor, History.Length - historyCursor)
-                               .Select(i => new { idx = i, addr = History[i], inst = GetInstructionAt(History[i]) })
-                               .Select(n => string.Format("{0}{1} {2} {3}",
-                                                           (n.idx == History.Length - 1) ? ">" : " ",
-                                                           n.addr.ToHexString(),
-                                                           Lib.GetSpacedHex(Memory, n.addr, n.inst.Size),
-                                                           n.inst.FullName(memory, n.addr))));
-        }
         public ushort PcVal { get { return PC.val; } }
         public ushort SpVal { get { return SP.val; } }
         public ushort AfVal {  get { return AF.val; } }

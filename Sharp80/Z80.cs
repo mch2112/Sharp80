@@ -9,7 +9,11 @@ namespace Sharp80.Processor
 {
     internal sealed partial class Z80 : IZ80_Status
     {
+        // changing this requires new SERIALIZATION_VERSION
         public const int NUM_DISASSEMBLY_LINES = 22;
+
+        // Circular history buffer
+        private CircularBuffer historyBuffer;
 
         // REGISTERS
 
@@ -88,21 +92,14 @@ namespace Sharp80.Processor
         private ushort? systemBreakPoint = null;
         private bool skipOneBreakpoint = false;
 
-        // Circular history buffer
-        private ushort[] historyBuffer = new ushort[NUM_DISASSEMBLY_LINES];
-        private int historyBufferCursor = 0;
-        private ulong instructionCount = 0;
-
         // CONSTRUCTORS
 
-        static Z80()
-        {
-            InitFlagsString();
-        }
+        static Z80() => InitFlagsString();
 
         public Z80(Computer Computer, PortSet Ports)
         {
             instructionSet = new InstructionSet();
+            historyBuffer = new CircularBuffer(NUM_DISASSEMBLY_LINES);
             Disassembler.Initialize(instructionSet);
 
             computer = Computer;
@@ -161,15 +158,17 @@ namespace Sharp80.Processor
             Reset();
 
             CurrentInstruction = instructionSet.NOP; // NOP
+
+            historyBuffer.Add(0);
         }
         
         // PROPERTIES
 
         public byte InterruptMode { get; private set; }
         public bool HistoricDisassemblyMode { get; set; }
-        public byte ByteAtPCPlusInitialOpCodeLength => Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialSize)];
-        public byte ByteAtPCPlusOpCodeInitialLengthPlusOne => Memory[PC.val.Offset(CurrentInstruction.OpcodeInitialSize + 1)];
-        public ushort WordAtPCPlusInitialOpcodeLength => Memory.GetWordAt(PC.val.Offset(CurrentInstruction.OpcodeInitialSize));
+        public byte ByteAtPCPlusCoreOpCodeSize => Memory[PC.val.Offset(CurrentInstruction.OpcodeCoreSize)];
+        public byte ByteAtPCPlusCoreOpCodeSizePlusOne => Memory[PC.val.Offset(CurrentInstruction.OpcodeCoreSize + 1)];
+        public ushort WordAtPCPlusInitialOpcodeLength => Memory.GetWordAt(PC.val.Offset(CurrentInstruction.OpcodeCoreSize));
 
         // MAIN EXECUTION CONTROL
 
@@ -209,8 +208,7 @@ namespace Sharp80.Processor
 
             ZF = true;
 
-            instructionCount = 0;
-            UpdatePCHistory();
+            historyBuffer.Clear();
         }
         
         // returns ticks used
@@ -265,8 +263,7 @@ namespace Sharp80.Processor
                     restoreInterruptsNow = true;
                 }
             }
-            UpdatePCHistory();
-            instructionCount++;
+            historyBuffer.Add(PC.val);
             return retVal;
         }
 
@@ -294,7 +291,7 @@ namespace Sharp80.Processor
             if (PC.val != Address)
             {
                 PC.val = Address;
-                historyBuffer[historyBufferCursor] = PC.val;
+                historyBuffer.ReplaceLast(PC.val);
             }
         }
         // Returns ticks used
@@ -397,29 +394,15 @@ namespace Sharp80.Processor
             PC.val = 0x0066;
             WZ.val = 0x0066;
             IncrementR(1);
-            UpdatePCHistory();
-            instructionCount++;
+            historyBuffer.Add(PC.val);
         }
- 
+
         // REFRESH REGISTER
 
         public void IncrementR(byte num)
         {
             // Memory refresh register; sometimes used for pseudo-random numbers. Don't change bit 7.
             R.val = (byte)((R.val & 0x80) | ((R.val + num) & 0x7F));
-        }
-
-        // DISPLAY SUPPORT
-
-        private void UpdatePCHistory()
-        {
-            // Atomic for thread safety
-            if (historyBufferCursor == NUM_DISASSEMBLY_LINES - 1)
-                historyBufferCursor = 0;
-            else
-                ++historyBufferCursor;
-
-            historyBuffer[historyBufferCursor] = PC.val;
         }
 
         // SNAPSHOTS
@@ -462,119 +445,73 @@ namespace Sharp80.Processor
             Writer.Write(systemBreakPoint.HasValue);
             Writer.Write(systemBreakPoint ?? 0);
 
-            Writer.Write(historyBufferCursor);
-            Writer.Write(instructionCount);
-            for (int i = 0; i < NUM_DISASSEMBLY_LINES; i++)
-                Writer.Write(historyBuffer[i]);
-
+            historyBuffer.Serialize(Writer);
             ports.Serialize(Writer);
             memory.Serialize(Writer);
         }
-        public void Deserialize(System.IO.BinaryReader Reader)
+        public bool Deserialize(System.IO.BinaryReader Reader, int DeserializationVersion)
         {
-            PC.val = Reader.ReadUInt16();
-            SP.val = Reader.ReadUInt16();
-
-            BC.val = Reader.ReadUInt16();
-            DE.val = Reader.ReadUInt16();
-            HL.val = Reader.ReadUInt16();
-            AF.val = Reader.ReadUInt16();
-
-            BCp.val = Reader.ReadUInt16();
-            DEp.val = Reader.ReadUInt16();
-            HLp.val = Reader.ReadUInt16();
-            AFp.val = Reader.ReadUInt16();
-
-            IX.val = Reader.ReadUInt16();
-            IY.val = Reader.ReadUInt16();
-
-            I.val = Reader.ReadByte();
-            R.val = Reader.ReadByte();
-
-            WZ.val = Reader.ReadUInt16();
-            NextPC = Reader.ReadUInt16();
-
-            InterruptMode = Reader.ReadByte();
-            IFF1 = Reader.ReadBoolean();
-            IFF2 = Reader.ReadBoolean();
-            RestoreInterrupts = Reader.ReadBoolean();
-            RecordExtraTicks = Reader.ReadBoolean();
-            restoreInterruptsNow = Reader.ReadBoolean();
-            im2Vector = Reader.ReadByte();
-            halted = Reader.ReadBoolean();
-            breakPoint = Reader.ReadUInt16();
-            BreakPointOn = Reader.ReadBoolean();
-            skipOneBreakpoint = Reader.ReadBoolean();
-            if (Reader.ReadBoolean())
+            try
             {
-                systemBreakPoint = Reader.ReadUInt16();
+                PC.val = Reader.ReadUInt16();
+                SP.val = Reader.ReadUInt16();
+
+                BC.val = Reader.ReadUInt16();
+                DE.val = Reader.ReadUInt16();
+                HL.val = Reader.ReadUInt16();
+                AF.val = Reader.ReadUInt16();
+
+                BCp.val = Reader.ReadUInt16();
+                DEp.val = Reader.ReadUInt16();
+                HLp.val = Reader.ReadUInt16();
+                AFp.val = Reader.ReadUInt16();
+
+                IX.val = Reader.ReadUInt16();
+                IY.val = Reader.ReadUInt16();
+
+                I.val = Reader.ReadByte();
+                R.val = Reader.ReadByte();
+
+                WZ.val = Reader.ReadUInt16();
+                NextPC = Reader.ReadUInt16();
+
+                InterruptMode = Reader.ReadByte();
+                IFF1 = Reader.ReadBoolean();
+                IFF2 = Reader.ReadBoolean();
+                RestoreInterrupts = Reader.ReadBoolean();
+                RecordExtraTicks = Reader.ReadBoolean();
+                restoreInterruptsNow = Reader.ReadBoolean();
+                im2Vector = Reader.ReadByte();
+                halted = Reader.ReadBoolean();
+                breakPoint = Reader.ReadUInt16();
+                BreakPointOn = Reader.ReadBoolean();
+                skipOneBreakpoint = Reader.ReadBoolean();
+                if (Reader.ReadBoolean())
+                {
+                    systemBreakPoint = Reader.ReadUInt16();
+                }
+                else
+                {
+                    systemBreakPoint = null;
+                    Reader.ReadUInt16();
+                }
+
+                return historyBuffer.Deserialize(Reader, DeserializationVersion) &&
+                       ports.Deserialize(Reader, DeserializationVersion) &&
+                       memory.Deserialize(Reader, DeserializationVersion);
             }
-            else
+            catch
             {
-                systemBreakPoint = null;
-                Reader.ReadUInt16();
+                return false;
             }
-
-            historyBufferCursor = Reader.ReadInt32();
-            instructionCount = Reader.ReadUInt64();
-            for (int i = 0; i < NUM_DISASSEMBLY_LINES; i++)
-                historyBuffer[i] = Reader.ReadUInt16();
-
-            ports.Deserialize(Reader);
-            memory.Deserialize(Reader);
         }
 
         // INSTRUCTION SUPPORT
+
         private void InitInstructionSet()
         {
             SetupInstructionObjects();
             instructionSet.LoadTables();
-        }
-        private void OutPort(byte pornNum, byte value) => ports[pornNum] = value;
-        private void OutPortR(IRegister<byte> r) => OutPort(C.val, r.val);
-        private void OutPortZero() => OutPort(C.val, (byte)0);
-        private void OutPortN()
-        {
-            byte aVal = A.val;
-            byte portNum = ByteAtPCPlusInitialOpCodeLength;
-
-            OutPort(portNum, aVal);
-
-            // Note for *BM1: WZ_low = (port + 1) & #FF,  WZ_hi = 0
-            portNum++;
-            WZ.val = (ushort)((aVal << 8) | portNum);
-        }
-        private void OutPortA()
-        {
-            OutPort(C.val, A.val);
-            WZ.val = BC.val;
-            WZ.inc();
-        }
-        
-        private byte InPort(byte pornNum) => ports[pornNum];
-        private byte InPortC()
-        {
-            byte b = InPort(C.val);
-            F.val = (byte)((F.val & S_CF) | SZ53P(b));
-            return b;
-        }
-        private void InPortR(IRegister<byte> r) => r.val = InPortC();
-        private void InPortZero() => InPortC();
-        private void InPortN()
-        {
-            byte aVal = A.val;
-            byte portNum = ByteAtPCPlusInitialOpCodeLength;
-
-            A.val = InPort(portNum);
-
-            portNum++;
-            WZ.val = (ushort)((aVal << 8) | portNum);
-        }
-        private void InPortA()
-        {
-            InPortR(A);
-            WZ.val = BC.val;
-            WZ.inc();
         }
 
         private void PushWord(ushort val)

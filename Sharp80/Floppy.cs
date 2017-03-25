@@ -191,7 +191,7 @@ namespace Sharp80
             Writer.Write(FilePath);
         }
 
-        public abstract void Deserialize(BinaryReader Reader);
+        public abstract bool Deserialize(BinaryReader Reader, int DeserializationVersion);
 
         protected void Reset()
         {

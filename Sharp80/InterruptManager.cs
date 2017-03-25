@@ -220,19 +220,28 @@ namespace Sharp80
             rs232ReceiveIntLatch.Serialize(Writer);
             rs232XmitIntLatch.Serialize(Writer);
         }
-        public void Deserialize(System.IO.BinaryReader Reader)
+        public bool Deserialize(System.IO.BinaryReader Reader, int DeserializationVersion)
         {
-            RtcIntLatch.Deserialize(Reader);
-            FdcNmiLatch.Deserialize(Reader);
-            FdcMotorOffNmiLatch.Deserialize(Reader);
-            ResetButtonLatch.Deserialize(Reader);
-            ioIntLatch.Deserialize(Reader);
-            CasMotorOnLatch.Deserialize(Reader);
-            CasRisingEdgeIntLatch.Deserialize(Reader);
-            CasFallingEdgeIntLatch.Deserialize(Reader);
-            rs232ErrorIntLatch.Deserialize(Reader);
-            rs232ReceiveIntLatch.Deserialize(Reader);
-            rs232XmitIntLatch.Deserialize(Reader);
+            try
+            {
+                return
+
+                RtcIntLatch.Deserialize(Reader, DeserializationVersion)            && 
+                FdcNmiLatch.Deserialize(Reader, DeserializationVersion)            &&
+                FdcMotorOffNmiLatch.Deserialize(Reader, DeserializationVersion)    &&
+                ResetButtonLatch.Deserialize(Reader, DeserializationVersion)       &&
+                ioIntLatch.Deserialize(Reader, DeserializationVersion)             &&
+                CasMotorOnLatch.Deserialize(Reader, DeserializationVersion)        &&
+                CasRisingEdgeIntLatch.Deserialize(Reader, DeserializationVersion)  &&
+                CasFallingEdgeIntLatch.Deserialize(Reader, DeserializationVersion) && 
+                rs232ErrorIntLatch.Deserialize(Reader, DeserializationVersion)     &&
+                rs232ReceiveIntLatch.Deserialize(Reader, DeserializationVersion)   &&
+                rs232XmitIntLatch.Deserialize(Reader, DeserializationVersion);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }       

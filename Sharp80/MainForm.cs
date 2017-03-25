@@ -42,7 +42,7 @@ namespace Sharp80
         {
             uiThread = Thread.CurrentThread;
             KeyPreview = true;
-            Text = "Sharp 80 - TRS-80 Model III Emulator";
+            Text = ProductInfo.PRODUCT_NAME + " - TRS-80 Model III Emulator";
 
             Dialogs.Initialize(this);
             Dialogs.BeforeShowDialog += BeforeDialog;
@@ -415,6 +415,7 @@ namespace Sharp80
         {
             // No force show cursor
             dialogLevel--;
+            System.Diagnostics.Debug.Assert(dialogLevel >= 0);
             UpdateDialogLevel();
         }
         private void UpdateDialogLevel()

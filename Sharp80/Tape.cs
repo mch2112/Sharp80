@@ -14,7 +14,7 @@ namespace Sharp80
     {
         private const int DEFAULT_BLANK_TAPE_LENGTH = 0x0800;
         private const int MAX_TAPE_LENGTH = 0x12000;
-        
+
         // Values in ticks (1 tstate = 1000 ticks)
         // All determined empirically by M3 ROM write timing
         // Ranges and thresholds are positive to positive, so about twice
@@ -171,11 +171,11 @@ namespace Sharp80
                 MotorOn = MotorEngaged && MotorOnSignal;
             }
         }
-       
+
         // USER CONTROLS
-        
+
         public bool LoadBlank() => Load(String.Empty);
-        
+
         public bool Load(string Path)
         {
             Stop();
@@ -230,7 +230,7 @@ namespace Sharp80
             recordInvoked = false;
         }
         public void Eject() => InitTape();
-        
+
         public void Rewind()
         {
             bitCursor = 7;
@@ -381,7 +381,7 @@ namespace Sharp80
             if (AdvanceCursor()) { return data[byteCursor].IsBitSet(bitCursor); }
             else { return false; }
         }
-        
+
         // WRITE OPERATIONS
 
         public void WriteToCasPort(byte b)
@@ -496,47 +496,6 @@ namespace Sharp80
 
         // SNAPSHOT SUPPORT
 
-        public void Deserialize(BinaryReader Reader)
-        {
-            Speed = (Baud)Reader.ReadInt32();
-            Changed = Reader.ReadBoolean();
-            FilePath = Reader.ReadString();
-            data = Reader.ReadBytes(Reader.ReadInt32());
-            isBlank = Reader.ReadBoolean();
-            byteCursor = Reader.ReadInt32();
-            bitCursor = Reader.ReadByte();
-            motorOn = Reader.ReadBoolean();
-            motorOnSignal = Reader.ReadBoolean();
-            motorEngaged = Reader.ReadBoolean();
-            recordInvoked = Reader.ReadBoolean();
-            consecutiveFiftyFives = Reader.ReadInt32();
-            consecutiveZeros = Reader.ReadInt32();
-            lastWritePositive = Reader.ReadUInt64();
-            nextLastWritePositive = Reader.ReadUInt64();
-            lastWritePolarity = (PulsePolarity)Reader.ReadInt32();
-            highSpeedWriteEvidence = Reader.ReadInt32();
-            skippedLast = Reader.ReadBoolean();
-            if (Reader.ReadBoolean())
-            {
-                transition = transition ?? new Transition(Speed);
-                transition.Deserialize(Reader);
-            }
-            else
-            {
-                transition = null;
-            }
-            if (Reader.ReadBoolean())
-            {
-                readPulseReq = readPulseReq ?? new PulseReq();
-                readPulseReq.Deserialize(Reader, Update);
-                if (readPulseReq.Active)
-                    computer.AddPulseReq(readPulseReq);
-            }
-            else
-            {
-                readPulseReq = null;
-            }
-        }
         public void Serialize(BinaryWriter Writer)
         {
             Writer.Write((int)Speed);
@@ -564,6 +523,57 @@ namespace Sharp80
             Writer.Write(readPulseReq != null);
             if (readPulseReq != null)
                 readPulseReq.Serialize(Writer);
+        }
+        public bool Deserialize(BinaryReader Reader, int SerializationVersion)
+        {
+            try
+            {
+                bool ok = true;
+
+                Speed = (Baud)Reader.ReadInt32();
+                Changed = Reader.ReadBoolean();
+                FilePath = Reader.ReadString();
+                data = Reader.ReadBytes(Reader.ReadInt32());
+                isBlank = Reader.ReadBoolean();
+                byteCursor = Reader.ReadInt32();
+                bitCursor = Reader.ReadByte();
+                motorOn = Reader.ReadBoolean();
+                motorOnSignal = Reader.ReadBoolean();
+                motorEngaged = Reader.ReadBoolean();
+                recordInvoked = Reader.ReadBoolean();
+                consecutiveFiftyFives = Reader.ReadInt32();
+                consecutiveZeros = Reader.ReadInt32();
+                lastWritePositive = Reader.ReadUInt64();
+                nextLastWritePositive = Reader.ReadUInt64();
+                lastWritePolarity = (PulsePolarity)Reader.ReadInt32();
+                highSpeedWriteEvidence = Reader.ReadInt32();
+                skippedLast = Reader.ReadBoolean();
+                if (Reader.ReadBoolean())
+                {
+                    transition = transition ?? new Transition(Speed);
+                    ok &= transition.Deserialize(Reader, SerializationVersion);
+                }
+                else
+                {
+                    transition = null;
+                }
+                if (Reader.ReadBoolean())
+                {
+                    readPulseReq = readPulseReq ?? new PulseReq();
+                    readPulseReq.Deserialize(Reader, Update);
+                    if (readPulseReq.Active)
+                        computer.AddPulseReq(readPulseReq);
+                }
+                else
+                {
+                    readPulseReq = null;
+                }
+                return ok;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

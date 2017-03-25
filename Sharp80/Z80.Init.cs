@@ -11,20 +11,20 @@ namespace Sharp80.Processor
 
         private void SetupInstructionObjects()
         {
-            IRegister<byte>[] r8 =      new IRegister<byte>[] { B, C, D, E, H, L, HLM, A };
+            IRegister<byte>[] r8 =      new IRegister<byte>[]   { B, C, D, E, H, L, HLM, A };
             IRegister<ushort>[] r16s =  new IRegister<ushort>[] { BC, DE, HL, SP };
             IRegister<ushort>[] r16a =  new IRegister<ushort>[] { BC, DE, HL, AF };
             IRegister<ushort>[] r16xs = new IRegister<ushort>[] { BC, DE, IX, SP };
             IRegister<ushort>[] r16ys = new IRegister<ushort>[] { BC, DE, IY, SP };
-            IRegisterIndexed[] rxyi =   new IRegisterIndexed[] { IXM, IYM };
+            IRegisterIndexed[] rxyi =   new IRegisterIndexed[]  { IXM, IYM };
             IRegister<ushort>[] rxy =   new IRegister<ushort>[] { IX, IY };
 
-            IRegister<byte>[] r8x =     new IRegister<byte>[] { B, C, D, E, IX.H, IX.L, null, A };
-            IRegister<byte>[] r8y =     new IRegister<byte>[] { B, C, D, E, IY.H, IY.L, null, A };
+            IRegister<byte>[] r8x =     new IRegister<byte>[]   { B, C, D, E, IX.H, IX.L, null, A };
+            IRegister<byte>[] r8y =     new IRegister<byte>[]   { B, C, D, E, IY.H, IY.L, null, A };
 
-            byte[] iter8 = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 }; // prevent closure capture by using foreach instead of for
-            byte[] iter4 = new byte[] { 0, 1, 2, 3 };
-            byte[] iter2 = new byte[] { 0, 1 };
+            byte[] iter8 = new byte[]    { 0, 1, 2, 3, 4, 5, 6, 7 }; // prevent closure capture by using foreach instead of for
+            byte[] iter4 = new byte[]    { 0, 1, 2, 3 };
+            byte[] iter2 = new byte[]    { 0, 1 };
             byte[] iter8alt = new byte[] { 0, 1, 2, 3, 4, 5, 7 }; // skips HLM entry
             
             byte HLMIndex = 6;

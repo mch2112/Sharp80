@@ -8,6 +8,6 @@ namespace Sharp80
     interface ISerializable
     {
         void Serialize(System.IO.BinaryWriter Writer);
-        void Deserialize(System.IO.BinaryReader Reader);
+        bool Deserialize(System.IO.BinaryReader Reader, int SerializationVersion);
     }
 }

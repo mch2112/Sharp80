@@ -129,6 +129,7 @@
     <Compile Include="Assembler.Macro.cs" />
     <Compile Include="Assembler.Operand.cs" />
     <Compile Include="Basic.cs" />
+    <Compile Include="CircularBuffer.cs" />
     <Compile Include="Clock.cs" />
     <Compile Include="CmdFile.cs" />
     <Compile Include="Computer.cs" />
@@ -154,6 +155,7 @@
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Printer.cs" />
+    <Compile Include="ProductInfo.cs" />
     <Compile Include="Resources.CharGen.cs" />
     <Compile Include="IScreen.cs" />
     <Compile Include="Resources.Rom.cs" />

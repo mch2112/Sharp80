@@ -134,10 +134,18 @@ namespace Sharp80
             Writer.Write(mem);
             Writer.Write(firstRAMByte);
         }
-        public void Deserialize(BinaryReader Reader)
+        public bool Deserialize(BinaryReader Reader, int DeserializationVersion)
         {
-            Array.Copy(Reader.ReadBytes(MEMORY_SIZE), mem, MEMORY_SIZE);
-            firstRAMByte = Reader.ReadUInt16();
+            try
+            {
+                Array.Copy(Reader.ReadBytes(MEMORY_SIZE), mem, MEMORY_SIZE);
+                firstRAMByte = Reader.ReadUInt16();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
         private void LoadRom()
         {

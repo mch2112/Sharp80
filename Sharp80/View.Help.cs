@@ -9,7 +9,7 @@ namespace Sharp80
     internal class ViewHelp : View
     {
         private int ScreenNum { get; set; }
-        private const int NUM_SCREENS = 5;
+        private const int NUM_SCREENS = 6;
         private string helpHeaderText = "Sharp 80 Help";
         private string footerText = "Left/Right Arrow: Show More Commands";
 
@@ -23,7 +23,7 @@ namespace Sharp80
             {
                 case 0:
                     return PadScreen(Encoding.ASCII.GetBytes(
-                                        Header(helpHeaderText, "BASIC COMMANDS (1/5)") +
+                                        Header(helpHeaderText, "BASIC COMMANDS (1/6)") +
                                         Indent("[F8]        Run / Pause") +
                                         Format() +
                                         Indent("[F1]        Show This Help") +
@@ -37,7 +37,7 @@ namespace Sharp80
                                         Footer(footerText)));
                 case 1:
                     return PadScreen(Encoding.ASCII.GetBytes(
-                                        Header(helpHeaderText, "MORE BASIC COMMANDS (2/5)") +
+                                        Header(helpHeaderText, "MORE BASIC COMMANDS (2/6)") +
                                         Indent("[F5]                  Show / Hide CPU Internal Info") +
                                         Indent("[F9]                  Single Step (when paused)") +
                                         Format() +
@@ -52,7 +52,7 @@ namespace Sharp80
                                         Footer(footerText)));
                 case 2:
                     return PadScreen(Encoding.ASCII.GetBytes(
-                                        Header(helpHeaderText, "TRS-80 KEYBOARD HELP (3/5)") +
+                                        Header(helpHeaderText, "TRS-80 KEYBOARD HELP (3/6)") +
                                         Format(new string[] { "Keyboard Key", "Virtual TRS-80 Key" }, true) +
                                         Format(new string[] { "-------------------", "------------------" }, true) +
                                         Format(new string[] { "[Esc]", "[Break]           " }, true) +
@@ -66,7 +66,7 @@ namespace Sharp80
                                         Footer(footerText)));
                 case 3:
                     return PadScreen(Encoding.ASCII.GetBytes(
-                                        Header(helpHeaderText, "DISK COMMANDS (4/5)") +
+                                        Header(helpHeaderText, "DISK COMMANDS (4/6)") +
                                         Indent("[F3]               Floppy Disk Manager") +
                                         Format() +
                                         Indent("[Alt]+[B]          Create Blank Formatted Floppy") +
@@ -80,17 +80,32 @@ namespace Sharp80
                                         Footer(footerText)));
                 case 4:
                     return PadScreen(Encoding.ASCII.GetBytes(
-                                        Header(helpHeaderText, "ADVANCED COMMANDS (5/5)") +
-                                        Format(new string[] { "[F9] Single Step", "[F10] Step Over", "[F11] Step Out" }, true) +
-                                        Format(new string[] { "[F7] Set/Clear Breakpoint", "[Alt]+[V] Trace On / Off" }, true) +
+                                        Header(helpHeaderText, "DEBUG COMMANDS (5/6)") +
+                                        Indent("[F8]  Run / Pause") +
+                                        Indent("[F9]  Single Step") +
+                                        Indent("[F10] Step Over") +
+                                        Indent("[F11] Step Out") +
                                         Format() +
-                                        Indent("[F6] Jump to Address") +
+                                        Indent("[F7]  Set/Clear Breakpoint") +
                                         Format() +
+                                        Indent("[F6]  Jump to Address") +
+                                        Format() +
+                                        Indent("[Alt]+[V] Trace Log On / Off") +
+                                        Format() +
+                                        Footer(footerText)));
+                case 5:
+                    return PadScreen(Encoding.ASCII.GetBytes(
+                                        Header(helpHeaderText, "ADVANCED COMMANDS (6/6)") +
+                                        Format() + 
                                         Indent("[Alt]+[Y] Invoke Assembler") +
                                         Indent("[Alt]+[E] Invoke Disassembler") +
                                         Format() +
-                                        Format(new string[] { "[Alt]+[M] Memory Viewer" }, true) +
-                                        Format(new string[] { "[Alt]+[I] Instruction Set Report" }, true) +
+                                        Format("[Alt]+[M] Memory Viewer") +
+                                        Format("[Alt]+[I] Instruction Set Report") +
+                                        Format() +
+                                        Format("[Alt]+[D] Disk Controller Status View") +
+                                        Format() +
+                                        Format("[Alt]+[Shift}+[M] Dump memory to .bin file") +
                                         Footer(footerText)));
                 default:
                     throw new Exception("Invalid Help View");

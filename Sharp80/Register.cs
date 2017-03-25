@@ -64,7 +64,7 @@ namespace Sharp80.Processor
         public void inc() => val++;
         public void dec() => val--;
         public bool NZ => val != 0;
-        public ushort OffsetAddress => Proxy.val.Offset(z80.ByteAtPCPlusInitialOpCodeLength.TwosComp());
+        public ushort OffsetAddress => Proxy.val.Offset(z80.ByteAtPCPlusCoreOpCodeSize.TwosComp());
         public override string ToString() => val.ToHexString();
     }
     internal class Register16 : IRegister<ushort>

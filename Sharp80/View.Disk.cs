@@ -19,7 +19,7 @@ namespace Sharp80
         private static DirectoryInfo BaseLibraryDir { get; set; }
         private DirectoryInfo LibraryDir { get; set; }
 
-        private string header = Header("Sharp 80 Floppy Disk Manager");
+        private string header = Header($"{ProductInfo.PRODUCT_NAME} Floppy Disk Manager");
 
         static ViewDisk()
         {

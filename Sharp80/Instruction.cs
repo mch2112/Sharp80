@@ -12,34 +12,26 @@ namespace Sharp80.Processor
         public delegate void InstructionDelegate();
 
         private readonly byte[] op = new byte[4];
-        private readonly bool isPrefix = false;
 
         private readonly InstructionDelegate exec;
-
-        private readonly byte rIncrement;
-        private readonly byte tStates;
-        private readonly byte tStatesAlt;
-        private readonly ushort ticks;
-        private readonly ushort ticksWithExtra;
-
-        private readonly uint signature;
-        private readonly uint paddedSig;
 
         private string operand0 = null;
         private string operand1 = null;
         private string operand2 = null;
+
         private int? numOperands = null;
 
         public InstructionDelegate Execute { get { return exec; } }
 
-        public byte RIncrement => rIncrement;
-        public bool IsPrefix => isPrefix;
-        public byte TStates => tStates;
-        public byte TStatesAlt => tStatesAlt;
-        public ushort Ticks => ticks;
-        public ushort TicksWithExtra => ticksWithExtra;
-        public uint Signature => signature;
-        public uint PaddedSig => paddedSig;
+        public byte RIncrement { get; private set; }
+        public bool IsPrefix { get; private set; }
+        public byte TStates { get; private set; }
+        public byte TStatesAlt { get; private set; }
+        public ushort Ticks { get; private set; }
+        public ushort TicksWithExtra { get; private set; }
+        public uint Signature {get; private set;}
+        public uint PaddedSig { get; private set; }
+
         public byte Op0 => op[0];
         public byte Op1 => op[1];
         public byte Op3 => op[3];
@@ -53,9 +45,9 @@ namespace Sharp80.Processor
             // Don't "ADD" this instruction, just call this constructor
 
             Debug.Assert(IsPrefix);
-            isPrefix = IsPrefix;
+            this.IsPrefix = IsPrefix;
 
-            this.rIncrement = 1;
+            this.RIncrement = 1;
         }
         public Instruction(string Name, byte Op0, byte TStates, InstructionDelegate exec, byte TStatesAlt)
             : this(Name, Op0, null, null, TStates, exec, TStatesAlt)
@@ -69,11 +61,11 @@ namespace Sharp80.Processor
             : this(Name, Op0, Op1, null, TStates, exec, TStatesAlt)
         {
         }
-        public Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstructionDelegate exec)
-            : this(Name, Op0, Op1, Op3, TStates, exec, 0)
+        public Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstructionDelegate Exec)
+            : this(Name, Op0, Op1, Op3, TStates, Exec, 0)
         {
         }
-        private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstructionDelegate exec, byte TStatesAlt)
+        private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstructionDelegate Exec, byte TStatesAlt)
         {
             this.Name = Name;
             Mnemonic = Name.FirstText();
@@ -83,25 +75,25 @@ namespace Sharp80.Processor
             op[2] = 0x00;
             op[3] = Op3 ?? 0x00;
 
-            OpcodeInitialSize = (byte)(1 + (Op1.HasValue ? 1 : 0));
-            OpcodeSize = (byte)(OpcodeInitialSize + (Op3.HasValue ? 1 : 0));
+            OpcodeCoreSize = (byte)(1 + (Op1.HasValue ? 1 : 0));
+            OpcodeSize = (byte)(OpcodeCoreSize + (Op3.HasValue ? 1 : 0));
 
             Size = OpcodeSize;
 
             if (OpcodeSize == 1)
             {
-                signature = Op0;
-                paddedSig = (uint)(op[0] << 16);
+                Signature = Op0;
+                PaddedSig = (uint)(op[0] << 16);
             }
             else if (OpcodeSize == 2)
             {
-                signature = (uint)((op[0] << 8) | op[1]);
-                paddedSig = signature << 8;
+                Signature = (uint)((op[0] << 8) | op[1]);
+                PaddedSig = Signature << 8;
             }
             else
             {
-                signature = (uint)((op[0] << 16) | (op[1] << 8) | (op[3]));
-                paddedSig = signature;
+                Signature = (uint)((op[0] << 16) | (op[1] << 8) | (op[3]));
+                PaddedSig = Signature;
             }
 
             bool hasDisp = Name.Contains("+d");
@@ -123,26 +115,26 @@ namespace Sharp80.Processor
 
             bool hasReplaceableTokens = hasDisp || hasLiteral8 || hasLiteral16 || hasRelJump || hasPortRefNum;
 
-            tStates = TStates;
-            tStatesAlt = TStatesAlt;
-            ticks = (ushort)(TStates * Clock.TICKS_PER_TSTATE);
-            ticksWithExtra = (ushort)((TStates + TStatesAlt) * Clock.TICKS_PER_TSTATE);
+            this.TStates = TStates;
+            this.TStatesAlt = TStatesAlt;
+            Ticks = (ushort)(TStates * Clock.TICKS_PER_TSTATE);
+            TicksWithExtra = (ushort)((TStates + TStatesAlt) * Clock.TICKS_PER_TSTATE);
 
-            this.exec = exec;
+            this.exec = Exec;
 
-            rIncrement = 1;
+            RIncrement = 1;
 
             if ((op[0] == 0xDD) || (op[0] == 0xFD) || (op[0] == 0xCB) || (op[0] == 0xED))
-                rIncrement++;
+                RIncrement++;
 
-            Debug.Assert(Size > 0 && Size <= 4);
-            Debug.Assert(OpcodeSize > 0 && OpcodeSize <= Size);
+            Debug.Assert(Size.IsBetween(1, 4));
+            Debug.Assert(OpcodeSize.IsBetween(1, Size));
 
             Debug.Assert(!hasReplaceableTokens || Size > OpcodeSize);
 
-            Debug.Assert(Op1 != null || Op3 == null);
-            Debug.Assert(Op1 == null || Size >= 2);
-            Debug.Assert(Op3 == null || Size == 4);
+            Debug.Assert(!(Op1 is null) || Op3 is null);
+            Debug.Assert(Op1 is null || Size >= 2);
+            Debug.Assert(Op3 is null || Size == 4);
 
             PostMnemonic = Name.Substring(Mnemonic.Length);
 
@@ -158,7 +150,7 @@ namespace Sharp80.Processor
 
         public byte Size { get; private set; }
         public byte OpcodeSize { get; private set; }
-        public byte OpcodeInitialSize { get; private set; }
+        public byte OpcodeCoreSize { get; private set; }
  
         public int NumOperands
         {
@@ -247,20 +239,20 @@ namespace Sharp80.Processor
 
         // RENDERING
 
-        private string NameNN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeInitialSize)], Memory[PC.Offset(OpcodeInitialSize + 1)]).ToHexString());
+        private string NameNN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeCoreSize)], Memory[PC.Offset(OpcodeCoreSize + 1)]).ToHexString());
         private string NameMM(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("(N)", "(" + (Memory[PC.Offset(Size - 1)]).ToHexString() + ")");
         private string NameN(IReadOnlyList<byte> Memory, ushort PC) =>  Mnemonic + PostMnemonic.Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString());
-        private string NameD(IReadOnlyList<byte> Memory, ushort PC) =>  Mnemonic + PostMnemonic.Replace("+d", Memory[PC.Offset(OpcodeInitialSize)].ToTwosCompHexString());
-        private string NameE(IReadOnlyList<byte> Memory, ushort PC) =>  Mnemonic + PostMnemonic.Replace(" e", " " + PC.Offset(Size + Memory[PC.Offset(OpcodeInitialSize)].TwosComp()).ToHexString());
-        private string NameDN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("+d", Memory[PC.Offset(OpcodeInitialSize)].ToTwosCompHexString()).Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString());
+        private string NameD(IReadOnlyList<byte> Memory, ushort PC) =>  Mnemonic + PostMnemonic.Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString());
+        private string NameE(IReadOnlyList<byte> Memory, ushort PC) =>  Mnemonic + PostMnemonic.Replace(" e", " " + PC.Offset(Size + Memory[PC.Offset(OpcodeCoreSize)].TwosComp()).ToHexString());
+        private string NameDN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString()).Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString());
 
         private string NameA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("\t ", "\t");
-        private string NameNNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeInitialSize)], Memory[PC.Offset(OpcodeInitialSize + 1)]).ToHexString() + "H").Replace("\t ", "\t");
+        private string NameNNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeCoreSize)], Memory[PC.Offset(OpcodeCoreSize + 1)]).ToHexString() + "H").Replace("\t ", "\t");
         private string NameMMA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("(N)", "(" + (Memory[PC.Offset(Size - 1)]).ToHexString() + "H)").Replace("\t ", "\t");
         private string NameNA(IReadOnlyList<byte> Memory, ushort PC) =>  ("\t" + Mnemonic + "\t" + PostMnemonic).Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString() + "H").Replace("\t ", "\t");
-        private string NameDA(IReadOnlyList<byte> Memory, ushort PC) =>  ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("+d", Memory[PC.Offset(OpcodeInitialSize)].ToTwosCompHexString() + "H").Replace("\t ", "\t");
-        private string NameEA(IReadOnlyList<byte> Memory, ushort PC) =>  ("\t" + Mnemonic + "\t" + PostMnemonic).Replace(" e", " " + PC.Offset(Size + Memory[PC.Offset(OpcodeInitialSize)].TwosComp()).ToHexString() + "H").Replace("\t ", "\t");
-        private string NameDNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("+d", Memory[PC.Offset(OpcodeInitialSize)].ToTwosCompHexString() + "H").Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString() + "H").Replace("\t ", "\t");
+        private string NameDA(IReadOnlyList<byte> Memory, ushort PC) =>  ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString() + "H").Replace("\t ", "\t");
+        private string NameEA(IReadOnlyList<byte> Memory, ushort PC) =>  ("\t" + Mnemonic + "\t" + PostMnemonic).Replace(" e", " " + PC.Offset(Size + Memory[PC.Offset(OpcodeCoreSize)].TwosComp()).ToHexString() + "H").Replace("\t ", "\t");
+        private string NameDNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString() + "H").Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString() + "H").Replace("\t ", "\t");
 
         public override string ToString() => Name;
 

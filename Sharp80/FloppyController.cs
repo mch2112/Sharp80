@@ -1193,112 +1193,120 @@ namespace Sharp80
             motorOnPulseReq.Serialize(Writer);
             motorOffPulseReq.Serialize(Writer);
         }
-        public void Deserialize(BinaryReader Reader)
+        public bool Deserialize(BinaryReader Reader, int SerializationVersion)
         {
-            TrackRegister = Reader.ReadByte();
-            SectorRegister = Reader.ReadByte();
-            CommandRegister = Reader.ReadByte();
-            DataRegister = Reader.ReadByte();
-            statusRegister = Reader.ReadByte();
-
-            command = (Command)Reader.ReadInt32();
-            opStatus = (OpStatus)Reader.ReadInt32();
-
-            DoubleDensitySelected = Reader.ReadBoolean();
-            sectorDeleted = Reader.ReadBoolean();
-            Busy = Reader.ReadBoolean();
-            Drq = Reader.ReadBoolean();
-            SeekError = Reader.ReadBoolean();
-            CrcError = Reader.ReadBoolean();
-            LostData = Reader.ReadBoolean();
-            lastStepDirUp = Reader.ReadBoolean();
-            writeProtected = Reader.ReadBoolean();
-            MotorOn = Reader.ReadBoolean();
-            stepRateInUsec = Reader.ReadUInt64();
-            verify = Reader.ReadBoolean();
-            updateRegisters = Reader.ReadBoolean();
-            sideSelectVerify = Reader.ReadBoolean();
-            sideOneExpected = Reader.ReadBoolean();
-            markSectorDeleted = Reader.ReadBoolean();
-            multipleRecords = Reader.ReadBoolean();
-
-            Array.Copy(Reader.ReadBytes(ADDRESS_DATA_BYTES), readAddressData, ADDRESS_DATA_BYTES);
-            readAddressIndex = Reader.ReadByte();
-            idamBytesFound = Reader.ReadInt32();
-            damBytesChecked = Reader.ReadInt32();
-            sectorLength = Reader.ReadInt32();
-            bytesRead = Reader.ReadInt32();
-            bytesToWrite = Reader.ReadInt32();
-
-            indexCheckStartTick = Reader.ReadUInt64();
-            isPolling = Reader.ReadBoolean();
-            targetDataIndex = Reader.ReadInt32();
-
-            crc = Reader.ReadUInt16();
-            crcCalc = Reader.ReadUInt16();
-            crcHigh = Reader.ReadByte();
-            crcLow = Reader.ReadByte();
-
-            for (byte b = 0; b < NUM_DRIVES; b++)
+            try
             {
-                drives[b].Deserialize(Reader);
-                if (drives[b].IsLoaded)
-                    if (File.Exists(drives[b].Floppy.FilePath))
-                        Storage.SaveDefaultDriveFileName(b, drives[b].Floppy.FilePath);
+                TrackRegister = Reader.ReadByte();
+                SectorRegister = Reader.ReadByte();
+                CommandRegister = Reader.ReadByte();
+                DataRegister = Reader.ReadByte();
+                statusRegister = Reader.ReadByte();
+
+                command = (Command)Reader.ReadInt32();
+                opStatus = (OpStatus)Reader.ReadInt32();
+
+                DoubleDensitySelected = Reader.ReadBoolean();
+                sectorDeleted = Reader.ReadBoolean();
+                Busy = Reader.ReadBoolean();
+                Drq = Reader.ReadBoolean();
+                SeekError = Reader.ReadBoolean();
+                CrcError = Reader.ReadBoolean();
+                LostData = Reader.ReadBoolean();
+                lastStepDirUp = Reader.ReadBoolean();
+                writeProtected = Reader.ReadBoolean();
+                MotorOn = Reader.ReadBoolean();
+                stepRateInUsec = Reader.ReadUInt64();
+                verify = Reader.ReadBoolean();
+                updateRegisters = Reader.ReadBoolean();
+                sideSelectVerify = Reader.ReadBoolean();
+                sideOneExpected = Reader.ReadBoolean();
+                markSectorDeleted = Reader.ReadBoolean();
+                multipleRecords = Reader.ReadBoolean();
+
+                Array.Copy(Reader.ReadBytes(ADDRESS_DATA_BYTES), readAddressData, ADDRESS_DATA_BYTES);
+                readAddressIndex = Reader.ReadByte();
+                idamBytesFound = Reader.ReadInt32();
+                damBytesChecked = Reader.ReadInt32();
+                sectorLength = Reader.ReadInt32();
+                bytesRead = Reader.ReadInt32();
+                bytesToWrite = Reader.ReadInt32();
+
+                indexCheckStartTick = Reader.ReadUInt64();
+                isPolling = Reader.ReadBoolean();
+                targetDataIndex = Reader.ReadInt32();
+
+                crc = Reader.ReadUInt16();
+                crcCalc = Reader.ReadUInt16();
+                crcHigh = Reader.ReadByte();
+                crcLow = Reader.ReadByte();
+
+                for (byte b = 0; b < NUM_DRIVES; b++)
+                {
+                    drives[b].Deserialize(Reader);
+                    if (drives[b].IsLoaded)
+                        if (File.Exists(drives[b].Floppy.FilePath))
+                            Storage.SaveDefaultDriveFileName(b, drives[b].Floppy.FilePath);
+                }
+
+                currentDriveNumber = Reader.ReadByte();
+                SideOneSelected = Reader.ReadBoolean();
+
+                Clock.ClockCallback callback;
+
+                switch (command)
+                {
+                    case Command.ReadAddress:
+                        callback = ReadAddressCallback;
+                        break;
+                    case Command.ReadSector:
+                        callback = ReadSectorCallback;
+                        break;
+                    case Command.ReadTrack:
+                        callback = ReadTrackCallback;
+                        break;
+                    case Command.WriteSector:
+                        callback = WriteSectorCallback;
+                        break;
+                    case Command.WriteTrack:
+                        callback = WriteTrackCallback;
+                        break;
+                    case Command.Restore:
+                    case Command.Seek:
+                    case Command.Step:
+                        callback = TypeOneCommandCallback;
+                        break;
+                    default:
+                        callback = null;
+                        break;
+                }
+
+                if (isPolling)
+                {
+                    nextCallback = callback;
+                    callback = Poll;
+                }
+
+                commandPulseReq.Deserialize(Reader, callback);
+
+                if (commandPulseReq.Active)
+                    computer.AddPulseReq(commandPulseReq);
+
+                motorOnPulseReq.Deserialize(Reader, MotorOnCallback);
+                if (motorOnPulseReq.Active)
+                    computer.AddPulseReq(motorOnPulseReq);
+
+                motorOffPulseReq.Deserialize(Reader, MotorOffCallback);
+                if (motorOffPulseReq.Active)
+                    computer.AddPulseReq(motorOffPulseReq);
+
+                UpdateTrack();
+                return true;
             }
-
-            currentDriveNumber = Reader.ReadByte();
-            SideOneSelected = Reader.ReadBoolean();
-
-            Clock.ClockCallback callback;
-
-            switch (command)
+            catch
             {
-                case Command.ReadAddress:
-                    callback = ReadAddressCallback;
-                    break;
-                case Command.ReadSector:
-                    callback = ReadSectorCallback;
-                    break;
-                case Command.ReadTrack:
-                    callback = ReadTrackCallback;
-                    break;
-                case Command.WriteSector:
-                    callback = WriteSectorCallback;
-                    break;
-                case Command.WriteTrack:
-                    callback = WriteTrackCallback;
-                    break;
-                case Command.Restore:
-                case Command.Seek:
-                case Command.Step:
-                    callback = TypeOneCommandCallback;
-                    break;
-                default:
-                    callback = null;
-                    break;
+                return false;
             }
-
-            if (isPolling)
-            {
-                nextCallback = callback;
-                callback = Poll;
-            }
-
-            commandPulseReq.Deserialize(Reader, callback);
-
-            if (commandPulseReq.Active)
-                computer.AddPulseReq(commandPulseReq);
-            
-            motorOnPulseReq.Deserialize(Reader, MotorOnCallback);
-            if (motorOnPulseReq.Active)
-                computer.AddPulseReq(motorOnPulseReq);
-
-            motorOffPulseReq.Deserialize(Reader, MotorOffCallback);
-            if (motorOffPulseReq.Active)
-                computer.AddPulseReq(motorOffPulseReq);
-
-            UpdateTrack();
         }
 
         private byte ReadByte(bool AllowResetCRC)

@@ -334,6 +334,10 @@ namespace Sharp80
         {
             return Value >= Min && Value <= Max;
         }
+        public static bool IsBetween(this byte Value, byte Min, byte Max)
+        {
+            return Value >= Min && Value <= Max;
+        }
         public static string ToReport(this Exception Ex)
         {
             string exMsg;

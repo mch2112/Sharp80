@@ -173,10 +173,18 @@ namespace Sharp80
             Writer.Write(ports);
             Writer.Write(lastFFout);
         }
-        public void Deserialize(System.IO.BinaryReader Reader)
+        public bool Deserialize(System.IO.BinaryReader Reader, int DeserializationVersion)
         {
-            Array.Copy(Reader.ReadBytes(NUM_PORTS), ports, NUM_PORTS);
-            lastFFout = Reader.ReadByte();
+            try
+            {
+                Array.Copy(Reader.ReadBytes(NUM_PORTS), ports, NUM_PORTS);
+                lastFFout = Reader.ReadByte();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

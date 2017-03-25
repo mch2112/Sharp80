@@ -74,7 +74,7 @@ namespace Sharp80
                 options = String.Empty;
             }
             return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Sharp 80 Z80 Pritner Status") +
+                Header("Sharp 80 Z80 Printer Status") +
                 printContent +
 				Separator() +
 				options));

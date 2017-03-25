@@ -21,7 +21,7 @@ namespace Sharp80
             var Status = Computer.CpuStatus;
 
             return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Sharp 80 Z80 Register Status") +
+                Header($"{ProductInfo.PRODUCT_NAME} Z80 Register Status") +
                 Format() +
                 Indent($"PC  {Status.PcVal:X4}  SP  {Status.SpVal:X4}") +
                 Format() +

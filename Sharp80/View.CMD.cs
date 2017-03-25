@@ -95,7 +95,7 @@ namespace Sharp80
                           Format() +
                           Format("[L] Load a CMD file without running") +
                           Format() +
-                          Format("[A] Create and load CMD file with the Z-80 Assembler");
+                          Format("[A] Create and load CMD file with the Z80 Assembler");
 
                 if (!Computer.HasRunYet)
                     warning = runWarning;
@@ -132,7 +132,7 @@ namespace Sharp80
             }
 
             return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Sharp 80 CMD File Manager") +
+                Header($"{ProductInfo.PRODUCT_NAME} CMD File Manager") +
                 fileInfo +
                 Separator() +
                 warning +

@@ -9,7 +9,8 @@ namespace Sharp80
 {
     internal class Computer : IDisposable
     {
-        private const int SERIALIZATION_VERSION = 8;
+        public const int SERIALIZATION_VERSION = 9;
+
         private const ushort TAPE_SPEED_SELECT_RAM_LOCATION = 0x4211;
 
         public bool Ready { get; private set; }
@@ -339,13 +340,14 @@ namespace Sharp80
             get => Processor.Memory[TAPE_SPEED_SELECT_RAM_LOCATION] == 0x00 ? Baud.Low : Baud.High;
             set => Processor.Memory[TAPE_SPEED_SELECT_RAM_LOCATION] = (value == Baud.High ? (byte)0xFF : (byte)0x00);
         }
+
         // PRINTER
 
         public bool PrinterHasContent => Printer.HasContent;
-        public bool PrinterSave() { return Printer.Save(); }
+        public bool PrinterSave() => Printer.Save();
         public string PrinterContent => Printer.PrintBuffer;
-        public string PrinterFilePath { get => Printer.FilePath; }
-        public void PrinterReset() { Printer.Reset(); }
+        public string PrinterFilePath => Printer.FilePath;
+        public void PrinterReset() => Printer.Reset();
 
         // SNAPSHOTS
 
@@ -388,22 +390,37 @@ namespace Sharp80
             Screen.Serialize(Writer);
             Tape.Serialize(Writer);
         }
-        private void Deserialize(BinaryReader Reader)
+        private bool Deserialize(BinaryReader Reader)
         {
             int ver = Reader.ReadInt32(); // SERIALIZATION_VERSION
 
-            if (ver == SERIALIZATION_VERSION)
+            if (ver > SERIALIZATION_VERSION)
             {
-                Processor.Deserialize(Reader);
-                Clock.Deserialize(Reader);
-                FloppyController.Deserialize(Reader);
-                IntMgr.Deserialize(Reader);
-                Screen.Deserialize(Reader);
-                Tape.Deserialize(Reader);
+                Dialogs.AlertUser($"This snapshot was created with a newer version of {ProductInfo.PRODUCT_NAME}. Please upgrade at {ProductInfo.DOWNLOAD_URL}.");
+                return false;
+            }
+            else if (ver >= 8)
+            {
+                if (Processor.Deserialize(Reader, ver)        &&
+                    Clock.Deserialize(Reader, ver)            &&
+                    FloppyController.Deserialize(Reader, ver) &&
+                    IntMgr.Deserialize(Reader, ver)           &&
+                    Screen.Deserialize(Reader, ver)           &&
+                    Tape.Deserialize(Reader, ver))
+                {
+                    // ok
+                    return true;
+                }
+                else
+                {
+                    Dialogs.AlertUser("Data error restoring snapshot.");
+                    return false;
+                }
             }
             else
             {
-                Dialogs.AlertUser("Snapshot load failed: incompatible snapshot version.");
+                Dialogs.AlertUser($"Snapshot load failed: incompatible snapshot version {ver}.");
+                return false;
             }
         }
 

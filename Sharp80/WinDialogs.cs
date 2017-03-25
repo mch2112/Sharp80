@@ -11,6 +11,10 @@ namespace Sharp80
     {
         internal delegate void DialogDelegate();
 
+        /// <summary>
+        /// Guarantee that AfterShowDialog will always be invoked
+        /// after BeforeShowDialog. Nesting is possible.
+        /// </summary>
         public static event DialogDelegate BeforeShowDialog;
         public static event DialogDelegate AfterShowDialog;
 
@@ -23,25 +27,31 @@ namespace Sharp80
 
         // MESSAGE BOXES
 
-        public static bool AskYesNo(string Question, string Caption = "Sharp 80")
+        public static bool AskYesNo(string Question, string Caption = ProductInfo.PRODUCT_NAME)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
             bool res;
-            BeforeShowDialog?.Invoke();
-            switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
+            try
             {
-                case DialogResult.Yes:
-                    res = true;
-                    break;
-                default:
-                    res = false;
-                    break;
+                BeforeShowDialog?.Invoke();
+                switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
+                {
+                    case DialogResult.Yes:
+                        res = true;
+                        break;
+                    default:
+                        res = false;
+                        break;
+                }
             }
-            AfterShowDialog?.Invoke();
+            finally
+            {
+                AfterShowDialog?.Invoke();
+            }
             return res;
         }
-        public static bool? AskYesNoCancel(string Question, string Caption = "Sharp 80")
+        public static bool? AskYesNoCancel(string Question, string Caption = ProductInfo.PRODUCT_NAME)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
@@ -66,17 +76,29 @@ namespace Sharp80
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
-            BeforeShowDialog?.Invoke();
-            MessageBox.Show(Parent, Information, Caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            AfterShowDialog?.Invoke();
+            try
+            {
+                BeforeShowDialog?.Invoke();
+                MessageBox.Show(Parent, Information, Caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                AfterShowDialog?.Invoke();
+            }
         }
-        public static void AlertUser(string Alert, string Caption = "Sharp 80")
+        public static void AlertUser(string Alert, string Caption = ProductInfo.PRODUCT_NAME)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
-            BeforeShowDialog?.Invoke();
-            MessageBox.Show(Parent, Alert, Caption, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            AfterShowDialog?.Invoke();
+            try
+            {
+                BeforeShowDialog?.Invoke();
+                MessageBox.Show(Parent, Alert, Caption, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            finally
+            {
+                AfterShowDialog?.Invoke();
+            }
         }
 
         // PATHS AND FILE DIALOGS
@@ -115,9 +137,16 @@ namespace Sharp80
             dialog.CheckFileExists = !Save;
             dialog.CheckPathExists = true;
 
-            BeforeShowDialog?.Invoke();
-            var dr = dialog.ShowDialog(Parent);
-            AfterShowDialog?.Invoke();
+            DialogResult dr;
+            try
+            {
+                BeforeShowDialog?.Invoke();
+                dr = dialog.ShowDialog(Parent);
+            }
+            finally
+            {
+                AfterShowDialog?.Invoke();
+            }
 
             string path = dialog.FileName;
 
@@ -152,6 +181,9 @@ namespace Sharp80
         public static string GetSnapshotFile(string DefaultPath, bool Save)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+
+            if (string.IsNullOrWhiteSpace(DefaultPath))
+                DefaultPath = Path.Combine(Storage.AppDataPath, @"Snapshots/");
 
             return UserSelectFile(Save: Save,
                                   DefaultPath: DefaultPath,

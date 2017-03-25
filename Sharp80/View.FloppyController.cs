@@ -9,7 +9,7 @@ namespace Sharp80
     class ViewFloppyController : View
     {
         protected override ViewMode Mode => ViewMode.FloppyController;
-        protected override bool ForceRedraw => FrameReqNum % 10 == 0;
+        protected override bool ForceRedraw => Computer.IsRunning || FrameReqNum % 15 == 0;
         protected override bool CanSendKeysToEmulation => false;
 
         protected override byte[] GetViewBytes()
@@ -17,11 +17,11 @@ namespace Sharp80
             var status = Computer.FloppyControllerStatus;
 
             string physicalData = status.MotorOn ?
-                Indent(string.Format("Physical Disk Data: Dsk {0} Trk {1:X2} {2} ", status.CurrentDriveNumber, status.PhysicalTrackNum, status.DiskAngleDegrees)) +
-                Indent(string.Format("Track Data Index:   {0:X4} [{1:X2}]", status.TrackDataIndex, status.ValueAtTrackDataIndex)) +
-                Indent(              "Index Hole:         " + (status.IndexDetect ? "DETECTED" : ""))
+                Indent($"Physical Disk Data: Dsk {status.CurrentDriveNumber} Trk {status.PhysicalTrackNum:X2} {status.DiskAngleDegrees}") +
+                Indent($"Track Data Index:   {status.TrackDataIndex:X4} [{status.ValueAtTrackDataIndex:X2}]") +
+                Indent("Index Hole:         " + (status.IndexDetect ? "DETECTED" : ""))
                 :
-                Indent(string.Format("Physical Disk Data: Dsk {0} Trk {1:X2}", status.CurrentDriveNumber, status.PhysicalTrackNum)) +
+                Indent($"Physical Disk Data: Dsk {status.CurrentDriveNumber} Trk {status.PhysicalTrackNum:X2}") +
                 Format() +
                 Format();
 
@@ -31,15 +31,15 @@ namespace Sharp80
                 Format();
 
             return PadScreen(Encoding.ASCII.GetBytes(
-                Header("Sharp 80 Floppy Controller Status") +
+                Header($"{ProductInfo.PRODUCT_NAME} Floppy Controller Status") +
                 Format() +
-                Indent(string.Format("Drive Number:   {0}", status.CurrentDriveNumber)) +
-                Indent(string.Format("OpStatus:       {0}", status.OperationStatus)) +
+                Indent($"Drive Number:   {status.CurrentDriveNumber}") +
+                Indent($"OpStatus:       {status.OperationStatus}") +
                 Indent(string.Format("State:          {0} {1}", status.Busy ? "BUSY" : "    ", status.Drq ? "DRQ" : "   ")) +
-                Indent("Command Status: " + status.CommandStatus) +
+                Indent($"Command Status: {status.CommandStatus}") +
                 Format() +
-                Indent(string.Format("Track / Sector Register:   {0:X2} / {1:X2}", status.TrackRegister, status.SectorRegister)) +
-                Indent(string.Format("Command / Data Register:   {0:X2} / {1:X2}", status.CommandRegister, status.DataRegister)) +
+                Indent($"Track / Sector Register:   {status.TrackRegister:X2} / {status.SectorRegister:X2}") +
+                Indent($"Command / Data Register:   {status.CommandRegister:X2} / {status.DataRegister:X2}") +
                 Indent(string.Format("Side / Density Mode:       {0}  / {1}", status.SideOneSelected ? "1" : "0", status.DoubleDensitySelected ? "Double" : "Single")) +
                 Format() +
                 physicalData +

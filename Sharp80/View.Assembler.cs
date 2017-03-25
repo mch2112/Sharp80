@@ -38,10 +38,11 @@ namespace Sharp80
             return PadScreen(Encoding.ASCII.GetBytes(
                                 Header("Z80 Assembler") +
                                 Format() +
+                                Indent($"{ProductInfo.PRODUCT_NAME} can assemble your Z80 .asm files.") +
                                 Format() +
-                                Indent("[R] Assemble .asm file and Run.") +
+                                Indent("[R] Assemble .asm file and run") +
                                 Format() +
-                                Indent("[L] Assemble and Load to memory.")
+                                Indent("[L] Assemble and load to memory only")
                                 ));
         }
     }

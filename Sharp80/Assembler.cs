@@ -1,4 +1,4 @@
-/// Sharp 80 (c) Matthew Hamiltonxx
+/// Sharp 80 (c) Matthew Hamilton
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;

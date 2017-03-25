@@ -181,16 +181,24 @@ namespace Sharp80
                 Writer.Write(TimeStamp);
                 Writer.Write(Duration);
             }
-            public void Deserialize(BinaryReader Reader)
+            public bool Deserialize(BinaryReader Reader, int DeserializationVersion)
             {
-                Speed =       (Baud)      Reader.ReadInt32();
-                Before =      (PulseState)Reader.ReadInt32();
-                After =       (PulseState)Reader.ReadInt32();
-                LastNonZero = (PulseState)Reader.ReadInt32();
-                FlipFlop =                Reader.ReadBoolean();
-                Value =                   Reader.ReadBoolean();
-                TimeStamp =               Reader.ReadUInt64();
-                Duration =                Reader.ReadUInt64();
+                try
+                {
+                    Speed =       (Baud)Reader.ReadInt32();
+                    Before =      (PulseState)Reader.ReadInt32();
+                    After =       (PulseState)Reader.ReadInt32();
+                    LastNonZero = (PulseState)Reader.ReadInt32();
+                    FlipFlop =    Reader.ReadBoolean();
+                    Value =       Reader.ReadBoolean();
+                    TimeStamp =   Reader.ReadUInt64();
+                    Duration =    Reader.ReadUInt64();
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
     }

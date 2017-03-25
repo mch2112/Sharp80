@@ -15,8 +15,10 @@ namespace Sharp80
         protected override byte[] GetViewBytes()
         {
             return PadScreen(Encoding.ASCII.GetBytes(
-                                Header("Sharp 80 - TRS-80 Model III Emulator", 
-                                    string.Format("Version {0}        (c) Matthew Hamilton {1}", System.Windows.Forms.Application.ProductVersion.ToString(), DateTime.Now.Year)) +
+                                Separator() +
+                                Center($"{ProductInfo.PRODUCT_NAME} - TRS-80 Model III Emulator") +
+                                Center(string.Format($"Version {System.Windows.Forms.Application.ProductVersion}  (c) {ProductInfo.PRODUCT_AUTHOR} {DateTime.Now.Year}")) +
+                                Separator() +
                                 Format() + 
                                 Indent("[F8] Start Emulator") +
                                 Format() +
@@ -27,7 +29,7 @@ namespace Sharp80
                                 Format() +
                                 Format() +
                                 Format() +
-                                Footer("Visit http://www.sharp80.com for more information.")
+                                Footer($"Visit {ProductInfo.PRODUCT_URL} for more information.")
                                 ));
         }
         protected override bool processKey(KeyState Key)
