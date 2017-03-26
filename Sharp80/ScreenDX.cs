@@ -106,16 +106,28 @@ namespace Sharp80
             get => isKanjiCharMode;
             set { isKanjiCharMode = value; erase = true; Invalidate(); }
         }
+        /// <summary>
+        /// Prepend message with '&' for permanent message
+        /// </summary>
         public string StatusMessage
         {
             private get { return statusMessage; }
             set
             {
                 statusMessage = value;
-                if (value.Length == 0)
+                if (statusMessage.Length == 0)
+                {
                     cyclesForMessageRemaining = 0;
+                }
+                else if (statusMessage[0] == '&')
+                {
+                    statusMessage = statusMessage.Substring(1);
+                    cyclesForMessageRemaining = 10000000;
+                }
                 else
+                {
                     cyclesForMessageRemaining = (int)messageDisplayDuration;
+                }
                 Invalidate();
             }
         }

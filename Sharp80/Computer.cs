@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Sharp80
 {
@@ -29,7 +31,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Computer(IScreen Screen, bool FloppyEnabled, bool NullSound = false)
+        public Computer(IScreen Screen, bool FloppyEnabled, bool SoundEnabled = true)
         {
             ulong ticksPerSoundSample = Clock.TICKS_PER_SECOND / SoundX.SAMPLE_RATE;
 
@@ -46,11 +48,7 @@ namespace Sharp80
             // If sound fails to initialize there might be a driver issue,
             // but it's not fatal: we can continue without sound
 
-            if (NullSound)
-            {
-                Sound = new SoundNull();
-            }
-            else
+            if (SoundEnabled)
             {
                 Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut));
                 if (Sound.Stopped)
@@ -58,6 +56,10 @@ namespace Sharp80
                     Sound.Dispose();
                     Sound = new SoundNull();
                 }
+            }
+            else
+            {
+                Sound = new SoundNull();
             }
 
             Clock = new Clock(this,
@@ -463,9 +465,44 @@ namespace Sharp80
         public string GetInternalsReport() => Processor.GetInternalsReport();
         public string GetClockReport() => Clock.GetInternalsReport();
         public string GetDisassembly() => Processor.GetDisassembly();
+
+        // KEYBOARD
+
         public bool NotifyKeyboardChange(KeyState Key) => Processor.Memory.NotifyKeyboardChange(Key);
         public void ResetKeyboard(bool LeftShift, bool RightShift) => Processor.Memory.ResetKeyboard(LeftShift, RightShift);
 
+        public async Task Paste(string text, CancellationToken Token)
+        {
+            foreach (char c in text)
+            {
+                var kc = c.ToKeyCode();
+
+                if (c == '\n')
+                    await KeyStroke(kc.Code, kc.Shifted, 1000);
+                else
+                    await KeyStroke(kc.Code, kc.Shifted);
+                
+                if (Token.IsCancellationRequested)
+                    break;
+            }
+        }
+        public async Task KeyStroke(KeyCode Key, bool Shifted, uint DelayMSecUp = 40u, uint DelayMSecDown = 40u)
+        {
+            if (Key != KeyCode.None)
+            {
+                NotifyKeyboardChange(new KeyState(Key, Shifted, false, false, true));
+                await Delay(DelayMSecDown);
+                NotifyKeyboardChange(new KeyState(Key, Shifted, false, false, false));
+                await Delay(DelayMSecUp);
+            }
+        }
+        public async Task Delay(uint VirtualMSec)
+        {
+            bool done = false;
+            Clock.ActivatePulseReq(new PulseReq(PulseReq.DelayBasis.Microseconds, VirtualMSec * 1000, () => { done = true; }));
+            while (!done)
+                await Task.Delay(NormalSpeed ? (int)VirtualMSec / 5 : (int)VirtualMSec / 100);
+        }
         public void Dispose()
         {
             if (!isDisposed)

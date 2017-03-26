@@ -7,7 +7,7 @@ using System.IO;
 
 namespace Sharp80
 {
-    internal static class Storage
+    public static class Storage
     {
         public const string FILE_NAME_TRSDOS =      "{TRSDOS}";
         public const string FILE_NAME_NEW =         "{NEW}";
@@ -40,7 +40,7 @@ namespace Sharp80
                 return appDataPath;
             }
         }
-        public static bool LoadBinaryFile(string FilePath, out byte[] Bytes)
+        internal static bool LoadBinaryFile(string FilePath, out byte[] Bytes)
         {
             try
             {
@@ -60,7 +60,7 @@ namespace Sharp80
                 return false;
             }
         }
-        public static bool LoadTextFile(string FilePath, out string Text)
+        internal static bool LoadTextFile(string FilePath, out string Text)
         {
             try
             {
@@ -73,7 +73,7 @@ namespace Sharp80
                 return false;
             }
         }
-        public static bool SaveBinaryFile(string FilePath, byte[] Data)
+        internal static bool SaveBinaryFile(string FilePath, byte[] Data)
         {
             try
             {
@@ -94,15 +94,15 @@ namespace Sharp80
                 return false;
             }
         }
-        public static void SaveTextFile(string FilePath, IEnumerable<string> Lines)
+        internal static void SaveTextFile(string FilePath, IEnumerable<string> Lines)
         {
             File.WriteAllLines(FilePath, Lines);
         }
-        public static void SaveTextFile(string FilePath, string Text)
+        internal static void SaveTextFile(string FilePath, string Text)
         {
             File.WriteAllText(FilePath, Text);
         }
-        public static string GetDefaultDriveFileName(byte DriveNum)
+        internal static string GetDefaultDriveFileName(byte DriveNum)
         {
             string fileName = String.Empty;
 
@@ -131,7 +131,7 @@ namespace Sharp80
         /// Returns a token or the latest path used. The path is confirmed to exist.
         /// </summary>
         /// <returns></returns>
-        public static string GetDefaultTapeFileName()
+        internal static string GetDefaultTapeFileName()
         {
             string path = Settings.LastTapeFile;
             if (File.Exists(path) || IsFileNameToken(path))
@@ -139,7 +139,7 @@ namespace Sharp80
             else
                 return String.Empty;
         }
-        public static string GetTapeFilePath(string Prompt, string DefaultPath, bool Save, bool SelectFileInDialog)
+        internal static string GetTapeFilePath(string Prompt, string DefaultPath, bool Save, bool SelectFileInDialog)
         {
             return Dialogs.UserSelectFile(Save: Save,
                                           DefaultPath: DefaultPath,
@@ -153,7 +153,7 @@ namespace Sharp80
         /// floppy's file path may be empty but we may want to save a token
         /// value like {NEW}
         /// </summary>
-        public static void SaveDefaultDriveFileName(byte DriveNum, string FilePath)
+        internal static void SaveDefaultDriveFileName(byte DriveNum, string FilePath)
         {
             switch (DriveNum)
             {
@@ -171,7 +171,7 @@ namespace Sharp80
                     break;
             }
         }
-        public static Floppy MakeBlankFloppy(bool Formatted)
+        internal static Floppy MakeBlankFloppy(bool Formatted)
         {
             var f = DMK.MakeBlankFloppy(NumTracks: 40,
                                            DoubleSided: true,
@@ -180,8 +180,8 @@ namespace Sharp80
 
             return f;
         }
-        
-        public static string GetFloppyFilePath(string Prompt, string DefaultPath, bool Save, bool SelectFileInDialog, bool DskOnly)
+
+        internal static string GetFloppyFilePath(string Prompt, string DefaultPath, bool Save, bool SelectFileInDialog, bool DskOnly)
         {
             string ext = DskOnly ? "dsk" : Path.GetExtension(DefaultPath);
 
@@ -196,7 +196,7 @@ namespace Sharp80
                                           DefaultExtension: ext,
                                           SelectFileInDialog: SelectFileInDialog);
         }
-        public static bool GetAsmFilePath(out string Path)
+        internal static bool GetAsmFilePath(out string Path)
         {
             Path = Settings.LastAsmFile;
 
@@ -212,12 +212,12 @@ namespace Sharp80
                 return false;
             }
         }
-        public static bool IsFileNameToken(string Path)
+        internal static bool IsFileNameToken(string Path)
         {
             return Path == FILE_NAME_UNFORMATTED || Path == FILE_NAME_NEW || Path == FILE_NAME_TRSDOS;
         }
         private static string libraryPath = null;
-        public static string LibraryPath
+        internal static string LibraryPath
         {
             get
             {
@@ -225,14 +225,14 @@ namespace Sharp80
                 return libraryPath;
             }
         }
-        public static bool IsLibraryFile(string Path) => Path.StartsWith(LibraryPath);
+        internal static bool IsLibraryFile(string Path) => Path.StartsWith(LibraryPath);
 
         /// returns false if the user cancelled a needed save
-        public static bool SaveChangedStorage(Computer Computer)
+        internal static bool SaveChangedStorage(Computer Computer)
         {
             return SaveFloppies(Computer) && SaveTapeIfRequired(Computer);
         }
-        public static bool SaveFloppies(Computer Computer)
+        internal static bool SaveFloppies(Computer Computer)
         {
             // returns true on user cancel
             for (byte b = 0; b < 4; b++)
@@ -242,7 +242,7 @@ namespace Sharp80
             }
             return true;
         }
-        public static bool SaveFloppyIfRequired(Computer Computer, byte DriveNum)
+        internal static bool SaveFloppyIfRequired(Computer Computer, byte DriveNum)
         {
             bool? save = false;
 
@@ -276,7 +276,7 @@ namespace Sharp80
             }
             return true;
         }
-        public static bool SaveTapeIfRequired(Computer Computer)
+        internal static bool SaveTapeIfRequired(Computer Computer)
         {
             bool? save = false;
 
@@ -309,7 +309,7 @@ namespace Sharp80
             }
             return true;
         }
-        public static bool MakeFloppyFromFile(string FilePath, out string NewPath)
+        internal static bool MakeFloppyFromFile(string FilePath, out string NewPath)
         {
             if (LoadBinaryFile(FilePath, out byte[] bytes))
             {
@@ -320,8 +320,8 @@ namespace Sharp80
             NewPath = String.Empty;
             return false;
         }
-        public static string DefaultSnapshotDir => Path.Combine(AppDataPath, @"Snapshots\");
-        public static string DefaultPrintDir => Path.Combine(AppDataPath, @"Print\");
+        internal static string DefaultSnapshotDir => Path.Combine(AppDataPath, @"Snapshots\");
+        internal static string DefaultPrintDir => Path.Combine(AppDataPath, @"Print\");
     }
 }
 

@@ -44,11 +44,7 @@ namespace Sharp80
             }
         }
 
-        public static bool ProcessKey(KeyState Key)
-        {
-            return views[CurrentMode].processKey(Key);
-        }
-
+        public static bool ProcessKey(KeyState Key) => views[CurrentMode].processKey(Key);
         public static byte[] GetViewData() => views[CurrentMode].GetViewBytes();
 
         public static bool Invalid

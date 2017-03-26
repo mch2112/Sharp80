@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Sharp80;
@@ -9,27 +10,16 @@ namespace Sharp80Tests
     public class Startup : Test
     {
         [TestMethod]
-        public void StartToBasic()
+        public async Task BasicStartTest()
         {
-            try
-            {
-                InitComputer();
-                computer.Start();
-                DelayMSec(500);
-
-                KeyPress(KeyCode.Return);
-                KeyPress(KeyCode.Return);
-
-                bool res = ScreenContainsText("READY");
-
-                DisposeComputer();
-
-                Assert.IsTrue(res);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.StackTrace);
-            }
-         }
+            await StartToBasic();
+            Assert.IsTrue(DisposeComputer(ScreenContainsText("READY")));
+        }
+        [TestMethod]
+        public async Task TrsdosStartTest()
+        {
+            await StartToTrsdos();
+            Assert.IsTrue(DisposeComputer(ScreenContainsText("TRSDOS Ready")));
+        }
     }
 }

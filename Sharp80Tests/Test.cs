@@ -13,48 +13,43 @@ namespace Sharp80Tests
     public abstract class Test
     {
         protected Computer computer;
-
-        protected void DelayMSec(ulong MSec)
+        
+        protected async Task StartToBasic(bool fast = true)
         {
-            DelayTStates(MSec * Clock.CLOCK_RATE / 1000);   
+            InitComputer(false);
+            computer.NormalSpeed = false;
+            computer.Start();
+            await computer.Delay(500);
+            await KeyPress(KeyCode.Return, false, 500);
+            await KeyPress(KeyCode.Return, false, 500);
+            await computer.Delay(2000);
         }
-        protected void DelayTStates(ulong Delay)
+        protected async Task StartToTrsdos(bool fast = true)
         {
-            ulong startTStates = computer.GetElapsedTStates();
-            ulong endTStates = startTStates + Delay;
-
-            while (computer.GetElapsedTStates() < endTStates)
-            {
-                Thread.Sleep(100);
-            }
+            InitComputer(true);
+            computer.NormalSpeed = false;
+            computer.LoadFloppy(0, Storage.FILE_NAME_TRSDOS);
+            computer.Start();
+            await computer.Delay(10000);
         }
-        protected void KeyDown(KeyCode Key, ulong DelayMSec = 300)
+        protected async Task KeyPress(KeyCode Key, bool Shift, uint DelayMSecDown = 40, uint DelayMSecUp = 40)
         {
-            computer.NotifyKeyboardChange(new KeyState(Key, false, false, false, true));
-            this.DelayMSec(DelayMSec);
-        }
-        protected void KeyUp(KeyCode Key, ulong DelayMSec = 300)
-        {
-            computer.NotifyKeyboardChange(new KeyState(Key, false, false, false, false));
-            this.DelayMSec(DelayMSec);
-        }
-        protected void KeyPress(KeyCode Key, ulong DelayMSec = 300)
-        {
-            KeyDown(Key, DelayMSec);
-            KeyUp(Key, DelayMSec);
+            await computer.KeyStroke(Key, Shift, DelayMSecDown, DelayMSecUp);
         }
         protected bool ScreenContainsText(string Text)
         {
             return computer.VideoMemory.Contains(Text.ToByteArray());
         }
-        protected void InitComputer()
+        protected void InitComputer(bool EnableFloppyController)
         {
-            computer = new Computer(new ScreenNull(), false, true);
+            computer = new Computer(new ScreenNull(), EnableFloppyController, false);
         }
-        protected void DisposeComputer()
+        protected bool DisposeComputer(bool PassThrough = true)
         {
             computer.Stop(true);
             computer.Dispose();
+
+            return PassThrough;
         }
      }
 }
