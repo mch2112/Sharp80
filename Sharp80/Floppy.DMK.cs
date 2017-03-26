@@ -34,14 +34,10 @@ namespace Sharp80
         private const byte SING_DENS_SING_BYTE_FLAG = 0x40;
         private const byte IGNORE_SING_DENS_FLAG = 0x80;
         
-        public DMK(byte[] DiskData)
-        {
-            Deserialize(DiskData);
-        }
-        public DMK(System.IO.BinaryReader Reader)
-        {
-            Deserialize(Reader, Computer.SERIALIZATION_VERSION);
-        }
+        public DMK(byte[] DiskData) => Deserialize(DiskData);
+        
+        public DMK(System.IO.BinaryReader Reader) => Deserialize(Reader, Computer.SERIALIZATION_VERSION);
+        
         public override Track GetTrack(int TrackNum, bool SideOne)
         {
             return tracks.FirstOrDefault(t => t.PhysicalTrackNum == TrackNum && t.SideOne == SideOne);
@@ -120,7 +116,6 @@ namespace Sharp80
             dirSector.SectorData[19] = 0x5C;
 
             // File length
-            //Lib.SplitBytes((ushort)(neededSectors), out dirSector.SectorData[20], out dirSector.SectorData[21]);
             dirSector.SectorData[20] = neededSectors;
             dirSector.SectorData[21] = 0;
 
@@ -389,7 +384,7 @@ namespace Sharp80
 
                 if (DiskData.Length < 0x200)
                 {
-                    Log.LogDebug(string.Format("Invalid DMK format: Too short ({0} bytes)", DiskData.Length));
+                    Log.LogDebug($"Invalid DMK format: Too short ({DiskData.Length} bytes)");
                     return;
                 }
 
@@ -413,7 +408,7 @@ namespace Sharp80
                     {
                         if (DiskData.Length < diskCursor + trackLength)
                         {
-                            Log.LogDebug(string.Format("Unexpected End to DMK File on Track {0} at byte {1}", trackNum, diskCursor));
+                            Log.LogDebug($"Unexpected End to DMK File on Track {trackNum} at byte {diskCursor}");
                         }
                         else
                         {

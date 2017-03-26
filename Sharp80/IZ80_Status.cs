@@ -3,7 +3,7 @@
 
 namespace Sharp80
 {
-    internal interface IZ80_Status
+    public interface IZ80_Status
     {
         ushort PcVal { get; }
         ushort SpVal { get; }

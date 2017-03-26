@@ -5,7 +5,7 @@ using System;
 
 namespace Sharp80
 {
-    internal struct KeyState
+    public struct KeyState
     {
         public KeyCode Key { get; }
         public bool Shift { get; }

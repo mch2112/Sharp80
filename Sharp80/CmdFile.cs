@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Sharp80
 {
-    internal class CmdFile
+    public class CmdFile
     {
         public const int MAX_TITLE_LENGTH = 6;
 

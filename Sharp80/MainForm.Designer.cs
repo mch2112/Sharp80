@@ -60,12 +60,9 @@ namespace Sharp80
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(6);
             this.Name = "MainForm";
-            this.Activated += new System.EventHandler(this.Form_Activated);
-            this.Deactivate += new System.EventHandler(this.Form_Deactivate);
             this.Load += new System.EventHandler(this.Form_Load);
             this.ResumeLayout(false);
         }
-
         #endregion
     }
 }

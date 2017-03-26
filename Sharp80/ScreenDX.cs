@@ -54,6 +54,9 @@ namespace Sharp80
         private RawRectangleF[] cellsNormal, cellsWide;
 
         private byte[] shadowScreen;
+
+        public IList<byte> ScreenBytes => shadowScreen;
+
         private bool shadowIsStdWidth;
 
         private SolidColorBrush foregroundBrush,
@@ -162,7 +165,7 @@ namespace Sharp80
             initialized = true;
             Invalidate();
         }
-        public void Reinitialize(Computer Computer)
+        public void Initialize(Computer Computer)
         {
             computer = Computer;
             Reset();
@@ -543,12 +546,12 @@ namespace Sharp80
 
         // RENDERING
 
+        public bool Suspend { private get; set; }
         public async Task Start(float RefreshRateHz, CancellationToken StopToken)
         {
             var delay = TimeSpan.FromTicks((int)(10_000_000f / RefreshRateHz));
             await RenderLoop(delay, StopToken);
         }
-        public bool Suspend { private get; set; }
         private async Task RenderLoop(TimeSpan Delay, CancellationToken StopToken)
         {
             while (!StopToken.IsCancellationRequested)

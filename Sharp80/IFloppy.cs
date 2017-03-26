@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Sharp80
 {
-    internal interface IFloppy
+    public interface IFloppy
     {
         bool DoubleSided { get; }
         bool Changed { get; }

@@ -5,7 +5,7 @@ using System;
 
 namespace Sharp80
 {
-    internal sealed class SectorDescriptor
+    public sealed class SectorDescriptor
     {
         public byte TrackNumber { get; set; }
         public byte SectorNumber { get; set; }

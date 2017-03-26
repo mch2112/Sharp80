@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Sharp80
 {
-    internal partial class FloppyController
+    internal partial class FloppyController : ISerializable
     {
         private class DriveState
         {
@@ -25,13 +25,21 @@ namespace Sharp80
                     Floppy.Serialize(Writer);
                 Writer.Write(PhysicalTrackNumber);
             }
-            public void Deserialize(BinaryReader Reader)
+            public bool Deserialize(BinaryReader Reader, int SerializationVersion)
             {
-                if (Reader.ReadBoolean())
-                    Floppy = new DMK(Reader);
-                else
-                    Floppy = null;
-                PhysicalTrackNumber = Reader.ReadByte();
+                try
+                {
+                    if (Reader.ReadBoolean())
+                        Floppy = new DMK(Reader);
+                    else
+                        Floppy = null;
+                    PhysicalTrackNumber = Reader.ReadByte();
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
     }

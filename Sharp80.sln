@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26206.0
+VisualStudioVersion = 15.0.26228.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sharp80", "Sharp80\Sharp80.csproj", "{826ECE28-4D67-42F8-A04F-7036263210CE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A4A52541-2A2B-4B05-ABCB-61FDEDBDAB09}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sharp80Tests", "Sharp80Tests\Sharp80Tests.csproj", "{B3F5203C-889C-4973-B276-361953E1D25A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,6 +19,10 @@ Global
 		{826ECE28-4D67-42F8-A04F-7036263210CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{826ECE28-4D67-42F8-A04F-7036263210CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{826ECE28-4D67-42F8-A04F-7036263210CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3F5203C-889C-4973-B276-361953E1D25A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3F5203C-889C-4973-B276-361953E1D25A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3F5203C-889C-4973-B276-361953E1D25A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3F5203C-889C-4973-B276-361953E1D25A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

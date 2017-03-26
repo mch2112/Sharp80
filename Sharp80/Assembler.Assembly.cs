@@ -8,7 +8,7 @@ namespace Sharp80.Assembler
 {
     public enum Status { New, Empty, AssembleFailed, AssembleDone, IntWriteFailed, CmdWriteFailed, Complete, CompleteOK}
 
-    internal class Assembly
+    public class Assembly
     {
         public string CmdFilePath { get; private set; }
         public string IntFilePath { get; private set; }
@@ -32,7 +32,7 @@ namespace Sharp80.Assembler
         private List<(ushort SegmentAddress, byte[] Bytes)> Segments { get; set; }
         private Dictionary<string, Assembler.LineInfo> SymbolTable { get; set; }
 
-        public Assembly(string SourceText)
+        internal Assembly(string SourceText)
         {
             this.SourceText = SourceText;
         }
@@ -62,7 +62,8 @@ namespace Sharp80.Assembler
             else
                 return null;
         }
-        public void Write(string CmdPath)
+
+        internal void Write(string CmdPath)
         {
             this.CmdFilePath = CmdPath;
             IntFilePath = Path.ChangeExtension(CmdPath, ".int.txt");

@@ -119,8 +119,7 @@ namespace Sharp80
         {
             unchecked
             {
-                return Lib.CombineBytes(this[Location++],
-                                        this[Location]);
+                return Lib.CombineBytes(this[Location++], this[Location]);
             }
         }
         public IReadOnlyCollection<byte> ToArray()

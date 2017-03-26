@@ -123,7 +123,9 @@ namespace Sharp80
                 
                 playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
 
-                enabled = true;
+                enabled = false;
+                on = false;
+                mute = false;
                 Stopped = false;
             }
             catch (Exception Ex)

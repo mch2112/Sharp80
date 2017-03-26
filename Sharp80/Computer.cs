@@ -7,7 +7,7 @@ using System.IO;
 
 namespace Sharp80
 {
-    internal class Computer : IDisposable
+    public class Computer : IDisposable
     {
         public const int SERIALIZATION_VERSION = 9;
 
@@ -29,7 +29,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Computer(IAppWindow MainForm, IScreen Screen, bool FloppyEnabled, bool NormalSpeed, bool SoundOn)
+        public Computer(IScreen Screen, bool FloppyEnabled)
         {
             ulong ticksPerSoundSample = Clock.TICKS_PER_SECOND / SoundX.SAMPLE_RATE;
 
@@ -51,14 +51,12 @@ namespace Sharp80
                 Sound.Dispose();
                 Sound = new SoundNull();
             }
-            Sound.On = SoundOn;
 
             Clock = new Clock(this,
                               Processor,
                               IntMgr,
                               ticksPerSoundSample,
-                              new SoundEventCallback(Sound.Sample),
-                              NormalSpeed);
+                              new SoundEventCallback(Sound.Sample));
 
             Clock.SpeedChanged += (s, e) => { Sound.Mute = !Clock.NormalSpeed; };
 
@@ -230,17 +228,17 @@ namespace Sharp80
         /// trigger's delay
         /// </summary>
         /// <param name="Req"></param>
-        public void Activate(PulseReq Req) => Clock.ActivatePulseReq(Req);
+        internal void Activate(PulseReq Req) => Clock.ActivatePulseReq(Req);
 
         /// <summary>
         /// Adds a pulse req without resetting the trigger
         /// </summary>
         /// <param name="Req"></param>
-        public void AddPulseReq(PulseReq Req) => Clock.AddPulseReq(Req);
+        internal void AddPulseReq(PulseReq Req) => Clock.AddPulseReq(Req);
 
         // FLOPPY SUPPORT
 
-        public void StartupInitializeStorage()
+        internal void StartupInitializeStorage()
         {
             for (byte i = 0; i < 4; i++)
                 LoadFloppy(i);
@@ -249,7 +247,8 @@ namespace Sharp80
             if (tape.Length > 0 && File.Exists(tape))
                 TapeLoad(tape);
         }
-        public void LoadFloppy(byte DriveNum) => LoadFloppy(DriveNum, Storage.GetDefaultDriveFileName(DriveNum));
+
+        internal void LoadFloppy(byte DriveNum) => LoadFloppy(DriveNum, Storage.GetDefaultDriveFileName(DriveNum));
 
         public bool LoadFloppy(byte DriveNum, string FilePath)
         {
@@ -291,7 +290,7 @@ namespace Sharp80
 
             return ret;
         }
-        public void LoadFloppy(byte DriveNum, Floppy Floppy) => FloppyController.LoadFloppy(DriveNum, Floppy);
+        internal void LoadFloppy(byte DriveNum, Floppy Floppy) => FloppyController.LoadFloppy(DriveNum, Floppy);
 
         public void LoadTrsDosFloppy(byte DriveNum) => LoadFloppy(DriveNum, new DMK(Resources.TRSDOS) { FilePath = Storage.FILE_NAME_TRSDOS });
         
@@ -399,7 +398,7 @@ namespace Sharp80
                 Dialogs.AlertUser($"This snapshot was created with a newer version of {ProductInfo.PRODUCT_NAME}. Please upgrade at {ProductInfo.DOWNLOAD_URL}.");
                 return false;
             }
-            else if (ver >= 8)
+            else if (ver >= 8) // currently supporting v 8 & 9
             {
                 if (Processor.Deserialize(Reader, ver)        &&
                     Clock.Deserialize(Reader, ver)            &&

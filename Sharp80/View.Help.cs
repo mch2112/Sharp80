@@ -10,6 +10,7 @@ namespace Sharp80
     {
         private int ScreenNum { get; set; }
         private const int NUM_SCREENS = 6;
+
         private string helpHeaderText = "Sharp 80 Help";
         private string footerText = "Left/Right Arrow: Show More Commands";
 
@@ -39,13 +40,12 @@ namespace Sharp80
                     return PadScreen(Encoding.ASCII.GetBytes(
                                         Header(helpHeaderText, "MORE BASIC COMMANDS (2/6)") +
                                         Indent("[F5]                  Show / Hide CPU Internal Info") +
-                                        Indent("[F9]                  Single Step (when paused)") +
                                         Format() +
                                         Indent("[Alt]+[P]             Manage Printer Output") +
                                         Format() +
                                         Indent("[Ctrl]+[V]            Paste from Windows Clipboard") +
+                                        Indent("[Ctrl]+[C]            Copy Screen to Windows Clipboard") +
                                         Format() + 
-                                        Indent("[Alt]+[End]           Reset Button") +
                                         Indent("[Alt]+[Shift]+[End]   Hard Reset (Power Cycle)") +
                                         Indent("[Alt]+[Shift]+[X]     Exit") +
                                         Format() +
@@ -96,16 +96,16 @@ namespace Sharp80
                 case 5:
                     return PadScreen(Encoding.ASCII.GetBytes(
                                         Header(helpHeaderText, "ADVANCED COMMANDS (6/6)") +
-                                        Format() + 
                                         Indent("[Alt]+[Y] Invoke Assembler") +
                                         Indent("[Alt]+[E] Invoke Disassembler") +
                                         Format() +
-                                        Format("[Alt]+[M] Memory Viewer") +
-                                        Format("[Alt]+[I] Instruction Set Report") +
+                                        Indent("[Alt]+[M] Memory Viewer") +
+                                        Indent("[Alt]+[I] Instruction Set Report") +
                                         Format() +
-                                        Format("[Alt]+[D] Disk Controller Status View") +
+                                        Indent("[Alt]+[D] Disk Controller Status View") +
                                         Format() +
-                                        Format("[Alt]+[Shift}+[M] Dump memory to .bin file") +
+                                        Indent("[Alt]+[Shift}+[M] Dump memory to .bin file") +
+                                        Format() +
                                         Footer(footerText)));
                 default:
                     throw new Exception("Invalid Help View");

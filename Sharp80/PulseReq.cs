@@ -7,7 +7,7 @@ namespace Sharp80
 {
     internal sealed class PulseReq
     {
-        public enum DelayBasis { Microseconds, Ticks }
+        internal enum DelayBasis { Microseconds, Ticks }
 
         public bool Active { get; private set; }
         public ulong Trigger { get; private set; }
@@ -61,14 +61,23 @@ namespace Sharp80
             Writer.Write(Trigger);
             Writer.Write(Active);
         }
-        public void Deserialize(System.IO.BinaryReader Reader, Clock.ClockCallback Callback)
+        public bool Deserialize(System.IO.BinaryReader Reader, Clock.ClockCallback Callback, int SerializationVersion)
         {
-            callback = Callback;
+            try
+            {
+                callback = Callback;
 
-            delay = Reader.ReadUInt64();
-            delayBasis = (DelayBasis)Reader.ReadInt32();
-            Trigger = Reader.ReadUInt64();
-            Active = Reader.ReadBoolean();
+                delay = Reader.ReadUInt64();
+                delayBasis = (DelayBasis)Reader.ReadInt32();
+                Trigger = Reader.ReadUInt64();
+                Active = Reader.ReadBoolean();
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

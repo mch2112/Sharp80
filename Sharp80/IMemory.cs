@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Sharp80
 {
-    internal interface IMemory : IReadOnlyList<byte>, ISerializable
+    public interface IMemory : IReadOnlyList<byte>, ISerializable
     {
         byte this[ushort Location] { get; set; }
 

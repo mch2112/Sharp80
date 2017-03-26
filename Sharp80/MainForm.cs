@@ -40,13 +40,11 @@ namespace Sharp80
 
         public MainForm()
         {
+            Dialogs.Initialize(this);
+
             uiThread = Thread.CurrentThread;
             KeyPreview = true;
             Text = ProductInfo.PRODUCT_NAME + " - TRS-80 Model III Emulator";
-
-            Dialogs.Initialize(this);
-            Dialogs.BeforeShowDialog += BeforeDialog;
-            Dialogs.AfterShowDialog += AfterDialog;
 
             keyboard = new KeyboardDX();
 
@@ -62,10 +60,17 @@ namespace Sharp80
         {
             try
             {
-                ResizeBegin += (o, ee) => { screen.Suspend = true;  resizing++; };
-                ResizeEnd += (o, ee) => { resizing--; screen.Suspend = false; };
+                Dialogs.BeforeShowDialog += BeforeDialog;
+                Dialogs.AfterShowDialog += AfterDialog;
 
-                View.OnUserCommand += OnUserCommand;
+                Activated +=   (s, ee) => { SyncKeyboard(); IsActive = true; };
+                Deactivate +=  (s, ee) => { IsActive = false; computer.ResetKeyboard(false, false); };
+
+                ResizeBegin += (s, ee) => { screen.Suspend = true;  resizing++; };
+                ResizeEnd +=   (s, ee) => { resizing--; screen.Suspend = false; };
+
+                View.OnUserCommand += ProcessUserCommand;
+
                 screen.Initialize(this);
                 HardReset();
                 
@@ -81,11 +86,9 @@ namespace Sharp80
 
                 ScreenTask = screen.Start(SCREEN_REFRESH_RATE_HZ, StopToken.Token);
                 KeyboardPollTask = keyboard.Start(KEYBOARD_REFRESH_RATE_HZ, ProcessKey, StopToken.Token);
-                CheckExceptionsTimer = new System.Windows.Forms.Timer()
-                {
-                    Interval = 100
-                };
-                CheckExceptionsTimer.Tick += (o,ee) => ExceptionHandler.HandleExceptions();
+
+                CheckExceptionsTimer = new System.Windows.Forms.Timer() { Interval = 100 };
+                CheckExceptionsTimer.Tick += (s, ee) => ExceptionHandler.HandleExceptions();
                 CheckExceptionsTimer.Start();
             }
             catch (Exception ex)
@@ -129,9 +132,9 @@ namespace Sharp80
             Location = new System.Drawing.Point(x, y);
         }
         
-        private void OnUserCommand(UserCommand Command)
+        private void ProcessUserCommand(UserCommand Command)
         {
-            switch(Command)
+            switch (Command)
             {
                 case UserCommand.ToggleFullScreen:
                     ToggleFullScreen();
@@ -253,16 +256,6 @@ namespace Sharp80
             resizing--;
         }
         
-        private void Form_Activated(object sender, EventArgs e)
-        {
-            SyncKeyboard();
-            IsActive = true;
-        }
-        private void Form_Deactivate(object sender, EventArgs e)
-        {
-            IsActive = false;
-            computer.ResetKeyboard(false, false);
-        }
         private void Zoom(bool In)
         {
             if (IsMinimized)
@@ -349,15 +342,17 @@ namespace Sharp80
 
                     computer.Dispose();
                 }
-                computer = new Computer(this, screen, Settings.DiskEnabled, Settings.NormalSpeed, Settings.SoundOn)
+                computer = new Computer(screen, Settings.DiskEnabled)
                 {
                     DriveNoise = Settings.DriveNoise,
                     BreakPoint = Settings.Breakpoint,
-                    BreakPointOn = Settings.BreakpointOn
+                    BreakPointOn = Settings.BreakpointOn,
+                    SoundOn = Settings.SoundOn,
+                    NormalSpeed = Settings.NormalSpeed
                 };
 
                 computer.StartupInitializeStorage();
-                screen.Reinitialize(computer);
+                screen.Initialize(computer);
 
                 Log.Initalize(computer.GetElapsedTStates);
 

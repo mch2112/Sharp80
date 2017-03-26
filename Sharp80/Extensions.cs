@@ -11,9 +11,10 @@ namespace Sharp80
 {
     public static class Extensions
     {
+        // TABLES
+
         private static readonly byte[] BIT = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
         private static readonly byte[] NOT = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F };
-
         private static readonly sbyte[] TWOSCOMP =
         {
              0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
@@ -33,10 +34,11 @@ namespace Sharp80
             -0x20,-0x1F,-0x1E,-0x1D,-0x1C,-0x1B,-0x1A,-0x19,-0x18,-0x17,-0x16,-0x15,-0x14,-0x13,-0x12,-0x11,
             -0x10,-0x0F,-0x0E,-0x0D,-0x0C,-0x0B,-0x0A,-0x09,-0x08,-0x07,-0x06,-0x05,-0x04,-0x03,-0x02,-0x01
         };
-
         private static string[] BytesAsHex;
         private static string[] WordsAsHex;
         
+        // CONSGTRUCTOR
+
         static Extensions()
         {
             BytesAsHex = new string[0x100];
@@ -57,6 +59,8 @@ namespace Sharp80
 
 
         }
+
+        // ARRAY MANIPULATION
 
         /// <summary>
         /// Get the subarray, inclusive for start index, exclusive for end index.
@@ -93,18 +97,15 @@ namespace Sharp80
                 throw new Exception("ToUShortArray: Requires even length source.");
 
             ushort[] ret = new ushort[Source.Length / 2];
-            int j = 0;
-            for (int i = 0; i < Source.Length; i += 2, j++)
-            {
-                ret[j] = (ushort)((Source[i + 1] << 8) | (Source[i]));
-            }
+            for (int i = 0, j = 0; i < Source.Length; i += 2, j++)
+                ret[j] = Lib.CombineBytes(Source[i], Source[i + 1]);
+            
             return ret;
         }
         public static byte[] ToByteArray(this ushort[] Source)
         {
             byte[] ret = new byte[Source.Length * 2];
-            int j = 0;
-            for (int i = 0; i < Source.Length; i++, j += 2)
+            for (int i = 0, j = 0; i < Source.Length; i++, j += 2)
                 Source[i].Split(out ret[j], out ret[j + 1]);
             return ret;
         }
@@ -115,34 +116,29 @@ namespace Sharp80
                 ret[i * 2] = ret[i * 2 + 1] = Source[i];
             return ret;
         }
-        public static T[] Truncate<T>(this T[] Source, int MaxLength)
-        {
-            if (Source.Length <= MaxLength)
-                return Source;
-
-            return Source.Slice(0, MaxLength);
-        }
-        public static void SetAll<T>(this T[] Array, T Value)
+        public static T[] Truncate<T>(this T[] Source, int MaxLength) => Source.Length <= MaxLength ? Source : Source.Slice(0, MaxLength);
+        public static T[] SetAll<T>(this T[] Array, T Value)
         {
             for (int i = 0; i < Array.Length; i++)
                 Array[i] = Value;
+            return Array;
         }
-        public static void SetValues<T>(this T[] Array, ref int Start, int Length, T Value)
+        public static T[] SetValues<T>(this T[] Array, ref int Cursor, int Length, T Value)
         {
-            int end = Start + Length;
-            for (; Start < end; Start++)
-                Array[Start] = Value;
+            int end = Cursor + Length;
+            for (; Cursor < end; Cursor++)
+                Array[Cursor] = Value;
+            return Array;
         }
-        public static void SetValues<T>(this T[] Array, ref int Start, bool Double, params T[] Values)
+        public static void SetValues<T>(this T[] Array, ref int Cursor, bool Double, params T[] Values)
         {
             foreach (T v in Values)
             {
-                Array[Start++] = v;
+                Array[Cursor++] = v;
                 if (Double)
-                    Array[Start++] = v;
+                    Array[Cursor++] = v;
             }
         }
-
         /// <summary>
         /// Pads an array to minimum length with given value
         /// NOTE: The origiinal array might be returned!
@@ -154,27 +150,16 @@ namespace Sharp80
         /// <returns></returns>
         public static T[] Pad<T>(this T[] Array, int Length, T Value)
         {
-            if (Array.Length >= Length)
-                return Array;
-
-            var ret = Array.Concat(new T[Length - Array.Length]);
-
-            for (int i = Array.Length; i < Length; i++)
-                ret[i] = Value;
-
-            return ret;
+            return (Array.Length >= Length) ? Array : Array.Concat(new T[Length - Array.Length].SetAll(Value));
         }
         public static bool ArrayEquals<T>(this T[] Source, T[] Other)
         {
             return Source.SequenceEqual(Other);
-
-            //if (Source.Length != Other.Length)
-            //    return false;
-            //for (int i = 0; i < Source.Length; i++)
-            //    if (!EqualityComparer<T>.Default.Equals(Source[i], Other[i]))
-            //        return false;
-            //return true;
         }
+        public static string ToArrayDeclaration(this byte[] Input) => "{" + String.Join(",", Input.Select(b => "0x" + b.ToHexString())) + "}";
+        
+        // NUMERIC FUNCTIONS
+
         public static byte SetBit(this byte Input, byte BitNum)
         {
             return (byte)(Input | BIT[BitNum]);
@@ -224,6 +209,47 @@ namespace Sharp80
         {
             return TWOSCOMP[input];
         }
+        public static ushort Offset(this ushort Input, int Offset) => (ushort)(Input + Offset);
+        public static bool IsBetween(this ulong Value, ulong Min, ulong Max) => Value >= Min && Value <= Max;
+        public static bool IsBetween(this int Value, int Min, int Max) => Value >= Min && Value <= Max;
+        public static bool IsBetween(this char Value, char Min, char Max) => Value >= Min && Value <= Max;
+        public static bool IsBetween(this byte Value, byte Min, byte Max) => Value >= Min && Value <= Max;
+
+        // STRINGS
+
+        public static string Repeat(this String Input, int Count)
+        {
+            Count = Math.Max(0, Count);
+            switch (Count)
+            {
+                case 0:
+                    return String.Empty;
+                case 1:
+                    return Input;
+                default:
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < Count; i++)
+                        sb.Append(Input);
+                    return sb.ToString();
+            }
+        }
+        public static string Truncate(this string Input, int Chars)
+        {
+            if (Input.Length < Chars)
+                return Input;
+            else
+                return Input.Substring(0, Chars);
+        }
+        public static string FirstText(this string Input)
+        {
+            if (Input.Contains(" "))
+                return Input.Substring(0, Input.IndexOf(' '));
+            else
+                return Input;
+        }
+
+        // HEXADECIMAL
+
         public static string ToHexString(this byte Input)
         {
             unchecked
@@ -250,6 +276,26 @@ namespace Sharp80
         {
             return input.ToString("X8");
         }
+        public static string ToHexChar(this ushort Input)
+        {
+            return ((byte)(Input & 0x0F)).ToHexString().Substring(1);
+        }
+        public static string ToTwosCompHexString(this byte input)
+        {
+            if ((input & 0x80) == 0x80)
+                return "-" + ((byte)(1 + ((input & 0x7F) ^ 0x7F))).ToHexString();
+            else
+                return "+" + input.ToHexString();
+        }
+        public static string ToHexDisplay(this byte[] Input)
+        {
+            var lines = Input.Select((x, i) => new { Index = i, Value = x })
+                             .GroupBy(x => x.Index / 0x10)
+                             .Select(x => x.Select(v => v.Value).ToList())
+                             .ToList();
+
+            return String.Join(Environment.NewLine, lines.Select(l => String.Join(" ", l.Select(ll => ll.ToHexString()))));
+        }
         public static byte ToHexCharByte(this int Input)
         {
             Input &= 0x0F;
@@ -272,72 +318,34 @@ namespace Sharp80
 
             return Input;
         }
-        public static string ToHexChar(this ushort Input)
-        {
-            return ((byte)(Input & 0x0F)).ToHexString().Substring(1);
-        }
-        public static string ToTwosCompHexString(this byte input)
-        {
-            if ((input & 0x80) == 0x80)
-                return "-" + ((byte)(1 + ((input & 0x7F) ^ 0x7F))).ToHexString();
-            else
-                return "+" + input.ToHexString();
-        }
-        public static ushort Offset(this ushort Input, int Offset)
-        {
-            return (ushort)(Input + Offset);
-        }
-        public static string ToArrayDeclaration(this byte[] Input)
-        {
-            return "{" + String.Join(",", Input.Select(b => "0x" + b.ToHexString())) + "}";
-        }
-        public static string ToHexDisplay(this byte[] Input)
-        {
-            var lines = Input.Select((x, i) => new { Index = i, Value = x })
-                             .GroupBy(x => x.Index / 0x10)
-                             .Select(x => x.Select(v => v.Value).ToList())
-                             .ToList();
 
-            return String.Join(Environment.NewLine, lines.Select(l => String.Join(" ", l.Select(ll => ll.ToHexString()))));
-        }
-        public static byte[] Compress(this byte[] data)
+        // FILE PATHS
+
+        public static string MakeUniquePath(this string Path)
         {
-            var output = new MemoryStream();
-            using (DeflateStream ds = new DeflateStream(output, CompressionLevel.Optimal))
+            var Dir = System.IO.Path.GetDirectoryName(Path);
+            var FileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(Path);
+            var Extension = System.IO.Path.GetExtension(Path);
+
+            int i = 0;
+            do
             {
-                ds.Write(data, 0, data.Length);
+                string name = i++ > 0 ? $"{FileNameWithoutExtension} ({i})"
+                                      : FileNameWithoutExtension;
+
+                Path = System.IO.Path.Combine(Dir, name + Extension);
             }
-            var o = output.ToArray();
-            System.Diagnostics.Debug.Assert(Decompress(o).ArrayEquals(data));
-            return o;
+            while (File.Exists(Path));
+
+            return Path;
         }
-        public static byte[] Decompress(this byte[] data)
+        public static string ReplaceExtension(this string Path, string NewExtension)
         {
-            var input = new MemoryStream(data);
-            var output = new MemoryStream();
-            using (DeflateStream ds = new DeflateStream(input, CompressionMode.Decompress))
-            {
-                ds.CopyTo(output);
-            }
-            var o = output.ToArray();
-            return o;
+            return System.IO.Path.ChangeExtension(Path, NewExtension);
         }
-        public static bool IsBetween(this ulong Value, ulong Min, ulong Max)
-        {
-            return Value >= Min && Value <= Max;
-        }
-        public static bool IsBetween(this int Value, int Min, int Max)
-        {
-            return Value >= Min && Value <= Max;
-        }
-        public static bool IsBetween(this char Value, char Min, char Max)
-        {
-            return Value >= Min && Value <= Max;
-        }
-        public static bool IsBetween(this byte Value, byte Min, byte Max)
-        {
-            return Value >= Min && Value <= Max;
-        }
+        
+        // EXCEPTIONS
+
         public static string ToReport(this Exception Ex)
         {
             string exMsg;
@@ -372,58 +380,9 @@ namespace Sharp80
                         method.ReflectedType?.Name ?? String.Empty, method.Name,
                         String.Join(", ", method.GetParameters().Select(p => p.Name)));
         }
-        public static string MakeUniquePath(this string Path)
-        {
-            var Dir = System.IO.Path.GetDirectoryName(Path);
-            var FileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(Path);
-            var Extension = System.IO.Path.GetExtension(Path);
 
-            int i = 0;
-            do
-            {
-                string name = i++ > 0 ? $"{FileNameWithoutExtension} ({i})"
-                                      : FileNameWithoutExtension;
+        // KEYS
 
-                Path = System.IO.Path.Combine(Dir, name + Extension);
-            }
-            while (File.Exists(Path));
-
-            return Path;
-        }
-        public static string ReplaceExtension(this string Path, string NewExtension)
-        {
-            return System.IO.Path.ChangeExtension(Path, NewExtension);
-        }
-        public static string Repeat(this String Input, int Count)
-        {
-            Count = Math.Max(0, Count);
-            switch (Count)
-            {
-                case 0:
-                    return String.Empty;
-                case 1:
-                    return Input;
-                default:
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 0; i < Count; i++)
-                        sb.Append(Input);
-                    return sb.ToString();
-            }
-        }
-        public static string Truncate(this string Input, int Chars)
-        {
-            if (Input.Length < Chars)
-                return Input;
-            else
-                return Input.Substring(0, Chars);
-        }
-        public static string FirstText(this string Input)
-        {
-            if (Input.Contains(" "))
-                return Input.Substring(0, Input.IndexOf(' '));
-            else
-                return Input;
-        }
         public static (KeyCode Code, bool Shifted) ToKeyCode(this char c)
         {
             switch (c)
@@ -529,6 +488,31 @@ namespace Sharp80
                     break;
             }
             return (KeyCode.None, false);
+        }
+
+        // COMPRESSION
+
+        public static byte[] Compress(this byte[] data)
+        {
+            var output = new MemoryStream();
+            using (DeflateStream ds = new DeflateStream(output, CompressionLevel.Optimal))
+            {
+                ds.Write(data, 0, data.Length);
+            }
+            var o = output.ToArray();
+            System.Diagnostics.Debug.Assert(Decompress(o).ArrayEquals(data));
+            return o;
+        }
+        public static byte[] Decompress(this byte[] data)
+        {
+            var input = new MemoryStream(data);
+            var output = new MemoryStream();
+            using (DeflateStream ds = new DeflateStream(input, CompressionMode.Decompress))
+            {
+                ds.CopyTo(output);
+            }
+            var o = output.ToArray();
+            return o;
         }
     }
 }

@@ -497,7 +497,7 @@ namespace Sharp80.Processor
                 }
 
                 return historyBuffer.Deserialize(Reader, DeserializationVersion) &&
-                       ports.Deserialize(Reader, DeserializationVersion) &&
+                       ports.Deserialize(Reader, DeserializationVersion)         &&
                        memory.Deserialize(Reader, DeserializationVersion);
             }
             catch

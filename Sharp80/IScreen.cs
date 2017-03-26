@@ -2,13 +2,16 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Sharp80
 {
-    internal interface IScreen : ISerializable, IDisposable
-    {
+    public interface IScreen : ISerializable, IDisposable
+    {   
+        IList<byte> ScreenBytes { get; }
+
         Task Start(float RefreshRateHz, CancellationToken StopToken);
         bool Suspend { set; }
 
@@ -20,6 +23,6 @@ namespace Sharp80
         
         void Reset();
         void Initialize(IAppWindow Parent);
-        void Reinitialize(Computer Computer);
+        void Initialize(Computer Computer);
     }
 }

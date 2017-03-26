@@ -7,8 +7,8 @@ using System.Linq;
 
 namespace Sharp80
 {
-    internal enum TapeStatus { Stopped, Reading, ReadEngaged, Writing, WriteEngaged, Waiting }
-    internal enum Baud { Low, High }
+    public enum TapeStatus { Stopped, Reading, ReadEngaged, Writing, WriteEngaged, Waiting }
+    public enum Baud { Low, High }
 
     internal partial class Tape : ISerializable
     {
@@ -560,8 +560,8 @@ namespace Sharp80
                 if (Reader.ReadBoolean())
                 {
                     readPulseReq = readPulseReq ?? new PulseReq();
-                    readPulseReq.Deserialize(Reader, Update);
-                    if (readPulseReq.Active)
+                    ok = readPulseReq.Deserialize(Reader, Update, SerializationVersion);
+                    if (ok && readPulseReq.Active)
                         computer.AddPulseReq(readPulseReq);
                 }
                 else

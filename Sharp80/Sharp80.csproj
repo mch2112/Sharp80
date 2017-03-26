@@ -161,6 +161,7 @@
     <Compile Include="Resources.Rom.cs" />
     <Compile Include="Resources.Trsdos.cs" />
     <Compile Include="ScreenMetrics.cs" />
+    <Compile Include="ScreenNull.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="SoundNull.cs" />
     <Compile Include="IMemory.cs" />
@@ -168,6 +169,7 @@
     <Compile Include="ISerializable.cs" />
     <Compile Include="SoundX.FrameBuffer.cs" />
     <Compile Include="SoundX.Noise.cs" />
+    <Compile Include="StartToBasicTest.cs" />
     <Compile Include="SubArray.cs" />
     <Compile Include="Tape.cs" />
     <Compile Include="Tape.Transition.cs" />

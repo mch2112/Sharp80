@@ -8,14 +8,14 @@ using System.Threading.Tasks;
 
 namespace Sharp80
 {
-    internal class Clock : ISerializable
+    public class Clock : ISerializable
     {
         public event EventHandler SpeedChanged;
         public delegate void ClockCallback();
 
         public const ulong CLOCK_RATE = 2027520;
-        public const ushort TICKS_PER_TSTATE = 1000;
-        public const ulong TICKS_PER_SECOND = CLOCK_RATE * TICKS_PER_TSTATE;
+        internal const ushort TICKS_PER_TSTATE = 1000;
+        internal const ulong TICKS_PER_SECOND = CLOCK_RATE * TICKS_PER_TSTATE;
 
         /// <summary>
         /// This is near 30 hz but not exactly since we don't want to sync with Floppy disk
@@ -24,7 +24,7 @@ namespace Sharp80
         /// certain sectors to become unreadable, because an interrupt always dirupts reading
         /// those sectors.
         /// </summary>
-        public const ulong TICKS_PER_IRQ = TICKS_PER_SECOND * 100 / 3001; 
+        internal const ulong TICKS_PER_IRQ = TICKS_PER_SECOND * 100 / 3001; 
 
         // Internal State
 
@@ -61,7 +61,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Clock(Computer Computer, Processor.Z80 Processor, InterruptManager InterruptManager, ulong TicksPerSoundSample, SoundEventCallback SoundCallback, bool NormalSpeed)
+        internal Clock(Computer Computer, Processor.Z80 Processor, InterruptManager InterruptManager, ulong TicksPerSoundSample, SoundEventCallback SoundCallback)
         {
             CalRealTimeClock();
 
@@ -73,7 +73,7 @@ namespace Sharp80
             
             ticksPerSoundSample = TicksPerSoundSample;            
             soundCallback = SoundCallback;
-            normalSpeed = NormalSpeed;
+            normalSpeed = true;
             nextRtcIrqTick = TICKS_PER_IRQ;
 
             ResetTriggers();
@@ -89,8 +89,8 @@ namespace Sharp80
 
         public bool IsRunning { get; private set; }
         public ulong ElapsedTStates => TickCount / TICKS_PER_TSTATE;
-        public ulong TickCount { get; private set; }
-        public string GetInternalsReport()
+        internal ulong TickCount { get; private set; }
+        internal string GetInternalsReport()
         {
             var s = new StringBuilder();
 
@@ -126,7 +126,7 @@ namespace Sharp80
 
         // CPU CONTROL
 
-        public void Start()
+        internal void Start()
         {
             if (!IsRunning)
             {
@@ -134,13 +134,13 @@ namespace Sharp80
                 execThread = Task.Run((Action)Exec);
             }
         }
-        public void Stop() => stopReq = true;
-        public void Step()
+        internal void Stop() => stopReq = true;
+        internal void Step()
         {
             if (!IsRunning)
                 ExecOne();
         }
-        public void Wait()
+        internal void Wait()
         {
             if (!waitTrigger.Latched)
             {
@@ -153,7 +153,7 @@ namespace Sharp80
             }
             waitTrigger.Latch();
         }
-        public bool NormalSpeed
+        internal bool NormalSpeed
         {
             get => normalSpeed;
             set
@@ -292,12 +292,12 @@ namespace Sharp80
 
         // PULSE REQ CALLBACKS
 
-        public void ActivatePulseReq(PulseReq Req)
+        internal void ActivatePulseReq(PulseReq Req)
         {
             Req.SetTrigger(BaselineTicks: TickCount);
             AddPulseReq(Req);
         }
-        public void AddPulseReq(PulseReq Req)
+        internal void AddPulseReq(PulseReq Req)
         {
             if (!pulseReqs.Contains(Req))
                 pulseReqs.Add(Req);
@@ -376,12 +376,12 @@ namespace Sharp80
         {
             try
             {
-                TickCount = Reader.ReadUInt64();
-                nextRtcIrqTick = Reader.ReadUInt64();
-                stopReq = Reader.ReadBoolean();
-                nextPulseReqTick = Reader.ReadUInt64();
+                TickCount =           Reader.ReadUInt64();
+                nextRtcIrqTick =      Reader.ReadUInt64();
+                stopReq =             Reader.ReadBoolean();
+                nextPulseReqTick =    Reader.ReadUInt64();
                 nextSoundSampleTick = Reader.ReadUInt64();
-                waitTimeout = Reader.ReadUInt64();
+                waitTimeout =         Reader.ReadUInt64();
 
                 return waitTrigger.Deserialize(Reader, DeserializationVersion);
             }
