@@ -342,7 +342,7 @@ namespace Sharp80
 
                     computer.Dispose();
                 }
-                computer = new Computer(screen, Settings.DiskEnabled)
+                computer = new Computer(screen, Settings.DiskEnabled, false)
                 {
                     DriveNoise = Settings.DriveNoise,
                     BreakPoint = Settings.Breakpoint,

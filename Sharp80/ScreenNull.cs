@@ -14,22 +14,9 @@ namespace Sharp80
 
         public async Task Start(float RefreshRateHz, CancellationToken StopToken)
         {
-            var delay = TimeSpan.FromTicks((int)(10_000_000f / RefreshRateHz));
-            await RenderLoop(delay, StopToken);
+            await Task.Delay(1000);
         }
-        private async Task RenderLoop(TimeSpan Delay, CancellationToken StopToken)
-        {
-            while (!StopToken.IsCancellationRequested)
-            {
-                int i = 0;
-
-                foreach (var b in computer.VideoMemory)
-                    shadowScreen[i] = b;
-
-                await Task.Delay(Delay, StopToken);
-            }
-        }
-
+        
         public bool Suspend { set { } }
 
         public IList<byte> ScreenBytes => shadowScreen;

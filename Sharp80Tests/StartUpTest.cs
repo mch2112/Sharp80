@@ -11,13 +11,25 @@ namespace Sharp80Tests
         [TestMethod]
         public void StartToBasic()
         {
-            InitComputer();
-            computer.Start();
-            DelayMSec(500);
-            KeyPress(KeyCode.Return);
-            KeyPress(KeyCode.Return);
-            Assert.IsTrue(ScreenContainsText("READY"));
-            DisposeComputer();
-        }
+            try
+            {
+                InitComputer();
+                computer.Start();
+                DelayMSec(500);
+
+                KeyPress(KeyCode.Return);
+                KeyPress(KeyCode.Return);
+
+                bool res = ScreenContainsText("READY");
+
+                DisposeComputer();
+
+                Assert.IsTrue(res);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+            }
+         }
     }
 }

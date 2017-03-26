@@ -29,7 +29,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Computer(IScreen Screen, bool FloppyEnabled)
+        public Computer(IScreen Screen, bool FloppyEnabled, bool NullSound = false)
         {
             ulong ticksPerSoundSample = Clock.TICKS_PER_SECOND / SoundX.SAMPLE_RATE;
 
@@ -45,11 +45,19 @@ namespace Sharp80
 
             // If sound fails to initialize there might be a driver issue,
             // but it's not fatal: we can continue without sound
-            Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut));
-            if (Sound.Stopped)
+
+            if (NullSound)
             {
-                Sound.Dispose();
                 Sound = new SoundNull();
+            }
+            else
+            {
+                Sound = new SoundX(new GetSampleCallback(Ports.CassetteOut));
+                if (Sound.Stopped)
+                {
+                    Sound.Dispose();
+                    Sound = new SoundNull();
+                }
             }
 
             Clock = new Clock(this,
@@ -166,6 +174,7 @@ namespace Sharp80
                     System.Threading.Thread.Sleep(0);     // make sure we're not in the middle of a cycle
             }
         }
+
         public void ResetButton() => IntMgr.ResetButtonLatch.Latch();
 
         public void StepOver()
@@ -469,7 +478,7 @@ namespace Sharp80
                 FloppyController.Dispose();
                 Sound.Dispose();
                 Printer.Dispose();
-                Stop(WaitForStop: false);
+                Stop(WaitForStop: false); // ?
                 isDisposed = true;
             }
         }

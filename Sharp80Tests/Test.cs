@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -12,7 +13,6 @@ namespace Sharp80Tests
     public abstract class Test
     {
         protected Computer computer;
-        protected IScreen screen;
 
         protected void DelayMSec(ulong MSec)
         {
@@ -49,15 +49,12 @@ namespace Sharp80Tests
         }
         protected void InitComputer()
         {
-            screen = new ScreenNull();
-            computer = new Computer(screen, false);
+            computer = new Computer(new ScreenNull(), false, true);
         }
         protected void DisposeComputer()
         {
-            computer.Stop(false);
+            computer.Stop(true);
             computer.Dispose();
-            screen.Dispose();
-
         }
-    }
+     }
 }
