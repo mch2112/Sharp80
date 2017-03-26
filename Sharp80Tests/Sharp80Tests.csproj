@@ -49,6 +49,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataStructure.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="StartUpTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

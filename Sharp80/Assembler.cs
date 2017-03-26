@@ -86,6 +86,8 @@ namespace Sharp80.Assembler
             int sourceFileLine = 0;
             Macro m = null;
 
+            bool ended = false;
+
             for (int i = 0; i < lines.Count; i++)
             {
                 sourceFileLine++;
@@ -115,9 +117,11 @@ namespace Sharp80.Assembler
                             AddLine(l, sourceFileLine, null, Error);
                         m = null;
                     }
-                    else
+                    else if (!ended)
                     {
                         AddLine(line, sourceFileLine);
+                        if (mn == "END")
+                            ended = true; // don't allow any non macro lines after end statement
                     }
                 }
             }
