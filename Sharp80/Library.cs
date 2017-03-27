@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Sharp80
 {
-    internal static partial class Lib
+    public static partial class Lib
     {
         /// <summary>
         /// Returns up to four bytes of hex values separated by spaces and right padded

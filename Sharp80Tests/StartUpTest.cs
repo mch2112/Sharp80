@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -20,6 +21,13 @@ namespace Sharp80Tests
         {
             await StartToTrsdos();
             Assert.IsTrue(DisposeComputer(ScreenContainsText("TRSDOS Ready")));
+        }
+        [TestMethod]
+        public async Task SuPlusStartTest()
+        {
+            await StartWithFloppy(@"\Disks\Utilities & Operating Systems\Super Utility+ 3.2.dsk");
+            await computer.KeyStroke(KeyCode.Return, false, 1000);
+            Assert.IsTrue(DisposeComputer(ScreenContainsText("Zap Utilities")));
         }
     }
 }

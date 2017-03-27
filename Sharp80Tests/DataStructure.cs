@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Sharp80;
-
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Sharp80Tests

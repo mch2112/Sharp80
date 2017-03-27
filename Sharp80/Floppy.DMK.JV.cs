@@ -256,7 +256,7 @@ namespace Sharp80
         {
             var sectors = Sectors.Where(s => s.SectorSize == JV1_SECTOR_SIZE);
 
-            List<SectorDescriptor> newSectors = new List<SectorDescriptor>();
+            var newSectors = new List<SectorDescriptor>();
 
             for (int i = 0; i < JV1_SECTORS_PER_TRACK; i++)
                 newSectors.Add(sectors.FirstOrDefault(s => s.SectorNumber == i) ?? new SectorDescriptor() { SectorData = new byte[JV1_SECTOR_SIZE] });

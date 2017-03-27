@@ -130,7 +130,7 @@ namespace Sharp80
                 Array[Cursor] = Value;
             return Array;
         }
-        public static void SetValues<T>(this T[] Array, ref int Cursor, bool Double, params T[] Values)
+        public static T[] SetValues<T>(this T[] Array, ref int Cursor, bool Double, params T[] Values)
         {
             foreach (T v in Values)
             {
@@ -138,6 +138,7 @@ namespace Sharp80
                 if (Double)
                     Array[Cursor++] = v;
             }
+            return Array;
         }
         /// <summary>
         /// Pads an array to minimum length with given value

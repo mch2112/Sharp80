@@ -48,11 +48,6 @@ namespace Sharp80
 
             LengthWithHeader = this.Data.Length + HEADER_LENGTH_BYTES;
             densityMap = null;
-
-#if DEBUG
-    //      RebuildHeader();
-  //         Changed = true;
-#endif
         }
 
         private void SetDensity()
@@ -63,11 +58,6 @@ namespace Sharp80
                 density = false;
             else
                 density = null;
-        }
-
-        public Track(byte PhysicalTrackNum, bool SideOne, int Length) : this(PhysicalTrackNum, SideOne, new byte[Length], false)
-        {
-
         }
         public static byte[] ToTrackBytes(IEnumerable<SectorDescriptor> Sectors, int Length = 0)
         {
@@ -86,19 +76,19 @@ namespace Sharp80
 
             if (ddAll)
             {
-                ret.SetValues(ref i, 10, (byte)0x4E); /* standard is 80 */
-                ret.SetValues(ref i, 12, (byte)0x00);
-                ret.SetValues(ref i,  3, (byte)0xF6);
-                ret.SetValues(ref i,  1, (byte)0xFC);
-                ret.SetValues(ref i, 50, (byte)0x4E); /* standard is 50 */
+                ret.SetValues(ref i, 10, (byte)0x4E)  /* standard is 80 */
+                   .SetValues(ref i, 12, (byte)0x00)
+                   .SetValues(ref i,  3, (byte)0xF6)
+                   .SetValues(ref i,  1, (byte)0xFC) 
+                   .SetValues(ref i, 50, (byte)0x4E); /* standard is 50 */
             }
             else
             {
                 // times two for doubled bytes
-                ret.SetValues(ref i, 10 * 2, (byte)0xFF); /* tech datasheet says 30, not 10 */
-                ret.SetValues(ref i,  6 * 2, (byte)0x00);
-                ret.SetValues(ref i,  1 * 2, (byte)0xFC);
-                ret.SetValues(ref i, 26 * 2, (byte)0xFF);
+                ret.SetValues(ref i, 10 * 2, (byte)0xFF)  /* tech datasheet says 30, not 10 */
+                   .SetValues(ref i,  6 * 2, (byte)0x00)
+                   .SetValues(ref i,  1 * 2, (byte)0xFC)
+                   .SetValues(ref i, 26 * 2, (byte)0xFF);
             }
             byte sideNum;
             byte dataLengthCode;
@@ -112,15 +102,14 @@ namespace Sharp80
                 {
                     crc = Floppy.CRC_RESET_A1_A1_A1_FE;
 
-                    ret.SetValues(ref i, 12, (byte)0x00);
-                    ret.SetValues(ref i, 3, (byte)0xA1);
+                    ret.SetValues(ref i, 12, (byte)0x00)
+                       .SetValues(ref i, 3, (byte)0xA1);
 
                     ((ushort)(i + DOUBLE_DENSITY_MASK)).Split(out ret[headerCursor], out ret[headerCursor + 1]);
                 }
                 else
                 {
                     crc = Floppy.CRC_RESET_FE;
-
                     ret.SetValues(ref i, 6 * 2, (byte)0x00);
 
                     ((ushort)i).Split(out ret[headerCursor], out ret[headerCursor + 1]);
@@ -133,10 +122,10 @@ namespace Sharp80
 
                 if (s.DoubleDensity)
                 {
-                    ret.SetValues(ref i, false, crcHigh, crcLow);
-                    ret.SetValues(ref i, 22, (byte)0x4E);
-                    ret.SetValues(ref i, 12, (byte)0x00);
-                    ret.SetValues(ref i, false, (byte)0xA1, (byte)0xA1, (byte)0xA1, s.DAM);
+                    ret.SetValues(ref i, false, crcHigh, crcLow)
+                       .SetValues(ref i, 22, (byte)0x4E)
+                       .SetValues(ref i, 12, (byte)0x00)
+                       .SetValues(ref i, false, (byte)0xA1, (byte)0xA1, (byte)0xA1, s.DAM);
 
                     crc = Lib.Crc(Floppy.CRC_RESET_A1_A1_A1, s.DAM);
                     for (int j = 0; j < s.SectorData.Length; j++)
@@ -151,16 +140,15 @@ namespace Sharp80
 
                     crc.Split(out crcLow, out crcHigh);
 
-                    ret.SetValues(ref i, false, crcHigh, crcLow);
-
-                    ret.SetValues(ref i, 20, (byte)0x4E); /* standard is 54 */
+                    ret.SetValues(ref i, false, crcHigh, crcLow)
+                       .SetValues(ref i, 20, (byte)0x4E); /* standard is 54 */
                 }
                 else // single density
                 {
-                    ret.SetValues(ref i, true, crcHigh, crcLow);
-                    ret.SetValues(ref i, 11 * 2, (byte)0xFF);
-                    ret.SetValues(ref i, 6 * 2, (byte)0x00);
-                    ret.SetValues(ref i, 1 * 2, s.DAM);
+                    ret.SetValues(ref i, true, crcHigh, crcLow)
+                       .SetValues(ref i, 11 * 2, (byte)0xFF)
+                       .SetValues(ref i, 6 * 2, (byte)0x00)
+                       .SetValues(ref i, 1 * 2, s.DAM);
 
                     crc = Floppy.CRC_RESET;
                     crc = Lib.Crc(crc, s.DAM);
@@ -176,14 +164,13 @@ namespace Sharp80
                         crc = (ushort)~crc; // trash the crc
 
                     crc.Split(out crcLow, out crcHigh);
-                    ret.SetValues(ref i,  1 * 2, crcHigh);
-                    ret.SetValues(ref i,  1 * 2, crcLow);
-                    ret.SetValues(ref i, 17 * 2, (byte)0xFF); /* spec says 27, not 17 */
+                    ret.SetValues(ref i,  1 * 2, crcHigh)
+                       .SetValues(ref i,  1 * 2, crcLow)
+                       .SetValues(ref i, 17 * 2, (byte)0xFF); /* spec says 27, not 17 */
                 }
             }
            
             if (Length > 0)
-
                 ret = ret.Pad(Length, ddAll ? Floppy.FILLER_BYTE_DD : Floppy.FILLER_BYTE_SD).Slice(0, Length);
 
             else if (i <= 0x0CC0)
@@ -301,7 +288,7 @@ namespace Sharp80
                 int byteMultiple = density ? 1 : 2;
                 if (Data[offset] != Floppy.IDAM)
                 {
-                    Log.LogDebug(string.Format("Missing IDAM Track {0} Side {1} SectorIndex {2}.", this.PhysicalTrackNum, this.SideOne ? 1 : 0, SectorIndex));
+                    Log.LogDebug(string.Format($"Missing IDAM Track {PhysicalTrackNum} Side {(SideOne ? 1 : 0)} SectorIndex {SectorIndex}."));
                     continue;
                 }
 
@@ -379,7 +366,7 @@ namespace Sharp80
                 TrackIndex++;
             return b;
         }
-        private void RebuildHeader()
+        public void RebuildHeader()
         {
             var header = new ushort[HEADER_LENGTH];
 
@@ -393,6 +380,7 @@ namespace Sharp80
 
                 if (Data[i] == Floppy.IDAM)
                 {
+                    // is it a real IDAM? Check preceding bytes
                     if (density)
                     {
                         if (Data[i - 1] != 0xA1 || Data[i - 2] != 0xA1 || Data[i - 3] != 0xA1)
@@ -410,7 +398,7 @@ namespace Sharp80
                         }
                     }
 
-                    // commit without checking address crc, since could be intensional error
+                    // commit without checking address crc, since could be intentional error
                     header[headerCursor++] = (ushort)(i + HEADER_LENGTH_BYTES + (density ? DOUBLE_DENSITY_MASK : 0));
 
                     // now skip forward past the sector contents
@@ -496,7 +484,7 @@ namespace Sharp80
         }
         public override string ToString()
         {
-            return string.Format("Track {0} Side {1}", this.PhysicalTrackNum, SideOne ? 1 : 0);
+            return string.Format($"Track {PhysicalTrackNum} Side {(SideOne ? 1 : 0)}");
         }
     }
 }

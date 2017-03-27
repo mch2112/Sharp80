@@ -221,7 +221,7 @@ namespace Sharp80
         {
             get
             {
-                libraryPath = libraryPath ?? Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), @"Library");
+                libraryPath = libraryPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Library");
                 return libraryPath;
             }
         }

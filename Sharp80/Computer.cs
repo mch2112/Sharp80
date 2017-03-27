@@ -288,6 +288,8 @@ namespace Sharp80
                     ret = true;
                     break;
                 default:
+                    if (FilePath.StartsWith("\\")) // relative to library
+                        FilePath = Path.Combine(Storage.LibraryPath, FilePath.Substring(1));
                     ret = FloppyController.LoadFloppy(DriveNum, FilePath);
                     break;
             }

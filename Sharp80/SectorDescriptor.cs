@@ -17,13 +17,10 @@ namespace Sharp80
         public ushort SectorSize { get; set; }
         public byte SectorSizeCode { get; set; }
         public byte[] SectorData { get; set; }
-        public SectorDescriptor()
-        {
-        }
         public static SectorDescriptor Empty => new SectorDescriptor() { InUse = false };
         public override string ToString()
         {
-            return string.Format("Track: {0} Side: {1} Sector: {2} Double Density: {3} Length: {4} {5}",
+            return string.Format("Track: {0:X2} Side: {1} Sector: {2:X2} Double Density: {3} Length: {4:X4} {5}",
                                  TrackNumber,
                                  SideOne ? "1" : "0",
                                  SectorNumber,
