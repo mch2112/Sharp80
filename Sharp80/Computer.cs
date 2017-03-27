@@ -475,20 +475,29 @@ namespace Sharp80
 
         public async Task Paste(string text, CancellationToken Token)
         {
-            foreach (char c in text)
+            if (IsRunning)
             {
-                var kc = c.ToKeyCode();
+                foreach (char c in text)
+                {
+                    var kc = c.ToKeyCode();
 
-                if (c == '\n')
-                    await KeyStroke(kc.Code, kc.Shifted, 1000);
-                else
-                    await KeyStroke(kc.Code, kc.Shifted);
-                
-                if (Token.IsCancellationRequested)
-                    break;
+                    if (kc.Shifted)
+                        NotifyKeyboardChange(new KeyState(KeyCode.LeftShift, true, false, false, true));
+
+                    if (c == '\n')
+                        await KeyStroke(kc.Code, kc.Shifted, 1000);
+                    else
+                        await KeyStroke(kc.Code, kc.Shifted);
+
+                    if (kc.Shifted)
+                        NotifyKeyboardChange(new KeyState(KeyCode.LeftShift, true, false, false, false));
+
+                    if (Token.IsCancellationRequested || !IsRunning)
+                        break;
+                }
             }
         }
-        public async Task KeyStroke(KeyCode Key, bool Shifted, uint DelayMSecUp = 40u, uint DelayMSecDown = 40u)
+        public async Task KeyStroke(KeyCode Key, bool Shifted, uint DelayMSecUp = 70u, uint DelayMSecDown = 70u)
         {
             if (Key != KeyCode.None)
             {
@@ -501,9 +510,10 @@ namespace Sharp80
         public async Task Delay(uint VirtualMSec)
         {
             bool done = false;
-            Clock.ActivatePulseReq(new PulseReq(PulseReq.DelayBasis.Microseconds, VirtualMSec * 1000, () => { done = true; }));
-            while (!done)
-                await Task.Delay(NormalSpeed ? (int)VirtualMSec / 5 : (int)VirtualMSec / 100);
+            var pr = new PulseReq(PulseReq.DelayBasis.Microseconds, VirtualMSec * 1000, () => { done = true; });
+            Clock.ActivatePulseReq(pr);
+            while (!done && pr.Active && IsRunning)
+                await Task.Delay(NormalSpeed ? (int)Math.Max(5, VirtualMSec / 5) : Math.Max(2, (int)VirtualMSec / 100));
         }
         public void Dispose()
         {

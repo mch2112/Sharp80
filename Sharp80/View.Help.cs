@@ -32,7 +32,7 @@ namespace Sharp80
                                         Indent("[F3]        Floppy Disk Manager") +
                                         Indent("[F4]        Tape Manager") +
                                         Format() +
-                                        Indent("[Alt]+[S]                 Toggle Sound") +
+                                        Indent("[F12]       Toggle Normal / Fast emulation speed") +
                                         Indent("[Ctrl]+[+] / [Ctrl]+[-]   Zoom In / Out") +
                                         Format() +
                                         Footer(footerText)));
