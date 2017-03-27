@@ -104,7 +104,7 @@ namespace Sharp80
                                         Format() +
                                         Indent("[Alt]+[D] Disk Controller Status View") +
                                         Format() +
-                                        Indent("[Alt]+[Shift}+[M] Dump memory to .bin file") +
+                                        Indent("[Alt]+[Shift]+[M] Dump memory to .bin file") +
                                         Format() +
                                         Footer(footerText)));
                 default:
