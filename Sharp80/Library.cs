@@ -33,20 +33,8 @@ namespace Sharp80
                                                                        System.Globalization.NumberStyles.AllowHexSpecifier,
                                                                        System.Globalization.CultureInfo.InvariantCulture);
 
-		public static byte HexToByte(string input) => byte.Parse(input,
-                                                                 System.Globalization.NumberStyles.AllowHexSpecifier,
-                                                                 System.Globalization.CultureInfo.InvariantCulture);
-
         public static ushort CombineBytes(byte lowOrderByte, byte highOrderByte) => (ushort)(lowOrderByte | (highOrderByte << 8));
-
-        public static byte TwosCompInv(sbyte input) => TWOSCOMPINVERT_APPLY_0X80_OFFSET[input + 0x80];
-
-        /// <summary>
-        /// Returns the first blob of text in a line, such as the first word. Space delimited.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-                
+        
         public static ushort Crc(ushort StartingCRC, params byte[] Data)
         {
             ushort crc = StartingCRC;

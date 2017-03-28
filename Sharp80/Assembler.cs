@@ -364,7 +364,7 @@ namespace Sharp80.Assembler
                                 }
                                 else
                                 {
-                                    lp.Byte1 = Lib.TwosCompInv((sbyte)(operand.NumericValue - lp.Address - 2));
+                                    lp.Byte1 = ((sbyte)(operand.NumericValue - lp.Address - 2)).TwosCompInv();
                                 }
                                 break;
                             case 2:

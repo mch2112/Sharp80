@@ -5,7 +5,7 @@ using System;
 
 namespace Sharp80
 {
-    internal sealed class InterruptManager : ISerializable
+    internal class InterruptManager : ISerializable
     {
         private Computer computer;
         private PortSet ports;

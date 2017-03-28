@@ -166,7 +166,7 @@ namespace Sharp80.Processor
                     }
                 }
 
-                this.NOP = STD[0x00];
+                NOP = STD[0x00];
 
                 for (byte b = 0; b < 0xFF; b++)
                 {

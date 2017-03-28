@@ -7,8 +7,6 @@ namespace Sharp80
 {
     internal class SoundNull : ISound, IDisposable
     {
-        public const int SAMPLE_RATE = 16000;
-
         public bool Stopped => false;
 
         public bool On { get; set; } = false;

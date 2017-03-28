@@ -540,16 +540,17 @@ namespace Sharp80.Processor
                    i.Mnemonic == "INDR" ||
                    i.Mnemonic == "DJNZ";
         }
-        private byte SZ(byte input)    => Lib.SZ[input];
-        private byte SZ53P(byte input) => Lib.SZ53P[input];
-        private byte SZ53(byte input)  => Lib.SZ53[input];
-        private byte F53(byte input)   => Lib.F53[input];
-        private byte P(byte input)     => Lib.P[input];
 
-        private byte SZ(int input)     => Lib.SZ[input & 0xFF];
-        private byte SZ53P(int input)  => Lib.SZ53P[input & 0xFF];
-        private byte SZ53(int input)   => Lib.SZ53[input & 0xFF];
-        private byte F53(int input)    => Lib.F53[input & 0xFF];
-        private byte P(int input)      => Lib.P[input & 0xFF];
+        private static byte SZ(byte input)    => Lib.SZ[input];
+        private static byte SZ53P(byte input) => Lib.SZ53P[input];
+        private static byte SZ53(byte input)  => Lib.SZ53[input];
+        private static byte F53(byte input)   => Lib.F53[input];
+        private static byte P(byte input)     => Lib.P[input];
+
+        private static byte SZ(int input)     => Lib.SZ[input & 0xFF];
+        private static byte SZ53P(int input)  => Lib.SZ53P[input & 0xFF];
+        private static byte SZ53(int input)   => Lib.SZ53[input & 0xFF];
+        private static byte F53(int input)    => Lib.F53[input & 0xFF];
+        private static byte P(int input)      => Lib.P[input & 0xFF];
     }
 }
