@@ -40,7 +40,7 @@ namespace Sharp80
         Mode mode = Mode.Normal;
         public Basic()
         {
-            if (Storage.LoadBinaryFile(@"C:\users\mcham\Desktop\foo.bas", out byte[] file))
+            if (IO.LoadBinaryFile(@"C:\users\name\Desktop\foo.bas", out byte[] file))
             {
                 StringBuilder sb = new StringBuilder();
                 int cursor = 0;

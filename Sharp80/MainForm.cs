@@ -339,10 +339,9 @@ namespace Sharp80
                 {
                     if (!Storage.SaveChangedStorage(computer) || !Storage.SaveTapeIfRequired(computer))
                         return;
-
                     computer.Dispose();
                 }
-                computer = new Computer(screen, Settings.DiskEnabled, false)
+                computer = new Computer(screen, Settings.DiskEnabled, true)
                 {
                     DriveNoise = Settings.DriveNoise,
                     BreakPoint = Settings.Breakpoint,
@@ -431,7 +430,6 @@ namespace Sharp80
                 Cursor.Show();
                 cursorHidden = false;
             }
-
             keyboard.Enabled = dialogLevel == 0;
         }
 

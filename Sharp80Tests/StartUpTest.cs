@@ -14,20 +14,34 @@ namespace Sharp80Tests
         public async Task BasicStartTest()
         {
             await StartToBasic();
-            Assert.IsTrue(DisposeComputer(ScreenContainsText("READY")));
+            bool result = ScreenContainsText("READY");
+            await DisposeComputer();
+            Assert.IsTrue(result);
         }
         [TestMethod]
         public async Task TrsdosStartTest()
         {
             await StartToTrsdos();
-            Assert.IsTrue(DisposeComputer(ScreenContainsText("TRSDOS Ready")));
+            bool result = ScreenContainsText("TRSDOS Ready");
+            await DisposeComputer();
+            Assert.IsTrue(result);
         }
         [TestMethod]
         public async Task SuPlusStartTest()
         {
             await StartWithFloppy(@"\Disks\Utilities & Operating Systems\Super Utility+ 3.2.dsk");
             await computer.KeyStroke(KeyCode.Return, false, 1000);
-            Assert.IsTrue(DisposeComputer(ScreenContainsText("Zap Utilities")));
+            bool result = ScreenContainsText("Zap Utilities");
+            await DisposeComputer();
+            Assert.IsTrue(result);
+        }
+        [TestMethod]
+        public async Task StartWithSoundTest()
+        {
+            await StartToBasic(true, true);
+            bool result = computer.SoundEnabled;
+            await DisposeComputer();
+            Assert.IsTrue(result);
         }
     }
 }

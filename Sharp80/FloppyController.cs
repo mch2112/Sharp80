@@ -3,7 +3,6 @@
 
 using System;
 using System.Linq;
-using System.IO;
 
 namespace Sharp80
 {
@@ -264,7 +263,7 @@ namespace Sharp80
                 if (string.IsNullOrWhiteSpace(f.FilePath))
                     Log.LogDebug("Can't save floppy without file path.");
                 else
-                    Storage.SaveBinaryFile(f.FilePath, f.Serialize(ForceDMK: false));
+                    IO.SaveBinaryFile(f.FilePath, f.Serialize(ForceDMK: false));
             }
             catch (Exception ex)
             {
@@ -1137,7 +1136,7 @@ namespace Sharp80
 
         // SNAPSHOTS
 
-        public void Serialize(BinaryWriter Writer)
+        public void Serialize(System.IO.BinaryWriter Writer)
         {
             Writer.Write(TrackRegister);
             Writer.Write(SectorRegister);
@@ -1193,7 +1192,7 @@ namespace Sharp80
             motorOnPulseReq.Serialize(Writer);
             motorOffPulseReq.Serialize(Writer);
         }
-        public bool Deserialize(BinaryReader Reader, int SerializationVersion)
+        public bool Deserialize(System.IO.BinaryReader Reader, int SerializationVersion)
         {
             try
             {
@@ -1248,7 +1247,7 @@ namespace Sharp80
                 {
                     ok &= drives[b].Deserialize(Reader, SerializationVersion);
                     if (drives[b].IsLoaded)
-                        if (File.Exists(drives[b].Floppy.FilePath))
+                        if (System.IO.File.Exists(drives[b].Floppy.FilePath))
                             Storage.SaveDefaultDriveFileName(b, drives[b].Floppy.FilePath);
                 }
 

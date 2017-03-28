@@ -97,7 +97,7 @@ namespace Sharp80
         {
             Floppy f;
 
-            if (Storage.LoadBinaryFile(FilePath, out byte[] diskData))
+            if (IO.LoadBinaryFile(FilePath, out byte[] diskData))
             {
                 f = LoadDisk(diskData, FilePath);
                 if (f != null)
@@ -151,11 +151,6 @@ namespace Sharp80
         }
 
         public abstract byte[] Serialize(bool ForceDMK);
-        //public abstract void WriteTrackData(byte TrackNumber, bool SideOne, byte[] Data, bool[] DoubleDensity);
-        //public abstract byte[] GetSectorData(byte TrackNumber, bool SideOne, byte SectorNumber);
-        //public abstract SectorDescriptor GetSectorDescriptor(byte TrackNumber, bool SideOne, byte SectorNumber);
-        //public abstract byte[] GetTrackData(byte TrackNumber, bool SideOne);
-        //public abstract bool IsDoubleDensity(byte TrackNumber, bool SideOne, byte SectorNumber);
 
         public abstract Track GetTrack(int TrackNum, bool SideOne);
 
@@ -241,9 +236,9 @@ namespace Sharp80
         protected static bool IsValidTrsdosChar(char c, bool IsFirstChar)
         {
             if (IsFirstChar)
-                return c >= 'A' && c <= 'Z';
+                return c.IsBetween('A', 'Z');
             else
-                return (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+                return c.IsBetween('A', 'Z') || c.IsBetween('0', '9');
         }
         protected static byte HashFilename(string Filename)
         {

@@ -265,7 +265,7 @@ namespace Sharp80
                             return true;
                         case KeyCode.I:
                             string iPath = System.IO.Path.Combine(Storage.AppDataPath, "Z80 Instruction Set.txt");
-                            Storage.SaveTextFile(iPath, Computer.GetInstructionSetReport());
+                            IO.SaveTextFile(iPath, Computer.GetInstructionSetReport());
                             InvokeUserCommand(UserCommand.Window);
                             Dialogs.ShowTextFile(iPath);
                             return true;
@@ -349,7 +349,7 @@ namespace Sharp80
         {
             if (Storage.GetAsmFilePath(out string sourcePath))
             {
-                if (Storage.LoadTextFile(sourcePath, out string source))
+                if (IO.LoadTextFile(sourcePath, out string source))
                 {
                     var assembly = Computer.Assemble(source);
                     assembly.Write(System.IO.Path.ChangeExtension(sourcePath, ".cmd"));
@@ -529,7 +529,7 @@ namespace Sharp80
 
             if (FilePath.Length > 0)
             {
-                if (Storage.MakeFloppyFromFile(FilePath, out NewPath))
+                if (DMK.FromFile(FilePath, out NewPath))
                 {
                     if (Dialogs.AskYesNo("Floppy created and saved to:" + Environment.NewLine + NewPath + Environment.NewLine + "Load to floppy drive 1?"))
                     {
@@ -556,9 +556,9 @@ namespace Sharp80
 
             if (path.Length > 0)
             {
-                var f = Storage.MakeBlankFloppy(Formatted);
+                var f = new DMK(Formatted);
                 f.FilePath = path;
-                if (Storage.SaveBinaryFile(path, f.Serialize(ForceDMK: true)))
+                if (IO.SaveBinaryFile(path, f.Serialize(ForceDMK: true)))
                     Dialogs.InformUser("Created floppy OK.");
                 else
                     Dialogs.AlertUser($"Failed to create floppy with filename {path}.",
@@ -568,7 +568,7 @@ namespace Sharp80
         private void DumpMemory()
         {
             string path = System.IO.Path.Combine(Storage.AppDataPath, "Memory.bin");
-            Storage.SaveBinaryFile(path, Computer.Memory.ToArray());
+            IO.SaveBinaryFile(path, Computer.Memory.ToArray());
             Dialogs.InformUser($"Memory dumped to {path}.");
         }
     }

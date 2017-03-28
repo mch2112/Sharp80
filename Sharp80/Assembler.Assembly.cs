@@ -95,12 +95,12 @@ namespace Sharp80.Assembler
         {
             try
             {
-                Storage.SaveTextFile(IntFilePath,
-                                     string.Join(Environment.NewLine,
-                                                 Lines.Select(lp => string.Format("{0:00000} {1}", lp.SourceFileLine, lp.FullNameWithOriginalLineAsCommentWithErrorIfAny))) +
-                                     Environment.NewLine +
-                                     Environment.NewLine +
-                                     SymbolTableToString());
+                IO.SaveTextFile(IntFilePath,
+                                string.Join(Environment.NewLine,
+                                            Lines.Select(lp => string.Format("{0:00000} {1}", lp.SourceFileLine, lp.FullNameWithOriginalLineAsCommentWithErrorIfAny))) +
+                                Environment.NewLine +
+                                Environment.NewLine +
+                                SymbolTableToString());
             }
             catch
             {

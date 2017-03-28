@@ -2,7 +2,6 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
-using System.IO;
 
 namespace Sharp80
 {
@@ -21,23 +20,19 @@ namespace Sharp80
 
             public bool FlipFlop { get; private set; }
 
-            private static Clock Clock;
-            private static ReadCallback Callback { get; set; }
+            private Clock Clock;
+            private ReadCallback Callback { get; set; }
 
             public bool Value { get; private set; }
             private ulong TimeStamp { get; set; }
             private ulong Duration { get; set; }
             private Baud Speed { get; set; }
 
-            public static void Initialize(Clock Clock, ReadCallback Callback)
-            {
-                Transition.Clock = Clock;
-                Transition.Callback = Callback;
-            }
-
-            public Transition(Baud Speed)
+            public Transition(Baud Speed, Clock Clock, ReadCallback Callback)
             {
                 this.Speed = Speed;
+                this.Clock = Clock;
+                this.Callback = Callback;
                 TimeStamp = Clock.TickCount;
                 Duration = 0;
             }
@@ -170,7 +165,7 @@ namespace Sharp80
 
             // SNAPSHOTS
 
-            public void Serialize(BinaryWriter Writer)
+            public void Serialize(System.IO.BinaryWriter Writer)
             {
                 Writer.Write((int)Speed);
                 Writer.Write((int)Before);
@@ -181,7 +176,7 @@ namespace Sharp80
                 Writer.Write(TimeStamp);
                 Writer.Write(Duration);
             }
-            public bool Deserialize(BinaryReader Reader, int DeserializationVersion)
+            public bool Deserialize(System.IO.BinaryReader Reader, int DeserializationVersion)
             {
                 try
                 {

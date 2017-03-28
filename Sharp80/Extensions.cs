@@ -269,10 +269,7 @@ namespace Sharp80
                 return WordsAsHex[Input];
             }
         }
-        public static string ToHexString(this sbyte Input)
-        {
-            return (Input < 0 ? "-" : "") + ToHexString((byte)(Math.Abs(Input)));
-        }
+        public static string ToHexString(this sbyte Input) => (Input < 0 ? "-" : "") + ToHexString((byte)(Math.Abs(Input)));
         public static string ToHexString(this uint input)
         {
             return input.ToString("X8");

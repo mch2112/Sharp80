@@ -406,10 +406,10 @@ namespace Sharp80
                 switch (Path)
                 {
                     case Storage.FILE_NAME_NEW:
-                        Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted: true));
+                        Computer.LoadFloppy(DriveNumber.Value, new DMK(Formatted: true));
                         break;
                     case Storage.FILE_NAME_UNFORMATTED:
-                        Computer.LoadFloppy(DriveNumber.Value, Storage.MakeBlankFloppy(Formatted: false));
+                        Computer.LoadFloppy(DriveNumber.Value, new DMK(Formatted: false));
                         break;
                     case Storage.FILE_NAME_TRSDOS:
                         Computer.LoadTrsDosFloppy(DriveNumber.Value);

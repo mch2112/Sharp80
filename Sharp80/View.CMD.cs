@@ -210,7 +210,7 @@ namespace Sharp80
                 var path = Path.Combine(Storage.AppDataPath,
                                         Path.GetFileNameWithoutExtension(CmdFile.FilePath) + ".txt")
                                             .MakeUniquePath();
-                Storage.SaveTextFile(path, txt);
+                IO.SaveTextFile(path, txt);
                 InvokeUserCommand(UserCommand.Window);
                 Dialogs.ShowTextFile(path);
             }

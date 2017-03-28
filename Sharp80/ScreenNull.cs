@@ -14,7 +14,7 @@ namespace Sharp80
 
         public async Task Start(float RefreshRateHz, CancellationToken StopToken)
         {
-            await Task.Delay(1000);
+            await Task.Delay(1);
         }
         
         public bool Suspend { set { } }

@@ -28,9 +28,9 @@ namespace Sharp80
 
         // Internal State
 
-        private static double realTimeTicksPerSec;
-        private static long realTimeElapsedTicksOffset;
-        private static double z80TicksPerRealtimeTick;
+        private double realTimeTicksPerSec;
+        private long realTimeElapsedTicksOffset;
+        private double z80TicksPerRealtimeTick;
 
         private ulong emuSpeedInHz;
         private ulong z80TicksOnLastMeasure;
@@ -246,7 +246,7 @@ namespace Sharp80
             if (TickCount > nextPulseReqTick)
             {
                 // descending to avoid problems with new reqs being added
-                for (int i = pulseReqs.Count - 1; i >= 0; i--)
+                for (int i = pulseReqs.Count - 1; i >= 0 && IsRunning; i--)
                 {
                     if (TickCount > pulseReqs[i].Trigger)
                         pulseReqs[i].Execute();
@@ -310,7 +310,7 @@ namespace Sharp80
         /// <summary>
         /// Ask windows for a tick count
         /// </summary>
-        private static long RealTimeTicks
+        private long RealTimeTicks
         {
             get
             {
@@ -319,7 +319,7 @@ namespace Sharp80
                 return ticks;
             }
         }
-        private static long ElapsedMicroseconds => (long)(1000000 * RealTimeTicks / realTimeTicksPerSec);
+        private long ElapsedMicroseconds => (long)(1000000 * RealTimeTicks / realTimeTicksPerSec);
         
         /// <summary>
         /// This zeroes the difference between the virtual and realtime clocks

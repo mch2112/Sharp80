@@ -140,6 +140,7 @@
     <Compile Include="IFloppyControllerStatus.cs" />
     <Compile Include="IFloppy.cs" />
     <Compile Include="IKeyboard.cs" />
+    <Compile Include="IO.cs" />
     <Compile Include="IRegister.cs" />
     <Compile Include="ISound.cs" />
     <Compile Include="KeyCode.cs" />

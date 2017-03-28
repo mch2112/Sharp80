@@ -83,7 +83,6 @@ namespace Sharp80
         public void Initialize(Clock Clock, InterruptManager InterruptManager)
         {
             clock = Clock;
-            Transition.Initialize(clock, Read);
             intMgr = InterruptManager;
             InitTape();
         }
@@ -158,8 +157,8 @@ namespace Sharp80
             get => motorEngaged;
             private set
             {
-                MotorOn = MotorEngaged && MotorOnSignal;
                 motorEngaged = value;
+                MotorOn = MotorEngaged && MotorOnSignal;
             }
         }
         public bool MotorOnSignal
@@ -187,7 +186,7 @@ namespace Sharp80
                 // init tape will take care of it
                 bytes = null;
             }
-            else if (!Storage.LoadBinaryFile(Path, out bytes) || bytes.Length < 0x100)
+            else if (!IO.LoadBinaryFile(Path, out bytes) || bytes.Length < 0x100)
             {
                 return false;
             }
@@ -204,7 +203,7 @@ namespace Sharp80
             if (data.Length > i)
                 Array.Resize(ref data, i);
 
-            if (Storage.SaveBinaryFile(FilePath, data))
+            if (IO.SaveBinaryFile(FilePath, data))
             {
                 Changed = false;
                 return true;
@@ -363,7 +362,7 @@ namespace Sharp80
             {
                 // capture transition in t in case transition is nullified
                 // asynchronously
-                var t = transition = transition ?? new Transition(Speed);
+                var t = transition = transition ?? new Transition(Speed, clock, Read);
                 while (t.Update(Speed))
                 {
                     if (t.IsRising) intMgr.CasRisingEdgeIntLatch.Latch();
@@ -376,11 +375,7 @@ namespace Sharp80
                                                                       Update));
             }
         }
-        private bool Read()
-        {
-            if (AdvanceCursor()) { return data[byteCursor].IsBitSet(bitCursor); }
-            else { return false; }
-        }
+        private bool Read() => AdvanceCursor() && data[byteCursor].IsBitSet(bitCursor);
 
         // WRITE OPERATIONS
 
@@ -550,7 +545,7 @@ namespace Sharp80
                 skippedLast = Reader.ReadBoolean();
                 if (Reader.ReadBoolean())
                 {
-                    transition = transition ?? new Transition(Speed);
+                    transition = transition ?? new Transition(Speed, clock, Read);
                     ok &= transition.Deserialize(Reader, SerializationVersion);
                 }
                 else

@@ -37,16 +37,38 @@ namespace Sharp80
         public DMK(byte[] DiskData) => Deserialize(DiskData);
         
         public DMK(System.IO.BinaryReader Reader) => Deserialize(Reader, Computer.SERIALIZATION_VERSION);
-        
-        public override Track GetTrack(int TrackNum, bool SideOne)
+
+        public DMK(bool Formatted)
         {
-            return tracks.FirstOrDefault(t => t.PhysicalTrackNum == TrackNum && t.SideOne == SideOne);
+            if (Formatted)
+            {
+                Deserialize(SectorsToDmkBytes(GetDiskSectorDescriptors(NumTracks: 40,
+                                                                       DoubleSided: true,
+                                                                       DoubleDensity: true),
+                                              false));
+                FilePath = Storage.FILE_NAME_NEW;
+            }
+            else
+            {
+                Deserialize(UnformattedDmkBytes(40, true));
+                WriteProtected = false;
+                FilePath = Storage.FILE_NAME_UNFORMATTED;
+            }
+            OriginalFileType = FileType.DMK;
         }
-        public override SectorDescriptor GetSectorDescriptor(byte TrackNum, bool SideOne, byte SectorIndex)
+
+        public static bool FromFile(string FilePath, out string NewPath)
         {
-            return GetTrack(TrackNum, SideOne)?.GetSectorDescriptor(SectorIndex);
+            if (IO.LoadBinaryFile(FilePath, out byte[] bytes))
+            {
+                byte[] diskImage = MakeFloppyFromFile(bytes, System.IO.Path.GetFileName(FilePath)).Serialize(ForceDMK: true);
+                if (diskImage.Length > 0)
+                    return IO.SaveBinaryFile(NewPath = FilePath.ReplaceExtension("dsk"), diskImage);
+            }
+            NewPath = String.Empty;
+            return false;
         }
-        public static Floppy MakeFloppyFromFile(byte[] b, string filename)
+        private static Floppy MakeFloppyFromFile(byte[] b, string filename)
         {
             var fn = ConvertWindowsFilePathToTRSDOSFileName(filename);
 
@@ -147,6 +169,15 @@ namespace Sharp80
                                 WriteProtected: false,
                                 OriginalFileType: FileType.DMK);
         }
+        public override Track GetTrack(int TrackNum, bool SideOne)
+        {
+            return tracks.FirstOrDefault(t => t.PhysicalTrackNum == TrackNum && t.SideOne == SideOne);
+        }
+        public override SectorDescriptor GetSectorDescriptor(byte TrackNum, bool SideOne, byte SectorIndex)
+        {
+            return GetTrack(TrackNum, SideOne)?.GetSectorDescriptor(SectorIndex);
+        }
+        
         public static Floppy MakeBlankFloppy(byte NumTracks, bool DoubleSided, bool Formatted)
         {
             return Formatted ? MakeFloppy(Sectors: GetDiskSectorDescriptors(NumTracks: NumTracks,
@@ -271,12 +302,20 @@ namespace Sharp80
         }
         private static DMK MakeFloppy(List<SectorDescriptor> Sectors, bool WriteProtected, FileType OriginalFileType)
         {
+            var f = new DMK(SectorsToDmkBytes(Sectors, WriteProtected))
+            {
+                OriginalFileType = OriginalFileType
+            };
+            return f;
+        }
+
+        private static byte[] SectorsToDmkBytes(List<SectorDescriptor> Sectors, bool WriteProtected)
+        {
             byte numTracks = (byte)(Sectors.Max(s => s.TrackNumber) + 1);
             bool doubleSided = Sectors.Exists(s => s.SideOne);
             byte numSides = (byte)(doubleSided ? 2 : 1);
 
-            byte[] bytes = new byte[Track.MAX_LENGTH_WITH_HEADER * 80 * 2 + DISK_HEADER_LENGTH];
-
+            var bytes = new byte[Track.MAX_LENGTH_WITH_HEADER * 80 * 2 + DISK_HEADER_LENGTH];
             bytes[0] = WriteProtected ? WRITE_PROTECT_VAL : NO_WRITE_PROTECT_VAL; // Not write protected
             bytes[1] = numTracks;
             ((ushort)(STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN)).Split(out bytes[2], out bytes[3]);
@@ -291,7 +330,7 @@ namespace Sharp80
 
             int k = DISK_HEADER_LENGTH;
             for (int i = 0; i < numTracks; i++)
-            { 
+            {
                 for (int j = 0; j < numSides; j++)
                 {
                     var trkBytes = Track.ToTrackBytes(Sectors.Where(s => s.TrackNumber == i && (s.SideOne == (j == 1))), Track.DEFAULT_LENGTH_WITH_HEADER);
@@ -299,14 +338,12 @@ namespace Sharp80
                     k += trkBytes.Length;
                 }
             }
-
-            var f = new DMK(bytes.Slice(0, k))
-            {
-                OriginalFileType = OriginalFileType
-            };
-            return f;
+            return bytes.Slice(0, k);
         }
-        private static DMK MakeUnformattedFloppy(byte NumTracks, bool DoubleSided)
+
+        private static DMK MakeUnformattedFloppy(byte NumTracks, bool DoubleSided) => new DMK(UnformattedDmkBytes(NumTracks, DoubleSided));
+
+        private static byte[] UnformattedDmkBytes(byte NumTracks, bool DoubleSided)
         {
             byte numSides = DoubleSided ? (byte)2 : (byte)1;
 
@@ -317,9 +354,9 @@ namespace Sharp80
             ((ushort)(STANDARD_TRACK_LENGTH_DOUBLE_DENSITY + TRACK_HEADER_LEN)).Split(out data[2], out data[3]);
             data[4] = DoubleSided ? ZERO_BYTE : SINGLE_SIDED_FLAG;    // assumes double density
 
-            return new DMK(data);
+            return data;
         }
-        
+
         private byte[] SerializeToDMK()
         {
             int trackLength = tracks.Max(t => t.LengthWithHeader);

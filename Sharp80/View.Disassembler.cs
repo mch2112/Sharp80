@@ -77,7 +77,7 @@ namespace Sharp80
             if (lowercase)
                 txt = txt.ToLower();
             var path = Path.Combine(Storage.AppDataPath, "Disassembly.txt").MakeUniquePath();
-            Storage.SaveTextFile(path, txt);
+            IO.SaveTextFile(path, txt);
             InvokeUserCommand(UserCommand.Window);
             Dialogs.ShowTextFile(path);
         }

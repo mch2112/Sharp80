@@ -30,9 +30,7 @@ namespace Sharp80
         public static void LogTrace(string Message)
         {
             if (TraceOn)
-            {
                 LogItem(Message);
-            }
         }
 
         [Conditional("LOGDEBUG")]
@@ -53,7 +51,7 @@ namespace Sharp80
                 var oldLog = log;
                 log = new List<(ulong Tick, string Message)>();
 
-                Storage.SaveTextFile(Path, oldLog.Select(l => $"{l.Tick:000,000,000,000}: {l.Message}"));
+                IO.SaveTextFile(Path, oldLog.Select(l => $"{l.Tick:000,000,000,000}: {l.Message}"));
 
                 // and restore if not flushed
                 if (!Flush)

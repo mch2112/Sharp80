@@ -114,6 +114,7 @@ namespace Sharp80
             get => Sound.On;
             set => Sound.On = value;
         }
+        public bool SoundEnabled => !Sound.Stopped;
         public bool DriveNoise
         {
             get => Sound.UseDriveNoise;
@@ -173,7 +174,7 @@ namespace Sharp80
             if (WaitForStop)
             {
                 while (Clock.IsRunning)
-                    System.Threading.Thread.Sleep(0);     // make sure we're not in the middle of a cycle
+                    Thread.Sleep(0);     // make sure we're not in the middle of a cycle
             }
         }
 
@@ -276,11 +277,11 @@ namespace Sharp80
                     ret = true;
                     break;
                 case Storage.FILE_NAME_NEW:
-                    LoadFloppy(DriveNum, Storage.MakeBlankFloppy(true));
+                    LoadFloppy(DriveNum, new DMK(true));
                     ret = true;
                     break;
                 case Storage.FILE_NAME_UNFORMATTED:
-                    LoadFloppy(DriveNum, Storage.MakeBlankFloppy(false));
+                    LoadFloppy(DriveNum, new DMK(false));
                     ret = true;
                     break;
                 case "":

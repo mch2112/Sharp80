@@ -9,12 +9,15 @@ namespace Sharp80
 {
     public static class Storage
     {
-        public const string FILE_NAME_TRSDOS =      "{TRSDOS}";
-        public const string FILE_NAME_NEW =         "{NEW}";
+        public const string FILE_NAME_TRSDOS = "{TRSDOS}";
+        public const string FILE_NAME_NEW = "{NEW}";
         public const string FILE_NAME_UNFORMATTED = "{UNFORMATTED}";
 
         private static string userPath = null;
         private static string appDataPath = null;
+        private static string libraryPath = null;
+
+        // SYSTEM PATHS
 
         public static string DocsPath
         {
@@ -40,68 +43,9 @@ namespace Sharp80
                 return appDataPath;
             }
         }
-        internal static bool LoadBinaryFile(string FilePath, out byte[] Bytes)
-        {
-            try
-            {
-                Bytes = File.ReadAllBytes(FilePath);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                if (ex is IOException)
-                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"File \"{Path.GetFileName(FilePath)}\" already is use.");
-                else if (ex is FileNotFoundException)
-                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"File \"{Path.GetFileName(FilePath)}\" not found.");
-                else
-                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser);
 
-                Bytes = null;
-                return false;
-            }
-        }
-        internal static bool LoadTextFile(string FilePath, out string Text)
-        {
-            try
-            {
-                Text = File.ReadAllText(FilePath);
-                return true;
-            }
-            catch
-            {
-                Text = null;
-                return false;
-            }
-        }
-        internal static bool SaveBinaryFile(string FilePath, byte[] Data)
-        {
-            try
-            {
-                File.WriteAllBytes(FilePath, Data);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                ex.Data["ExtraMessage"] = $"Exception saving file {FilePath}";
+        // DISKS
 
-                if (ex is IOException)
-                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"File \"{Path.GetFileName(FilePath)}\" already is use.");
-                else if (ex is FileNotFoundException)
-                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, $"File \"{Path.GetFileName(FilePath)}\" not found.");
-                else
-                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser);
-
-                return false;
-            }
-        }
-        internal static void SaveTextFile(string FilePath, IEnumerable<string> Lines)
-        {
-            File.WriteAllLines(FilePath, Lines);
-        }
-        internal static void SaveTextFile(string FilePath, string Text)
-        {
-            File.WriteAllText(FilePath, Text);
-        }
         internal static string GetDefaultDriveFileName(byte DriveNum)
         {
             string fileName = String.Empty;
@@ -126,28 +70,6 @@ namespace Sharp80
             else
                 return String.Empty;
         }
-
-        /// <summary>
-        /// Returns a token or the latest path used. The path is confirmed to exist.
-        /// </summary>
-        /// <returns></returns>
-        internal static string GetDefaultTapeFileName()
-        {
-            string path = Settings.LastTapeFile;
-            if (File.Exists(path) || IsFileNameToken(path))
-                return path;
-            else
-                return String.Empty;
-        }
-        internal static string GetTapeFilePath(string Prompt, string DefaultPath, bool Save, bool SelectFileInDialog)
-        {
-            return Dialogs.UserSelectFile(Save: Save,
-                                          DefaultPath: DefaultPath,
-                                          Title: Prompt,
-                                          Filter: "TRS-80 Tape Files (*.cas)|*.cas|All Files (*.*)|*.*",
-                                          DefaultExtension: ".cas",
-                                          SelectFileInDialog: SelectFileInDialog);
-        }
         /// <summary>
         /// Should be called when the floppy is put in the drive. Note that the
         /// floppy's file path may be empty but we may want to save a token
@@ -171,16 +93,6 @@ namespace Sharp80
                     break;
             }
         }
-        internal static Floppy MakeBlankFloppy(bool Formatted)
-        {
-            var f = DMK.MakeBlankFloppy(NumTracks: 40,
-                                           DoubleSided: true,
-                                           Formatted: Formatted);
-            f.FilePath = Formatted ? FILE_NAME_NEW : FILE_NAME_UNFORMATTED;
-
-            return f;
-        }
-
         internal static string GetFloppyFilePath(string Prompt, string DefaultPath, bool Save, bool SelectFileInDialog, bool DskOnly)
         {
             string ext = DskOnly ? "dsk" : Path.GetExtension(DefaultPath);
@@ -195,42 +107,6 @@ namespace Sharp80
                                                           : "TRS-80 DSK Files (*.dsk;*.dmk;*.jv1;*.jv3)|*.dsk;*.dmk;*.jv1;*.jv3|All Files (*.*)|*.*",
                                           DefaultExtension: ext,
                                           SelectFileInDialog: SelectFileInDialog);
-        }
-        internal static bool GetAsmFilePath(out string Path)
-        {
-            Path = Settings.LastAsmFile;
-
-            Path = Dialogs.GetAssemblyFile(Path, false);
-
-            if (Path.Length > 0)
-            {
-                Settings.LastAsmFile = Path;
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        internal static bool IsFileNameToken(string Path)
-        {
-            return Path == FILE_NAME_UNFORMATTED || Path == FILE_NAME_NEW || Path == FILE_NAME_TRSDOS;
-        }
-        private static string libraryPath = null;
-        internal static string LibraryPath
-        {
-            get
-            {
-                libraryPath = libraryPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Library");
-                return libraryPath;
-            }
-        }
-        internal static bool IsLibraryFile(string Path) => Path.StartsWith(LibraryPath);
-
-        /// returns false if the user cancelled a needed save
-        internal static bool SaveChangedStorage(Computer Computer)
-        {
-            return SaveFloppies(Computer) && SaveTapeIfRequired(Computer);
         }
         internal static bool SaveFloppies(Computer Computer)
         {
@@ -276,6 +152,30 @@ namespace Sharp80
             }
             return true;
         }
+
+        // TAPES
+
+        /// <summary>
+        /// Returns a token or the latest path used. The path is confirmed to exist.
+        /// </summary>
+        /// <returns></returns>
+        internal static string GetDefaultTapeFileName()
+        {
+            string path = Settings.LastTapeFile;
+            if (File.Exists(path) || IsFileNameToken(path))
+                return path;
+            else
+                return String.Empty;
+        }
+        internal static string GetTapeFilePath(string Prompt, string DefaultPath, bool Save, bool SelectFileInDialog)
+        {
+            return Dialogs.UserSelectFile(Save: Save,
+                                          DefaultPath: DefaultPath,
+                                          Title: Prompt,
+                                          Filter: "TRS-80 Tape Files (*.cas)|*.cas|All Files (*.*)|*.*",
+                                          DefaultExtension: ".cas",
+                                          SelectFileInDialog: SelectFileInDialog);
+        }
         internal static bool SaveTapeIfRequired(Computer Computer)
         {
             bool? save = false;
@@ -289,7 +189,7 @@ namespace Sharp80
             if (save.Value)
             {
                 var path = Computer.TapeFilePath;
-                if (String.IsNullOrWhiteSpace(path) || IsFileNameToken(path)|| !Directory.Exists(Path.GetDirectoryName(path)))
+                if (String.IsNullOrWhiteSpace(path) || IsFileNameToken(path) || !Directory.Exists(Path.GetDirectoryName(path)))
                 {
                     if (!Directory.Exists(Path.GetDirectoryName(path)))
                         path = Path.Combine(AppDataPath, "Tapes\\");
@@ -309,19 +209,57 @@ namespace Sharp80
             }
             return true;
         }
-        internal static bool MakeFloppyFromFile(string FilePath, out string NewPath)
+
+        // ASSEMBLY
+
+        internal static bool GetAsmFilePath(out string Path)
         {
-            if (LoadBinaryFile(FilePath, out byte[] bytes))
+            Path = Settings.LastAsmFile;
+            Path = Dialogs.GetAssemblyFile(Path, false);
+
+            if (Path.Length > 0)
             {
-                byte[] diskImage = DMK.MakeFloppyFromFile(bytes, Path.GetFileName(FilePath)).Serialize(ForceDMK: true);
-                if (diskImage.Length > 0)
-                    return SaveBinaryFile(NewPath = FilePath.ReplaceExtension("dsk"), diskImage);
+                Settings.LastAsmFile = Path;
+                return true;
             }
-            NewPath = String.Empty;
-            return false;
+            else
+            {
+                return false;
+            }
         }
+
+        // SNAPSHOTS
+
         internal static string DefaultSnapshotDir => Path.Combine(AppDataPath, @"Snapshots\");
+
+        // PRINTER
+
         internal static string DefaultPrintDir => Path.Combine(AppDataPath, @"Print\");
+
+        // MISC
+
+        internal static bool IsFileNameToken(string Path)
+        {
+            return Path == FILE_NAME_UNFORMATTED || Path == FILE_NAME_NEW || Path == FILE_NAME_TRSDOS;
+        }
+        internal static string LibraryPath
+        {
+            get
+            {
+                libraryPath = libraryPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Library");
+                return libraryPath;
+            }
+        }
+        internal static bool IsLibraryFile(string Path) => Path.StartsWith(LibraryPath);
+
+        /// <summary>
+        /// Returns false if the user cancelled a needed save
+        /// </summary>
+        internal static bool SaveChangedStorage(Computer Computer)
+        {
+            return SaveFloppies(Computer) && SaveTapeIfRequired(Computer);
+        }
+
     }
 }
 

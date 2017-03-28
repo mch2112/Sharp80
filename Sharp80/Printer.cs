@@ -57,8 +57,7 @@ namespace Sharp80
             {
                 System.IO.Directory.CreateDirectory(Storage.DefaultPrintDir);
                 FilePath = FilePath ?? System.IO.Path.Combine(Storage.DefaultPrintDir, "Printer.txt").MakeUniquePath();
-                Storage.SaveTextFile(FilePath,
-                                     printBuffer.ToString());
+                IO.SaveTextFile(FilePath, printBuffer.ToString());
                 hasUnsavedContent = false;
                 return true;
             }

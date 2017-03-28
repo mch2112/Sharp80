@@ -14,10 +14,10 @@ namespace Sharp80Tests
     {
         protected Computer computer;
         
-        protected async Task StartToBasic(bool fast = true)
+        protected async Task StartToBasic(bool Fast = true, bool Sound = false)
         {
-            InitComputer(false);
-            computer.NormalSpeed = !fast;
+            InitComputer(false, Sound);
+            computer.NormalSpeed = !Fast;
             computer.Start();
             await computer.Delay(500);
             await KeyPress(KeyCode.Return, false, 500);
@@ -28,10 +28,10 @@ namespace Sharp80Tests
         {
             await StartWithFloppy(Storage.FILE_NAME_TRSDOS, fast);
         }
-        protected async Task StartWithFloppy(string Path, bool fast = true)
+        protected async Task StartWithFloppy(string Path, bool Fast = true, bool Sound = false)
         {
-            InitComputer(true);
-            computer.NormalSpeed = !fast;
+            InitComputer(true, Sound);
+            computer.NormalSpeed = !Fast;
             computer.LoadFloppy(0, Path);
             computer.Start();
             await computer.Delay(20000);
@@ -43,16 +43,15 @@ namespace Sharp80Tests
 
         protected bool ScreenContainsText(string Text) => computer.VideoMemory.Contains(Text.ToByteArray());
 
-        protected void InitComputer(bool EnableFloppyController)
+        protected void InitComputer(bool EnableFloppyController, bool Sound)
         {
-            computer = new Computer(new ScreenNull(), EnableFloppyController, false);
+            computer = new Computer(new ScreenNull(), EnableFloppyController, Sound);
         }
-        protected bool DisposeComputer(bool PassThrough = true)
+        protected async Task DisposeComputer()
         {
             computer.Stop(true);
             computer.Dispose();
-
-            return PassThrough;
+            await Task.Delay(100);
         }
      }
 }

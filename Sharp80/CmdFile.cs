@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+//using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Sharp80
 {
@@ -32,74 +31,71 @@ namespace Sharp80
 
             FilePath = Path;
 
-            if (File.Exists(FilePath))
+            try
             {
-                try
+                if (IO.LoadBinaryFile(FilePath, out byte[] b))
                 {
-                    if (Storage.LoadBinaryFile(FilePath, out byte[] b))
+                    int i = 0;
+                    while (i < b.Length - 2)
                     {
-                        int i = 0;
-                        while (i < b.Length - 2)
+                        code = b[i++];
+                        length = b[i++];
+
+                        length = Math.Min(length, b.Length - i);
+                        if (length == 0)
+                            length = 0x100;
+
+                        switch (code)
                         {
-                            code = b[i++];
-                            length = b[i++];
-
-                            length = Math.Min(length, b.Length - i);
-                            if (length == 0)
-                                length = 0x100;
-
-                            switch (code)
-                            {
-                                case 0x00:
-                                    // do nothing
-                                    break;
-                                case 0x01:          // object code (load block)
-                                    var addr = Lib.CombineBytes(b[i++], b[i++]);
-                                    if (length < 0x03)
-                                        length += 0xFE;
-                                    else
-                                        length -= 0x02;
-                                    var data = new byte[length];
-                                    Array.Copy(b, i, data, 0, length);
-                                    segments.Add((addr, data));
-                                    break;
-                                case 0x02:          // transfer address
-                                    if (length == 0x01)
-                                        ExecAddress = b[i++];
-                                    else if (length == 0x02)
-                                        ExecAddress = Lib.CombineBytes(b[i++], b[i++]);
-                                    else
-                                        throw new Exception("CMD file Error.");
-                                    Finalize(true);
-                                    return;
-                                case 0x03:
-                                    // non executable marker
-                                    Finalize(true);
-                                    return;
-                                case 0x04: break;   // end of partitioned data set member
-                                case 0x05:
-                                    Title = String.Empty;
-                                    for (int j = 0; j < length; j++)
-                                        Title += (char)b[i + j];
-                                    break;
-                                case 0x06: break;   // partitioned data set header
-                                case 0x07: break;   // patch name header
-                                case 0x08: break;   // ISAM directory entry
-                                case 0x09: break;   // unused code
-                                case 0x0A: break;   // end of ISAM directory
-                                case 0x0C: break;   // PDS directory entry
-                                case 0x0E: break;   // end of PDS directory
-                                case 0x10: break;   // yanked load block
-                                case 0x1F: break;   // copyright block
-                            }
-                            i += length;
+                            case 0x00:
+                                // do nothing
+                                break;
+                            case 0x01:          // object code (load block)
+                                var addr = Lib.CombineBytes(b[i++], b[i++]);
+                                if (length < 0x03)
+                                    length += 0xFE;
+                                else
+                                    length -= 0x02;
+                                var data = new byte[length];
+                                Array.Copy(b, i, data, 0, length);
+                                segments.Add((addr, data));
+                                break;
+                            case 0x02:          // transfer address
+                                if (length == 0x01)
+                                    ExecAddress = b[i++];
+                                else if (length == 0x02)
+                                    ExecAddress = Lib.CombineBytes(b[i++], b[i++]);
+                                else
+                                    throw new Exception("CMD file Error.");
+                                Finalize(true);
+                                return;
+                            case 0x03:
+                                // non executable marker
+                                Finalize(true);
+                                return;
+                            case 0x04: break;   // end of partitioned data set member
+                            case 0x05:
+                                Title = String.Empty;
+                                for (int j = 0; j < length; j++)
+                                    Title += (char)b[i + j];
+                                break;
+                            case 0x06: break;   // partitioned data set header
+                            case 0x07: break;   // patch name header
+                            case 0x08: break;   // ISAM directory entry
+                            case 0x09: break;   // unused code
+                            case 0x0A: break;   // end of ISAM directory
+                            case 0x0C: break;   // PDS directory entry
+                            case 0x0E: break;   // end of PDS directory
+                            case 0x10: break;   // yanked load block
+                            case 0x1F: break;   // copyright block
                         }
+                        i += length;
                     }
                 }
-                catch (Exception ex)
-                {
-                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, "Error loading CMD File " + FilePath);
-                }
+            }
+            catch (Exception ex)
+            {
+                ExceptionHandler.Handle(ex, ExceptionHandlingOptions.InformUser, "Error loading CMD File " + FilePath);
             }
             Finalize(false);
         }
