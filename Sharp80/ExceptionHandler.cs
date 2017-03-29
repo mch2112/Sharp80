@@ -7,35 +7,44 @@ using System.Windows.Forms;
 
 namespace Sharp80
 {
-    internal static class ExceptionHandler
+    public static class ExceptionHandler
     {
+        public static bool PassThrough { get; set; } = false;
         private static bool terminating = false;
 
         /// <summary>
         /// We save exception events in a queue that can be processed by the main form's ui thread,
         /// because showing dialogs can only be done in that thread.
         /// </summary>
+
         private static Queue<(Exception Exception, ExceptionHandlingOptions Option, string Message)> ExceptionQueue = new Queue<(Exception Exception, ExceptionHandlingOptions Option, string Message)>();
 
-        public static void Handle(Exception Ex, ExceptionHandlingOptions Option = ExceptionHandlingOptions.Terminate, string Message = "")
+        internal static void Handle(Exception Ex, ExceptionHandlingOptions Option = ExceptionHandlingOptions.Terminate, string Message = "")
         {
-            if (Message.Length > 0)
-                Log.LogDebug(Message + Environment.NewLine + Ex.ToReport());
-            else
-                Log.LogDebug(Ex.ToReport());
-
-            if (!terminating && Option != ExceptionHandlingOptions.LogOnly)
+            if (PassThrough)
             {
-                ExceptionQueue.Enqueue((Ex, Option, Message));
-                if (Option == ExceptionHandlingOptions.Terminate)
-                    terminating = true;
+                throw Ex;
             }
-            HandleExceptions();
+            else
+            {
+                if (Message.Length > 0)
+                    Log.LogDebug(Message + Environment.NewLine + Ex.ToReport());
+                else
+                    Log.LogDebug(Ex.ToReport());
+
+                if (!terminating && Option != ExceptionHandlingOptions.LogOnly)
+                {
+                    ExceptionQueue.Enqueue((Ex, Option, Message));
+                    if (Option == ExceptionHandlingOptions.Terminate)
+                        terminating = true;
+                }
+                HandleExceptions();
+            }
         }
         /// <summary>
         /// Only works if called from UI thread
         /// </summary>
-        public static void HandleExceptions()
+        internal static void HandleExceptions()
         {
             if (MainForm.IsUiThread)
             {

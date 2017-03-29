@@ -37,10 +37,9 @@ namespace Sharp80
             // some emulators map writes to this address to the printer port,
             // but this isn't reflected in the technical docuentaion so 
             // we ignore writes to this (and all addresses below 0x3c00)
-
             mem[0x37E8] = 0x30;
 
-            SetupDXKeyboardMatrix();
+            SetupKeyboardMatrix();
         }
 
         // RAM ACCESS
@@ -126,6 +125,7 @@ namespace Sharp80
         {
             return Array.AsReadOnly(mem);
         }
+
         // SNAPSHOTS
 
         public void Serialize(BinaryWriter Writer)

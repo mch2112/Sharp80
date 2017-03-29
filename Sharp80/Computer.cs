@@ -68,7 +68,7 @@ namespace Sharp80
                               ticksPerSoundSample,
                               new SoundEventCallback(Sound.Sample));
 
-            Clock.SpeedChanged += (s, e) => { Sound.Mute = !Clock.NormalSpeed; };
+            Clock.SpeedChanged += (s, e) => Sound.Mute = !Clock.NormalSpeed;
 
             FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound, FloppyEnabled);
 
@@ -87,11 +87,11 @@ namespace Sharp80
         /// </summary>
         public bool DiskEnabled => FloppyController.Enabled;
         public bool IsRunning => Clock.IsRunning;
+        public bool IsStopped => Clock.IsStopped;
         public ushort ProgramCounter => Processor.PcVal;
         public ulong GetElapsedTStates() =>Clock.ElapsedTStates;
 
         public IReadOnlyList<byte> Memory => Processor.Memory;
-
         public SubArray<byte> VideoMemory => Processor.Memory.VideoMemory;
 
         public ushort BreakPoint
@@ -126,6 +126,8 @@ namespace Sharp80
             get => Processor;
         }
 
+        // FLOPPY SUPPORT
+
         public IFloppy GetFloppy(byte DriveNum) => FloppyController.GetFloppy(DriveNum);
 
         public bool DriveIsUnloaded(byte DriveNum) => FloppyController.DriveIsUnloaded(DriveNum);
@@ -156,6 +158,12 @@ namespace Sharp80
             Init();
             Clock.Start();
         }
+        public async Task StartAndAwait()
+        {
+            Start();
+            while (!IsRunning)
+                await Task.Delay(1);
+        }
         private void Init()
         {
             if (!HasRunYet)
@@ -173,11 +181,16 @@ namespace Sharp80
             Clock.Stop();
             if (WaitForStop)
             {
-                while (Clock.IsRunning)
+                while (!Clock.IsStopped)
                     Thread.Sleep(0);     // make sure we're not in the middle of a cycle
             }
         }
-
+        public async Task StopAndAwait()
+        {
+            Stop(false);
+            while (!Clock.IsStopped)
+                await Task.Delay(1);
+        }
         public void ResetButton() => IntMgr.ResetButtonLatch.Latch();
 
         public void StepOver()
@@ -508,6 +521,9 @@ namespace Sharp80
                 await Delay(DelayMSecUp);
             }
         }
+
+        // TEST SUPPORT
+
         public async Task Delay(uint VirtualMSec)
         {
             bool done = false;

@@ -8,11 +8,16 @@ namespace Sharp80
         private class DriveState
         {
             public Floppy Floppy { get; set; }
-            public bool IsLoaded { get { return Floppy != null; } }
-            public bool IsUnloaded { get { return Floppy == null; } }
-            public bool OnTrackZero { get { return PhysicalTrackNumber == 0; } }
             public byte PhysicalTrackNumber { get; set; }
-            public bool WriteProtected { get { return Floppy?.WriteProtected ?? true; } set { Floppy.WriteProtected = value; } }
+            public bool IsLoaded => Floppy != null;
+            public bool IsUnloaded => Floppy == null;
+            public bool OnTrackZero => PhysicalTrackNumber == 0;
+            
+            public bool WriteProtected
+            {
+                get => Floppy?.WriteProtected ?? true;
+                set => Floppy.WriteProtected = value;
+            }
             public DriveState()
             {
                 PhysicalTrackNumber = 0;

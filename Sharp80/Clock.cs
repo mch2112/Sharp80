@@ -88,6 +88,8 @@ namespace Sharp80
         // PROPERTIES
 
         public bool IsRunning { get; private set; }
+        public bool IsStarting { get; private set; }
+        public bool IsStopped => !IsRunning && !IsStarting;
         public ulong ElapsedTStates => TickCount / TICKS_PER_TSTATE;
         internal ulong TickCount { get; private set; }
         internal string GetInternalsReport()
@@ -128,8 +130,9 @@ namespace Sharp80
 
         internal void Start()
         {
-            if (!IsRunning)
+            if (IsStopped)
             {
+                IsStarting = true;
                 ResetTriggers();
                 execThread = Task.Run((Action)Exec);
             }
@@ -137,7 +140,7 @@ namespace Sharp80
         internal void Stop() => stopReq = true;
         internal void Step()
         {
-            if (!IsRunning)
+            if (IsStopped)
                 ExecOne();
         }
         internal void Wait()
@@ -177,7 +180,9 @@ namespace Sharp80
         {
             if (!IsRunning)
             {
+                System.Diagnostics.Debug.Assert(IsStarting);
                 IsRunning = true;
+                IsStarting = false;
                 stopReq = false;
                 SyncRealTimeOffset();
 
@@ -246,7 +251,7 @@ namespace Sharp80
             if (TickCount > nextPulseReqTick)
             {
                 // descending to avoid problems with new reqs being added
-                for (int i = pulseReqs.Count - 1; i >= 0 && IsRunning; i--)
+                for (int i = pulseReqs.Count - 1; i >= 0; i--)
                 {
                     if (TickCount > pulseReqs[i].Trigger)
                         pulseReqs[i].Execute();

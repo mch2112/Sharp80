@@ -17,7 +17,7 @@ namespace Sharp80
 
         private static bool AnyInitFail { get; set; } = false;
         public bool Stopped { get; private set; }
-        
+
         private XAudio2 xaudio;
         private MasteringVoice masteringVoice;
         private SourceVoice sourceVoice;
@@ -89,7 +89,7 @@ namespace Sharp80
 
             if (AnyInitFail)
                 return;
-            
+
             try
             {
                 frameBuffer = new FrameBuffer<short>(FRAME_SIZE_SAMPLES, SAMPLE_RATE / 20);
@@ -99,9 +99,9 @@ namespace Sharp80
                 xaudio = new XAudio2();
 
                 masteringVoice = new MasteringVoice(xaudio, CHANNELS, SAMPLE_RATE);
-                
+
                 bufferEndEvent = new AutoResetEvent(false);
-                
+
                 for (int i = 0; i < RING_SIZE; i++)
                 {
                     audioBuffersRing[i] = new AudioBuffer()
@@ -117,10 +117,10 @@ namespace Sharp80
                 sourceVoice = new SourceVoice(xaudio, new WaveFormat(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS), true);
 
                 xaudio.StartEngine();
-                
+
                 sourceVoice.BufferEnd += (o) => bufferEndEvent?.Set();
                 sourceVoice.Start();
-                
+
                 playingTask = Task.Factory.StartNew(Loop, TaskCreationOptions.LongRunning);
 
                 enabled = false;
@@ -136,7 +136,7 @@ namespace Sharp80
                 ExceptionHandler.Handle(Ex, ExceptionHandlingOptions.InformUser, $"Failed to start XAudio2. Please update your DirectX drivers from Microsoft. {ProductInfo.PRODUCT_NAME} will continue without sound.");
             }
         }
-        
+
         public void Sample()
         {
             if (enabled)
@@ -206,21 +206,18 @@ namespace Sharp80
                 enabled = false;
                 Stopped = true;
                 await playingTask;
-                DisposeXAudio();
-            }
-        }
-        private void DisposeXAudio()
-        {
-            sourceVoice?.DestroyVoice();
-            sourceVoice?.Dispose();
-            bufferEndEvent?.Dispose();
-            masteringVoice?.Dispose();
-            xaudio?.Dispose();
 
-            sourceVoice = null;
-            bufferEndEvent = null;
-            masteringVoice = null;
-            xaudio = null;
+                sourceVoice?.DestroyVoice();
+                sourceVoice?.Dispose();
+                bufferEndEvent?.Dispose();
+                masteringVoice?.Dispose();
+                xaudio?.Dispose();
+
+                sourceVoice = null;
+                bufferEndEvent = null;
+                masteringVoice = null;
+                xaudio = null;
+            }
         }
     }
 }

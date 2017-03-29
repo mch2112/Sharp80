@@ -57,7 +57,8 @@
     <Compile Include="Test.cs" />
     <Compile Include="Compression.cs" />
     <Compile Include="Strings.cs" />
-    <Compile Include="UnitTest1.cs" />
+    <Compile Include="Numeric.cs" />
+    <Compile Include="Assembly.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

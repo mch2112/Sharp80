@@ -1043,8 +1043,7 @@ namespace Sharp80.Processor
             OutPort(C.val, A.val);
             WZ.val = BC.val;
             WZ.inc();
-        }
-        
+        }   
 
         // COMPOUND INSTRUCTIONS
 

@@ -31,7 +31,10 @@ namespace Sharp80
 
         protected List<Track> tracks;
 
-        protected bool writeProtected;
+        private bool changed = false;
+        private bool writeProtected;
+
+        // CONSTRUCTORS
 
         protected Floppy() { }
         public Floppy(byte[] Data) { throw new Exception("Need to deserialize"); }
@@ -44,7 +47,20 @@ namespace Sharp80
         {
             FilePath = Reader.ReadString();
         }
+        protected void Reset()
+        {
+            writeProtected = false;
+
+            changed = false;
+            FilePath = string.Empty;
+
+            tracks = new List<Track>();
+        }
+
+        // PROPERTIES
+
         public string FilePath { get; set; }
+        public FileType OriginalFileType { get; protected set; }
         public string FileDisplayName
         {
             get
@@ -65,14 +81,9 @@ namespace Sharp80
                 }
             }
         }
-        public bool Formatted => tracks.Any(t => t.Formatted);
-
-        private bool changed = false;
-        public bool Changed => changed || tracks.Any(t => t.Changed);
-
         public bool WriteProtected
         {
-            get { return writeProtected; }
+            get => writeProtected;
             set
             {
                 if (writeProtected != value)
@@ -82,17 +93,21 @@ namespace Sharp80
                 }
             }
         }
-        public byte NumTracks
-        {
-            get { return (byte)(tracks.Max(t => t.PhysicalTrackNum) + 1); }
-        }
-        public bool DoubleSided
-        {
-            get { return tracks.Any(t => t.SideOne); }
-        }
-        public FileType OriginalFileType { get; protected set; }
+        public bool Formatted => tracks.Any(t => t.Formatted);
+        public bool Changed => changed || tracks.Any(t => t.Changed);
+        public byte NumTracks => (byte)(tracks.Max(t => t.PhysicalTrackNum) + 1);
+        public bool DoubleSided => tracks.Any(t => t.SideOne);
+       
+
+        // ABSTRACT METHODS
+
+        public abstract byte[] Serialize(bool ForceDMK);
+        public abstract Track GetTrack(int TrackNum, bool SideOne);
         public abstract SectorDescriptor GetSectorDescriptor(byte TrackNum, bool SideOne, byte SectorIndex);
         public abstract byte SectorCount(byte TrackNumber, bool SideOne);
+
+        // FACTORY METHODS
+
         public static Floppy LoadDisk(string FilePath)
         {
             Floppy f;
@@ -111,7 +126,6 @@ namespace Sharp80
 
             return f;
         }
-
         private static Floppy LoadDisk(byte[] diskData, string FilePath)
         {
             Floppy f = null;
@@ -150,19 +164,17 @@ namespace Sharp80
             return f;
         }
 
-        public abstract byte[] Serialize(bool ForceDMK);
-
-        public abstract Track GetTrack(int TrackNum, bool SideOne);
+        // HELPERS
 
         public static byte GetDataLengthCode(int DataLength)
         {
             switch (DataLength)
             {
-                case 0x080:  return 0x00;
+                case 0x080: return 0x00;
                 case 0x100: return 0x01;
                 case 0x200: return 0x02;
                 case 0x400: return 0x03;
-                default:    return 0x01;
+                default: return 0x01;
             }
         }
         public static ushort GetDataLengthFromCode(byte DataLengthCode)
@@ -173,29 +185,8 @@ namespace Sharp80
                 case 0x01: return 0x100;
                 case 0x02: return 0x200;
                 case 0x03: return 0x400;
-                default:   return 0x000; // Impossible
+                default: return 0x000; // Impossible
             }
-        }
-
-        public void Serialize(BinaryWriter Writer)
-        {
-            byte[] b = Serialize(ForceDMK: true);
-
-            Writer.Write(b.Length);
-            Writer.Write(b);
-            Writer.Write(FilePath);
-        }
-
-        public abstract bool Deserialize(BinaryReader Reader, int DeserializationVersion);
-
-        protected void Reset()
-        {
-            writeProtected = false;
-
-            changed = false;
-            FilePath = string.Empty;
-
-            tracks = new List<Track>();
         }
         protected static string ConvertWindowsFilePathToTRSDOSFileName(string WinPath)
         {
@@ -271,6 +262,18 @@ namespace Sharp80
                 a = 1;
             return a;
         }
+
+        // SERIALIZATION
+
+        public void Serialize(BinaryWriter Writer)
+        {
+            byte[] b = Serialize(ForceDMK: true);
+
+            Writer.Write(b.Length);
+            Writer.Write(b);
+            Writer.Write(FilePath);
+        }
+        public abstract bool Deserialize(BinaryReader Reader, int DeserializationVersion);
     }
 }
    

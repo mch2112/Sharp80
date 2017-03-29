@@ -1,0 +1,1 @@
+<Playlist Version="1.0"><Add Test="Sharp80Tests.Assembly.AssemblerTest" /><Add Test="Sharp80Tests.Startup.TrsdosStartTest" /><Add Test="Sharp80Tests.Startup.SuPlusStartTest" /></Playlist>

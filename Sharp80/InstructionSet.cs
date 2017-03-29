@@ -8,9 +8,9 @@ using System.Text;
 
 namespace Sharp80.Processor
 {
-    internal sealed partial class Z80 : IZ80_Status
+    internal partial class Z80 : IZ80_Status
     {
-        internal sealed class InstructionSet
+        internal class InstructionSet
         {
             public Instruction NOP { get; private set; }
 
@@ -131,7 +131,7 @@ namespace Sharp80.Processor
 
             }
 
-            public void LoadTables()
+            public void Initialize()
             {
                 foreach (KeyValuePair<uint, Instruction> kvp in instructions)
                 {

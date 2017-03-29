@@ -18,7 +18,7 @@ namespace Sharp80Tests
         {
             InitComputer(false, Sound);
             computer.NormalSpeed = !Fast;
-            computer.Start();
+            await computer.StartAndAwait();
             await computer.Delay(500);
             await KeyPress(KeyCode.Return, false, 500);
             await KeyPress(KeyCode.Return, false, 500);
@@ -33,7 +33,7 @@ namespace Sharp80Tests
             InitComputer(true, Sound);
             computer.NormalSpeed = !Fast;
             computer.LoadFloppy(0, Path);
-            computer.Start();
+            await computer.StartAndAwait();
             await computer.Delay(20000);
         }
         protected async Task KeyPress(KeyCode Key, bool Shift, uint DelayMSecDown = 40, uint DelayMSecUp = 40)
@@ -46,12 +46,16 @@ namespace Sharp80Tests
         protected void InitComputer(bool EnableFloppyController, bool Sound)
         {
             computer = new Computer(new ScreenNull(), EnableFloppyController, Sound);
+            ExceptionHandler.PassThrough = true;
         }
         protected async Task DisposeComputer()
         {
-            computer.Stop(true);
+            await computer.StopAndAwait();
             computer.Dispose();
-            await Task.Delay(100);
+        }
+        protected void Log(string Message)
+        {
+            Microsoft.VisualStudio.TestTools.UnitTesting.Logging.Logger.LogMessage(Message);
         }
      }
 }

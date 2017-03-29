@@ -195,13 +195,16 @@ namespace Sharp80
             else
                 switch (OriginalFileType)
                 {
+                    // Currently we're not writing back to JV1 or JV3 format. Change the extension and
+                    // leave the original file in this case.
                     case FileType.JV1:
-                        FilePath = FilePath.ReplaceExtension(".dmk");
+                    case FileType.JV3:
+                        if (FilePath.ToLower().EndsWith(".dsk"))
+                            FilePath = FilePath.ReplaceExtension(".dmk");
+                        else
+                            FilePath = FilePath.ReplaceExtension(".dsk");
                         return SerializeToDMK();
                         //return SerializeToJV1();
-                    case FileType.JV3:
-                        FilePath = FilePath.ReplaceExtension(".dmk");
-                        return SerializeToDMK();
                         //return SerializeToJV3();
                     default:
                         return SerializeToDMK();
@@ -365,7 +368,7 @@ namespace Sharp80
 
             byte[] diskData = new byte[DISK_HEADER_LENGTH + numTracks * numSides * trackLength * 2];
 
-            diskData[WRITE_PROTECT_BYTE] = writeProtected ? WRITE_PROTECT_VAL : NO_WRITE_PROTECT_VAL;
+            diskData[WRITE_PROTECT_BYTE] = WriteProtected ? WRITE_PROTECT_VAL : NO_WRITE_PROTECT_VAL;
             diskData[NUM_TRACKS_BYTE] = numTracks;
             ((ushort)trackLength).Split(out diskData[TRACK_LEN_LOW_BYTE], out diskData[TRACK_LEN_HIGH_BYTE]);
             if (numSides == 1)
@@ -425,7 +428,7 @@ namespace Sharp80
                     return;
                 }
 
-                writeProtected = DiskData[WRITE_PROTECT_BYTE] == WRITE_PROTECT_VAL;
+                WriteProtected = DiskData[WRITE_PROTECT_BYTE] == WRITE_PROTECT_VAL;
                 ushort trackLength = Lib.CombineBytes(DiskData[TRACK_LEN_LOW_BYTE], DiskData[TRACK_LEN_HIGH_BYTE]);
                 int numSides = ((DiskData[FLAGS_BYTE] & SINGLE_SIDED_FLAG) == SINGLE_SIDED_FLAG) ? 1 : 2;
 

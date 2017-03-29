@@ -288,13 +288,9 @@ namespace Sharp80.Assembler
                 else if (Mnemonic == "DS")  // Maybe add 'block', 'rmem' to this list
                     Mnemonic = "DEFS";
 
-                return IsMetaInstruction(Mnemonic) ||
-                       IsInstruction(Mnemonic);
+                return IsMetaInstruction(Mnemonic) || IsInstruction(Mnemonic);
             }
-            public override string ToString()
-            {
-                return FullNameWithOriginalLineAsCommentWithErrorIfAny;
-            }
+            public override string ToString() => FullNameWithOriginalLineAsCommentWithErrorIfAny;
         }
     }
 }

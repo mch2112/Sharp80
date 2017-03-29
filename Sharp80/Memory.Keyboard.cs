@@ -34,7 +34,7 @@ namespace Sharp80
 
         private List<KeyState> PressedKeys = new List<KeyState>();
 
-        private void SetupDXKeyboardMatrix()
+        private void SetupKeyboardMatrix()
         {
             keyAddresses = new Dictionary<VirtualKey, (ushort Address, byte KeyMask, byte InverseMask)>();
 
@@ -229,7 +229,7 @@ namespace Sharp80
         }
         private bool DoKeyChange(bool IsPressed, VirtualKey k)
         {
-            System.Diagnostics.Debug.WriteLine($"Virtual Key {k} Pressed: {IsPressed} KeyboardShiftState {mem[0x3880]}");
+            //System.Diagnostics.Debug.WriteLine($"Virtual Key {k} Pressed: {IsPressed} KeyboardShiftState {mem[0x3880]}");
             if (k == VirtualKey.NONE)
             {
                 return false;

@@ -63,7 +63,7 @@ namespace Sharp80.Assembler
                 return null;
         }
 
-        internal void Write(string CmdPath)
+        public void Write(string CmdPath)
         {
             this.CmdFilePath = CmdPath;
             IntFilePath = Path.ChangeExtension(CmdPath, ".int.txt");

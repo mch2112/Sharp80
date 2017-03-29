@@ -131,7 +131,7 @@ namespace Sharp80
             if (save.Value)
             {
                 var path = Computer.GetFloppyFilePath(DriveNum);
-                if (string.IsNullOrWhiteSpace(path) || IsFileNameToken(path) || IsLibraryFile(path))
+                if (!IsPathWritable(path))
                 {
                     if (IsLibraryFile(path))
                         path = GetFloppyFilePath("Choose path to save floppy", Path.Combine(Settings.DefaultFloppyDirectory, Path.GetFileName(path)), true, true, true);
@@ -238,10 +238,8 @@ namespace Sharp80
 
         // MISC
 
-        internal static bool IsFileNameToken(string Path)
-        {
-            return Path == FILE_NAME_UNFORMATTED || Path == FILE_NAME_NEW || Path == FILE_NAME_TRSDOS;
-        }
+        internal static bool IsFileNameToken(string Path) => Path == FILE_NAME_UNFORMATTED || Path == FILE_NAME_NEW || Path == FILE_NAME_TRSDOS;
+        internal static bool IsPathWritable(string Path) => !string.IsNullOrWhiteSpace(Path) && !IsFileNameToken(Path) && !IsLibraryFile(Path);
         internal static string LibraryPath
         {
             get
@@ -250,16 +248,12 @@ namespace Sharp80
                 return libraryPath;
             }
         }
-        internal static bool IsLibraryFile(string Path) => Path.StartsWith(LibraryPath);
+        internal static bool IsLibraryFile(string Path) => Path.StartsWith(LibraryPath, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// Returns false if the user cancelled a needed save
         /// </summary>
-        internal static bool SaveChangedStorage(Computer Computer)
-        {
-            return SaveFloppies(Computer) && SaveTapeIfRequired(Computer);
-        }
-
+        internal static bool SaveChangedStorage(Computer Computer) => SaveFloppies(Computer) && SaveTapeIfRequired(Computer);
     }
 }
 

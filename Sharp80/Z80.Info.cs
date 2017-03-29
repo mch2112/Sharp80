@@ -33,7 +33,7 @@ namespace Sharp80.Processor
             return string.Format("{0}\r\nPC   {1}\r\nSP   {2}\r\n\r\nAF   {3}\r\nBC   {4}\r\nDE   {5}\r\nHL   {6}\r\n\r\nIX   {7}\r\nIY   {8}\r\n\r\nAF'  {9}\r\nBC'  {10}\r\nDE'  {11}\r\nHL'  {12}\r\n\r\nIR   {13}{14}\r\nWZ   {15}\r\n\r\n(HL) {16}\r\n(SP) {17}", flagsToString[F.val], PC, SP, AF, BC, DE, HL, IX, IY, AFp, BCp, DEp, HLp, I, R, WZ, HLM, SPM);
         }
 
-        public string Disassemble(ushort Start, ushort End, bool MakeAssemblable) => Disassembler.Disassemble(Memory, Start, End, MakeAssemblable);
+        public string Disassemble(ushort Start, ushort End, bool MakeAssemblable) => disassembler.Disassemble(Memory, Start, End, MakeAssemblable);
 
         public string GetDisassembly() => HistoricDisassemblyMode ? GetDisassemblyHistoric() : GetDisassemblyNormal();
 

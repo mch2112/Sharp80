@@ -46,12 +46,15 @@ namespace Sharp80.Assembler
         private List<Macro> macros = new List<Macro>();
         private ushort? execAddress = null;
 
-        // CONSTRUCTORS
+        // CONSTRUCTOR
 
         public Assembler(IEnumerable<Processor.Instruction> InstructionSet)
         {
             instructionSet = InstructionSet.ToList();
         }
+
+        // MAIN PROCESS
+
         public Assembly Assemble(string SourceText)
         {
             Assembly = new Assembly(SourceText);
@@ -66,7 +69,6 @@ namespace Sharp80.Assembler
             return Assembly;
         }
 
-        // MAIN PROCESS
 
         private void Assemble()
         {

@@ -158,31 +158,6 @@ namespace Sharp80
         public Floppy GetFloppy(int DriveNumber) => drives[DriveNumber].Floppy;
         private DriveState CurrentDrive => (CurrentDriveNumber >= NUM_DRIVES) ? null : drives[CurrentDriveNumber];
 
-        public static ushort UpdateCRC(ushort crc, byte ByteRead, bool AllowReset, bool DoubleDensity)
-        {
-            if (AllowReset)
-            {
-                switch (ByteRead)
-                {
-                    case 0xF8:
-                    case 0xF9:
-                    case 0xFA:
-                    case 0xFB:
-                    case 0xFD:
-                    case 0xFE:
-                        if (!DoubleDensity)
-                            crc = Floppy.CRC_RESET;
-                        break;
-                    case 0xA1:
-                        if (DoubleDensity)
-                            crc = Floppy.CRC_RESET_A1_A1;
-                        break;
-                }
-            }
-            crc = Lib.Crc(crc, ByteRead);
-            return crc;
-        }
-
         // EXTERNAL INTERACTION AND INFORMATION
 
         public void HardwareReset()
@@ -1557,44 +1532,6 @@ namespace Sharp80
             else
                 computer.Activate(motorOnPulseReq);
         }
-        private static Command GetCommand(byte CommandRegister)
-        {
-            switch (CommandRegister & 0xF0)
-            {
-                case 0x00:
-                    return Command.Restore;
-                case 0x10:
-                    return Command.Seek;
-                case 0x20:
-                case 0x30:
-                case 0x40:
-                case 0x50:
-                case 0x60:
-                case 0x70:
-                    return Command.Step;
-                case 0x80:
-                case 0x90:
-                    return Command.ReadSector;
-                case 0xA0: // write sector  
-                case 0xB0:
-                    return Command.WriteSector;
-                case 0xC0: // read address
-                    return Command.ReadAddress;
-                case 0xD0:
-                    if (CommandRegister == 0xD0)
-                        return Command.Reset;
-                    else if (CommandRegister == 0xD8)
-                        return Command.ForceInterruptImmediate;
-                    else
-                        return Command.ForceInterrupt;
-                case 0xE0: // read track
-                    return Command.ReadTrack;
-                case 0xF0:  // write track
-                    return Command.WriteTrack;
-                default:
-                    return Command.Invalid;
-            }
-        }
         private void UpdateStatus()
         {
             //    Type I Command Status values are:
@@ -1765,7 +1702,7 @@ namespace Sharp80
         
         // HELPERS
 
-        private int CommandType(Command Command)
+        private static int CommandType(Command Command)
         {
             switch (Command)
             {
@@ -1787,7 +1724,69 @@ namespace Sharp80
                     return 0;
             }
         }
-        internal static bool IsDAM(byte b, out bool SectorDeleted)
+        private static Command GetCommand(byte CommandRegister)
+        {
+            switch (CommandRegister & 0xF0)
+            {
+                case 0x00:
+                    return Command.Restore;
+                case 0x10:
+                    return Command.Seek;
+                case 0x20:
+                case 0x30:
+                case 0x40:
+                case 0x50:
+                case 0x60:
+                case 0x70:
+                    return Command.Step;
+                case 0x80:
+                case 0x90:
+                    return Command.ReadSector;
+                case 0xA0: // write sector  
+                case 0xB0:
+                    return Command.WriteSector;
+                case 0xC0: // read address
+                    return Command.ReadAddress;
+                case 0xD0:
+                    if (CommandRegister == 0xD0)
+                        return Command.Reset;
+                    else if (CommandRegister == 0xD8)
+                        return Command.ForceInterruptImmediate;
+                    else
+                        return Command.ForceInterrupt;
+                case 0xE0: // read track
+                    return Command.ReadTrack;
+                case 0xF0:  // write track
+                    return Command.WriteTrack;
+                default:
+                    return Command.Invalid;
+            }
+        }
+        public static ushort UpdateCRC(ushort crc, byte ByteRead, bool AllowReset, bool DoubleDensity)
+        {
+            if (AllowReset)
+            {
+                switch (ByteRead)
+                {
+                    case 0xF8:
+                    case 0xF9:
+                    case 0xFA:
+                    case 0xFB:
+                    case 0xFD:
+                    case 0xFE:
+                        if (!DoubleDensity)
+                            crc = Floppy.CRC_RESET;
+                        break;
+                    case 0xA1:
+                        if (DoubleDensity)
+                            crc = Floppy.CRC_RESET_A1_A1;
+                        break;
+                }
+            }
+            crc = Lib.Crc(crc, ByteRead);
+            return crc;
+        }
+        public static bool IsDAM(byte b, out bool SectorDeleted)
         {
             switch (b)
             {

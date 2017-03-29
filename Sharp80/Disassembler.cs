@@ -6,37 +6,39 @@ using System.Threading.Tasks;
 
 namespace Sharp80.Processor
 {
-    internal static class Disassembler
+    internal class Disassembler
     {
         public const int NUM_DISASSEMBLY_LINES = 22;
 
-        private static Z80.InstructionSet InstructionSet { get; set; }
+        public bool HistoricDisassemblyMode { get; set; }
+        private Z80.InstructionSet InstructionSet { get; set; }
 
-        public static bool HistoricDisassemblyMode { get; set; }
-
-        public static void Initialize(Z80.InstructionSet InstructionSet)
-        {
-            Disassembler.InstructionSet = InstructionSet;
-        }
-        public static string Disassemble(IReadOnlyList<byte> Memory, ushort Start, ushort End, bool MakeAssemblable)
+        public Disassembler(Z80.InstructionSet InstructionSet) => this.InstructionSet = InstructionSet;
+        
+        public string Disassemble(IReadOnlyList<byte> Memory, ushort Start, ushort End, bool MakeAssemblable)
         {
             ushort PC = Start;
             Instruction inst;
 
-            // Eliminate trailing NOPs
-            while (Memory[End] == 0 && End > Start) // NOP
-                End--;
-            if (End < 0xFFFF)
-                End++;
+            var end = End;
 
-            if (End > Sharp80.Memory.MEMORY_SIZE - 0x10)
-                End = Sharp80.Memory.MEMORY_SIZE - 1;
+            // Eliminate trailing NOPs
+            while (Memory[end] == 0 && end > Start) // NOP
+                end--;
+            if (end < 0xFFFF)
+                end++;
+
+            if (end > Sharp80.Memory.MEMORY_SIZE - 0x10)
+                end = Sharp80.Memory.MEMORY_SIZE - 1;
+
+            if (end > End)
+                end = End;
 
             var sb = new StringBuilder(Sharp80.Memory.MEMORY_SIZE * 40);
 
             var li = new Dictionary<ushort, Instruction>();
 
-            while (PC <= End)
+            while (PC <= end)
             {
                 li.Add(PC, inst = InstructionSet.GetInstruction(Memory[PC], Memory[PC + 1], Memory[PC + 3]));
                 PC += inst.Size;

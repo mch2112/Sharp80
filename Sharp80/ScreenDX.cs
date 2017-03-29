@@ -759,8 +759,13 @@ namespace Sharp80
             if (!isDisposed)
             {
                 isDisposed = true;
+                if (!renderTarget.IsDisposed)
+                    renderTarget.Dispose();
                 if (!backBufferView.IsDisposed)
                     backBufferView.Dispose();
+                foregroundBrushWhite.Dispose();
+                foregroundBrushGreen.Dispose();
+
                 GC.SuppressFinalize(this);
             }
         }

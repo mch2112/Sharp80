@@ -12,7 +12,7 @@ namespace Sharp80.Processor
         // changing this requires new SERIALIZATION_VERSION
         public const int NUM_DISASSEMBLY_LINES = 22;
 
-        // Circular history buffer
+        private Disassembler disassembler;
         private CircularBuffer historyBuffer;
 
         // REGISTERS
@@ -100,7 +100,8 @@ namespace Sharp80.Processor
         {
             instructionSet = new InstructionSet();
             historyBuffer = new CircularBuffer(NUM_DISASSEMBLY_LINES);
-            Disassembler.Initialize(instructionSet);
+
+            disassembler = new Disassembler(instructionSet);
 
             computer = Computer;
 
@@ -511,7 +512,7 @@ namespace Sharp80.Processor
         private void InitInstructionSet()
         {
             SetupInstructionObjects();
-            instructionSet.LoadTables();
+            instructionSet.Initialize();
         }
 
         private void PushWord(ushort val)
