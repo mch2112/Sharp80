@@ -59,6 +59,7 @@
     <Compile Include="Strings.cs" />
     <Compile Include="Numeric.cs" />
     <Compile Include="Assembly.cs" />
+    <Compile Include="ProgramFlow.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

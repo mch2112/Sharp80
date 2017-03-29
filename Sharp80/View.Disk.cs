@@ -44,7 +44,7 @@ namespace Sharp80
                     switch (Key.Key)
                     {
                         case KeyCode.F:
-                            if (Settings.DiskEnabled)
+                            if (Computer.DiskUserEnabled)
                                 LoadFloppy();
                             break;
                         case KeyCode.L:
@@ -57,7 +57,7 @@ namespace Sharp80
                 }
                 else
                 {
-                    if (Settings.DiskEnabled)
+                    if (Computer.DiskUserEnabled)
                     {
                         switch (Key.Key)
                         {
@@ -143,7 +143,7 @@ namespace Sharp80
         {
             string ret = header;
 
-            if (Settings.DiskEnabled)
+            if (Computer.DiskUserEnabled)
             {
                 if (DriveNumber.HasValue)
                 {
@@ -451,25 +451,25 @@ namespace Sharp80
         }
         private void ToggleFloppyEnable()
         {
-            if (!Settings.DiskEnabled || Storage.SaveFloppies(Computer))
+            if (!Computer.DiskUserEnabled || Storage.SaveFloppies(Computer))
             {
                 bool restart = false;
 
                 if (Computer.HasRunYet)
                 {
-                    string caption = (Settings.DiskEnabled ? "Disabling" : "Enabling") + " the floppy controller requires a restart. Continue?";
+                    string caption = (Computer.DiskUserEnabled ? "Disabling" : "Enabling") + " the floppy controller requires a restart. Continue?";
                     if (!Dialogs.AskYesNo(caption))
                         return;
                     if (Computer.IsRunning)
                         restart = true;
-                    Settings.DiskEnabled = !Settings.DiskEnabled;
+                    Computer.DiskUserEnabled = Settings.DiskEnabled = !Settings.DiskEnabled;
                     InvokeUserCommand(UserCommand.HardReset);
                 }
                 else
                 {
-                    Settings.DiskEnabled = !Settings.DiskEnabled;
+                    Computer.DiskUserEnabled = Settings.DiskEnabled = !Settings.DiskEnabled;
                 }
-                MessageCallback("Floppy Controller " + (Settings.DiskEnabled ? "Enabled" : "Disabled"));
+                MessageCallback("Floppy Controller " + (Computer.DiskUserEnabled ? "Enabled" : "Disabled"));
                 if (restart)
                 {
                     Computer.Start();

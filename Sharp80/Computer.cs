@@ -31,7 +31,7 @@ namespace Sharp80
 
         // CONSTRUCTOR
 
-        public Computer(IScreen Screen, bool FloppyEnabled, bool SoundEnabled = true)
+        public Computer(IScreen Screen, bool DiskUserEnabled, bool SoundEnabled = true)
         {
             ulong ticksPerSoundSample = Clock.TICKS_PER_SECOND / SoundX.SAMPLE_RATE;
 
@@ -70,7 +70,9 @@ namespace Sharp80
 
             Clock.SpeedChanged += (s, e) => Sound.Mute = !Clock.NormalSpeed;
 
-            FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound, FloppyEnabled);
+            this.DiskUserEnabled = DiskUserEnabled;
+
+            FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound, DiskUserEnabled);
 
             IntMgr.Initialize(Ports, Tape);
             Tape.Initialize(Clock, IntMgr);
@@ -120,6 +122,7 @@ namespace Sharp80
             get => Sound.UseDriveNoise;
             set => Sound.UseDriveNoise = value;
         }
+        public bool DiskUserEnabled { set; get; }
         public IZ80_Status CpuStatus
         {
             // Safe to send this out in interface form
@@ -168,7 +171,7 @@ namespace Sharp80
         {
             if (!HasRunYet)
             {
-                if (!Settings.DiskEnabled || !FloppyController.Available)
+                if (!DiskUserEnabled || !FloppyController.Available)
                     FloppyController.Disable();
 
                 HasRunYet = true;
