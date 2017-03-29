@@ -32,7 +32,7 @@ namespace Sharp80
         protected List<Track> tracks;
 
         private bool changed = false;
-        private bool writeProtected;
+        protected bool writeProtected;
 
         // CONSTRUCTORS
 
@@ -50,7 +50,6 @@ namespace Sharp80
         protected void Reset()
         {
             writeProtected = false;
-
             changed = false;
             FilePath = string.Empty;
 

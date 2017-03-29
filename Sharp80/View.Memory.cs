@@ -15,7 +15,7 @@ namespace Sharp80
 
         protected override void Activate()
         {
-            MessageCallback("Memory View");
+            MessageCallback("Memory View: Arrow Keys to Page");
             base.Activate();
         }
         protected override bool processKey(KeyState Key)
@@ -24,20 +24,20 @@ namespace Sharp80
             {
                 switch (Key.Key)
                 {
+                    case KeyCode.Up:
                     case KeyCode.PageUp:
                         baseAddress -= 0x1000;
                         Invalidate();
                         break;
-                    case KeyCode.Up:
                     case KeyCode.Left:
                         baseAddress -= 0x0100;
                         Invalidate();
                         break;
+                    case KeyCode.Down:
                     case KeyCode.PageDown:
                         baseAddress += 0x1000;
                         Invalidate();
                         break;
-                    case KeyCode.Down:
                     case KeyCode.Right:
                         baseAddress += 0x0100;
                         Invalidate();

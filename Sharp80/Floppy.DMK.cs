@@ -51,7 +51,7 @@ namespace Sharp80
             else
             {
                 Deserialize(UnformattedDmkBytes(40, true));
-                WriteProtected = false;
+                writeProtected = false;
                 FilePath = Storage.FILE_NAME_UNFORMATTED;
             }
             OriginalFileType = FileType.DMK;
@@ -428,7 +428,7 @@ namespace Sharp80
                     return;
                 }
 
-                WriteProtected = DiskData[WRITE_PROTECT_BYTE] == WRITE_PROTECT_VAL;
+                writeProtected = DiskData[WRITE_PROTECT_BYTE] == WRITE_PROTECT_VAL;
                 ushort trackLength = Lib.CombineBytes(DiskData[TRACK_LEN_LOW_BYTE], DiskData[TRACK_LEN_HIGH_BYTE]);
                 int numSides = ((DiskData[FLAGS_BYTE] & SINGLE_SIDED_FLAG) == SINGLE_SIDED_FLAG) ? 1 : 2;
 
