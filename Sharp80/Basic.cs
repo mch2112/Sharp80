@@ -15,7 +15,6 @@ namespace Sharp80
     /// </summary>
     internal class Basic
     {
-        
         private string[] Tokens =
         {
             "END", "FOR", "RESET", "SET", "CLS", "CMD", "RANDOM", "NEXT", "DATA",

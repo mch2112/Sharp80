@@ -18,7 +18,7 @@ namespace Sharp80
                 switch (Key.Key)
                 {
                     case KeyCode.R:
-                        if (InvokeAssembler())
+                        if (InvokeAssembler(true))
                         {
                             Computer.LoadCMDFile(CmdFile);
                             Computer.Start();
@@ -26,7 +26,7 @@ namespace Sharp80
                         }
                         return true;
                     case KeyCode.L:
-                        if (InvokeAssembler())
+                        if (InvokeAssembler(false))
                             CurrentMode = ViewMode.CmdFile;
                         break;
                 }

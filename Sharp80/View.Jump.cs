@@ -12,10 +12,7 @@ namespace Sharp80
         protected override ViewMode Mode => ViewMode.Jump;
         protected override bool CanSendKeysToEmulation => false;
 
-        protected override void Activate()
-        {
-            Computer.Stop(true);
-        }
+        protected override void Activate() => Computer.Stop(true);
 
         protected override bool processKey(KeyState Key)
         {

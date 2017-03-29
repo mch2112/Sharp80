@@ -10,7 +10,6 @@ namespace Sharp80
     {
         private int ScreenNum { get; set; }
         private const int NUM_SCREENS = 6;
-
         private string helpHeaderText = "Sharp 80 Help";
         private string footerText = "Left/Right Arrow: Show More Commands";
 

@@ -2,9 +2,7 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Sharp80.Processor
 {
@@ -81,19 +79,19 @@ namespace Sharp80.Processor
 
         public string GetInstructionSetReport() => instructionSet.GetInstructionSetReport();
         
-        public ushort PcVal { get { return PC.val; } }
-        public ushort SpVal { get { return SP.val; } }
-        public ushort AfVal {  get { return AF.val; } }
-        public ushort BcVal {  get { return BC.val; } }
-        public ushort DeVal {  get { return DE.val; } }
-        public ushort HlVal {  get { return HL.val; } }
-        public ushort IxVal {  get { return IX.val; } }
-        public ushort IyVal {  get { return IY.val; } }
-        public ushort AfpVal { get { return AFp.val; } }
-        public ushort BcpVal { get { return BCp.val; } }
-        public ushort DepVal { get { return DEp.val; } }
-        public ushort HlpVal { get { return HLp.val; } }
-        public ushort WzVal { get { return WZ.val; } }
-        public ushort IrVal { get { return (ushort)((I.val << 8) | R.val); } }
+        public ushort PcVal => PC.val;
+        public ushort SpVal => SP.val;
+        public ushort AfVal => AF.val;
+        public ushort BcVal => BC.val;
+        public ushort DeVal => DE.val;
+        public ushort HlVal => HL.val;
+        public ushort IxVal => IX.val;
+        public ushort IyVal => IY.val;
+        public ushort AfpVal => AFp.val;
+        public ushort BcpVal => BCp.val;
+        public ushort DepVal => DEp.val;
+        public ushort HlpVal => HLp.val;
+        public ushort WzVal => WZ.val;
+        public ushort IrVal => (ushort)((I.val << 8) | R.val);
     }
 }

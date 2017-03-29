@@ -13,15 +13,13 @@ namespace Sharp80.Processor
 
         private readonly byte[] op = new byte[4];
 
-        private readonly InstructionDelegate exec;
-
         private string operand0 = null;
         private string operand1 = null;
         private string operand2 = null;
 
         private int? numOperands = null;
 
-        public InstructionDelegate Execute { get { return exec; } }
+        public InstructionDelegate Execute { get; private set; }
 
         public byte RIncrement { get; private set; }
         public bool IsPrefix { get; private set; }
@@ -68,6 +66,8 @@ namespace Sharp80.Processor
         private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstructionDelegate Exec, byte TStatesAlt)
         {
             this.Name = Name;
+            Execute = Exec;
+
             Mnemonic = Name.FirstText();
 
             op[0] = Op0;
@@ -120,8 +120,6 @@ namespace Sharp80.Processor
             Ticks = (ushort)(TStates * Clock.TICKS_PER_TSTATE);
             TicksWithExtra = (ushort)((TStates + TStatesAlt) * Clock.TICKS_PER_TSTATE);
 
-            this.exec = Exec;
-
             RIncrement = 1;
 
             if ((op[0] == 0xDD) || (op[0] == 0xFD) || (op[0] == 0xCB) || (op[0] == 0xED))
@@ -129,9 +127,7 @@ namespace Sharp80.Processor
 
             Debug.Assert(Size.IsBetween(1, 4));
             Debug.Assert(OpcodeSize.IsBetween(1, Size));
-
             Debug.Assert(!hasReplaceableTokens || Size > OpcodeSize);
-
             Debug.Assert(!(Op1 is null) || Op3 is null);
             Debug.Assert(Op1 is null || Size >= 2);
             Debug.Assert(Op3 is null || Size == 4);
@@ -141,8 +137,8 @@ namespace Sharp80.Processor
             InitNameFn(hasReplaceableTokens);
         }
 
-        public Func<IReadOnlyList<byte>, ushort, string> FullName;
-        public Func<IReadOnlyList<byte>, ushort, string> AssemblableName;
+        public Func<IReadOnlyList<byte>, ushort, string> FullName { get; private set; }
+        public Func<IReadOnlyList<byte>, ushort, string> AssemblableName { get; private set; }
 
         public string Name { get; private set; }
         public string Mnemonic { get; private set; }

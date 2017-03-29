@@ -1032,9 +1032,10 @@ namespace Sharp80
             }
         }
 
+        // TRACK ACTIONS
+
         private void StepUp() => SetTrackNumber(CurrentDrive.PhysicalTrackNumber + 1);
         private void StepDown() => SetTrackNumber(CurrentDrive.PhysicalTrackNumber - 1);
-        
         private void UpdateTrack()
         {
             track = CurrentDrive.Floppy?.GetTrack(CurrentDrive.PhysicalTrackNumber, SideOneSelected);
@@ -1054,23 +1055,9 @@ namespace Sharp80
                 Log.LogDebug($"Drive {CurrentDriveNumber} Physical Track Step to {PhysicalTrackNum:X2}");
             }
         }
-        internal static bool IsDAM(byte b, out bool SectorDeleted)
-        {
-            switch (b)
-            {
-                case Floppy.DAM_DELETED:
-                    SectorDeleted = true;
-                    return true;
-                case Floppy.DAM_NORMAL:
-                case 0xF9:
-                case 0xFA:
-                    SectorDeleted = false;
-                    return true;
-                default:
-                    SectorDeleted = false;
-                    return false;
-            }
-        }
+        
+        // TRIGGERS
+
         private void SetCommandPulseReq(int Bytes, ulong DelayInUsec, Clock.ClockCallback Callback)
         {
             commandPulseReq.Expire();
@@ -1774,9 +1761,10 @@ namespace Sharp80
             
         }
         private byte ReadTrackByte() => track?.ReadByte(TrackDataIndex, DoubleDensitySelected) ?? 0;
-        
         private void WriteTrackByte(byte B) => track?.WriteByte(TrackDataIndex, DoubleDensitySelected, B);
         
+        // HELPERS
+
         private int CommandType(Command Command)
         {
             switch (Command)
@@ -1799,6 +1787,26 @@ namespace Sharp80
                     return 0;
             }
         }
+        internal static bool IsDAM(byte b, out bool SectorDeleted)
+        {
+            switch (b)
+            {
+                case Floppy.DAM_DELETED:
+                    SectorDeleted = true;
+                    return true;
+                case Floppy.DAM_NORMAL:
+                case 0xF9:
+                case 0xFA:
+                    SectorDeleted = false;
+                    return true;
+                default:
+                    SectorDeleted = false;
+                    return false;
+            }
+        }
+
+        // SHUTDOWN
+
         public void Dispose()
         {
             motorOffPulseReq?.Expire();

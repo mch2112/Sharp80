@@ -9,8 +9,10 @@ namespace Sharp80
 {
     internal sealed partial class DMK
     {
-        const int JV1_SECTORS_PER_TRACK = 10;
-        const int JV1_SECTOR_SIZE = 0x100;
+        // CONSTANTS
+
+        private const int JV1_SECTORS_PER_TRACK = 10;
+        private const int JV1_SECTOR_SIZE = 0x100;
 
         private const int JV3_SECTORS_PER_HEADER = 2901;
         private const int JV3_HEADER_SIZE = JV3_SECTORS_PER_HEADER * 3;
@@ -22,7 +24,9 @@ namespace Sharp80
         private const byte JV3_SECTOR_SIZE_MASK = 0x03;  /* in used sectors: 0=256,1=128,2=1024,3=512
                                                             in free sectors: 0=512,1=1024,2=128,3=256 */
         private const byte JV3_SECTOR_FREE = 0xFF;    // in track and sector fields of free sectors */
-        private const byte SECTOR_FREE_FLAGS = 0xFC;  // in flags field, or'd with size code
+        private const byte JV3_SECTOR_FREE_FLAGS = 0xFC;  // in flags field, or'd with size code
+
+        // JV3
 
         public static Floppy FromJV3(byte[] DiskData)
         {
@@ -45,7 +49,7 @@ namespace Sharp80
 
                         byte flags = DiskData[i + 2];
 
-                        sd.InUse = sd.TrackNumber != JV3_SECTOR_FREE || sd.SectorNumber != JV3_SECTOR_FREE || ((flags & SECTOR_FREE_FLAGS) != SECTOR_FREE_FLAGS);
+                        sd.InUse = sd.TrackNumber != JV3_SECTOR_FREE || sd.SectorNumber != JV3_SECTOR_FREE || ((flags & JV3_SECTOR_FREE_FLAGS) != JV3_SECTOR_FREE_FLAGS);
                         sd.DoubleDensity = (flags & JV3_DOUBLE_DENSITY) == JV3_DOUBLE_DENSITY;
 
                         // The 2-bit DAM_TYPE field encodes the sector's data address mark:
@@ -183,7 +187,7 @@ namespace Sharp80
                         {
                             temp[cursor++] = JV3_SECTOR_FREE;
                             temp[cursor++] = JV3_SECTOR_FREE;
-                            temp[cursor++] = SECTOR_FREE_FLAGS | 0x03;
+                            temp[cursor++] = JV3_SECTOR_FREE_FLAGS | 0x03;
                         }
                     }
                 }
@@ -195,6 +199,8 @@ namespace Sharp80
             Array.Copy(temp, data, cursor);
             return data;
         }
+
+        // JV1
 
         public static Floppy FromJV1(byte[] DiskData)
         {

@@ -12,10 +12,6 @@ namespace Sharp80
         protected override bool ForceRedraw => false;
         protected override bool CanSendKeysToEmulation => false;
 
-        protected override bool processKey(KeyState Key)
-        {
-            return base.processKey(Key);
-        }
         protected override byte[] GetViewBytes()
         {
             return PadScreen(Encoding.ASCII.GetBytes(

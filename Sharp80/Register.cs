@@ -12,11 +12,10 @@ namespace Sharp80.Processor
 
         public Register8(string Name) => this.Name = Name;
 
-        public void inc() { val++; }
-        public void dec() { val--; }
+        public void inc() => val++;
+        public void dec() => val--;
 
-        public bool Z { get { return val == 0x00; } }
-        public bool NZ { get { return val != 0x00; } }
+        public bool NZ => val != 0x00;
 
         public override string ToString() => val.ToHexString();
     }
@@ -33,8 +32,8 @@ namespace Sharp80.Processor
         }
         public byte val
         {
-            get { return z80.Memory[Proxy.val]; }
-            set { z80.Memory[Proxy.val] = value; }
+            get => z80.Memory[Proxy.val];
+            set => z80.Memory[Proxy.val] = value;
         }
 
         //public ushort ProxyVal { get { return Proxy.val; } }

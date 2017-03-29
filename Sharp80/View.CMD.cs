@@ -39,7 +39,7 @@ namespace Sharp80
                     {
                         case KeyCode.A:
                             if (CmdFile is null)
-                                InvokeAssembler();
+                                InvokeAssembler(false);
                             return true;
                         case KeyCode.C:
                             Clear();
@@ -113,8 +113,8 @@ namespace Sharp80
                 fileInfo = Format(FitFilePath(CmdFile.FilePath, ScreenMetrics.NUM_SCREEN_CHARS_X)) +
                            Format(string.Format("{0} bytes in {1} block{2} spanning {3}:{4}",
                                                 CmdFile.Size,
-                                                CmdFile.NumBlocks,
-                                                CmdFile.NumBlocks == 1 ? String.Empty : "s",
+                                                CmdFile.NumSegments,
+                                                CmdFile.NumSegments == 1 ? String.Empty : "s",
                                                 CmdFile.LowAddress.ToHexString(),
                                                 CmdFile.HighAddress.ToHexString())) +
                            Format($"Title: {CmdFile.Title.Truncate(20)}  " + (CmdFile.ExecAddress.HasValue ? ("Execution Address: " + CmdFile.ExecAddress.Value.ToHexString()) : "NO EXECUTION ADDRESS!"));

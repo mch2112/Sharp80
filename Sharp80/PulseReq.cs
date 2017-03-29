@@ -5,9 +5,9 @@ using System;
 
 namespace Sharp80
 {
-    internal sealed class PulseReq
+    internal class PulseReq
     {
-        internal enum DelayBasis { Microseconds, Ticks }
+        public enum DelayBasis { Microseconds, Ticks }
 
         public bool Active { get; private set; }
         public ulong Trigger { get; private set; }

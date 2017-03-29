@@ -345,7 +345,7 @@ namespace Sharp80
             }
             return false;
         }
-        protected static bool InvokeAssembler()
+        protected static bool InvokeAssembler(bool SuppressDialogOnSuccess)
         {
             if (Storage.GetAsmFilePath(out string sourcePath))
             {
@@ -355,7 +355,8 @@ namespace Sharp80
                     assembly.Write(System.IO.Path.ChangeExtension(sourcePath, ".cmd"));
                     if (assembly.CmdFileWritten)
                     {
-                        Dialogs.InformUser(string.Format("Assembled {0} to {1}.", System.IO.Path.GetFileName(sourcePath), System.IO.Path.GetFileName(assembly.CmdFilePath)));
+                        if (!SuppressDialogOnSuccess)
+                            Dialogs.InformUser(string.Format("Assembled {0} to {1}.", System.IO.Path.GetFileName(sourcePath), System.IO.Path.GetFileName(assembly.CmdFilePath)));
                         CmdFile = assembly.ToCmdFile();
                         if (CmdFile?.Valid ?? false)
                         {

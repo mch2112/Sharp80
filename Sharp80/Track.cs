@@ -48,6 +48,9 @@ namespace Sharp80
 
             LengthWithHeader = this.Data.Length + HEADER_LENGTH_BYTES;
             densityMap = null;
+
+            //RebuildHeader();
+            //Changed = true;
         }
 
         private void SetDensity()

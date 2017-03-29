@@ -14,10 +14,11 @@ namespace Sharp80
         public bool Valid { get; private set; } = false;
         public string FilePath { get; private set; }
         public int Size { get; private set; }
-        public int NumBlocks {  get { return segments.Count; } }
         public ushort LowAddress { get; private set; }
         public ushort HighAddress { get; private set; }
         public bool IsLoaded { get; private set; }
+
+        public int NumSegments => segments.Count;
 
         private List<(ushort SegmentAddress, byte[] Bytes)> segments = new List<(ushort SegmentAddress, byte[] Bytes)>();
 
@@ -99,7 +100,7 @@ namespace Sharp80
             }
             Finalize(false);
         }
-        public bool Load(IMemory Memory)
+        internal bool Load(IMemory Memory)
         {
             if (Valid)
             {
