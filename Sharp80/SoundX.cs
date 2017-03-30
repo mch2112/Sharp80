@@ -205,7 +205,9 @@ namespace Sharp80
                 isDisposed = true;
                 enabled = false;
                 Stopped = true;
-                await playingTask;
+
+                if (playingTask != null)
+                    await playingTask;
 
                 sourceVoice?.DestroyVoice();
                 sourceVoice?.Dispose();
