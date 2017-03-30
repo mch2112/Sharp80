@@ -31,4 +31,4 @@ edition works fine)
 
 This code is licensed under the GPL v3.
 
-Read more at http://www.sharp80.com (coming soon).
+Read more at http://www.sharp80.com.
