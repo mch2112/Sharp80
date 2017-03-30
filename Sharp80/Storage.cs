@@ -244,12 +244,25 @@ namespace Sharp80
         {
             get
             {
-                libraryPath = libraryPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Library");
+                if (libraryPath is null)
+                {
+                    libraryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Library");
+                    if (!Directory.Exists(libraryPath))
+                    {
+                        libraryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Sharp80\Library");
+                        if (!Directory.Exists(libraryPath))
+                        {
+                            libraryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Sharp80\Library");
+                            if (!Directory.Exists(libraryPath))
+                                libraryPath = String.Empty;
+                        }
+                    }
+                }
                 return libraryPath;
             }
         }
-        internal static bool IsLibraryFile(string Path) => Path.StartsWith(LibraryPath, StringComparison.OrdinalIgnoreCase);
-
+        internal static bool IsLibraryFile(string Path) => LibraryOK && Path.StartsWith(LibraryPath, StringComparison.OrdinalIgnoreCase);
+        internal static bool LibraryOK => !String.IsNullOrWhiteSpace(LibraryPath);
         /// <summary>
         /// Returns false if the user cancelled a needed save
         /// </summary>

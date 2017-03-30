@@ -48,8 +48,9 @@ namespace Sharp80
                                 LoadFloppy();
                             break;
                         case KeyCode.L:
-                            if (DriveNumber.HasValue && LibraryDir is null)
-                                LibraryDir = BaseLibraryDir;
+                            if (Storage.LibraryOK)
+                                if (DriveNumber.HasValue && LibraryDir is null)
+                                    LibraryDir = BaseLibraryDir;
                             break;
                         default:
                             return base.processKey(Key);
@@ -186,41 +187,50 @@ namespace Sharp80
 
         private string GetViewForLibrary()
         {
-            bool isTop = LibraryDir.FullName == BaseLibraryDir.FullName;
-
-            if (LibraryDir is null)
+            if (Storage.LibraryOK)
             {
-                LibraryDir = BaseLibraryDir;
-                libraryMenu = null;
+                bool isTop = LibraryDir.FullName == BaseLibraryDir.FullName;
+
+                if (LibraryDir is null)
+                {
+                    LibraryDir = BaseLibraryDir;
+                    libraryMenu = null;
+                }
+
+                string ret = Format(isTop ? String.Empty : LibraryDir.Name) +
+                             Format();
+
+                for (int i = 0; i < LibraryMenu.Count; i++)
+                    ret += Format($"[{(i + 1) % 10}] {LibraryMenu[i].Name}");
+
+                ret += Format().Repeat(11 - LibraryMenu.Count);
+
+                if (isTop)
+                    ret += "[Esc] to exit library.";
+                else
+                    ret += "[Esc] to go back.";
+
+                return ret;
             }
-
-            string ret = Format(isTop ? String.Empty : LibraryDir.Name) +
-                         Format();
-
-            for (int i = 0; i < LibraryMenu.Count; i++)
-                ret += Format($"[{(i + 1) % 10}] {LibraryMenu[i].Name}");
-
-            ret += Format().Repeat(11 - LibraryMenu.Count);
-
-            if (isTop)
-                ret += "[Esc] to exit library.";
             else
-                ret += "[Esc] to go back.";
-
-            return ret;
+            {
+                return "Library Error.";
+            }
         }
         private List<(string Name, string Path, bool IsDir)> GetLibraryMenu()
         {
             var ld = new List<(string Name, string Path, bool IsDir)>();
 
-            foreach (var d in LibraryDir.GetDirectories())
-                ld.Add((d.Name, d.FullName, true));
+            if (Storage.LibraryOK)
+            {
+                foreach (var d in LibraryDir.GetDirectories())
+                    ld.Add((d.Name, d.FullName, true));
 
-            foreach (var d in LibraryDir.GetFiles())
-                ld.Add((Path.GetFileNameWithoutExtension(d.Name), d.FullName, false));
+                foreach (var d in LibraryDir.GetFiles())
+                    ld.Add((Path.GetFileNameWithoutExtension(d.Name), d.FullName, false));
 
-            System.Diagnostics.Debug.Assert(ld.Count <= 10);
-
+                System.Diagnostics.Debug.Assert(ld.Count <= 10);
+            }
             return ld;
         }
         private static string GetViewForDisk()
@@ -246,7 +256,7 @@ namespace Sharp80
             else
             {
                 s += Format("[F] Load floppy from file") +
-                     Format("[L] Load floppy from included library") +
+                     (Storage.LibraryOK ? Format("[L] Load floppy from included library") : String.Empty) +
                      Format("[T] Load TRSDOS floppy") +
                      Format("[B] Insert blank formatted floppy") +
                      Format("[U] Insert unformatted floppy");
@@ -488,7 +498,7 @@ namespace Sharp80
         }
         private bool SelectLibrary(int Index)
         {
-            if (LibraryDir is null)
+            if (LibraryDir is null || !Storage.LibraryOK)
                 return false;
 
             var item = LibraryMenu[(Index + 9) % 10];
