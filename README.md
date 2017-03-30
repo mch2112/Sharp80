@@ -4,14 +4,25 @@ TRS80 Emulator for Windows
 
 This is a full-featured emulator of a TRS-80 Model III circa 1981. It includes:
 
-* Model III computer running at standard 2.03MHz (can be run faster)
-* Full Z-80 emulation including all undocumented opcodes
-* Emulation of a floppy disk controller supporting 4 virtual floppy drives
-* Support for all major virtual floppy formats (DMK, JV3, JV1)
-* Windowed and full-screen (Alt-Enter) modes
+* Complete and self contained with ROM and DOS built in
+* Faithful Z-80 CPU emulation (including undocumented opcodes -- passes all ZEXALL opcode tests)
+* Runs at standard 2.03MHz (or run up to 100MHz on a modern PC)
+* Bundled disk and tape library includes applications, utilities, operating systems, and games
+* Supports up to four virtual floppy drives, and all major virtual floppy formats (DMK, JV3, JV1)
+* Tape drive emulation supports high and low speed reading and writing (CAS format)
+* Windowed and full-screen modes
+* Built-in Z-80 assembler and disassembler
+* Real-time monitor of Z-80 CPU internals and IO device status
+* Printer to file support
 * Support for all video modes, including wide characters and Kanji mode
 
-To use this code, you'll need:
+Project Objectives
+
+* Run old TRS-80 programs for fun and general interest
+* Document the internal workings of this ground-breaking 8-bit machine
+* Provide examples of emulation techniques for others to use
+
+To develop with this code, you'll need:
 
 * The latest MS Visual Studio 2017 (the free community
 edition works fine)
@@ -20,4 +31,4 @@ edition works fine)
 
 This code is licensed under the GPL v3.
 
-Read more at http://www.sharp80.com (coming soon).
+Read more at http://www.sharp80.com.
