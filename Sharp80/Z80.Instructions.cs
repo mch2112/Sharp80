@@ -933,19 +933,19 @@ namespace Sharp80.Processor
             dec(B);
             NF = (HLM.val & 0x80) != 0x00;
 
-            if (IncHL)
-                HL.inc();
-            else
-                HL.dec();
+            if (IncHL) HL.inc(); else HL.dec();
 
-            int k = ((C.val + 0xFF) & 0xFF) + HLM.val;
+            byte c = C.val;
 
+            // Weird undocumented behavior: http://www.z80.info/zip/z80-documented.pdf
+            if (IncHL) c++; else c--;
+
+            int k = c + HLM.val;
             if (k > 0xFF)
             {
                 CF = true;
                 HF = true;
             }
-
             VF = P((k & 0x07) ^ B.val) != 0;
         }
         private byte InPort(byte pornNum) => ports[pornNum];
@@ -1006,22 +1006,16 @@ namespace Sharp80.Processor
         private void outx(bool IncHL)
         {
             OutPort(C.val, HLM.val);
-
             dec(B);
 
-            if (IncHL)
-                HL.inc();
-            else
-                HL.dec();
+            if (IncHL) HL.inc(); else HL.dec();
 
             int k = L.val + HLM.val;
-            
             if (k > 0xFF)
             {
                 CF = true;
                 HF = true;
             }
-
             VF = P((k & 0x07) ^ B.val) != 0;
         }
         private void OutPort(byte pornNum, byte value) => ports[pornNum] = value;

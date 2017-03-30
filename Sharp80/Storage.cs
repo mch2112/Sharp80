@@ -23,10 +23,11 @@ namespace Sharp80
         {
             get
             {
-                if (userPath == null)
+                if (userPath is null)
                 {
                     userPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Sharp80");
-                    Directory.CreateDirectory(userPath);
+                    if (!Directory.Exists(userPath))
+                        Directory.CreateDirectory(userPath);
                 }
                 return userPath;
             }
@@ -35,10 +36,11 @@ namespace Sharp80
         {
             get
             {
-                if (appDataPath == null)
+                if (appDataPath is null)
                 {
                     appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Sharp80");
-                    Directory.CreateDirectory(appDataPath);
+                    if (!Directory.Exists(appDataPath))
+                        Directory.CreateDirectory(appDataPath);
                 }
                 return appDataPath;
             }
