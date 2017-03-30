@@ -115,7 +115,7 @@ namespace Sharp80.Processor
 
                 foreach (Instruction i in li)
                 {
-                    sb.AppendFormat("| {0} {1} {2} {3} | {4,-18}|    {5:0#}    |   {6}   |   \r\n",
+                    sb.AppendFormat("| {0} {1} {2} {3} | {4,-18}|    {5:0#}    |   {6}   |" + Environment.NewLine,
                                      i.Op0.ToHexString(),
                                      i.Size < 2 ? "  " : i.OpcodeSize < 2 ? "XX" : i.Op1.ToHexString(),
                                      i.Size < 3 ? "  " : "XX",

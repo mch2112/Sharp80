@@ -50,7 +50,8 @@ namespace Sharp80Tests
             // remove comment lines
             dis = string.Join(Environment.NewLine, dis.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).Where(l => !l.Trim().StartsWith(";")));
 
-            Assert.IsTrue(dis == "\tDI" + NL + 
+            Assert.IsTrue(dis.ToUpper() ==
+                                 "\tDI" + NL + 
                                  "\tLD\tHL, 0000H" + NL +
                                  "\tLD\tA, 10H" + NL +
                                  "\tADD\tHL, HL" + NL +
