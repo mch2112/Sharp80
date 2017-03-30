@@ -22,12 +22,8 @@ Project Objectives
 * Document the internal workings of this ground-breaking 8-bit machine
 * Provide examples of emulation techniques for others to use
 
-To develop with this code, you'll need:
-
-* The latest MS Visual Studio 2017 (the free community
-edition works fine)
-* The SharpDX library (download the 3.1.0 SDK from sharpdx.org) and then put the dll files into the
-/SharpDX directory under the Sharp80.exe file.
+To develop with this code, you'll need the latest MS Visual Studio 2017 (the free community
+edition works fine.) Create a Sharp80 project and sync to GitHub.
 
 This code is licensed under the GPL v3.
 
