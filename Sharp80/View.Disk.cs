@@ -411,7 +411,7 @@ namespace Sharp80
         }
         private void LoadFloppy(string Path)
         {
-            if (Storage.SaveFloppyIfRequired(Computer, DriveNumber.Value))
+            if (DriveNumber.HasValue && Storage.SaveFloppyIfRequired(Computer, DriveNumber.Value))
             {
                 switch (Path)
                 {
