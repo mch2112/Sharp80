@@ -935,9 +935,10 @@ namespace Sharp80.Processor
 
             if (IncHL) HL.inc(); else HL.dec();
 
+            // See http://www.z80.info/zip/z80-documented.pdf for weird flag behavior
+
             byte c = C.val;
 
-            // Weird undocumented behavior: http://www.z80.info/zip/z80-documented.pdf
             if (IncHL) c++; else c--;
 
             int k = c + HLM.val;
@@ -1009,6 +1010,8 @@ namespace Sharp80.Processor
             dec(B);
 
             if (IncHL) HL.inc(); else HL.dec();
+
+            // See http://www.z80.info/zip/z80-documented.pdf for weird flag behavior
 
             int k = L.val + HLM.val;
             if (k > 0xFF)
