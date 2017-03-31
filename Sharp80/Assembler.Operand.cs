@@ -9,7 +9,7 @@ namespace Sharp80.Processor.Assembler
         internal class Operand
         {
             public LineInfo LineInfo { get; private set; }
-            public string RawText { get; private set; }
+            public string RawText { get; private set;} 
             public bool Exists => RawText.Length > 0;
             public bool IsIndirect { get; private set; }
             public bool IsPseudoIndirect => IsIndirect && LineInfo.Mnemonic == "JP" || LineInfo.Mnemonic == "OUT" || LineInfo.Mnemonic == "IN";

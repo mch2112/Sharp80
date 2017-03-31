@@ -353,7 +353,7 @@ namespace Sharp80
                 if (IO.LoadTextFile(sourcePath, out string source))
                 {
                     var assembly = Computer.Assemble(source);
-                    var cmdFile = new TRS80.CmdFile(assembly, System.IO.Path.ChangeExtension(source, ".cmd"));
+                    var cmdFile = new TRS80.CmdFile(assembly, System.IO.Path.ChangeExtension(sourcePath, ".cmd"));
                     if (cmdFile.Valid)
                     {
                         if (!SuppressDialogOnSuccess)

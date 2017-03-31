@@ -20,7 +20,7 @@ namespace Sharp80Tests
             int num = r.Next(1000, 10000);
             int size = r.Next(10, 100);
             
-            var cb = new CircularBuffer(size);
+            var cb = new Sharp80.Processor.CircularBuffer(size);
             for (ushort i = 0; i <= num; i++)
                 cb.Add(i);
 
