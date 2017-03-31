@@ -173,10 +173,10 @@ namespace Sharp80
         private string GetView()
         {
             string s = String.Empty;
-            for (byte i = 0; i < FloppyController.NUM_DRIVES; i++)
+            for (byte i = 0; i < TRS80.FloppyController.NUM_DRIVES; i++)
             {
                 s += DrawDisk(i);
-                if (i < FloppyController.NUM_DRIVES - 1)
+                if (i < TRS80.FloppyController.NUM_DRIVES - 1)
                     s += Format();
             }
             s += Separator() +
@@ -290,105 +290,6 @@ namespace Sharp80
 
             return Format(line1) + Format(line2);
         }
-        public static byte[] GetDiskZapText(byte DriveNum,
-                                            byte TrackNum,
-                                            bool SideOne,
-                                            bool DoubleSided,
-                                            SectorDescriptor sd,
-                                            bool IsEmpty
-                                            )
-        {
-            int numBytes = Math.Min(0x100, sd?.SectorData?.Length ?? 0);
-
-            byte[] cells = new byte[ScreenMetrics.NUM_SCREEN_CHARS];
-
-            WriteToByteArray(cells, 0x000, "Dsk");
-            cells[0x040] = DriveNum.ToHexCharByte();
-
-            WriteToByteArray(cells, 0x0C0, "Trk");
-            WriteToByteArrayHex(cells, 0x100, TrackNum);
-
-            if (DoubleSided)
-            {
-                WriteToByteArray(cells, 0x280, "Side");
-                cells[0x300] = (byte)(SideOne ? '1' : '0');
-            }
-
-            if (sd != null)
-            {
-                WriteToByteArray(cells, 0x180, "Sec");
-                WriteToByteArrayHex(cells, 0x1C0, sd.SectorNumber);
-
-                WriteToByteArray(cells, 0x200, sd.DoubleDensity ? "DD" : "SD");
-
-                if (sd.TrackNumber != TrackNum)
-                    WriteToByteArrayHex(cells, 0x140, sd.TrackNumber);
-
-                if (!IsEmpty)
-                {
-                    switch (sd.DAM)
-                    {
-                        case Floppy.DAM_NORMAL:
-                            WriteToByteArray(cells, 0x300, "Std");
-                            break;
-                        case Floppy.DAM_DELETED:
-                            WriteToByteArray(cells, 0x300, "Del");
-                            break;
-                    }
-                    if (sd.CrcError)
-                        WriteToByteArray(cells, 0x380, "CRC");
-                }
-            }
-
-            if (IsEmpty)
-            {
-                WriteToByteArray(cells, 0x006, $"Drive {DriveNum} is empty.");
-            }
-            else if (sd == null || numBytes == 0)
-            {
-                WriteToByteArray(cells, 0x006, "Sector is empty.");
-            }
-            else
-            {
-                int cell = 0;
-                int rawCell = 0x30;
-
-                for (int k = 0; k < 0x100; k++)
-                {
-                    if ((k & 0x0F) == 0x00)
-                    {
-                        // new line
-                        cell += 0x05;
-                        WriteToByteArrayHex(cells, cell, (byte)k);
-                        cell += 2;
-                    }
-                    if (k < numBytes)
-                    {
-                        if (k % 2 == 0)
-                            cell++;
-
-                        byte b = sd.SectorData[k];
-
-                        WriteToByteArrayHex(cells, cell, b);
-                        cell += 2;
-
-                        cells[rawCell++] = b;
-
-                        if ((k & 0x0F) == 0x0F)
-                        {
-                            // wrap to new line on screen
-                            rawCell += 0x30;
-                            cell += 0x20 - 15;
-                        }
-                    }
-                    else if ((k & 0x0F) == 0x00)
-                    {
-                        cell = k / 0x10 * ScreenMetrics.NUM_SCREEN_CHARS_X;
-                    }
-                }
-            }
-            return cells;
-        }
         private void LoadFloppy()
         {
             if (DriveNumber.HasValue)
@@ -416,10 +317,10 @@ namespace Sharp80
                 switch (Path)
                 {
                     case Storage.FILE_NAME_NEW:
-                        Computer.LoadFloppy(DriveNumber.Value, new DMK(Formatted: true));
+                        Computer.LoadFloppy(DriveNumber.Value, new TRS80.DMK(Formatted: true));
                         break;
                     case Storage.FILE_NAME_UNFORMATTED:
-                        Computer.LoadFloppy(DriveNumber.Value, new DMK(Formatted: false));
+                        Computer.LoadFloppy(DriveNumber.Value, new TRS80.DMK(Formatted: false));
                         break;
                     case Storage.FILE_NAME_TRSDOS:
                         Computer.LoadTrsDosFloppy(DriveNumber.Value);

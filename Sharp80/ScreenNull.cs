@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     public class ScreenNull : IScreen
     {

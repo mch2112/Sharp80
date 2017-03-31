@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
-    internal sealed partial class Memory : IMemory
+    internal partial class Memory : IMemory, Processor.IMemory
     {
         private bool altKeyboardLayout = false;
         public bool AltKeyboardLayout

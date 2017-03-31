@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Sharp80;
-using Sharp80.Assembler;
+using Sharp80.TRS80;
 
 namespace Sharp80Tests
 {
@@ -109,11 +109,11 @@ namespace Sharp80Tests
 
             await StartToBasic();
             var assembly = computer.Assemble(program);
-            assembly.Write(Path.GetTempFileName());
-            var cmdFile = assembly.ToCmdFile();
+            var cmdFile = new CmdFile(assembly, Path.GetTempFileName());
+
             computer.LoadCMDFile(cmdFile);
 
-            Assert.IsTrue(assembly.AssembledOK, "Failed to assemble");
+            Assert.IsTrue(assembly.AssembledOK && cmdFile.Valid, "Failed to assemble");
         }
     }
 }

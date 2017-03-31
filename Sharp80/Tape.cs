@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     public enum TapeStatus { Stopped, Reading, ReadEngaged, Writing, WriteEngaged, Waiting }
     public enum Baud { Low, High }

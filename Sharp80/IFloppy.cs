@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3. See license.txt for details.
 
-namespace Sharp80
+using System;
+
+namespace Sharp80.TRS80
 {
     public interface IFloppy
     {

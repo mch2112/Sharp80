@@ -20,12 +20,12 @@ using DXBitmap = SharpDX.Direct2D1.Bitmap;
     
 namespace Sharp80
 {
-    internal sealed class ScreenDX : IScreen
+    internal sealed class ScreenDX : TRS80.IScreen
     {
         private const Format PixelFormat = Format.R8G8B8A8_UNorm;
 
-        private Computer computer;
-        private TextFormat textFormat, statusTextFormat;
+        private TRS80.Computer computer;
+        private TextFormat textFormat;
         private Size2F Size { get; set; }
         private RenderTarget renderTarget;
         private IAppWindow parent;
@@ -177,7 +177,7 @@ namespace Sharp80
             initialized = true;
             Invalidate();
         }
-        public void Initialize(Computer Computer)
+        public void Initialize(TRS80.Computer Computer)
         {
             computer = Computer;
             Reset();
@@ -289,11 +289,6 @@ namespace Sharp80
             {
                 WordWrapping = WordWrapping.NoWrap,
                 TextAlignment = TextAlignment.Leading
-            };
-            statusTextFormat = new TextFormat(directWriteFactory, "Calibri", 18)
-            {
-                WordWrapping = WordWrapping.NoWrap,
-                TextAlignment = TextAlignment.Trailing
             };
 
             renderTarget.TextAntialiasMode = SharpDX.Direct2D1.TextAntialiasMode.Cleartype;

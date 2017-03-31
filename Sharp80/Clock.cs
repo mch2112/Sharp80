@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     public class Clock : ISerializable
     {
@@ -14,6 +14,7 @@ namespace Sharp80
         public delegate void ClockCallback();
 
         public const ulong CLOCK_RATE = 2027520;
+
         internal const ushort TICKS_PER_TSTATE = 1000;
         internal const ulong TICKS_PER_SECOND = CLOCK_RATE * TICKS_PER_TSTATE;
 

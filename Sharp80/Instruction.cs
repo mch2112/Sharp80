@@ -9,6 +9,8 @@ namespace Sharp80.Processor
 {
     internal class Instruction
     {
+        public const ushort TICKS_PER_TSTATE = 1000;
+
         public delegate void InstructionDelegate();
 
         private readonly byte[] op = new byte[4];
@@ -117,8 +119,8 @@ namespace Sharp80.Processor
 
             this.TStates = TStates;
             this.TStatesAlt = TStatesAlt;
-            Ticks = (ushort)(TStates * Clock.TICKS_PER_TSTATE);
-            TicksWithExtra = (ushort)((TStates + TStatesAlt) * Clock.TICKS_PER_TSTATE);
+            Ticks = (ushort)(TStates * TICKS_PER_TSTATE);
+            TicksWithExtra = (ushort)((TStates + TStatesAlt) * TICKS_PER_TSTATE);
 
             RIncrement = 1;
 

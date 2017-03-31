@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     internal class InterruptManager : ISerializable
     {

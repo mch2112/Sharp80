@@ -63,15 +63,15 @@ namespace Sharp80.Processor
                                                                         (PC.val == n.addr) ? ">" : " ",
                                                                         n.addr.ToHexString(),
                                                                         Lib.GetSpacedHex(Memory, n.addr, n.inst.Size),
-                                                                        n.inst.FullName(memory, n.addr))));
+                                                                        n.inst.FullName(Memory, n.addr))));
         }
         public string GetLineInfo(string Prefix, ushort PC, Instruction inst)
         {
-            return string.Format("{0}{1}  {2} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(memory, PC));
+            return string.Format("{0}{1}  {2} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(Memory, PC));
         }
         public string GetLineInfo(string Prefix, ref ushort PC, Instruction inst)
         {
-            var s = string.Format("{0}{1}  {2} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(memory, PC));
+            var s = string.Format("{0}{1}  {2} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(Memory, PC));
             PC += inst.Size;
             return s;
         }

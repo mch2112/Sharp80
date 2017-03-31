@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     /// <summary>
     /// This interface is used to allow for future non-DirectInput based implementations

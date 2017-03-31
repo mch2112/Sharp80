@@ -7,10 +7,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace Sharp80.Assembler
+namespace Sharp80.Processor.Assembler
 {
     internal partial class Assembler
     {
+        public const int MAX_TITLE_LENGTH = 6;
+        
         private Assembly Assembly = null;
         private string Title { get; set; } = null;
         private List<Processor.Instruction> instructionSet;
@@ -787,7 +789,7 @@ namespace Sharp80.Assembler
         private static bool IsValidTitle(ref string Input)
         {
             Input = Unquote(Input).ToUpper();
-            return Input.Length.IsBetween(1, CmdFile.MAX_TITLE_LENGTH) && Input.All(i => i.IsBetween('A', 'Z'));
+            return Input.Length.IsBetween(1, MAX_TITLE_LENGTH) && Input.All(i => i.IsBetween('A', 'Z'));
         }
         private static bool IsPrimableRegister(string RegName)
         {

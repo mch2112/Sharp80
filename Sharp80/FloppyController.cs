@@ -4,7 +4,7 @@
 using System;
 using System.Linq;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     internal partial class FloppyController : ISerializable, IFloppyControllerStatus, IDisposable
     {

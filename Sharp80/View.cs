@@ -57,7 +57,7 @@ namespace Sharp80
             private set => invalid = value;
         }
         public static void Validate() => invalid = false;
-        public static void Initialize(Computer Computer, MessageDelegate MessageCallback)
+        public static void Initialize(TRS80.Computer Computer, MessageDelegate MessageCallback)
         {
             View.Computer = Computer;
             View.MessageCallback = MessageCallback;
@@ -85,9 +85,9 @@ namespace Sharp80
             }
         }
 
-        protected static Computer Computer { get; private set; }
+        protected static TRS80.Computer Computer { get; private set; }
         protected static byte? DriveNumber { get; set; } = null;
-        protected static CmdFile CmdFile { get; set; } = null;
+        protected static TRS80.CmdFile CmdFile { get; set; } = null;
         protected static MessageDelegate MessageCallback { get; private set; }
 
         protected static void Invalidate() => invalid = true;
@@ -347,30 +347,24 @@ namespace Sharp80
         }
         protected static bool InvokeAssembler(bool SuppressDialogOnSuccess)
         {
+            Invalidate();
             if (Storage.GetAsmFilePath(out string sourcePath))
             {
                 if (IO.LoadTextFile(sourcePath, out string source))
                 {
                     var assembly = Computer.Assemble(source);
-                    assembly.Write(System.IO.Path.ChangeExtension(sourcePath, ".cmd"));
-                    if (assembly.CmdFileWritten)
+                    var cmdFile = new TRS80.CmdFile(assembly, System.IO.Path.ChangeExtension(source, ".cmd"));
+                    if (cmdFile.Valid)
                     {
                         if (!SuppressDialogOnSuccess)
-                            Dialogs.InformUser(string.Format("Assembled {0} to {1}.", System.IO.Path.GetFileName(sourcePath), System.IO.Path.GetFileName(assembly.CmdFilePath)));
-                        CmdFile = assembly.ToCmdFile();
-                        if (CmdFile?.Valid ?? false)
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            Dialogs.AlertUser("Assembled CMD file not valid."); // should never happen?
-                        }
+                            Dialogs.InformUser(string.Format("Assembled {0} to {1}.", System.IO.Path.GetFileName(sourcePath), System.IO.Path.GetFileName(cmdFile.FilePath)));
+                        CmdFile = cmdFile;
+                        return true;
                     }
                     else if (assembly.NumErrors == 0)
                     {
                         // not sure what the problem is
-                        Dialogs.AlertUser("Error assembling file.");
+                        Dialogs.AlertUser("Error creating CMD file.");
                     }
                     else if (assembly.IntFileWritten)
                     {
@@ -390,7 +384,6 @@ namespace Sharp80
                 {
                     Dialogs.AlertUser("Could not open source file.");
                 }
-                Invalidate();
             }
             return false;
         }
@@ -530,7 +523,7 @@ namespace Sharp80
 
             if (FilePath.Length > 0)
             {
-                if (DMK.FromFile(FilePath, out NewPath))
+                if (TRS80.DMK.FromFile(FilePath, out NewPath))
                 {
                     if (Dialogs.AskYesNo("Floppy created and saved to:" + Environment.NewLine + NewPath + Environment.NewLine + "Load to floppy drive 1?"))
                     {
@@ -557,7 +550,7 @@ namespace Sharp80
 
             if (path.Length > 0)
             {
-                var f = new DMK(Formatted);
+                var f = new TRS80.DMK(Formatted);
                 f.FilePath = path;
                 if (IO.SaveBinaryFile(path, f.Serialize(ForceDMK: true)))
                     Dialogs.InformUser("Created floppy OK.");

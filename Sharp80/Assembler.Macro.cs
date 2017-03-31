@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Sharp80.Assembler
+namespace Sharp80.Processor.Assembler
 {
     internal partial class Assembler
     {

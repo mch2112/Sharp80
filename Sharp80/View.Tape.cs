@@ -6,7 +6,7 @@ namespace Sharp80
     internal class ViewTape : View
     {
         protected override ViewMode Mode => ViewMode.Tape;
-        protected override bool ForceRedraw => Computer.TapeStatus == TapeStatus.Reading || Computer.TapeStatus == TapeStatus.Writing;
+        protected override bool ForceRedraw => Computer.TapeStatus == TRS80.TapeStatus.Reading || Computer.TapeStatus == TRS80.TapeStatus.Writing;
         protected override bool CanSendKeysToEmulation => false;
 
         protected override bool processKey(KeyState Key)
@@ -47,10 +47,10 @@ namespace Sharp80
                         Computer.TapeRecord();
                         switch (Computer.TapeStatus)
                         {
-                            case TapeStatus.WriteEngaged:
+                            case TRS80.TapeStatus.WriteEngaged:
                                 MessageCallback("Waiting to Record");
                                 break;
-                            case TapeStatus.Writing:
+                            case TRS80.TapeStatus.Writing:
                                 MessageCallback("Recording");
                                 break;
                         }
@@ -60,7 +60,7 @@ namespace Sharp80
                         MessageCallback("Tape Rewound");
                         break;
                     case KeyCode.X:
-                        Computer.TapeUserSelectedSpeed = Computer.TapeUserSelectedSpeed == Baud.High ? Baud.Low : Baud.High;
+                        Computer.TapeUserSelectedSpeed = Computer.TapeUserSelectedSpeed == TRS80.Baud.High ? TRS80.Baud.Low : TRS80.Baud.High;
                         break;
                     case KeyCode.F8:
                         if (!Computer.IsRunning)
@@ -84,12 +84,12 @@ namespace Sharp80
 
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Sharp 80 Tape Management") +
-                Format(string.Format("Speed Selected: {0} Baud", Computer.TapeUserSelectedSpeed == Baud.High ? "High 1500" : "Low 500")) +
+                Format(string.Format("Speed Selected: {0} Baud", Computer.TapeUserSelectedSpeed == TRS80.Baud.High ? "High 1500" : "Low 500")) +
                 Format("Tape File: " + FitFilePath(fileName, ScreenMetrics.NUM_SCREEN_CHARS_X - "Tape File: ".Length)) +
                 Format(string.Format(@"{0:0000.0} ({1:00.0%})", Computer.TapeCounter, Computer.TapePercent)) +
                 Format(string.Format("{0} {1} {2}",
                        StatusToString(Computer.TapeStatus),
-                       Computer.TapeIsBlank ? String.Empty : Computer.TapeSpeed == Baud.High ? "1500 Baud" : "500 Baud",
+                       Computer.TapeIsBlank ? String.Empty : Computer.TapeSpeed == TRS80.Baud.High ? "1500 Baud" : "500 Baud",
                        Computer.TapeMotorOn ? Computer.TapePulseStatus : String.Empty)) +
                 Separator() +
                 Format("[L] Load from file") +
@@ -136,21 +136,21 @@ namespace Sharp80
             }    
             MessageCallback("Tape Loaded");
         }
-        private string StatusToString(TapeStatus Status)
+        private string StatusToString(TRS80.TapeStatus Status)
         {
             switch (Status)
             {
-                case TapeStatus.Stopped:
+                case TRS80.TapeStatus.Stopped:
                     return "Stopped";
-                case TapeStatus.ReadEngaged:
+                case TRS80.TapeStatus.ReadEngaged:
                     return "Play Engaged";
-                case TapeStatus.WriteEngaged:
+                case TRS80.TapeStatus.WriteEngaged:
                     return "Record Engaged";
-                case TapeStatus.Reading:
+                case TRS80.TapeStatus.Reading:
                     return "Playing";
-                case TapeStatus.Writing:
+                case TRS80.TapeStatus.Writing:
                     return "Recording";
-                case TapeStatus.Waiting:
+                case TRS80.TapeStatus.Waiting:
                     return "Waiting";
                 default:
                     return "Error";

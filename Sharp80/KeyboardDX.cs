@@ -10,7 +10,7 @@ namespace Sharp80
 {
     internal delegate void KeyPressedDelegate(KeyState KeyState);
 
-    internal sealed class KeyboardDX : IKeyboard, IDisposable
+    internal sealed class KeyboardDX : TRS80.IKeyboard, IDisposable
     {
         private Keyboard keyboard;
 

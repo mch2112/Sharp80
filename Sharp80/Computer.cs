@@ -7,9 +7,9 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
-    public class Computer : IDisposable
+    public class Computer : Processor.IComputer, IDisposable
     {
         public const int SERIALIZATION_VERSION = 9;
 
@@ -27,6 +27,7 @@ namespace Sharp80
         private ISound Sound { get; set; }
         private Tape Tape { get; set; }
         private Printer Printer { get; set; }
+        private Memory memory;
         private bool isDisposed = false;
 
         // CONSTRUCTOR
@@ -39,10 +40,11 @@ namespace Sharp80
 
             this.Screen = Screen;
 
+            memory = new Memory();
             IntMgr = new InterruptManager(this);
             Tape = new Tape(this);
             Ports = new PortSet(this);
-            Processor = new Processor.Z80(this, Ports);
+            Processor = new Processor.Z80(this, memory, Ports);
             Printer = new Printer();
 
             // If sound fails to initialize there might be a driver issue,
@@ -93,8 +95,8 @@ namespace Sharp80
         public ushort ProgramCounter => Processor.PcVal;
         public ulong GetElapsedTStates() =>Clock.ElapsedTStates;
 
-        public IReadOnlyList<byte> Memory => Processor.Memory;
-        public SubArray<byte> VideoMemory => Processor.Memory.VideoMemory;
+        public IReadOnlyList<byte> Memory => memory;
+        public SubArray<byte> VideoMemory => memory.VideoMemory;
 
         public ushort BreakPoint
         {
@@ -108,8 +110,8 @@ namespace Sharp80
         }
         public bool AltKeyboardLayout
         {
-            get => Processor.Memory.AltKeyboardLayout;
-            set => Processor.Memory.AltKeyboardLayout = value;
+            get => memory.AltKeyboardLayout;
+            set => memory.AltKeyboardLayout = value;
         }
         public bool SoundOn
         {
@@ -413,6 +415,8 @@ namespace Sharp80
             Writer.Write(SERIALIZATION_VERSION);
 
             Processor.Serialize(Writer);
+            Ports.Serialize(Writer);
+            memory.Serialize(Writer);
             Clock.Serialize(Writer);
             FloppyController.Serialize(Writer);
             IntMgr.Serialize(Writer);
@@ -432,6 +436,8 @@ namespace Sharp80
             {
                 if (Processor.Deserialize(Reader, ver)        &&
                     Clock.Deserialize(Reader, ver)            &&
+                    Ports.Deserialize(Reader, ver) &&
+                    memory.Deserialize(Reader, ver) &&
                     FloppyController.Deserialize(Reader, ver) &&
                     IntMgr.Deserialize(Reader, ver)           &&
                     Screen.Deserialize(Reader, ver)           &&
@@ -459,7 +465,7 @@ namespace Sharp80
         {
             Stop(WaitForStop: true);
 
-            if (File.Valid && File.Load(Processor.Memory))
+            if (File.Valid && File.Load(memory))
             {
                 if (File.ExecAddress.HasValue)
                     Processor.Jump(File.ExecAddress.Value);
@@ -474,7 +480,7 @@ namespace Sharp80
         }
         public string Disassemble(ushort Start, ushort End, bool MakeAssemblable) => Processor.Disassemble(Start, End, MakeAssemblable);
         public string GetInstructionSetReport() => Processor.GetInstructionSetReport();
-        public Assembler.Assembly Assemble(string SourceText) => Processor.Assemble(SourceText);
+        public Processor.Assembler.Assembly Assemble(string SourceText) => Processor.Assemble(SourceText);
 
         public bool HistoricDisassemblyMode
         {
@@ -487,8 +493,8 @@ namespace Sharp80
 
         // KEYBOARD
 
-        public bool NotifyKeyboardChange(KeyState Key) => Processor.Memory.NotifyKeyboardChange(Key);
-        public void ResetKeyboard(bool LeftShift, bool RightShift) => Processor.Memory.ResetKeyboard(LeftShift, RightShift);
+        public bool NotifyKeyboardChange(KeyState Key) => memory.NotifyKeyboardChange(Key);
+        public void ResetKeyboard(bool LeftShift, bool RightShift) => memory.ResetKeyboard(LeftShift, RightShift);
 
         public async Task Paste(string text, CancellationToken Token)
         {

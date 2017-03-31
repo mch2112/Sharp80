@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     /// <summary>
     /// Triggers are used to fire events. The main ones are used for the floppy

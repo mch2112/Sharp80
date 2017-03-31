@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 
-namespace Sharp80.Assembler
+namespace Sharp80.Processor.Assembler
 {
     internal partial class Assembler
     {

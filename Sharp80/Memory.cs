@@ -8,15 +8,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
-    internal sealed partial class Memory : IMemory
+    internal partial class Memory : IMemory, Processor.IMemory
     {
-        public const int MEMORY_SIZE = 0x10000;
         public const ushort VIDEO_MEMORY_BLOCK = 0x3C00;
 
         private const ushort KEYBOARD_MEMORY_BLOCK = 0x3800;
-
 
         public SubArray<byte> VideoMemory { get; private set; }
 
@@ -25,7 +23,7 @@ namespace Sharp80
 
         public Memory()
         {
-            mem = new byte[MEMORY_SIZE];
+            mem = new byte[Processor.Z80.MEMORY_SIZE];
             VideoMemory = new SubArray<byte>(mem, 0x3C00, 0x4000);
 
 #if NOROM
@@ -44,13 +42,12 @@ namespace Sharp80
 
         // RAM ACCESS
 
-        public int Count => MEMORY_SIZE;
+        public int Count => mem.Length;
         public byte this[int Location] => this[(ushort)Location];
         public IEnumerator<byte> GetEnumerator()
         {
-            int i = 0;
-            if (i < MEMORY_SIZE)
-                yield return mem[i++];
+            foreach (byte b in mem)
+                yield return b;
         }
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -137,7 +134,7 @@ namespace Sharp80
         {
             try
             {
-                Array.Copy(Reader.ReadBytes(MEMORY_SIZE), mem, MEMORY_SIZE);
+                Array.Copy(Reader.ReadBytes(Processor.Z80.MEMORY_SIZE), mem, Processor.Z80.MEMORY_SIZE);
                 firstRAMByte = Reader.ReadUInt16();
                 return true;
             }

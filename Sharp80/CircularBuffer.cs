@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sharp80
+namespace Sharp80.Processor
 {
     public class CircularBuffer : IEnumerable<ushort>, ISerializable
     {

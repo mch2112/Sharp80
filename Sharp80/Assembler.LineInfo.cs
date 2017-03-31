@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Sharp80.Assembler
+namespace Sharp80.Processor.Assembler
 {
     internal partial class Assembler
     {

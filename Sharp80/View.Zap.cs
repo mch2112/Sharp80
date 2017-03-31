@@ -34,7 +34,7 @@ namespace Sharp80
                     DriveNumber = DriveNumber ?? 0;
                     for (int i = DriveNumber.Value + 1; i < DriveNumber.Value + 5; i++)
                     {
-                        DriveNumber = (byte)(i % FloppyController.NUM_DRIVES);
+                        DriveNumber = (byte)(i % TRS80.FloppyController.NUM_DRIVES);
                         if (!Computer.DriveIsUnloaded(DriveNumber.Value))
                             break;
                     }
@@ -123,15 +123,8 @@ namespace Sharp80
                 if (sd.TrackNumber != trackNum)
                     WriteToByteArray(cells, 0x140, $"({sd.TrackNumber:X2})");
 
-                switch (sd.DAM)
-                {
-                    case Floppy.DAM_NORMAL:
-                        WriteToByteArray(cells, 0x300, "Std");
-                        break;
-                    case Floppy.DAM_DELETED:
-                        WriteToByteArray(cells, 0x300, "Del");
-                        break;
-                }
+                WriteToByteArray(cells, 0x300, sd.Deleted ? "Del" : "Std");
+                
                 if (sd.CrcError)
                     WriteToByteArray(cells, 0x380, "CRC");
             }
@@ -189,11 +182,11 @@ namespace Sharp80
         {
             DriveNumber = DriveNumber ?? 0;
 
-            IFloppy f = null;
+            TRS80.IFloppy f = null;
 
-            for (byte i = DriveNumber.Value; i < DriveNumber.Value + FloppyController.NUM_DRIVES; i++)
+            for (byte i = DriveNumber.Value; i < DriveNumber.Value + TRS80.FloppyController.NUM_DRIVES; i++)
             {
-                f = Computer.GetFloppy((byte)(i % FloppyController.NUM_DRIVES));
+                f = Computer.GetFloppy((byte)(i % TRS80.FloppyController.NUM_DRIVES));
                 if (f != null)
                 {
                     DriveNumber = i;

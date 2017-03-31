@@ -23,18 +23,13 @@ namespace Sharp80.Processor
             var end = End;
 
             // Eliminate trailing NOPs
-            while (Memory[end] == 0 && end > Start) // NOP
+            while (end > Start && Memory[end - 1] == 0) // NOP
                 end--;
-            if (end < 0xFFFF)
-                end++;
 
-            if (end > Sharp80.Memory.MEMORY_SIZE - 0x10)
-                end = Sharp80.Memory.MEMORY_SIZE - 1;
+            if (end > Z80.MEMORY_SIZE - 0x10)
+                end = Z80.MEMORY_SIZE - 1;
 
-            if (end > End)
-                end = End;
-
-            var sb = new StringBuilder(Sharp80.Memory.MEMORY_SIZE * 40);
+            var sb = new StringBuilder(Z80.MEMORY_SIZE * 40);
 
             var li = new Dictionary<ushort, Instruction>();
 
@@ -44,15 +39,15 @@ namespace Sharp80.Processor
                 PC += inst.Size;
             }
 
-            var header = $"; Disassembly from memory {Start:X4}H to {End:X4}H" +
+            var header = $"; Disassembly from memory {Start:X4}H to {end:X4}H" +
                            Environment.NewLine;
 
             if (MakeAssemblable)
                 return header +
-                       string.Join(Environment.NewLine, li.Select(i => i.Value.AssemblableName(Memory, i.Key)));
+                       String.Join(Environment.NewLine, li.Select(i => i.Value.AssemblableName(Memory, i.Key)));
             else
                 return header +
-                           string.Join(Environment.NewLine, li.Select(i => string.Format("{0}  {1}  {2}",
+                       String.Join(Environment.NewLine, li.Select(i => string.Format("{0}  {1}  {2}",
                                                                                          i.Key.ToHexString(),
                                                                                          Lib.GetSpacedHex(Memory, i.Key, i.Value.Size),
                                                                                          i.Value.FullName(Memory, i.Key)

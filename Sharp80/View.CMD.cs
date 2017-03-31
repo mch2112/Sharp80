@@ -145,7 +145,7 @@ namespace Sharp80
 
             if (Path.Length > 0)
             {
-                CmdFile = new CmdFile(Path);
+                CmdFile = new TRS80.CmdFile(Path);
 
                 if (CmdFile.Valid)
                 {

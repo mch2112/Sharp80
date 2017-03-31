@@ -110,7 +110,7 @@ namespace Sharp80
                                           DefaultExtension: ext,
                                           SelectFileInDialog: SelectFileInDialog);
         }
-        internal static bool SaveFloppies(Computer Computer)
+        internal static bool SaveFloppies(TRS80.Computer Computer)
         {
             // returns true on user cancel
             for (byte b = 0; b < 4; b++)
@@ -120,7 +120,7 @@ namespace Sharp80
             }
             return true;
         }
-        internal static bool SaveFloppyIfRequired(Computer Computer, byte DriveNum)
+        internal static bool SaveFloppyIfRequired(TRS80.Computer Computer, byte DriveNum)
         {
             bool? save = false;
 
@@ -178,7 +178,7 @@ namespace Sharp80
                                           DefaultExtension: ".cas",
                                           SelectFileInDialog: SelectFileInDialog);
         }
-        internal static bool SaveTapeIfRequired(Computer Computer)
+        internal static bool SaveTapeIfRequired(TRS80.Computer Computer)
         {
             bool? save = false;
 
@@ -268,7 +268,7 @@ namespace Sharp80
         /// <summary>
         /// Returns false if the user cancelled a needed save
         /// </summary>
-        internal static bool SaveChangedStorage(Computer Computer) => SaveFloppies(Computer) && SaveTapeIfRequired(Computer);
+        internal static bool SaveChangedStorage(TRS80.Computer Computer) => SaveFloppies(Computer) && SaveTapeIfRequired(Computer);
     }
 }
 

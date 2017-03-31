@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     internal class Track
     {

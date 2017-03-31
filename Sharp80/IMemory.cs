@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     internal interface IMemory : IReadOnlyList<byte>, ISerializable
     {

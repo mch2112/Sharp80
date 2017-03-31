@@ -14,9 +14,9 @@ namespace Sharp80
 
         private static Thread uiThread;
 
-        private Computer computer;
-        private IScreen screen;
-        private IKeyboard keyboard;
+        private TRS80.Computer computer;
+        private TRS80.IScreen screen;
+        private TRS80.IKeyboard keyboard;
 
         private int resizing = 0;
 
@@ -341,7 +341,7 @@ namespace Sharp80
                         return;
                     computer.Dispose();
                 }
-                computer = new Computer(screen, Settings.DiskEnabled, true)
+                computer = new TRS80.Computer(screen, Settings.DiskEnabled, true)
                 {
                     DriveNoise = Settings.DriveNoise,
                     BreakPoint = Settings.Breakpoint,

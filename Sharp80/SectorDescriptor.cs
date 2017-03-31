@@ -3,9 +3,9 @@
 
 using System;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
-    public sealed class SectorDescriptor
+    public class SectorDescriptor
     {
         public byte TrackNumber { get; set; }
         public byte SectorNumber { get; set; }
@@ -28,5 +28,6 @@ namespace Sharp80
                                  SectorSize.ToHexString(),
                                  InUse ? "Used" : "Unused");
         }
+        public bool Deleted => DAM == Floppy.DAM_DELETED;
     }
 }

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     public interface IScreen : ISerializable, IDisposable
     {   

@@ -4,13 +4,13 @@ using System.Diagnostics;
 using System.Linq;
 using System.IO;
 
-namespace Sharp80.Assembler
+namespace Sharp80.Processor.Assembler
 {
-    public enum Status { New, Empty, AssembleFailed, AssembleDone, IntWriteFailed, CmdWriteFailed, Complete, CompleteOK}
+    internal enum Status { New, Empty, AssembleFailed, AssembleOK }
 
     public class Assembly
     {
-        public string CmdFilePath { get; private set; }
+        
         public string IntFilePath { get; private set; }
 
         public string Title { get; private set; }
@@ -22,14 +22,13 @@ namespace Sharp80.Assembler
         public ushort ExecAddress { get; private set; }
         public int NumErrors { get; private set; }
 
-        public bool AssembledOK => Status == Status.AssembleDone || Status == Status.IntWriteFailed || Status == Status.CmdWriteFailed || Status == Status.Complete || Status == Status.CompleteOK;
-        public bool IntFileWritten => Status == Status.Complete || Status == Status.CompleteOK;
-        public bool CmdFileWritten => Status == Status.CompleteOK;
+        public bool AssembledOK => Status == Status.AssembleOK;
+        public bool IntFileWritten { get; private set; }
 
         private Status Status { get; set; }
 
         private List<Assembler.LineInfo> Lines { get; set; }
-        private List<(ushort SegmentAddress, byte[] Bytes)> Segments { get; set; }
+        public List<(ushort SegmentAddress, byte[] Bytes)> Segments { get; private set; }
         private Dictionary<string, Assembler.LineInfo> SymbolTable { get; set; }
 
         internal Assembly(string SourceText)
@@ -54,39 +53,18 @@ namespace Sharp80.Assembler
                     Status = Status.AssembleFailed;
             }
         }
-        
-        public CmdFile ToCmdFile()
-        {
-            if (Status == Status.CompleteOK)
-                return new CmdFile(CmdFilePath);
-            else
-                return null;
-        }
 
-        public void Write(string CmdPath)
+        public void WriteIntFile(string Path)
         {
-            this.CmdFilePath = CmdPath;
-            IntFilePath = Path.ChangeExtension(CmdPath, ".int.txt");
+            IntFilePath = Path;
             switch (Status)
             {
                 case Status.New:
                 case Status.Empty:
                     break;
-                case Status.Complete:
                 case Status.AssembleFailed:
-                case Status.IntWriteFailed:
-                    if (WriteIntFile())
-                        Status = Status.Complete;
-                    else
-                        Status = Status.IntWriteFailed;
-                    break;
-                case Status.CompleteOK:
-                case Status.AssembleDone:
-                case Status.CmdWriteFailed:
-                    if (WriteIntFile() && WriteCmdFile())
-                        Status = Status.CompleteOK;
-                    else
-                        Status = Status.CmdWriteFailed;
+                case Status.AssembleOK:
+                    IntFileWritten = WriteIntFile();
                     break;
             }
         }
@@ -125,7 +103,7 @@ namespace Sharp80.Assembler
             {
                 try
                 {
-                    byte[] buffer = new byte[Memory.MEMORY_SIZE];
+                    byte[] buffer = new byte[Z80.MEMORY_SIZE];
                     var data = new List<(ushort SegmentAddress, byte[] Bytes)>();
                     int lineNum = 0;
 
@@ -137,7 +115,7 @@ namespace Sharp80.Assembler
                         data.Add((lowAddress, segment));
                     }
                     Segments = data;
-                    Status = Status.AssembleDone;
+                    Status = Status.AssembleOK;
                 }
                 catch (Exception ex)
                 {
@@ -147,64 +125,7 @@ namespace Sharp80.Assembler
                 }
             }
         }
-        private bool WriteCmdFile()
-        {
-            try
-            {
-                Title = Title ?? MakeTitle(Path.GetFileNameWithoutExtension(CmdFilePath));
-
-                var writer = new BinaryWriter(File.Open(CmdFilePath, FileMode.Create));
-
-                ushort dest;
-                int cursor;
-                byte lowDest;
-                byte highDest;
-                int segmentSize;
-                int blockSize;
-
-                writer.Write((byte)0x05);
-                writer.Write((byte)Title.Length);
-                for (int i = 0; i < Title.Length; i++)
-                    writer.Write((byte)Title[i]);
-
-                foreach (var d in Segments)
-                {
-                    dest = d.SegmentAddress;
-                    cursor = 0;
-
-                    segmentSize = d.Bytes.Length;
-
-                    while (cursor < segmentSize)
-                    {
-                        blockSize = Math.Min(0x100, d.Bytes.Length - cursor);
-                        writer.Write((byte)0x01);   // block marker
-                        writer.Write((byte)(blockSize + 2)); // 0x02 == 256 bytes
-                        dest.Split(out lowDest, out highDest);
-                        writer.Write(lowDest);
-                        writer.Write(highDest);
-                        while (blockSize-- > 0)
-                        {
-                            writer.Write(d.Bytes[cursor++]);
-                            dest++;
-                        }
-                    }
-                }
-                writer.Write((byte)0x02);  // transfer address marker
-                writer.Write((byte)0x02);  // transfer address length
-                ExecAddress.Split(out lowDest, out highDest);
-                writer.Write(lowDest);
-                writer.Write(highDest);
-
-                writer.Close();
-                return true;
-            }
-            catch
-            {
-                this.Status = Status.CmdWriteFailed;
-                return false;
-            }
-        }
-
+        
         /// <summary>
         /// Range is inclusive with low address, exclusive with highaddress
         /// </summary>
@@ -251,11 +172,6 @@ namespace Sharp80.Assembler
                 if (lp.Byte3.HasValue) Buffer[lp.Address + 3] = lp.Byte3.Value;
             }
             return any;
-        }
-        private static string MakeTitle(string FileName)
-        {
-            FileName = FileName.ToUpper();
-            return String.Join(String.Empty, FileName.Where(c => c.IsBetween('A', 'Z')).Take(CmdFile.MAX_TITLE_LENGTH));
         }
     }
 }

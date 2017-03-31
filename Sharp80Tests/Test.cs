@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Sharp80;
+using Sharp80.TRS80;
 
 namespace Sharp80Tests
 {

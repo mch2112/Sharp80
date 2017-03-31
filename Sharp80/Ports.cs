@@ -3,9 +3,9 @@
 
 using System;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
-    internal sealed class PortSet
+    internal class PortSet : Processor.IPorts
     {
         private FloppyController floppyController;
 

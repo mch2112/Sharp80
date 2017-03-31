@@ -7,8 +7,10 @@ using System.Diagnostics;
 
 namespace Sharp80.Processor
 {
-    internal sealed partial class Z80 : IZ80_Status
+    internal partial class Z80 : ISerializable, IZ80_Status
     {
+        public const int MEMORY_SIZE = 0x10000;
+
         // changing this requires new SERIALIZATION_VERSION
         public const int NUM_DISASSEMBLY_LINES = 22;
 
@@ -36,10 +38,10 @@ namespace Sharp80.Processor
         private bool ZF { get { return (F.val & S_ZF) != 0; } set { if (value) F.val |= S_ZF; else F.val &= R_ZF; } }	// zero flag
         private bool SF { get { return (F.val & S_SF) != 0; } set { if (value) F.val |= S_SF; else F.val &= R_SF; } }	// sign flag
 
-        private bool NZ { get { return (F.val & S_ZF) == 0; } }
-        private bool NC { get { return (F.val & S_CF) == 0; } }
-        private bool PE { get { return (F.val & S_VF) != 0; } set { if (value) F.val |= S_VF; else F.val &= R_VF; } }  // parity even, same as overflow
-        private bool PO { get { return (F.val & S_VF) == 0; } set { if (value) F.val &= R_VF; else F.val |= S_VF; } }  // parity odd, opposite of PE / V
+        private bool NZ => (F.val & S_ZF) == 0;
+        private bool NC => (F.val & S_CF) == 0;
+        private bool PE => (F.val & S_VF) != 0;  // parity even, same flag as overflow
+        private bool PO => (F.val & S_VF) == 0;  // parity odd, opposite of PE / V
 
         private const byte BIT_0_MASK = 0x01, BIT_1_MASK = 0x02, BIT_2_MASK = 0x04, BIT_3_MASK = 0x08,
                            BIT_4_MASK = 0x10, BIT_5_MASK = 0x20, BIT_6_MASK = 0x40, BIT_7_MASK = 0x80;
@@ -53,11 +55,10 @@ namespace Sharp80.Processor
         private const byte R_CF = BIT_0_INV_MASK, R_NF = BIT_1_INV_MASK, R_VF = BIT_2_INV_MASK, R_F3 = BIT_3_INV_MASK,
                            R_HF = BIT_4_INV_MASK, R_F5 = BIT_5_INV_MASK, R_ZF = BIT_6_INV_MASK, R_SF = BIT_7_INV_MASK;
 
-        private Computer computer;
-        private PortSet ports;
-        private IMemory memory;
+        private IComputer computer;
+        private IPorts ports;
 
-        public IMemory Memory => memory;
+        public IMemory Memory { get; private set; }
         public Instruction CurrentInstruction { get; private set; }
         public Assembler.Assembly Assemble(string SourceText) => new Assembler.Assembler(instructionSet.Instructions.Values).Assemble(SourceText);
 
@@ -67,10 +68,10 @@ namespace Sharp80.Processor
         public bool IFF2 { get; set; }
         public bool RestoreInterrupts { get; set; }
         public ushort NextPC { get; private set; }
+        public byte Im2Vector { get; set; } = 0xFF;  // For IM2
 
         private bool RecordExtraTicks { get; set; }
         private bool restoreInterruptsNow;
-        private byte im2Vector = 0xFF;         // For IM2 only
         private bool halted;
         private ushort breakPoint = 0;
         
@@ -96,7 +97,7 @@ namespace Sharp80.Processor
 
         static Z80() => InitFlagsString();
 
-        public Z80(Computer Computer, PortSet Ports)
+        public Z80(IComputer Computer, IMemory Memory, IPorts Ports)
         {
             instructionSet = new InstructionSet();
             historyBuffer = new CircularBuffer(NUM_DISASSEMBLY_LINES);
@@ -105,7 +106,7 @@ namespace Sharp80.Processor
 
             computer = Computer;
 
-            memory = new Memory();
+            this.Memory = Memory;
 
             ports = Ports;
 
@@ -330,7 +331,7 @@ namespace Sharp80.Processor
             }
         }
 
-        private Instruction GetInstructionAt(ushort Address) => instructionSet.GetInstruction(memory, Address);
+        private Instruction GetInstructionAt(ushort Address) => instructionSet.GetInstruction(Memory, Address);
 
         // INTERRUPTS
 
@@ -361,7 +362,7 @@ namespace Sharp80.Processor
                         WZ.val = PC.val = 0x0038;
                         return 13000;
                     case 2:
-                        WZ.val = PC.val = (ushort)(I.val * 0x100 + im2Vector);
+                        WZ.val = PC.val = (ushort)(I.val * 0x100 + Im2Vector);
                         return 19000;
                     default:
                         Log.LogDebug(string.Format("Interrupt Mode {0} Not Supported", InterruptMode));
@@ -438,7 +439,7 @@ namespace Sharp80.Processor
             Writer.Write(RestoreInterrupts);
             Writer.Write(RecordExtraTicks);
             Writer.Write(restoreInterruptsNow);
-            Writer.Write(im2Vector);
+            Writer.Write(Im2Vector);
             Writer.Write(halted);
             Writer.Write(breakPoint);
             Writer.Write(BreakPointOn);
@@ -447,8 +448,6 @@ namespace Sharp80.Processor
             Writer.Write(systemBreakPoint ?? 0);
 
             historyBuffer.Serialize(Writer);
-            ports.Serialize(Writer);
-            memory.Serialize(Writer);
         }
         public bool Deserialize(System.IO.BinaryReader Reader, int DeserializationVersion)
         {
@@ -482,7 +481,7 @@ namespace Sharp80.Processor
                 RestoreInterrupts = Reader.ReadBoolean();
                 RecordExtraTicks = Reader.ReadBoolean();
                 restoreInterruptsNow = Reader.ReadBoolean();
-                im2Vector = Reader.ReadByte();
+                Im2Vector = Reader.ReadByte();
                 halted = Reader.ReadBoolean();
                 breakPoint = Reader.ReadUInt16();
                 BreakPointOn = Reader.ReadBoolean();
@@ -496,10 +495,7 @@ namespace Sharp80.Processor
                     systemBreakPoint = null;
                     Reader.ReadUInt16();
                 }
-
-                return historyBuffer.Deserialize(Reader, DeserializationVersion) &&
-                       ports.Deserialize(Reader, DeserializationVersion)         &&
-                       memory.Deserialize(Reader, DeserializationVersion);
+                return historyBuffer.Deserialize(Reader, DeserializationVersion);
             }
             catch
             {

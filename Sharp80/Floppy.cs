@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Sharp80
+namespace Sharp80.TRS80
 {
     internal abstract class Floppy : ISerializable, IFloppy
     {
