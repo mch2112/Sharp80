@@ -73,9 +73,6 @@ namespace Sharp80
                 Activated += (s, ee) => { SyncKeyboard(); IsActive = true; };
                 Deactivate += (s, ee) => { IsActive = false; computer.ResetKeyboard(false, false); };
 
-                ResizeBegin += (s, ee) => { screen.Suspend = true; };
-                ResizeEnd += (s, ee) => { screen.Suspend = false; };
-
                 Views.View.OnUserCommand += ProcessUserCommand;
 
                 HardReset();
@@ -447,7 +444,7 @@ namespace Sharp80
             const int KEYEVENTF_KEYUP = 0x02;
 
             // Annoying that it turns on when doing virtual shift-zero.
-            if (System.Windows.Forms.Control.IsKeyLocked(System.Windows.Forms.Keys.CapsLock))
+            if (IsKeyLocked(Keys.CapsLock))
             {
                 NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY, (UIntPtr)0);
                 NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
@@ -456,14 +453,7 @@ namespace Sharp80
         }
         private void ConstrainAspectRatio(Message Msg)
         {
-            float ratio;
-            if (screen.AdvancedView)
-                ratio = ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED;
-            else
-                ratio = ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL;
-
-            float width = ClientSize.Width;
-            float height = ClientSize.Height;
+            float ratio = screen.AdvancedView ? ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL;
 
             if (Msg.Msg == MessageEventArgs.WM_SIZING)
             {
@@ -472,22 +462,22 @@ namespace Sharp80
                 if (res == MessageEventArgs.WMSZ_LEFT || res == MessageEventArgs.WMSZ_RIGHT)
                 {
                     // Left or right resize - adjust height (bottom)
-                    rc.Bottom = rc.Top + (int)(width / ratio);
+                    rc.Bottom = rc.Top + (int)(ClientSize.Width / ratio);
                 }
                 else if (res == MessageEventArgs.WMSZ_TOP || res == MessageEventArgs.WMSZ_BOTTOM)
                 {
                     // Up or down resize - adjust width (right)
-                    rc.Right = rc.Left + (int)(height * ratio);
+                    rc.Right = rc.Left + (int)(ClientSize.Height * ratio);
                 }
                 else if (res == MessageEventArgs.WMSZ_RIGHT + MessageEventArgs.WMSZ_BOTTOM)
                 {
-                    // Lower-right corner resize -> adjust height (could have been width)
-                    rc.Bottom = rc.Top + (int)(width / ratio);
+                    // Lower-right corner resize -> adjust height
+                    rc.Bottom = rc.Top + (int)(ClientSize.Width / ratio);
                 }
                 else if (res == MessageEventArgs.WMSZ_LEFT + MessageEventArgs.WMSZ_TOP)
                 {
-                    // Upper-left corner -> adjust width (could have been height)
-                    rc.Left = rc.Right - (int)(height * ratio);
+                    // Upper-left corner -> adjust width (left)
+                    rc.Left = rc.Right - (int)(ClientSize.Height * ratio);
                 }
                 Marshal.StructureToPtr(rc, Msg.LParam, true);
             }

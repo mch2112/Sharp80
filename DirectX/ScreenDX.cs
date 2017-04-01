@@ -47,7 +47,6 @@ namespace Sharp80.DirectX
         private bool erase = false;
         private bool isDrawing = false;
         private bool isDisposed = false;
-        private int isResizing = 0;
 
         private string statusMessage = String.Empty;
         private int cyclesForMessageRemaining = 0;
@@ -166,12 +165,7 @@ namespace Sharp80.DirectX
 
             // need to do this before computing targetsize
             parent = Parent;
-            parent.ResizeBegin += (o, args) => { isResizing++; };
-            parent.ResizeEnd += (o, args) =>
-            {
-                isResizing = Math.Max(0, isResizing - 1);
-                DoLayout();
-            };
+            parent.ResizeEnd += (o, args) => DoLayout();
 
             Size = DesiredLogicalSize;
 
@@ -556,7 +550,7 @@ namespace Sharp80.DirectX
             }
         }
         public void Invalidate() => invalid = true;
-        private bool DrawOK => isResizing == 0 && !isDrawing && !parent.IsMinimized && !Suspend;
+        private bool DrawOK => !isDrawing && !parent.IsMinimized && !Suspend;
         private void Draw()
         {
             if (initialized)
