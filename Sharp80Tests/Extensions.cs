@@ -26,9 +26,21 @@ namespace Sharp80Tests
             }
             return false;
         }
+
         public static byte[] ToByteArray(this string Text)
         {
             return Encoding.ASCII.GetBytes(Text);
         }
+        /*
+        public static string ToHexString(this byte Input) => Input.ToString("X2");
+        public static string ToHexString(this ushort Input) => Input.ToString("X4");
+        public static string ToTwosCompHexString(this byte input)
+        {
+            if ((input & 0x80) == 0x80)
+                return "-" + ((byte)(1 + ((input & 0x7F) ^ 0x7F))).ToHexString();
+            else
+                return "+" + input.ToHexString();
+        }
+    */
     }
 }

@@ -5,111 +5,176 @@ using System;
 using System.IO;
 using System.Windows.Forms;
 
+using Sharp80.TRS80;
+
 namespace Sharp80
 {
-    internal static class Dialogs
+    public class WinDialogs : IDialogs
     {
-        internal delegate void DialogDelegate();
-
         /// <summary>
         /// Guarantee that AfterShowDialog will always be invoked
         /// after BeforeShowDialog. Nesting is possible.
         /// </summary>
-        public static event DialogDelegate BeforeShowDialog;
-        public static event DialogDelegate AfterShowDialog;
 
-        private static IWin32Window Parent { get; set; }
+        private IWin32Window Parent { get; set; }
+        private Views.IProductInfo ProductInfo { get; set; }
+        private event DialogDelegate BeforeShowDialog;
+        private event DialogDelegate AfterShowDialog;
 
-        public static void Initialize(IWin32Window Parent)
+        public WinDialogs(IWin32Window Parent, Views.IProductInfo ProductInfo, DialogDelegate BeforeShowDialog, DialogDelegate AfterShowDialog)
         {
-            Dialogs.Parent = Parent;
+            this.Parent = Parent;
+            this.ProductInfo = ProductInfo;
+            this.BeforeShowDialog += BeforeShowDialog;
+            this.AfterShowDialog += AfterShowDialog;
         }
 
         // MESSAGE BOXES
 
-        public static bool AskYesNo(string Question, string Caption = ProductInfo.PRODUCT_NAME)
+        public void ExceptionAlert(Exception Ex, string Message = "", string Caption = null)
         {
-            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
-
-            bool res;
-            try
+            if (MainForm.IsUiThread)
             {
+                Caption = Caption ?? ProductInfo.ProductName;
+                try
+                {
+                    BeforeShowDialog?.Invoke();
+                    switch (MessageBox.Show(Parent,
+                                            "An exception has occurred. Copy details to clipboard?",
+                                            Caption,
+                                            MessageBoxButtons.YesNo,
+                                            MessageBoxIcon.Question,
+                                            MessageBoxDefaultButton.Button1))
+                    {
+                        case DialogResult.Yes:
+                            ClipboardText = Ex.ToReport();
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                finally
+                {
+                    AfterShowDialog?.Invoke();
+                }
+            }
+            else
+            {
+                MainForm.Instance.Invoke(new Action(() => { ExceptionAlert(Ex, Message, Caption); }));
+            }
+        }
+        public bool AskYesNo(string Question, string Caption = null)
+        {
+            if (MainForm.IsUiThread)
+            {
+                Caption = Caption ?? ProductInfo.ProductName;
+
+                bool res;
+                try
+                {
+                    BeforeShowDialog?.Invoke();
+                    switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
+                    {
+                        case DialogResult.Yes:
+                            res = true;
+                            break;
+                        default:
+                            res = false;
+                            break;
+                    }
+                }
+                finally
+                {
+                    AfterShowDialog?.Invoke();
+                }
+                return res;
+            }
+            else
+            {
+                return (bool)MainForm.Instance.Invoke(new Func<bool>(
+                            () => { return AskYesNo(Question, Caption); }));
+            }
+        }
+        public bool? AskYesNoCancel(string Question, string Caption = null)
+        {
+            if (MainForm.IsUiThread)
+            {
+                Caption = Caption ?? ProductInfo.ProductName;
+
+                bool? res;
                 BeforeShowDialog?.Invoke();
-                switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
+                switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
                 {
                     case DialogResult.Yes:
                         res = true;
                         break;
-                    default:
+                    case DialogResult.No:
                         res = false;
                         break;
+                    default:
+                        res = null;
+                        break;
+                }
+                AfterShowDialog?.Invoke();
+                return res;
+            }
+            else
+            {
+                return (bool?)MainForm.Instance.Invoke(new Func<bool?>(
+                            () => { return AskYesNoCancel(Question, Caption); }));
+
+            }
+        }
+        public void InformUser(string Information, string Caption = null)
+        {
+            if (MainForm.IsUiThread)
+            {
+                Caption = Caption ?? ProductInfo.ProductName;
+                try
+                {
+                    BeforeShowDialog?.Invoke();
+                    MessageBox.Show(Parent, Information, Caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                finally
+                {
+                    AfterShowDialog?.Invoke();
                 }
             }
-            finally
+            else
             {
-                AfterShowDialog?.Invoke();
-            }
-            return res;
-        }
-        public static bool? AskYesNoCancel(string Question, string Caption = ProductInfo.PRODUCT_NAME)
-        {
-            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
-
-            bool? res;
-            BeforeShowDialog?.Invoke();
-            switch (MessageBox.Show(Parent, Question, Caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1))
-            {
-                case DialogResult.Yes:
-                    res = true;
-                    break;
-                case DialogResult.No:
-                    res = false;
-                    break;
-                default:
-                    res = null;
-                    break;
-            }
-            AfterShowDialog?.Invoke();
-            return res;
-        }
-        public static void InformUser(string Information, string Caption = "Sharp 80")
-        {
-            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
-
-            try
-            {
-                BeforeShowDialog?.Invoke();
-                MessageBox.Show(Parent, Information, Caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            finally
-            {
-                AfterShowDialog?.Invoke();
+                MainForm.Instance.Invoke(new Action(() => { InformUser(Information, Caption); }));
             }
         }
-        public static void AlertUser(string Alert, string Caption = ProductInfo.PRODUCT_NAME)
+        public void AlertUser(string Alert, string Caption = null)
         {
-            System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
+            if (MainForm.IsUiThread)
+            {
+                Caption = Caption ?? ProductInfo.ProductName;
 
-            try
-            {
-                BeforeShowDialog?.Invoke();
-                MessageBox.Show(Parent, Alert, Caption, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                try
+                {
+                    BeforeShowDialog?.Invoke();
+                    MessageBox.Show(Parent, Alert, Caption, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                finally
+                {
+                    AfterShowDialog?.Invoke();
+                }
             }
-            finally
+            else
             {
-                AfterShowDialog?.Invoke();
+                MainForm.Instance.Invoke(new Action(() => { AlertUser(Alert, Caption); }));
             }
         }
 
         // PATHS AND FILE DIALOGS
 
-        public static string UserSelectFile(bool Save, string DefaultPath, string Title, string Filter, string DefaultExtension, bool SelectFileInDialog)
+        public string UserSelectFile(bool Save, string DefaultPath, string Title, string Filter, string DefaultExtension, bool SelectFileInDialog)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
             string dir = DefaultPath.Length > 0 ? Path.GetDirectoryName(DefaultPath) :
                                                   Storage.DocsPath;
-
             FileDialog dialog;
 
             if (Save)
@@ -156,7 +221,7 @@ namespace Sharp80
 
             return string.Empty;
         }
-        public static string GetFilePath(string DefaultPath)
+        public string GetFilePath(string DefaultPath)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
@@ -167,7 +232,7 @@ namespace Sharp80
                                   DefaultExtension: "cmd",
                                   SelectFileInDialog: true);
         }
-        public static string GetCommandFilePath(string DefaultPath)
+        public string GetCommandFilePath(string DefaultPath)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
@@ -178,7 +243,7 @@ namespace Sharp80
                                   DefaultExtension: "cmd",
                                   SelectFileInDialog: true);
         }
-        public static string GetSnapshotFile(string DefaultPath, bool Save)
+        public string GetSnapshotFile(string DefaultPath, bool Save)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
@@ -192,7 +257,7 @@ namespace Sharp80
                                   DefaultExtension: "snp",
                                   SelectFileInDialog: !Save);
         }
-        public static string GetAssemblyFile(string DefaultPath, bool Save)
+        public string GetAssemblyFile(string DefaultPath, bool Save)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
@@ -203,7 +268,7 @@ namespace Sharp80
                                   DefaultExtension: "asm",
                                   SelectFileInDialog: true);
         }
-        public static string GetTapeFilePath(string DefaultPath, bool Save)
+        public string GetTapeFilePath(string DefaultPath, bool Save)
         {
             System.Diagnostics.Debug.Assert(MainForm.IsUiThread);
 
@@ -217,7 +282,7 @@ namespace Sharp80
 
         // TEXT FILE LAUNCHING
 
-        public static void ShowTextFile(string Path)
+        public void ShowTextFile(string Path)
         {
             if (Path.ToUpper().EndsWith(".TXT"))
                 System.Diagnostics.Process.Start(Path);
@@ -225,7 +290,7 @@ namespace Sharp80
 
         // CLIPBOARD
 
-        public static string ClipboardText
+        public string ClipboardText
         {
             get => Clipboard.GetText(TextDataFormat.Text);
             set => Clipboard.SetText(value, TextDataFormat.Text);

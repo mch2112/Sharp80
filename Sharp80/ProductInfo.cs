@@ -2,14 +2,16 @@
 /// Licensed Under GPL v3. See license.txt for details. 
 
 using System;
+using Sharp80.Views;
 
 namespace Sharp80
 {
-    public static class ProductInfo
+    public class ProductInfo : IProductInfo
     {
-        public const string PRODUCT_NAME = "Sharp 80";
-        public const string PRODUCT_AUTHOR = "Matthew Hamilton";
-        public const string PRODUCT_URL = "http://www.sharp80.com";
-        public const string DOWNLOAD_URL = PRODUCT_NAME + "/download.php";
+        public string ProductName => "Sharp 80";
+        public string ProductAuthor => "Matthew Hamilton";
+        public string ProductURL => "http://www.sharp80.com";
+        public string DownloadURL => ProductName + "/download.php";
+        public string ProductVersion => System.Windows.Forms.Application.ProductVersion;
     }
 }

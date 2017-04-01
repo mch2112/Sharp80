@@ -74,36 +74,6 @@
     <ApplicationIcon>main.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="SharpDX, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.3.1.1\lib\net45\SharpDX.dll</HintPath>
-    </Reference>
-    <Reference Include="SharpDX.D3DCompiler, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.D3DCompiler.3.1.1\lib\net45\SharpDX.D3DCompiler.dll</HintPath>
-    </Reference>
-    <Reference Include="SharpDX.Desktop, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.Desktop.3.1.1\lib\net45\SharpDX.Desktop.dll</HintPath>
-    </Reference>
-    <Reference Include="SharpDX.Direct2D1, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.Direct2D1.3.1.1\lib\net45\SharpDX.Direct2D1.dll</HintPath>
-    </Reference>
-    <Reference Include="SharpDX.Direct3D10, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.Direct3D10.3.1.1\lib\net45\SharpDX.Direct3D10.dll</HintPath>
-    </Reference>
-    <Reference Include="SharpDX.DirectInput, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.DirectInput.3.1.1\lib\net45\SharpDX.DirectInput.dll</HintPath>
-    </Reference>
-    <Reference Include="SharpDX.DirectSound, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.DirectSound.3.1.1\lib\net45\SharpDX.DirectSound.dll</HintPath>
-    </Reference>
-    <Reference Include="SharpDX.DXGI, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.DXGI.3.1.1\lib\net45\SharpDX.DXGI.dll</HintPath>
-    </Reference>
-    <Reference Include="SharpDX.Mathematics, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.Mathematics.3.1.1\lib\net45\SharpDX.Mathematics.dll</HintPath>
-    </Reference>
-    <Reference Include="SharpDX.XAudio2, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.XAudio2.3.1.1\lib\net45\SharpDX.XAudio2.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
@@ -117,94 +87,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assembler.Assembly.cs" />
-    <Compile Include="Assembler.cs" />
-    <Compile Include="Assembler.LineInfo.cs" />
-    <Compile Include="Assembler.Macro.cs" />
-    <Compile Include="Assembler.Operand.cs" />
-    <Compile Include="Basic.cs" />
-    <Compile Include="CircularBuffer.cs" />
-    <Compile Include="Clock.cs" />
-    <Compile Include="CmdFile.cs" />
-    <Compile Include="Computer.cs" />
-    <Compile Include="Disassembler.cs" />
-    <Compile Include="ExceptionHandler.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="FloppyController.DriveState.cs" />
-    <Compile Include="Z80.IComputer.cs" />
-    <Compile Include="IFloppyControllerStatus.cs" />
-    <Compile Include="IFloppy.cs" />
-    <Compile Include="IKeyboard.cs" />
-    <Compile Include="IO.cs" />
-    <Compile Include="IRegister.cs" />
-    <Compile Include="ISound.cs" />
-    <Compile Include="KeyCode.cs" />
-    <Compile Include="KeyState.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Floppy.DMK.JV.cs" />
-    <Compile Include="IAppWindow.cs" />
     <Compile Include="MessageEventArgs.cs" />
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="Printer.cs" />
     <Compile Include="ProductInfo.cs" />
-    <Compile Include="Resources.CharGen.cs" />
-    <Compile Include="IScreen.cs" />
-    <Compile Include="Resources.Rom.cs" />
-    <Compile Include="Resources.Trsdos.cs" />
-    <Compile Include="ScreenMetrics.cs" />
-    <Compile Include="ScreenNull.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="SoundNull.cs" />
-    <Compile Include="IMemory.cs" />
-    <Compile Include="InstructionSet.cs" />
-    <Compile Include="ISerializable.cs" />
-    <Compile Include="SoundX.FrameBuffer.cs" />
-    <Compile Include="SoundX.Noise.cs" />
-    <Compile Include="StartToBasicTest.cs" />
-    <Compile Include="SubArray.cs" />
-    <Compile Include="Tape.cs" />
-    <Compile Include="Tape.Transition.cs" />
-    <Compile Include="Trigger.cs" />
-    <Compile Include="Memory.Keyboard.cs" />
-    <Compile Include="KeyboardDX.cs" />
-    <Compile Include="Library_Tables.cs" />
-    <Compile Include="Log.cs" />
-    <Compile Include="ScreenDX.cs" />
-    <Compile Include="Floppy.DMK.cs" />
-    <Compile Include="Floppy.cs" />
-    <Compile Include="FloppyController.cs" />
-    <Compile Include="Instruction.cs" />
-    <Compile Include="InterruptManager.cs" />
-    <Compile Include="Library.cs" />
-    <Compile Include="Memory.cs" />
-    <Compile Include="Ports.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SoundX.cs" />
-    <Compile Include="View.Assembler.cs" />
-    <Compile Include="View.Breakpoint.cs" />
-    <Compile Include="View.Cmd.cs" />
-    <Compile Include="View.Disassembler.cs" />
-    <Compile Include="View.Tape.cs" />
-    <Compile Include="View.cs" />
-    <Compile Include="View.Disk.cs" />
-    <Compile Include="View.FloppyController.cs" />
-    <Compile Include="View.Help.cs" />
-    <Compile Include="View.Jump.cs" />
-    <Compile Include="View.Normal.cs" />
-    <Compile Include="View.Cpu.cs" />
-    <Compile Include="View.Memory.cs" />
-    <Compile Include="View.Options.cs" />
-    <Compile Include="View.Splash.cs" />
-    <Compile Include="View.Zap.cs" />
+    <Compile Include="Timer.cs" />
     <Compile Include="WinDialogs.cs" />
-    <Compile Include="IZ80_Status.cs" />
-    <Compile Include="Z80.IPorts.cs" />
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -230,18 +126,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="PulseReq.cs" />
-    <Compile Include="Register.cs" />
-    <Compile Include="SectorDescriptor.cs" />
     <Compile Include="Properties.Settings.cs" />
-    <Compile Include="Storage.cs" />
-    <Compile Include="Track.cs" />
-    <Compile Include="Z80.cs" />
-    <Compile Include="Z80.Init.cs" />
-    <Compile Include="Z80.Info.cs" />
-    <Compile Include="Z80.Instructions.cs" />
-    <Compile Include="View.Printer.cs" />
-    <Compile Include="Z80.IMemory.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0,Profile=Client">
@@ -270,6 +155,24 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="main.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DirectX\DirectX.csproj">
+      <Project>{261120b2-49ea-47a0-b9ce-02d90db91165}</Project>
+      <Name>DirectX</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TRS80\TRS80.csproj">
+      <Project>{d8464fbd-127f-4b63-9906-680883edea76}</Project>
+      <Name>TRS80</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Views\Views.csproj">
+      <Project>{1c6945bc-4016-449f-9732-b416443f307d}</Project>
+      <Name>Views</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Z80\Z80.csproj">
+      <Project>{45dd5077-8016-44c7-9010-48f9fe10f6a6}</Project>
+      <Name>Z80</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

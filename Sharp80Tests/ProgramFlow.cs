@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-
-using Sharp80;
-
+using Sharp80.TRS80;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Sharp80Tests

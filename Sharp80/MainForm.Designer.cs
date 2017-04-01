@@ -36,7 +36,10 @@ namespace Sharp80
                 }
                 catch (Exception)
                 {
-                    // To late to do anything about it
+                    // To0 late to do anything about it
+#if DEBUG
+                    Dialogs.ExceptionAlert(Ex);
+#endif
                 }
             }
         }

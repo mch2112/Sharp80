@@ -2,27 +2,32 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+
+using Sharp80.DirectX;
+using Sharp80.TRS80;
+using Sharp80.Views;
 
 namespace Sharp80
 {
     public partial class MainForm : Form, IAppWindow
     {
-        public event MessageEventHandler Sizing;
-
         private static Thread uiThread;
+        private static MainForm instance;
 
-        private TRS80.Computer computer;
-        private TRS80.IScreen screen;
-        private TRS80.IKeyboard keyboard;
+        private ProductInfo ProductInfo { get; set; }
+        private Settings Settings { get; set; }
+        private IDialogs Dialogs { get; set; }
 
-        private int resizing = 0;
+        private Computer computer;
+        private IScreen screen;
+        private IKeyboard keyboard;
 
         private Task ScreenTask;
         private Task KeyboardPollTask;
-        private System.Windows.Forms.Timer CheckExceptionsTimer;
         private CancellationTokenSource StopToken;
 
         private bool isDisposing = false;
@@ -34,23 +39,28 @@ namespace Sharp80
         private const uint DISPLAY_MESSAGE_CYCLE_DURATION = SCREEN_REFRESH_RATE_HZ;  // 1 second
         
         public static bool IsUiThread => Thread.CurrentThread == uiThread;
+        public static MainForm Instance => instance; 
         public bool IsMinimized => WindowState == FormWindowState.Minimized;
 
         private bool IsActive { get; set; }
 
         public MainForm()
         {
-            Dialogs.Initialize(this);
+            instance = this;
+            Settings = new Settings();
+            ProductInfo = new ProductInfo();
+            Dialogs = new WinDialogs(this, ProductInfo, BeforeDialog, AfterDialog);
 
             uiThread = Thread.CurrentThread;
             KeyPreview = true;
-            Text = ProductInfo.PRODUCT_NAME + " - TRS-80 Model III Emulator";
-
+            Text = ProductInfo.ProductName + " - TRS-80 Model III Emulator";
+            BackColor = System.Drawing.Color.Black;
             keyboard = new KeyboardDX();
 
-            screen = new ScreenDX(Settings.AdvancedView,
-                                  DISPLAY_MESSAGE_CYCLE_DURATION,
-                                  Settings.GreenScreen);
+            screen = new ScreenDX(this,
+                                  Dialogs,
+                                  Settings,
+                                  DISPLAY_MESSAGE_CYCLE_DURATION);
 
             InitializeComponent();
             SetupClientArea();
@@ -60,20 +70,16 @@ namespace Sharp80
         {
             try
             {
-                Dialogs.BeforeShowDialog += BeforeDialog;
-                Dialogs.AfterShowDialog += AfterDialog;
+                Activated += (s, ee) => { SyncKeyboard(); IsActive = true; };
+                Deactivate += (s, ee) => { IsActive = false; computer.ResetKeyboard(false, false); };
 
-                Activated +=   (s, ee) => { SyncKeyboard(); IsActive = true; };
-                Deactivate +=  (s, ee) => { IsActive = false; computer.ResetKeyboard(false, false); };
+                ResizeBegin += (s, ee) => { screen.Suspend = true; };
+                ResizeEnd += (s, ee) => { screen.Suspend = false; };
 
-                ResizeBegin += (s, ee) => { screen.Suspend = true;  resizing++; };
-                ResizeEnd +=   (s, ee) => { resizing--; screen.Suspend = false; };
+                Views.View.OnUserCommand += ProcessUserCommand;
 
-                View.OnUserCommand += ProcessUserCommand;
-
-                screen.Initialize(this);
                 HardReset();
-                
+
                 if (Settings.FullScreen)
                     ToggleFullScreen();
 
@@ -86,14 +92,10 @@ namespace Sharp80
 
                 ScreenTask = screen.Start(SCREEN_REFRESH_RATE_HZ, StopToken.Token);
                 KeyboardPollTask = keyboard.Start(KEYBOARD_REFRESH_RATE_HZ, ProcessKey, StopToken.Token);
-
-                CheckExceptionsTimer = new System.Windows.Forms.Timer() { Interval = 100 };
-                CheckExceptionsTimer.Tick += (s, ee) => ExceptionHandler.HandleExceptions();
-                CheckExceptionsTimer.Start();
             }
-            catch (Exception ex)
+            catch (Exception Ex)
             {
-                ExceptionHandler.Handle(ex);
+                Dialogs.ExceptionAlert(Ex);
             }
         }
         private void SetupClientArea()
@@ -170,14 +172,13 @@ namespace Sharp80
         }
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (Storage.SaveChangedStorage(computer))
+            if (computer.SaveChangedStorage())
             {
                 Settings.WindowX = Location.X;
                 Settings.WindowY = Location.Y;
                 Settings.WindowWidth = ClientSize.Width;
                 Settings.WindowHeight = ClientSize.Height;
                 Settings.Save();
-                Log.Save(true, out string _);
                 Task.Run(Stop);
             }
             else
@@ -189,22 +190,23 @@ namespace Sharp80
         protected override void WndProc(ref Message m)
         {
             if (m.Msg == MessageEventArgs.WM_SIZING)
-                Sizing?.Invoke(this, new MessageEventArgs(m));
-
+                ConstrainAspectRatio(m);
             base.WndProc(ref m);
         }
         
-        private void ProcessKey(KeyState k)
+        private void ProcessKey(KeyState Key)
         {
             if (IsActive)
             {
                 try
                 {
-                    View.ProcessKey(k);
+                    if (Key.Key == KeyCode.Capital && Key.Released)
+                        TurnCapsLockOff();
+                    Views.View.ProcessKey(Key);
                 }
-                catch (Exception ex)
+                catch (Exception Ex)
                 {
-                    ExceptionHandler.Handle(ex, ExceptionHandlingOptions.Terminate);
+                    Dialogs.ExceptionAlert(Ex);
                 }
             }
         }
@@ -216,7 +218,6 @@ namespace Sharp80
         private void ToggleFullScreen(bool AdjustClientSize = true)
         {
             var fs = !screen.IsFullScreen;
-            resizing++;
 
             Settings.FullScreen = screen.IsFullScreen = fs;
 
@@ -236,12 +237,9 @@ namespace Sharp80
                 }
             }
             SuppressCursor = fs;
-            resizing--;
         }
         private void SetWindowStyle()
         {
-            resizing++;
-
             if (screen.IsFullScreen)
             {
                 FormBorderStyle = FormBorderStyle.None;
@@ -252,8 +250,6 @@ namespace Sharp80
                 FormBorderStyle = FormBorderStyle.Sizable;
                 WindowState = FormWindowState.Normal;
             }
-
-            resizing--;
         }
         
         private void Zoom(bool In)
@@ -321,13 +317,9 @@ namespace Sharp80
             newX = Math.Min(Math.Max(0, newX), scrW - newW);
             newY = Math.Min(Math.Max(0, newY), scrH - newH);
 
-            resizing++;
-
             ClientSize = new System.Drawing.Size(newW, newH);
             Location = new System.Drawing.Point(newX, newY);
             SetWindowStyle();
-
-            resizing--;
 
             previousClientHeight = newH;
         }
@@ -337,35 +329,29 @@ namespace Sharp80
             {
                 if (computer != null)
                 {
-                    if (!Storage.SaveChangedStorage(computer) || !Storage.SaveTapeIfRequired(computer))
+                    if (!computer.SaveChangedStorage())
                         return;
                     computer.Dispose();
                 }
-                computer = new TRS80.Computer(screen, Settings.DiskEnabled, true)
-                {
-                    DriveNoise = Settings.DriveNoise,
-                    BreakPoint = Settings.Breakpoint,
-                    BreakPointOn = Settings.BreakpointOn,
-                    SoundOn = Settings.SoundOn,
-                    NormalSpeed = Settings.NormalSpeed
-                };
-
-                computer.StartupInitializeStorage();
+                var sound = new SoundX(16000);
+                if (sound.Stopped)
+                    Dialogs.AlertUser("Sound failed to start. Continuing without sound.");
+                
+                computer = new Computer(screen, sound, new Timer(), Settings, Dialogs);
+                
                 screen.Initialize(computer);
 
-                Log.Initalize(computer.GetElapsedTStates);
-
-                View.Initialize(computer, (msg) => screen.StatusMessage = msg);
+                Views.View.Initialize(ProductInfo, Dialogs, Settings, computer, (msg) => screen.StatusMessage = msg);
 
                 if (Settings.AutoStartOnReset)
                 {
                     computer.Start();
-                    View.CurrentMode = ViewMode.Normal;
+                    Views.View.CurrentMode = ViewMode.Normal;
                 }
             }
-            catch (Exception ex)
+            catch (Exception Ex)
             {
-                ExceptionHandler.Handle(ex);
+                Dialogs.ExceptionAlert(Ex);
             }
         }
         private void AutoStart()
@@ -437,7 +423,6 @@ namespace Sharp80
         {
             try
             {
-                CheckExceptionsTimer.Stop();
                 StopToken.Cancel();
                 await Task.WhenAll(ScreenTask, KeyboardPollTask);
                 Dispose();
@@ -446,11 +431,65 @@ namespace Sharp80
             {
                 foreach (var ee in e.InnerExceptions)
                     if (!(ee is TaskCanceledException))
-                        ExceptionHandler.Handle(ee);
+                    {
+                        // should do something
+                    }
             }
             finally
             {
                 StopToken.Dispose();
+            }
+        }
+
+        private void TurnCapsLockOff()
+        {
+            const int KEYEVENTF_EXTENDEDKEY = 0x01;
+            const int KEYEVENTF_KEYUP = 0x02;
+
+            // Annoying that it turns on when doing virtual shift-zero.
+            if (System.Windows.Forms.Control.IsKeyLocked(System.Windows.Forms.Keys.CapsLock))
+            {
+                NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY, (UIntPtr)0);
+                NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
+                    (UIntPtr)0);
+            }
+        }
+        private void ConstrainAspectRatio(Message Msg)
+        {
+            float ratio;
+            if (screen.AdvancedView)
+                ratio = ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED;
+            else
+                ratio = ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL;
+
+            float width = ClientSize.Width;
+            float height = ClientSize.Height;
+
+            if (Msg.Msg == MessageEventArgs.WM_SIZING)
+            {
+                var rc = (MessageEventArgs.RECT)Marshal.PtrToStructure(Msg.LParam, typeof(MessageEventArgs.RECT));
+                int res = Msg.WParam.ToInt32();
+                if (res == MessageEventArgs.WMSZ_LEFT || res == MessageEventArgs.WMSZ_RIGHT)
+                {
+                    // Left or right resize - adjust height (bottom)
+                    rc.Bottom = rc.Top + (int)(width / ratio);
+                }
+                else if (res == MessageEventArgs.WMSZ_TOP || res == MessageEventArgs.WMSZ_BOTTOM)
+                {
+                    // Up or down resize - adjust width (right)
+                    rc.Right = rc.Left + (int)(height * ratio);
+                }
+                else if (res == MessageEventArgs.WMSZ_RIGHT + MessageEventArgs.WMSZ_BOTTOM)
+                {
+                    // Lower-right corner resize -> adjust height (could have been width)
+                    rc.Bottom = rc.Top + (int)(width / ratio);
+                }
+                else if (res == MessageEventArgs.WMSZ_LEFT + MessageEventArgs.WMSZ_TOP)
+                {
+                    // Upper-left corner -> adjust width (could have been height)
+                    rc.Left = rc.Right - (int)(height * ratio);
+                }
+                Marshal.StructureToPtr(rc, Msg.LParam, true);
             }
         }
     }

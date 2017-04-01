@@ -1,7 +1,8 @@
 ﻿using System;
-
-using Sharp80;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Sharp80;
+using Sharp80.TRS80;
+using Sharp80.Z80;
 
 namespace Sharp80Tests
 {
@@ -11,17 +12,16 @@ namespace Sharp80Tests
         [TestMethod]
         public void UShortToHexStringTest()
         {
-            Assert.IsTrue(((ushort)0xABCD).ToHexString() == "ABCD");
-            Assert.IsTrue(((ushort)0x89AB).ToHexString() == "89AB");
-            Assert.IsTrue(((ushort)0x0010).ToHexString() == "0010");
+            Assert.IsTrue(Sharp80.Z80.Extensions.ToHexString((ushort)0xABCD) == "ABCD");
+            Assert.IsTrue(Sharp80.Z80.Extensions.ToHexString((ushort)0x89AB) == "89AB");
+            Assert.IsTrue(Sharp80.Z80.Extensions.ToHexString((ushort)0x0010) == "0010");
         }
-
         [TestMethod]
         public void ByteToHexStringTest()
         {
-            Assert.IsTrue(((byte)0xAB).ToHexString() == "AB");
-            Assert.IsTrue(((byte)0x9A).ToHexString() == "9A");
-            Assert.IsTrue(((byte)0x03).ToHexString() == "03");
+            Assert.IsTrue(Sharp80.Z80.Extensions.ToHexString((byte)0xAB) == "AB");
+            Assert.IsTrue(Sharp80.Z80.Extensions.ToHexString((byte)0x9A) == "9A");
+            Assert.IsTrue(Sharp80.Z80.Extensions.ToHexString((byte)0x03) == "03");
         }
         [TestMethod]
         public void ByteToTwosCompHexStringTest()

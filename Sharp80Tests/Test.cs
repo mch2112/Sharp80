@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Sharp80;
@@ -15,10 +10,9 @@ namespace Sharp80Tests
     {
         protected Computer computer;
         
-        protected async Task StartToBasic(bool Fast = true, bool Sound = false)
+        protected async Task StartToBasic(bool Fast = true)
         {
-            InitComputer(false, Sound);
-            computer.NormalSpeed = !Fast;
+            InitComputer(false, !Fast);
             await computer.StartAndAwait();
             await computer.Delay(500);
             await KeyPress(KeyCode.Return, false, 500);
@@ -29,10 +23,9 @@ namespace Sharp80Tests
         {
             await StartWithFloppy(Storage.FILE_NAME_TRSDOS, fast);
         }
-        protected async Task StartWithFloppy(string Path, bool Fast = true, bool Sound = false)
+        protected async Task StartWithFloppy(string Path, bool Fast = true)
         {
-            InitComputer(true, Sound);
-            computer.NormalSpeed = !Fast;
+            InitComputer(true, !Fast);
             computer.LoadFloppy(0, Path);
             await computer.StartAndAwait();
             await computer.Delay(20000);
@@ -44,10 +37,18 @@ namespace Sharp80Tests
 
         protected bool ScreenContainsText(string Text) => computer.VideoMemory.Contains(Text.ToByteArray());
 
-        protected void InitComputer(bool EnableFloppyController, bool Sound)
+        protected void InitComputer(bool EnableFloppyController, bool NormalSpeed)
         {
-            computer = new Computer(new ScreenNull(), EnableFloppyController, Sound);
-            ExceptionHandler.PassThrough = true;
+            var settings = new Settings()
+            {
+                NormalSpeed = NormalSpeed,
+                DiskEnabled = EnableFloppyController
+            };
+            InitComputer(settings);
+        }
+        protected void InitComputer(ISettings Settings)
+        {
+            computer = new Computer(new ScreenNull(), new SoundNull(), new Sharp80.Timer(), Settings, new NullDialogs());
         }
         protected async Task DisposeComputer()
         {

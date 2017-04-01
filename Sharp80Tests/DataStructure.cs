@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Sharp80;
+using Sharp80.Z80;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Sharp80Tests
@@ -20,7 +21,7 @@ namespace Sharp80Tests
             int num = r.Next(1000, 10000);
             int size = r.Next(10, 100);
             
-            var cb = new Sharp80.Processor.CircularBuffer(size);
+            var cb = new CircularBuffer(size);
             for (ushort i = 0; i <= num; i++)
                 cb.Add(i);
 

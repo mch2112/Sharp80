@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sharp80;
+using Sharp80.TRS80;
 namespace Sharp80Tests
 {
     [TestClass]
