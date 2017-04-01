@@ -190,7 +190,6 @@ namespace Sharp80
                 ConstrainAspectRatio(m);
             base.WndProc(ref m);
         }
-        
         private void ProcessKey(KeyState Key)
         {
             if (IsActive)
@@ -229,8 +228,12 @@ namespace Sharp80
                 if (AdjustClientSize)
                 {
                     SetWindowStyle();
-                    ClientSize = new System.Drawing.Size((int)(previousClientHeight * (screen.AdvancedView ? ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL)),
-                                                               previousClientHeight);
+                    var r = ConstrainToScreen(Location.X,
+                                          Location.Y,
+                                          previousClientHeight);
+                    
+                    ClientSize = r.Size;
+                    Location = r.Location;
                 }
             }
             SuppressCursor = fs;
@@ -253,7 +256,6 @@ namespace Sharp80
         {
             if (IsMinimized)
                 return;
-
             if (screen.IsFullScreen && In)
                 return;
 
@@ -295,30 +297,26 @@ namespace Sharp80
 
             if (newW > scrW || newH > scrH)
             {
-                if (screen.IsFullScreen)
-                    return;
-                else
-                    ToggleFullScreen(false);
+                if (!screen.IsFullScreen)
+                    ToggleFullScreen(true);
+                return;
             }
-            else
-            {
-                if (screen.IsFullScreen)
-                    ToggleFullScreen(false);
-            }
+
+            if (screen.IsFullScreen)
+                ToggleFullScreen(false);
+
             int xOffset = (newW - curW) / 2;
             int yOffset = (newH - curH) / 2;
 
             int newX = curX - xOffset;
             int newY = curY - yOffset;
 
-            newX = Math.Min(Math.Max(0, newX), scrW - newW);
-            newY = Math.Min(Math.Max(0, newY), scrH - newH);
-
-            ClientSize = new System.Drawing.Size(newW, newH);
-            Location = new System.Drawing.Point(newX, newY);
             SetWindowStyle();
 
-            previousClientHeight = newH;
+            var r = ConstrainToScreen(newX, newY, newH);
+            ClientSize = r.Size;
+            Location = r.Location;
+            previousClientHeight = r.Height;
         }
         private void HardReset()
         {
@@ -450,6 +448,32 @@ namespace Sharp80
                 NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
                     (UIntPtr)0);
             }
+        }
+        private System.Drawing.Rectangle ConstrainToScreen(int X, int Y, int Height)
+        {
+            var scn = Screen.FromHandle(Handle);
+
+            // screen area adjusted for difference between size and client size
+            int screenW = scn.WorkingArea.Width - Size.Width + ClientSize.Width;
+            int screenH = scn.WorkingArea.Height - Size.Height + ClientSize.Height;
+
+            float h = Height;
+            float aspectRatio = screen.AdvancedView ? ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL;
+            float w = h * aspectRatio;
+
+            if (w > screenW)
+            {
+                w = screenW;
+                h = w / aspectRatio;
+            }
+            if (h > screenH)
+            {
+                h = screenH;
+                w = h * aspectRatio;
+            }
+            X = Math.Min(Math.Max(0, X), screenW - (int)w);
+            Y = Math.Min(Math.Max(0, X), screenH - (int)h);
+            return new System.Drawing.Rectangle(X, Y, (int)w, (int)h);
         }
         private void ConstrainAspectRatio(Message Msg)
         {
