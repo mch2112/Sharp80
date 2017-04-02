@@ -175,6 +175,13 @@ namespace Sharp80
 
             string dir = DefaultPath.Length > 0 ? Path.GetDirectoryName(DefaultPath) :
                                                   Storage.DocsPath;
+
+            if (!Directory.Exists(dir))
+                dir = Storage.DocsPath;
+
+            if (!Save && !File.Exists(DefaultPath))
+                DefaultPath = String.Empty;
+
             FileDialog dialog;
 
             if (Save)
@@ -189,11 +196,10 @@ namespace Sharp80
                 dialog = new OpenFileDialog()
                 {
                     Multiselect = false,
-                    CheckPathExists = true
                 };
             }
             dialog.Title = Title;
-            dialog.FileName = (SelectFileInDialog && DefaultPath.Length > 0) ? Path.GetFileName(DefaultPath) : string.Empty;
+            dialog.FileName = (SelectFileInDialog && DefaultPath.Length > 0) ? Path.GetFileName(DefaultPath) : null;
             dialog.InitialDirectory = dir;
             dialog.ValidateNames = true;
             dialog.Filter = Filter;

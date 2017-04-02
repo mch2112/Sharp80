@@ -34,7 +34,7 @@ namespace Sharp80.TRS80
 
             int diskCursor = 0;
             bool? writeProt = null;
-            while (diskCursor < DiskData.Length)
+            while (diskCursor < DiskData.Length - JV3_HEADER_SIZE)
             {
                 // Read sector Headers
                 for (int i = diskCursor; i < diskCursor + JV3_HEADER_SIZE; i += 3)

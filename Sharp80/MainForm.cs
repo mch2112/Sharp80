@@ -238,6 +238,7 @@ namespace Sharp80
             Settings.FullScreen = screen.IsFullScreen = false;
             SetWindowStyle(false);
             SetClientRect();
+            SuppressCursor = false;
         }
         private void SetFullScreen()
         {
@@ -246,6 +247,7 @@ namespace Sharp80
             Settings.FullScreen = screen.IsFullScreen = true;
             SetWindowStyle(true);
             Bounds = Screen.GetBounds(this);
+            SuppressCursor = true;
         }
         private void SetWindowStyle(bool FullScreen)
         {
