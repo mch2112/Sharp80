@@ -168,6 +168,7 @@ namespace Sharp80.Z80
 
         public byte InterruptMode { get; private set; }
         public bool HistoricDisassemblyMode { get; set; }
+
         public byte ByteAtPCPlusCoreOpCodeSize => Memory[PC.val.Offset(CurrentInstruction.OpcodeCoreSize)];
         public byte ByteAtPCPlusCoreOpCodeSizePlusOne => Memory[PC.val.Offset(CurrentInstruction.OpcodeCoreSize + 1)];
         public ushort WordAtPCPlusInitialOpcodeLength => Memory.GetWordAt(PC.val.Offset(CurrentInstruction.OpcodeCoreSize));

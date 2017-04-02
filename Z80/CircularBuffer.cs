@@ -37,10 +37,9 @@ namespace Sharp80.Z80
                 Count++;
             }
         }
-        public void ReplaceLast(ushort Item)
-        {
-            contents[writeCursor] = Item;
-        }
+
+        public void ReplaceLast(ushort Item) => contents[writeCursor] = Item;
+
         public void Clear()
         {
             contents = new ushort[Size];

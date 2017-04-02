@@ -85,6 +85,7 @@ namespace Sharp80.Z80.Assembler
                 string label = cols[0];
                 if (label.Length == 0)
                 {
+                    // Nothing to do
                 }
                 else if (ValidateLabel(ref label))
                 {
@@ -140,7 +141,7 @@ namespace Sharp80.Z80.Assembler
                 }
                 else
                 {
-                    switch (this.Mnemonic)
+                    switch (Mnemonic)
                     {
                         case "ADD":
                         case "ADC":

@@ -19,15 +19,11 @@ namespace Sharp80.Z80.Assembler
             public Macro(string line)
             {
                 Name = GetCol(line, 0).Replace(":", String.Empty);
-
-                Debug.Assert(GetCol(line, 1) == "MACRO");
-
                 arguments = new List<string>(GetCSV(GetCol(line, 2), 10000));
 
+                Debug.Assert(GetCol(line, 1) == "MACRO");
                 for (int i = 0; i < arguments.Count; i++)
-                {
                     Debug.Assert(arguments[i] == arguments[i].ToUpper());
-                }
             }
             public void AddLine(string Line)
             {

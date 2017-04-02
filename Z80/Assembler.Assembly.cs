@@ -12,19 +12,16 @@ namespace Sharp80.Z80.Assembler
         public string IntFilePath { get; private set; }
         public string Title { get; private set; }
         public string SourceText { get; private set; }
-        public IEnumerable<string> SourceLines => SourceText.Split(new string[] { Environment.NewLine, "\n", "\r" }, StringSplitOptions.None);
         public string IntermediateOutput { get; private set; }
-
         public ushort ExecAddress { get; private set; }
         public int NumErrors { get; private set; }
+        public List<(ushort SegmentAddress, byte[] Bytes)> Segments { get; private set; }
 
         public bool AssembledOK => Status == Status.AssembleOK;
-        public bool IntFileWritten { get; private set; }
-
-        private Status Status { get; set; }
+        public IEnumerable<string> SourceLines => SourceText.Split(new string[] { Environment.NewLine, "\n", "\r" }, StringSplitOptions.None);
 
         private List<Assembler.LineInfo> Lines { get; set; }
-        public List<(ushort SegmentAddress, byte[] Bytes)> Segments { get; private set; }
+        private Status Status { get; set; }
         private Dictionary<string, Assembler.LineInfo> SymbolTable { get; set; }
 
         internal Assembly(string SourceText)
@@ -67,7 +64,7 @@ namespace Sharp80.Z80.Assembler
         private string SymbolTableToString()
         {
             return "SYMBOL TABLE" + Environment.NewLine +
-                   "==================================" + Environment.NewLine +
+                   "============================================" + Environment.NewLine +
                    String.Join(Environment.NewLine,
                                SymbolTable.OrderBy(kv => kv.Key)
                                           .Select(kv => kv.Key.PadRight(15) +

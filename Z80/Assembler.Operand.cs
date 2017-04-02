@@ -8,17 +8,19 @@ namespace Sharp80.Z80.Assembler
     {
         internal class Operand
         {
+            // STATE
+
             public LineInfo LineInfo { get; private set; }
             public string RawText { get; private set; }
-            public bool Exists => RawText.Length > 0;
             public bool IsIndirect { get; private set; }
-            public bool IsPseudoIndirect => IsIndirect && LineInfo.Mnemonic == "JP" || LineInfo.Mnemonic == "OUT" || LineInfo.Mnemonic == "IN";
 
-            public Operand()
-            {
-                RawText = String.Empty;
-                Debug.Assert(!Exists);
-            }
+            private byte? _indexDisplacement = null; // for IX and IY displacements
+            private string indexDisplacementRaw = String.Empty;
+
+            // CONSTRUCTORS
+
+            public Operand() => RawText = String.Empty;
+
             public Operand(LineInfo LineInfo, string RawText)
             {
                 this.LineInfo = LineInfo;
@@ -78,6 +80,10 @@ namespace Sharp80.Z80.Assembler
                 }
             }
 
+            // PROPERTIES
+
+            public bool Exists => RawText.Length > 0;
+            public bool IsPseudoIndirect => IsIndirect && LineInfo.Mnemonic == "JP" || LineInfo.Mnemonic == "OUT" || LineInfo.Mnemonic == "IN";
             public bool IsRegister => registers.Contains(RawText);
             public bool IsAccumulator => RawText == "A";
             public bool IsIndexedRegister
@@ -93,9 +99,6 @@ namespace Sharp80.Z80.Assembler
                 }
             }
             public bool IsFlagState => flagStates.Contains(this.RawText);
-
-            private byte? _indexDisplacement = null; // for IX and IY displacements
-            private string indexDisplacementRaw = String.Empty;
             public byte? IndexDisplacement
             {
                 get
@@ -177,6 +180,9 @@ namespace Sharp80.Z80.Assembler
                     return RawText;
                 }
             }
+
+            // MISC
+
             public (byte Low, byte High) GetDataBytes()
             {
                 if (NumericValue.HasValue)

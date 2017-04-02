@@ -345,15 +345,6 @@ namespace Sharp80.Views
                         // not sure what the problem is
                         Dialogs.AlertUser("Error creating CMD file.");
                     }
-                    else if (assembly.IntFileWritten)
-                    {
-                        if (Dialogs.AskYesNo(string.Format("{0} error{1} found during assembly. Open intermediate file?",
-                                                           assembly.NumErrors,
-                                                           assembly.NumErrors == 1 ? String.Empty : "s")))
-                        {
-                            Dialogs.ShowTextFile(assembly.IntFilePath);
-                        }
-                    }
                     else
                     {
                         Dialogs.AlertUser("Assembly failed.");

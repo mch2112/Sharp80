@@ -54,6 +54,7 @@ namespace Sharp80.Z80
 
         private static string[] BytesAsHex;
         private static string[] WordsAsHex;
+
         static Extensions()
         {
             BytesAsHex = new string[0x100];
@@ -72,6 +73,7 @@ namespace Sharp80.Z80
             }
             while (++j != 0);
         }
+
         public static void Split(this ushort NNNN, out byte? lowOrderResult, out byte? highOrderResult)
         {
             lowOrderResult = (byte)(NNNN & 0x00FF);
@@ -101,10 +103,7 @@ namespace Sharp80.Z80
                 return WordsAsHex[Input];
             }
         }
-        public static string ToHexString(this char Input)
-        {
-            return ToHexString((byte)Input);
-        }
+        public static string ToHexString(this char Input) => ToHexString((byte)Input);
         public static string ToHexString(this sbyte Input) => (Input < 0 ? "-" : "") + ToHexString((byte)(Math.Abs(Input)));
         public static string ToTwosCompHexString(this byte input)
         {
@@ -113,24 +112,10 @@ namespace Sharp80.Z80
             else
                 return "+" + input.ToHexString();
         }
-        public static string ToHexChar(this ushort Input)
-        {
-            return ((byte)(Input & 0x0F)).ToHexString().Substring(1);
-        }
-        public static string FirstText(this string Input)
-        {
-            if (Input.Contains(" "))
-                return Input.Substring(0, Input.IndexOf(' '));
-            else
-                return Input;
-        }
-        public static string Truncate(this string Input, int Chars)
-        {
-            if (Input.Length < Chars)
-                return Input;
-            else
-                return Input.Substring(0, Chars);
-        }
+        public static string ToHexChar(this ushort Input) => ((byte)(Input & 0x0F)).ToHexString().Substring(1);
+        public static string FirstText(this string Input) => Input.Contains(" ") ? Input.Substring(0, Input.IndexOf(' ')) : Input;
+        public static string Truncate(this string Input, int Chars) => Input.Length < Chars ? Input : Input.Substring(0, Chars);
+
         public static bool IsBetween(this char Value, char Min, char Max) => Value >= Min && Value <= Max;
         public static bool IsBetween(this int Value, int Min, int Max) => Value >= Min && Value <= Max;
         public static bool IsBetween(this byte Value, byte Min, byte Max) => Value >= Min && Value <= Max;
