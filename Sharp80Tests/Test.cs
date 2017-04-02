@@ -52,8 +52,7 @@ namespace Sharp80Tests
         }
         protected async Task DisposeComputer()
         {
-            await computer.StopAndAwait();
-            computer.Dispose();
+            await computer.Shutdown();
         }
         protected void Log(string Message)
         {

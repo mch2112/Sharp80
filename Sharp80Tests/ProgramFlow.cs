@@ -21,7 +21,7 @@ namespace Sharp80Tests
             await KeyPress(KeyCode.Return, false, 500);
             await computer.Delay(2000);
             Assert.IsTrue(computer.ProgramCounter == 0x1A7B, $"PC not at expected 1A7B, instead {computer.ProgramCounter:X4}");
-            computer.Dispose();
+            await computer.Shutdown();
         }
     }
 }
