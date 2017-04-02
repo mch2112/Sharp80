@@ -50,7 +50,6 @@ namespace Sharp80.TRS80
         private byte[] data;
         private int byteCursor;
         private byte bitCursor;
-        private bool isBlank;
 
         private bool motorOn = false;
         private bool motorOnSignal = false;
@@ -121,7 +120,7 @@ namespace Sharp80.TRS80
                 }
             }
         }
-        public string PulseStatus { get { return transition?.After.ToString() ?? String.Empty; } }
+        public string PulseStatus => transition?.After.ToString() ?? String.Empty;
         public byte Value
         {
             get
@@ -134,7 +133,7 @@ namespace Sharp80.TRS80
                 return ret;
             }
         }
-        public bool IsBlank { get { return isBlank; } }
+        public bool IsBlank { get; private set; }
 
         // MOTOR CONTROL
 
@@ -246,13 +245,13 @@ namespace Sharp80.TRS80
             {
                 FilePath = Storage.FILE_NAME_NEW;
                 data = new byte[DEFAULT_BLANK_TAPE_LENGTH];
-                isBlank = true;
+                IsBlank = true;
                 Speed = computer.TapeUserSelectedSpeed; // if we write, this is what we'll write at
             }
             else
             {
                 data = Bytes;
-                isBlank = data.All(b => b == 0x00);
+                IsBlank = data.All(b => b == 0x00);
                 GuessSpeed();
             }
             Rewind();
@@ -483,7 +482,7 @@ namespace Sharp80.TRS80
                 else
                     data[byteCursor] = data[byteCursor].ResetBit(bitCursor);
                 Changed = true;
-                isBlank &= !Value;
+                IsBlank &= !Value;
             }
         }
 
@@ -491,6 +490,7 @@ namespace Sharp80.TRS80
 
         // SNAPSHOT SUPPORT
 
+        public void Shutdown() => readPulseReq?.Expire();
         public void Serialize(BinaryWriter Writer)
         {
             Writer.Write((int)Speed);
@@ -498,7 +498,7 @@ namespace Sharp80.TRS80
             Writer.Write(FilePath);
             Writer.Write(data.Length);
             Writer.Write(data);
-            Writer.Write(isBlank);
+            Writer.Write(IsBlank);
             Writer.Write(byteCursor);
             Writer.Write(bitCursor);
             Writer.Write(motorOn);
@@ -529,7 +529,7 @@ namespace Sharp80.TRS80
                 Changed = Reader.ReadBoolean();
                 FilePath = Reader.ReadString();
                 data = Reader.ReadBytes(Reader.ReadInt32());
-                isBlank = Reader.ReadBoolean();
+                IsBlank = Reader.ReadBoolean();
                 byteCursor = Reader.ReadInt32();
                 bitCursor = Reader.ReadByte();
                 motorOn = Reader.ReadBoolean();

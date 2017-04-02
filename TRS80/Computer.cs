@@ -239,8 +239,8 @@ namespace Sharp80.TRS80
         }
         public bool NormalSpeed
         {
-            get { return Clock.NormalSpeed; }
-            set { Clock.NormalSpeed = value; }
+            get => Clock.NormalSpeed;
+            set => Clock.NormalSpeed = value;
         }
         public void Reset()
         {
@@ -267,13 +267,11 @@ namespace Sharp80.TRS80
         /// Adds a pulse req and also sets the trigger based on the 
         /// trigger's delay
         /// </summary>
-        /// <param name="Req"></param>
         internal void Activate(PulseReq Req) => Clock.ActivatePulseReq(Req);
 
         /// <summary>
         /// Adds a pulse req without resetting the trigger
         /// </summary>
-        /// <param name="Req"></param>
         internal void AddPulseReq(PulseReq Req) => Clock.AddPulseReq(Req);
 
         // FLOPPY SUPPORT
@@ -431,9 +429,9 @@ namespace Sharp80.TRS80
                 if (ver >= 8) // currently supporting v 8 & 9
                 {
                     if (Processor.Deserialize(Reader, ver) &&
-                        Clock.Deserialize(Reader, ver) &&
                         Ports.Deserialize(Reader, ver) &&
                         memory.Deserialize(Reader, ver) &&
+                        Clock.Deserialize(Reader, ver) &&
                         FloppyController.Deserialize(Reader, ver) &&
                         IntMgr.Deserialize(Reader, ver) &&
                         Screen.Deserialize(Reader, ver) &&
@@ -533,6 +531,7 @@ namespace Sharp80.TRS80
         {
             FloppyController.Shutdown();
             Printer.Shutdown();
+            Tape.Shutdown();
             await StopAndAwait();
             await Sound.Shutdown();
         }
