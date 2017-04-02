@@ -232,11 +232,7 @@ namespace Sharp80.DirectX
                 {
                     advancedView = value;
                     Settings.AdvancedView = value;
-
-                    if (!IsFullScreen)
-                        parent.ClientSize =
-                            new Size((int)(parent.ClientSize.Height * (advancedView ? ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL)),
-                                     parent.ClientSize.Height);
+                    parent.AdvancedViewChange();
                     Resize(DesiredLogicalSize);
                 }
             }
@@ -550,7 +546,7 @@ namespace Sharp80.DirectX
             }
         }
         public void Invalidate() => invalid = true;
-        private bool DrawOK => !isDrawing && !parent.IsMinimized && !Suspend;
+        private bool DrawOK => !isDrawing && parent.DrawOK && !Suspend;
         private void Draw()
         {
             if (initialized)

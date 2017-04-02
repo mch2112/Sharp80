@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,19 +32,24 @@ namespace Sharp80
         private CancellationTokenSource StopToken;
 
         private bool isDisposing = false;
+        private bool disposed = false;
 
-        private int previousClientHeight;
+        private Rectangle previousClientRect = Rectangle.Empty;
 
         private const uint SCREEN_REFRESH_RATE_HZ = 30;
         private const uint KEYBOARD_REFRESH_RATE_HZ = 40;
         private const uint DISPLAY_MESSAGE_CYCLE_DURATION = SCREEN_REFRESH_RATE_HZ;  // 1 second
-        
+
         public static bool IsUiThread => Thread.CurrentThread == uiThread;
-        public static MainForm Instance => instance; 
-        public bool IsMinimized => WindowState == FormWindowState.Minimized;
+        public static MainForm Instance => instance;
+        public bool DrawOK => WindowState != FormWindowState.Minimized;
 
         private bool IsActive { get; set; }
-
+        private Size ClientExcess{ get; set; } = Size.Empty;
+        private int ClientExcessTop { get; set; }
+        private int ClientExcessLeft { get; set; }
+        private int ClientExcessWidth { get; set; }
+        private int ClientExcessHeight{ get; set; }
         public MainForm()
         {
             instance = this;
@@ -65,7 +71,7 @@ namespace Sharp80
             InitializeComponent();
             SetupClientArea();
         }
-        
+
         private void Form_Load(object sender, EventArgs e)
         {
             try
@@ -97,6 +103,14 @@ namespace Sharp80
         }
         private void SetupClientArea()
         {
+            ClientExcess = new Size(Size.Width - ClientSize.Width,
+                                    Size.Height - ClientSize.Height);
+            var pts = PointToScreen(new Point(0, 0));
+            ClientExcessTop = pts.Y - Top;
+            ClientExcessLeft = pts.X - Left;
+            ClientExcessWidth = Bounds.Width - ClientSize.Width;
+            ClientExcessHeight = Bounds.Height - ClientSize.Height;
+
             var scn = Screen.FromHandle(Handle);
 
             int clientExtraW = Width - ClientSize.Width;
@@ -113,7 +127,7 @@ namespace Sharp80
                 w = (int)(screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL);
                 h = (int)ScreenMetrics.WINDOWED_HEIGHT;
             }
-            
+
             int x = Settings.WindowX;
             int y = Settings.WindowY;
 
@@ -127,10 +141,10 @@ namespace Sharp80
             if (y + h + clientExtraH > sh)
                 y = sh - h - clientExtraH;
 
-            ClientSize = new System.Drawing.Size(w, h);
-            Location = new System.Drawing.Point(x, y);
+            ClientSize = new Size(w, h);
+            Location = new Point(x, y);
         }
-        
+
         private void ProcessUserCommand(UserCommand Command)
         {
             switch (Command)
@@ -156,7 +170,7 @@ namespace Sharp80
                     break;
             }
         }
-        
+
         protected override void OnKeyDown(KeyEventArgs e)
         {
             // Prevent stupid ding noise
@@ -190,6 +204,7 @@ namespace Sharp80
                 ConstrainAspectRatio(m);
             base.WndProc(ref m);
         }
+        protected override void OnPaintBackground(PaintEventArgs e) { /* do nothing prevent flicker */ }
         private void ProcessKey(KeyState Key)
         {
             if (IsActive)
@@ -211,36 +226,30 @@ namespace Sharp80
             keyboard.Refresh();
             computer?.ResetKeyboard(keyboard.RightShiftPressed, keyboard.LeftShiftPressed);
         }
-        private void ToggleFullScreen(bool AdjustClientSize = true)
-        {
-            var fs = !screen.IsFullScreen;
-
-            Settings.FullScreen = screen.IsFullScreen = fs;
-
-            if (fs)
-            {
-                previousClientHeight = ClientSize.Height;
-                if (AdjustClientSize)
-                    SetWindowStyle();
-            }
-            else
-            {
-                if (AdjustClientSize)
-                {
-                    SetWindowStyle();
-                    var r = ConstrainToScreen(Location.X,
-                                          Location.Y,
-                                          previousClientHeight);
-                    
-                    ClientSize = r.Size;
-                    Location = r.Location;
-                }
-            }
-            SuppressCursor = fs;
-        }
-        private void SetWindowStyle()
+        private void ToggleFullScreen()
         {
             if (screen.IsFullScreen)
+                SetWindowed();
+            else
+                SetFullScreen();
+        }
+        private void SetWindowed()
+        {
+            Settings.FullScreen = screen.IsFullScreen = false;
+            SetWindowStyle(false);
+            SetClientRect();
+        }
+        private void SetFullScreen()
+        {
+            previousClientRect = new Rectangle(PointToScreen(Point.Empty), ClientSize);
+
+            Settings.FullScreen = screen.IsFullScreen = true;
+            SetWindowStyle(true);
+            Bounds = Screen.GetBounds(this);
+        }
+        private void SetWindowStyle(bool FullScreen)
+        {
+            if (FullScreen)
             {
                 FormBorderStyle = FormBorderStyle.None;
                 WindowState = FormWindowState.Maximized;
@@ -251,72 +260,35 @@ namespace Sharp80
                 WindowState = FormWindowState.Normal;
             }
         }
-        
+
+        public void AdvancedViewChange()
+        {
+            if (!screen.IsFullScreen)
+                Bounds = ConstrainToScreen(Location.X, Location.Y, ClientSize.Height);
+        }
+
         private void Zoom(bool In)
         {
-            if (IsMinimized)
+            if (WindowState == FormWindowState.Minimized)
                 return;
-            if (screen.IsFullScreen && In)
+            if (screen.IsFullScreen)
+            {
+                if (!In)
+                    SetWindowed();
                 return;
-
+            }
             float aspectRatio = (screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL) / ScreenMetrics.WINDOWED_HEIGHT;
+            float zoom = In ? 1.2f : 1f / 1.2f;
+            float newH = zoom * ClientSize.Height;
+            newH = Math.Max(newH, ScreenMetrics.WINDOWED_HEIGHT / 2);
+            float newW = newH * aspectRatio;
 
-            var scn = Screen.FromHandle(Handle);
+            Rectangle r = new Rectangle((int)(Location.X + ClientExcessLeft - (newW - ClientSize.Width) / 2),
+                                        (int)(Location.Y + ClientExcessTop -  (newH - ClientSize.Height) / 2),
+                                        (int)newW,
+                                        (int)newH);
 
-            int curW, curH, curX, curY, scrW, scrH;
-
-            scrW = scn.WorkingArea.Width;
-            scrH = scn.WorkingArea.Height;
-
-            if (screen.IsFullScreen)
-            {
-                curW = scrW;
-                curH = scrH;
-                curX = curY = 0;
-            }
-            else
-            {
-                curW = ClientSize.Width;
-                curH = ClientSize.Height;
-                curX = Location.X;
-                curY = Location.Y;
-            }
-            
-            float zoom = In ? 1.2f : 1f/1.2f;
-
-            int newH = (int)(curH * zoom);
-
-            if (newH < ScreenMetrics.WINDOWED_HEIGHT / 2)
-                newH = (int)ScreenMetrics.WINDOWED_HEIGHT / 2;
-            else if (newH > ScreenMetrics.WINDOWED_HEIGHT * 0.88f && newH < ScreenMetrics.WINDOWED_HEIGHT * 1.102f)
-                newH = (int)ScreenMetrics.WINDOWED_HEIGHT;
-            else if (newH > 2 * ScreenMetrics.WINDOWED_HEIGHT * 0.88f && newH < 2 * ScreenMetrics.WINDOWED_HEIGHT * 1.102f)
-                newH = 2 * (int)ScreenMetrics.WINDOWED_HEIGHT;
-
-            int newW = (int)(newH * aspectRatio);
-
-            if (newW > scrW || newH > scrH)
-            {
-                if (!screen.IsFullScreen)
-                    ToggleFullScreen(true);
-                return;
-            }
-
-            if (screen.IsFullScreen)
-                ToggleFullScreen(false);
-
-            int xOffset = (newW - curW) / 2;
-            int yOffset = (newH - curH) / 2;
-
-            int newX = curX - xOffset;
-            int newY = curY - yOffset;
-
-            SetWindowStyle();
-
-            var r = ConstrainToScreen(newX, newY, newH);
-            ClientSize = r.Size;
-            Location = r.Location;
-            previousClientHeight = r.Height;
+            SetClientRect(r);
         }
         private void HardReset()
         {
@@ -420,6 +392,9 @@ namespace Sharp80
             {
                 StopToken.Cancel();
                 await Task.WhenAll(ScreenTask, KeyboardPollTask);
+                computer.Dispose();
+                screen.Dispose();
+                keyboard.Dispose();
                 Dispose();
             }
             catch (AggregateException e)
@@ -433,6 +408,7 @@ namespace Sharp80
             finally
             {
                 StopToken.Dispose();
+                Application.Exit();
             }
         }
 
@@ -449,31 +425,97 @@ namespace Sharp80
                     (UIntPtr)0);
             }
         }
-        private System.Drawing.Rectangle ConstrainToScreen(int X, int Y, int Height)
+
+
+        private void SetClientRect()
+        {
+            SetClientRect(previousClientRect);
+        }
+        /// <summary>
+        /// Width is always recomupted
+        /// </summary>
+        private void SetClientRect(Rectangle Input)
+        {
+            Rectangle bounds = Input;
+
+            int h;
+            if (Input.Height < ScreenMetrics.WINDOWED_HEIGHT / 2)
+                h = (int)ScreenMetrics.WINDOWED_HEIGHT;
+            else
+                h = Input.Height;
+            int w = (int)(h * (screen.AdvancedView ? ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL));
+
+            Input = new Rectangle(Input.X,
+                                  Input.Y,
+                                  w,
+                                  h);
+
+            bounds = new Rectangle(Input.X - ClientExcessLeft,
+                                   Input.Y - ClientExcessTop,
+                                   Input.Width + ClientExcessWidth,
+                                   Input.Height + ClientExcessHeight);
+
+            Rectangle workingArea;
+            if (!(workingArea = Screen.GetWorkingArea(this)).Contains(bounds))
+            {
+                if (bounds.Width > workingArea.Width || bounds.Height > workingArea.Height)
+                {
+                    SetFullScreen();
+                    return;
+                }
+                if (bounds.Left < workingArea.Left)
+                    bounds.Offset(workingArea.Left - bounds.Left, 0);
+                if (bounds.Right > workingArea.Right)
+                    bounds.Offset(workingArea.Right - bounds.Right, 0);
+                if (bounds.Top < workingArea.Top)
+                    bounds.Offset(0, workingArea.Top - bounds.Top);
+                if (bounds.Bottom > workingArea.Bottom)
+                    bounds.Offset(0, workingArea.Bottom - bounds.Bottom);
+            }
+            Bounds = bounds;
+        }
+        /// <summary>
+        /// Returns proposed screen bounds
+        /// </summary>
+        private Rectangle ConstrainToScreen(int X, int Y, int ClientHeight)
         {
             var scn = Screen.FromHandle(Handle);
 
             // screen area adjusted for difference between size and client size
-            int screenW = scn.WorkingArea.Width - Size.Width + ClientSize.Width;
-            int screenH = scn.WorkingArea.Height - Size.Height + ClientSize.Height;
+            int screenWidth = scn.WorkingArea.Width;
+            int screenHeight = scn.WorkingArea.Height;
+            int adjScreenWidth = screenWidth - ClientExcess.Width;
+            int adjScreenHeight = screenHeight - ClientExcess.Height;
 
-            float h = Height;
+            float h = ClientHeight;
             float aspectRatio = screen.AdvancedView ? ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL;
             float w = h * aspectRatio;
 
-            if (w > screenW)
+            if (w > adjScreenWidth)
             {
-                w = screenW;
+                w = adjScreenWidth;
                 h = w / aspectRatio;
             }
-            if (h > screenH)
+            if (h > adjScreenHeight)
             {
-                h = screenH;
+                h = adjScreenHeight;
                 w = h * aspectRatio;
             }
-            X = Math.Min(Math.Max(0, X), screenW - (int)w);
-            Y = Math.Min(Math.Max(0, X), screenH - (int)h);
-            return new System.Drawing.Rectangle(X, Y, (int)w, (int)h);
+
+            // adjust all for client borders
+            float x = X;
+            float y = Y;
+            w += ClientExcess.Width;
+            h += ClientExcess.Height;
+
+            // constrain to be on screen
+            x = Math.Min(Math.Max(x, 0), screenWidth - w);
+            y = Math.Min(Math.Max(y, 0), screenWidth - h);
+
+            return new Rectangle((int)x,
+                                 (int)y,
+                                 (int)w,
+                                 (int)h);
         }
         private void ConstrainAspectRatio(Message Msg)
         {

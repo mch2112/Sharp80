@@ -26,15 +26,11 @@ namespace Sharp80
                         components?.Dispose();
 
                     base.Dispose(disposing);
-
-                    computer.Dispose();
                     
-                    screen.Dispose();
-                    keyboard.Dispose();
-
+                    disposed = true;
                     isDisposing = false;
                 }
-                catch (Exception)
+                catch (Exception Ex)
                 {
                     // To0 late to do anything about it
 #if DEBUG

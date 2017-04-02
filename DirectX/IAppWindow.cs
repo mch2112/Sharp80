@@ -10,10 +10,10 @@ namespace Sharp80.DirectX
         event EventHandler ResizeBegin;
         event EventHandler ResizeEnd;
 
-        bool IsMinimized { get; }
+        bool DrawOK { get; }
         IntPtr Handle { get; }
-        System.Drawing.Size ClientSize { get; set; }
-        System.Drawing.Color BackColor { get; set; }
-        System.Windows.Forms.Cursor Cursor { get; set; }
+        System.Drawing.Size ClientSize { get; }
+
+        void AdvancedViewChange();
     }
 }
