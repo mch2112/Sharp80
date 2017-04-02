@@ -13,7 +13,7 @@ using Sharp80.TRS80;
 
 namespace Sharp80.DirectX
 {
-    public partial class SoundX : ISound, IDisposable
+    public partial class SoundX : ISound
     {
         public int SampleRate { get; private set; }
 
@@ -198,19 +198,25 @@ namespace Sharp80.DirectX
             catch (Exception)
             {
                 Mute = true;
-                Dispose();
+                Task.Run(Shutdown);
             }
         }
-        public async void Dispose()
+        public async Task Shutdown()
+        {
+            Stopped = true;
+            if (playingTask != null)
+            {
+                await playingTask;
+                playingTask = null;
+            }
+        }
+        public void Dispose()
         {
             if (!isDisposed)
             {
                 isDisposed = true;
                 enabled = false;
                 Stopped = true;
-
-                if (playingTask != null)
-                    await playingTask;
 
                 sourceVoice?.DestroyVoice();
                 sourceVoice?.Dispose();

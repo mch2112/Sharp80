@@ -6,11 +6,10 @@ using System.Text;
 
 namespace Sharp80.TRS80
 {
-    internal class Printer : IDisposable
+    internal class Printer
     {
         private StringBuilder printBuffer = new StringBuilder();
 
-        private bool isDisposed = false;
         private bool hasUnsavedContent = false;
 
         public string FilePath { get; private set; } = null;
@@ -67,14 +66,10 @@ namespace Sharp80.TRS80
                 return false;
             }
         }
-        public void Dispose()
+        public void Shutdown()
         {
-            if (!isDisposed)
-            {
-                if (hasUnsavedContent)
-                    Save();
-                isDisposed = true;
-            }
+            if (hasUnsavedContent)
+                Save();
         }
     }
 }

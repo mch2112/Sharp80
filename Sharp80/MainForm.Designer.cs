@@ -9,37 +9,6 @@ namespace Sharp80
     {
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        /// 
-        protected override void Dispose(bool disposing)
-        {
-            if (!isDisposing && !IsDisposed)
-            {
-                try
-                {
-                    isDisposing = true;
-
-                    if (disposing)
-                        components?.Dispose();
-
-                    base.Dispose(disposing);
-                    
-                    disposed = true;
-                    isDisposing = false;
-                }
-                catch (Exception Ex)
-                {
-                    // To0 late to do anything about it
-#if DEBUG
-                    Dialogs.ExceptionAlert(Ex);
-#endif
-                }
-            }
-        }
-
         #region Windows Form Designer generated code
 
         /// <summary>
@@ -55,7 +24,7 @@ namespace Sharp80
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(814, 359);
+            this.ClientSize = new System.Drawing.Size(831, 408);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(6);
             this.Name = "MainForm";

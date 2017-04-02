@@ -138,10 +138,16 @@ namespace Sharp80.TRS80
             {
                 IsStarting = true;
                 ResetTriggers();
-                execThread = Task.Run((Action)Exec);
+                execThread = Task.Run(Exec);
             }
         }
         internal void Stop() => stopReq = true;
+        internal async Task StopAndAwait()
+        {
+            Stop();
+            if (execThread != null)
+                await execThread;
+        }
         internal void Step()
         {
             if (IsStopped)
@@ -173,7 +179,7 @@ namespace Sharp80.TRS80
         /// <summary>
         /// The main CPU exec loop
         /// </summary>
-        private void Exec()
+        private async Task Exec()
         {
             if (!IsRunning)
             {
@@ -187,7 +193,7 @@ namespace Sharp80.TRS80
                 {
                     ExecOne();
                     if (NormalSpeed)
-                        Throttle();
+                        await Throttle();
                 }
                 IsRunning = false;
             }
@@ -255,7 +261,7 @@ namespace Sharp80.TRS80
                 SetNextPulseReqTick();
             }
         }
-        private void Throttle()
+        private async Task Throttle()
         {
             System.Diagnostics.Debug.Assert(NormalSpeed);
 
@@ -283,9 +289,9 @@ namespace Sharp80.TRS80
                     // Sleep
                     if (virtualTicksAhead > 0)
                         if (virtualTicksAhead > TICKS_PER_SECOND / 1000) // 1 msec
-                            System.Threading.Thread.Sleep(1);
+                            await Task.Delay(1);
                         else
-                            System.Threading.Thread.Sleep(0);
+                            await Task.Yield();
                 }
             }
         }

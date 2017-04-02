@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Sharp80.TRS80
 {
-    public class Computer : Z80.IComputer, IDisposable
+    public class Computer : Z80.IComputer
     {
         public const int SERIALIZATION_VERSION = 9;
 
@@ -30,7 +30,6 @@ namespace Sharp80.TRS80
         private Memory memory;
         private ISettings Settings { get; set; }
         private IDialogs Dialogs { get; set; }
-        private bool isDisposed = false;
 
         // CONSTRUCTOR
 
@@ -204,9 +203,8 @@ namespace Sharp80.TRS80
         }
         public async Task StopAndAwait()
         {
-            Stop(false);
-            while (!Clock.IsStopped)
-                await Task.Delay(1);
+            Sound.Mute = true;
+            await Clock.StopAndAwait();
         }
         public void ResetButton() => IntMgr.ResetButtonLatch.Latch();
 
@@ -531,21 +529,12 @@ namespace Sharp80.TRS80
             while (!done && pr.Active && IsRunning)
                 await Task.Delay(NormalSpeed ? (int)Math.Max(5, VirtualMSec / 5) : Math.Max(2, (int)VirtualMSec / 100));
         }
-        public void Dispose()
+        public async Task Shutdown()
         {
-            if (!isDisposed)
-            {
-                if (Ready)
-                {
-                    Stop(true);
-                    Ready = false;
-                }
-                FloppyController.Dispose();
-                Sound.Dispose();
-                Printer.Dispose();
-                Stop(WaitForStop: false); // ?
-                isDisposed = true;
-            }
+            FloppyController.Shutdown();
+            Printer.Shutdown();
+            await StopAndAwait();
+            await Sound.Shutdown();
         }
     }
 }

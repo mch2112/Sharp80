@@ -34,7 +34,7 @@ namespace Sharp80.TRS80
 
             int diskCursor = 0;
             bool? writeProt = null;
-            while (diskCursor < DiskData.Length - JV3_HEADER_SIZE)
+            while (diskCursor < DiskData.Length - JV3_HEADER_SIZE - 1)
             {
                 // Read sector Headers
                 for (int i = diskCursor; i < diskCursor + JV3_HEADER_SIZE; i += 3)
@@ -103,10 +103,8 @@ namespace Sharp80.TRS80
                 else
                     writeProt = (DiskData[diskCursor++] != 0xFF);
 
-                int q = 0;
                 foreach (var sd in sectors)
                 {
-                    q++;
                     if (sd.InUse)
                     {
                         if (DiskData.Length - diskCursor < sd.SectorSize) // not enough data for sector
@@ -125,9 +123,9 @@ namespace Sharp80.TRS80
                     diskCursor += sd.SectorSize;
                 }
             }
-            return DMK.MakeFloppy(Sectors: sectors,
-                                    WriteProtected: writeProt.Value,
-                                    OriginalFileType: FileType.JV3);
+            return MakeFloppy(Sectors: sectors,
+                              WriteProtected: writeProt.Value,
+                              OriginalFileType: FileType.JV3);
         }
         private byte[] SerializeToJV3()
         {

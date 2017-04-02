@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Threading.Tasks;
 
 namespace Sharp80.TRS80
 {
@@ -12,7 +13,7 @@ namespace Sharp80.TRS80
     {
         void Sample();
         void TrackStep();
-        void Dispose();
+        Task Shutdown();
 
         SampleCallback SampleCallback { set; }
         int SampleRate { get; }

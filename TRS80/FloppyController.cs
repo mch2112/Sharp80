@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Sharp80.TRS80
 {
-    public partial class FloppyController : ISerializable, IFloppyControllerStatus, IDisposable
+    public partial class FloppyController : ISerializable, IFloppyControllerStatus
     {
         public const int NUM_DRIVES = 4;
 
@@ -1714,7 +1714,7 @@ namespace Sharp80.TRS80
 
         // SHUTDOWN
 
-        public void Dispose()
+        public void Shutdown()
         {
             motorOffPulseReq?.Expire();
             motorOnPulseReq?.Expire();

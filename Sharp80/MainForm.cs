@@ -32,24 +32,23 @@ namespace Sharp80
         private CancellationTokenSource StopToken;
 
         private bool isDisposing = false;
-        private bool disposed = false;
-
         private Rectangle previousClientRect = Rectangle.Empty;
 
         private const uint SCREEN_REFRESH_RATE_HZ = 30;
         private const uint KEYBOARD_REFRESH_RATE_HZ = 40;
         private const uint DISPLAY_MESSAGE_CYCLE_DURATION = SCREEN_REFRESH_RATE_HZ;  // 1 second
 
+        private static bool suppressCursor = false;
+        private static int dialogLevel = 0;
+        private static bool cursorHidden = false;
+    
         public static bool IsUiThread => Thread.CurrentThread == uiThread;
         public static MainForm Instance => instance;
         public bool DrawOK => WindowState != FormWindowState.Minimized;
 
         private bool IsActive { get; set; }
-        private Size ClientExcess{ get; set; } = Size.Empty;
-        private int ClientExcessTop { get; set; }
-        private int ClientExcessLeft { get; set; }
-        private int ClientExcessWidth { get; set; }
-        private int ClientExcessHeight{ get; set; }
+        private Rectangle ClientExcess { get; set; } = Rectangle.Empty;
+
         public MainForm()
         {
             instance = this;
@@ -60,7 +59,8 @@ namespace Sharp80
             uiThread = Thread.CurrentThread;
             KeyPreview = true;
             Text = ProductInfo.ProductName + " - TRS-80 Model III Emulator";
-            BackColor = System.Drawing.Color.Black;
+            BackColor = Color.Black;
+
             keyboard = new KeyboardDX();
 
             screen = new ScreenDX(this,
@@ -101,197 +101,17 @@ namespace Sharp80
                 Dialogs.ExceptionAlert(Ex);
             }
         }
-        private void SetupClientArea()
-        {
-            ClientExcess = new Size(Size.Width - ClientSize.Width,
-                                    Size.Height - ClientSize.Height);
-            var pts = PointToScreen(new Point(0, 0));
-            ClientExcessTop = pts.Y - Top;
-            ClientExcessLeft = pts.X - Left;
-            ClientExcessWidth = Bounds.Width - ClientSize.Width;
-            ClientExcessHeight = Bounds.Height - ClientSize.Height;
-
-            var scn = Screen.FromHandle(Handle);
-
-            int clientExtraW = Width - ClientSize.Width;
-            int clientExtraH = Height - ClientSize.Height;
-
-            int sw = scn.WorkingArea.Width;
-            int sh = scn.WorkingArea.Height;
-
-            int w = Settings.WindowWidth;
-            int h = Settings.WindowHeight;
-
-            if (w <= 0 || h <= 0 || w + clientExtraW > sw || h + clientExtraH > sh)
-            {
-                w = (int)(screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL);
-                h = (int)ScreenMetrics.WINDOWED_HEIGHT;
-            }
-
-            int x = Settings.WindowX;
-            int y = Settings.WindowY;
-
-            if (x <= 0 || y <= 0)
-            {
-                x = (sw - w - clientExtraW) / 2;
-                y = (sh - h - clientExtraH) / 2;
-            }
-            if (x + w + clientExtraW > sw)
-                x = sw - w - clientExtraW;
-            if (y + h + clientExtraH > sh)
-                y = sh - h - clientExtraH;
-
-            ClientSize = new Size(w, h);
-            Location = new Point(x, y);
-        }
-
-        private void ProcessUserCommand(UserCommand Command)
-        {
-            switch (Command)
-            {
-                case UserCommand.ToggleFullScreen:
-                    ToggleFullScreen();
-                    break;
-                case UserCommand.Window:
-                    if (screen.IsFullScreen)
-                        ToggleFullScreen();
-                    break;
-                case UserCommand.ZoomIn:
-                    Zoom(true);
-                    break;
-                case UserCommand.ZoomOut:
-                    Zoom(false);
-                    break;
-                case UserCommand.HardReset:
-                    HardReset();
-                    break;
-                case UserCommand.Exit:
-                    Close();
-                    break;
-            }
-        }
-
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            // Prevent stupid ding noise
-            if (e.KeyCode < Keys.F1 || e.KeyCode > Keys.F19 || (!e.Alt && !e.Control))
-            {
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-                base.OnKeyDown(e);
-            }
-        }
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            if (computer.SaveChangedStorage())
-            {
-                Settings.WindowX = Location.X;
-                Settings.WindowY = Location.Y;
-                Settings.WindowWidth = ClientSize.Width;
-                Settings.WindowHeight = ClientSize.Height;
-                Settings.Save();
-                Task.Run(Stop);
-            }
-            else
-            {
-                e.Cancel = true;
-            }
-            base.OnFormClosing(e);
-        }
-        protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == MessageEventArgs.WM_SIZING)
-                ConstrainAspectRatio(m);
-            base.WndProc(ref m);
-        }
+        
         protected override void OnPaintBackground(PaintEventArgs e) { /* do nothing prevent flicker */ }
-        private void ProcessKey(KeyState Key)
-        {
-            if (IsActive)
-            {
-                try
-                {
-                    if (Key.Key == KeyCode.Capital && Key.Released)
-                        TurnCapsLockOff();
-                    Views.View.ProcessKey(Key);
-                }
-                catch (Exception Ex)
-                {
-                    Dialogs.ExceptionAlert(Ex);
-                }
-            }
-        }
-        private void SyncKeyboard()
-        {
-            keyboard.Refresh();
-            computer?.ResetKeyboard(keyboard.RightShiftPressed, keyboard.LeftShiftPressed);
-        }
-        private void ToggleFullScreen()
-        {
-            if (screen.IsFullScreen)
-                SetWindowed();
-            else
-                SetFullScreen();
-        }
-        private void SetWindowed()
-        {
-            Settings.FullScreen = screen.IsFullScreen = false;
-            SetWindowStyle(false);
-            SetClientRect();
-            SuppressCursor = false;
-        }
-        private void SetFullScreen()
-        {
-            previousClientRect = new Rectangle(PointToScreen(Point.Empty), ClientSize);
-
-            Settings.FullScreen = screen.IsFullScreen = true;
-            SetWindowStyle(true);
-            Bounds = Screen.GetBounds(this);
-            SuppressCursor = true;
-        }
-        private void SetWindowStyle(bool FullScreen)
-        {
-            if (FullScreen)
-            {
-                FormBorderStyle = FormBorderStyle.None;
-                WindowState = FormWindowState.Maximized;
-            }
-            else
-            {
-                FormBorderStyle = FormBorderStyle.Sizable;
-                WindowState = FormWindowState.Normal;
-            }
-        }
-
+        
         public void AdvancedViewChange()
         {
             if (!screen.IsFullScreen)
                 Bounds = ConstrainToScreen(Location.X, Location.Y, ClientSize.Height);
         }
 
-        private void Zoom(bool In)
-        {
-            if (WindowState == FormWindowState.Minimized)
-                return;
-            if (screen.IsFullScreen)
-            {
-                if (!In)
-                    SetWindowed();
-                return;
-            }
-            float aspectRatio = (screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL) / ScreenMetrics.WINDOWED_HEIGHT;
-            float zoom = In ? 1.2f : 1f / 1.2f;
-            float newH = zoom * ClientSize.Height;
-            newH = Math.Max(newH, ScreenMetrics.WINDOWED_HEIGHT / 2);
-            float newW = newH * aspectRatio;
+        // STARTUP
 
-            Rectangle r = new Rectangle((int)(Location.X + ClientExcessLeft - (newW - ClientSize.Width) / 2),
-                                        (int)(Location.Y + ClientExcessTop -  (newH - ClientSize.Height) / 2),
-                                        (int)newW,
-                                        (int)newH);
-
-            SetClientRect(r);
-        }
         private void HardReset()
         {
             try
@@ -300,14 +120,14 @@ namespace Sharp80
                 {
                     if (!computer.SaveChangedStorage())
                         return;
-                    computer.Dispose();
+                    Task.Run(computer.Shutdown);
                 }
                 var sound = new SoundX(16000);
                 if (sound.Stopped)
                     Dialogs.AlertUser("Sound failed to start. Continuing without sound.");
-                
+
                 computer = new Computer(screen, sound, new Timer(), Settings, Dialogs);
-                
+
                 screen.Initialize(computer);
 
                 Views.View.Initialize(ProductInfo, Dialogs, Settings, computer, (msg) => screen.StatusMessage = msg);
@@ -339,11 +159,66 @@ namespace Sharp80
             startTimer.Start();
         }
 
-        // CURSOR & DIALOG MANAGEMENT
+        // KEYBOARD HANDLING
 
-        private static bool suppressCursor = false;
-        private static int dialogLevel = 0;
-        private static bool cursorHidden = false;
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            // Prevent stupid ding noise
+            if (e.KeyCode < Keys.F1 || e.KeyCode > Keys.F19 || (!e.Alt && !e.Control))
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                base.OnKeyDown(e);
+            }
+        }
+        private void ProcessUserCommand(UserCommand Command)
+        {
+            switch (Command)
+            {
+                case UserCommand.ToggleFullScreen:
+                    ToggleFullScreen();
+                    break;
+                case UserCommand.Window:
+                    if (screen.IsFullScreen)
+                        ToggleFullScreen();
+                    break;
+                case UserCommand.ZoomIn:
+                    Zoom(true);
+                    break;
+                case UserCommand.ZoomOut:
+                    Zoom(false);
+                    break;
+                case UserCommand.HardReset:
+                    HardReset();
+                    break;
+                case UserCommand.Exit:
+                    Close();
+                    break;
+            }
+        }
+        private void ProcessKey(KeyState Key)
+        {
+            if (IsActive)
+            {
+                try
+                {
+                    if (Key.Key == KeyCode.Capital && Key.Released)
+                        TurnCapsLockOff();
+                    Views.View.ProcessKey(Key);
+                }
+                catch (Exception Ex)
+                {
+                    Dialogs.ExceptionAlert(Ex);
+                }
+            }
+        }
+        private void SyncKeyboard()
+        {
+            keyboard.Refresh();
+            computer?.ResetKeyboard(keyboard.RightShiftPressed, keyboard.LeftShiftPressed);
+        }
+
+        // CURSOR & DIALOG MANAGEMENT
 
         private bool SuppressCursor
         {
@@ -388,47 +263,97 @@ namespace Sharp80
             keyboard.Enabled = dialogLevel == 0;
         }
 
-        private async Task Stop()
+        // WINDOW SIZING
+
+        protected override void WndProc(ref Message m)
         {
-            try
+            if (m.Msg == MessageEventArgs.WM_SIZING)
+                ConstrainAspectRatio(m);
+            base.WndProc(ref m);
+        }
+        private void SetupClientArea()
+        {
+            // Store some invariant values for future use
+            var pts = PointToScreen(new Point(0, 0));
+            ClientExcess = new Rectangle(pts.X - Left,
+                                         pts.Y - Top,
+                                         Size.Width - ClientSize.Width,
+                                         Size.Height - ClientSize.Height);
+
+            // set screen startup position
+
+            Rectangle workingArea = Screen.FromHandle(Handle).WorkingArea;
+
+            int w = Settings.WindowWidth;
+            int h = Settings.WindowHeight;
+
+            // if not contained within screen working area, punt
+            if (w <= 0 || h <= 0 || w + ClientExcess.Width > workingArea.Width || h + ClientExcess.Height > workingArea.Height)
             {
-                StopToken.Cancel();
-                await Task.WhenAll(ScreenTask, KeyboardPollTask);
-                computer.Dispose();
-                screen.Dispose();
-                keyboard.Dispose();
-                Dispose();
+                w = (int)(screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL);
+                h = (int)ScreenMetrics.WINDOWED_HEIGHT;
             }
-            catch (AggregateException e)
+            SetClientRect(new Rectangle(Settings.WindowX, Settings.WindowY, w, h));
+        }
+        private void ToggleFullScreen()
+        {
+            if (screen.IsFullScreen)
+                SetWindowed();
+            else
+                SetFullScreen();
+        }
+        private void SetWindowed()
+        {
+            Settings.FullScreen = screen.IsFullScreen = false;
+            SetWindowStyle(false);
+            SetClientRect();
+            SuppressCursor = false;
+        }
+        private void SetFullScreen()
+        {
+            previousClientRect = new Rectangle(PointToScreen(Point.Empty), ClientSize);
+
+            Settings.FullScreen = screen.IsFullScreen = true;
+            SetWindowStyle(true);
+            Bounds = Screen.GetBounds(this);
+            SuppressCursor = true;
+        }
+        private void SetWindowStyle(bool FullScreen)
+        {
+            if (FullScreen)
             {
-                foreach (var ee in e.InnerExceptions)
-                    if (!(ee is TaskCanceledException))
-                    {
-                        // should do something
-                    }
+                FormBorderStyle = FormBorderStyle.None;
+                WindowState = FormWindowState.Maximized;
             }
-            finally
+            else
             {
-                StopToken.Dispose();
-                Application.Exit();
+                FormBorderStyle = FormBorderStyle.Sizable;
+                WindowState = FormWindowState.Normal;
             }
         }
-
-        private void TurnCapsLockOff()
+        private void Zoom(bool In)
         {
-            const int KEYEVENTF_EXTENDEDKEY = 0x01;
-            const int KEYEVENTF_KEYUP = 0x02;
-
-            // Annoying that it turns on when doing virtual shift-zero.
-            if (IsKeyLocked(Keys.CapsLock))
+            if (WindowState == FormWindowState.Minimized)
+                return;
+            if (screen.IsFullScreen)
             {
-                NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY, (UIntPtr)0);
-                NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
-                    (UIntPtr)0);
+                if (!In)
+                    SetWindowed();
+                return;
             }
+            float aspectRatio = (screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL) / ScreenMetrics.WINDOWED_HEIGHT;
+            float zoom = In ? 1.2f : 1f / 1.2f;
+            float newH = zoom * ClientSize.Height;
+            newH = Math.Max(newH, ScreenMetrics.WINDOWED_HEIGHT / 2);
+            float newW = newH * aspectRatio;
+
+            Rectangle r = new Rectangle((int)(Location.X + ClientExcess.Left - (newW - ClientSize.Width) / 2),
+                                        (int)(Location.Y + ClientExcess.Top - (newH - ClientSize.Height) / 2),
+                                        (int)newW,
+                                        (int)newH);
+
+            SetClientRect(r);
         }
-
-
         private void SetClientRect()
         {
             SetClientRect(previousClientRect);
@@ -452,10 +377,10 @@ namespace Sharp80
                                   w,
                                   h);
 
-            bounds = new Rectangle(Input.X - ClientExcessLeft,
-                                   Input.Y - ClientExcessTop,
-                                   Input.Width + ClientExcessWidth,
-                                   Input.Height + ClientExcessHeight);
+            bounds = new Rectangle(Input.X - ClientExcess.Left,
+                                   Input.Y - ClientExcess.Top,
+                                   Input.Width + ClientExcess.Width,
+                                   Input.Height + ClientExcess.Height);
 
             Rectangle workingArea;
             if (!(workingArea = Screen.GetWorkingArea(this)).Contains(bounds))
@@ -548,6 +473,95 @@ namespace Sharp80
                     rc.Left = rc.Right - (int)(ClientSize.Height * ratio);
                 }
                 Marshal.StructureToPtr(rc, Msg.LParam, true);
+            }
+        }
+
+        // SHUTDOWN
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (computer.SaveChangedStorage())
+            {
+                Settings.WindowX = Location.X;
+                Settings.WindowY = Location.Y;
+                Settings.WindowWidth = ClientSize.Width;
+                Settings.WindowHeight = ClientSize.Height;
+                Settings.Save();
+                Task.Run(Stop);
+            }
+            else
+            {
+                e.Cancel = true;
+            }
+            base.OnFormClosing(e);
+        }
+        private async Task Stop()
+        {
+            try
+            {
+                StopToken.Cancel();
+                await KeyboardPollTask;
+                await computer.Shutdown();
+                await ScreenTask;
+                screen.Dispose();
+                keyboard.Dispose();
+                Dispose();
+                StopToken.Dispose();
+                Application.Exit();
+            }
+            catch (AggregateException e)
+            {
+                foreach (var ee in e.InnerExceptions)
+                    if (!(ee is TaskCanceledException))
+                    {
+                        // should do something
+                    }
+                Application.Exit();
+            }
+        }
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (!isDisposing && !IsDisposed)
+            {
+                try
+                {
+                    isDisposing = true;
+
+                    if (disposing)
+                        components?.Dispose();
+
+                    base.Dispose(disposing);
+
+                    isDisposing = false;
+                }
+                catch (Exception Ex)
+                {
+                    // Too late to do anything about it
+#if DEBUG
+                    Dialogs.ExceptionAlert(Ex);
+#endif
+                }
+            }
+        }
+ 
+        // MISC
+
+        private void TurnCapsLockOff()
+        {
+            const int KEYEVENTF_EXTENDEDKEY = 0x01;
+            const int KEYEVENTF_KEYUP = 0x02;
+
+            // Annoying that it turns on when doing virtual shift-zero.
+            if (IsKeyLocked(Keys.CapsLock))
+            {
+                NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY, (UIntPtr)0);
+                NativeMethods.keybd_event(0x14, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP,
+                    (UIntPtr)0);
             }
         }
     }
