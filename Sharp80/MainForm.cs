@@ -539,12 +539,9 @@ namespace Sharp80
 
                     isDisposing = false;
                 }
-                catch (Exception Ex)
+                catch (Exception)
                 {
                     // Too late to do anything about it
-#if DEBUG
-                    Dialogs.ExceptionAlert(Ex);
-#endif
                 }
             }
         }

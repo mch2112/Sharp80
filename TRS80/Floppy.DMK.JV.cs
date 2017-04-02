@@ -16,15 +16,15 @@ namespace Sharp80.TRS80
 
         private const int JV3_SECTORS_PER_HEADER = 2901;
         private const int JV3_HEADER_SIZE = JV3_SECTORS_PER_HEADER * 3;
-        private const byte JV3_DOUBLE_DENSITY = 0x80; // 1 = DDEN; 0 = SDEN
-        private const byte JV3_DAM_TYPE = 0x60;       // DAM code
-        private const byte JV3_SIDE_ONE = 0x10;       // 0 = side 0; 1 = side 1
-        private const byte JV3_CRC_ERROR = 0x08;      // 0 = OK; 1 = CRC error */
-        private const byte JV3_NON_IBM = 0x04;        // 0=normal
-        private const byte JV3_SECTOR_SIZE_MASK = 0x03;  /* in used sectors: 0=256,1=128,2=1024,3=512
-                                                            in free sectors: 0=512,1=1024,2=128,3=256 */
-        private const byte JV3_SECTOR_FREE = 0xFF;    // in track and sector fields of free sectors */
-        private const byte JV3_SECTOR_FREE_FLAGS = 0xFC;  // in flags field, or'd with size code
+        private const byte JV3_DOUBLE_DENSITY = 0x80;     // 1 = Double Density; 0 = Single Density
+        private const byte JV3_DAM_TYPE = 0x60;           // DAM code
+        private const byte JV3_SIDE_ONE = 0x10;           // 0 = side 0; 1 = side 1
+        private const byte JV3_CRC_ERROR = 0x08;          // 0 = OK; 1 = CRC error */
+        private const byte JV3_NON_IBM = 0x04;            // 0=normal
+        private const byte JV3_SECTOR_SIZE_MASK = 0x03;   /* in used sectors: 0=256,1=128,2=1024,3=512
+                                                             in free sectors: 0=512,1=1024,2=128,3=256 */
+        private const byte JV3_SECTOR_FREE = 0xFF;        // in track and sector fields of header for unused sector blocks */
+        private const byte JV3_SECTOR_FREE_FLAGS = 0xFC;  // in flags field, OR'd with size code
 
         // JV3
 
@@ -39,7 +39,7 @@ namespace Sharp80.TRS80
                 // Read sector Headers
                 for (int i = diskCursor; i < diskCursor + JV3_HEADER_SIZE; i += 3)
                 {
-                    if (DiskData[i] != JV3_SECTOR_FREE)
+                    if (DiskData[i] != JV3_SECTOR_FREE && DiskData[i + 1] != JV3_SECTOR_FREE) // 0xFF for unused header entries
                     {
                         var sd = new SectorDescriptor()
                         {
@@ -49,7 +49,7 @@ namespace Sharp80.TRS80
 
                         byte flags = DiskData[i + 2];
 
-                        sd.InUse = sd.TrackNumber != JV3_SECTOR_FREE || sd.SectorNumber != JV3_SECTOR_FREE || ((flags & JV3_SECTOR_FREE_FLAGS) != JV3_SECTOR_FREE_FLAGS);
+                        sd.InUse = (flags & JV3_SECTOR_FREE_FLAGS) != JV3_SECTOR_FREE_FLAGS;
                         sd.DoubleDensity = (flags & JV3_DOUBLE_DENSITY) == JV3_DOUBLE_DENSITY;
 
                         // The 2-bit DAM_TYPE field encodes the sector's data address mark:
@@ -76,9 +76,7 @@ namespace Sharp80.TRS80
 
                         sd.SideOne = (flags & JV3_SIDE_ONE) == JV3_SIDE_ONE;
                         sd.CrcError = (flags & JV3_CRC_ERROR) == JV3_CRC_ERROR;
-
-                        // No reason to use this:
-                        // sd.NonIbm = (flags & JV3_NON_IBM) == JV3_NON_IBM;
+                        sd.NonIbm = (flags & JV3_NON_IBM) == JV3_NON_IBM;
 
                         // Sector Size Codes
                         // Size    IBM size   SECTOR_SIZE field SECTOR_SIZE field
@@ -110,10 +108,10 @@ namespace Sharp80.TRS80
                         if (DiskData.Length - diskCursor < sd.SectorSize) // not enough data for sector
                         {
                             if (DiskData.Length > diskCursor) // try to get some data
-                                sd.SectorData = DiskData.Slice(diskCursor, DiskData.Length);
+                                sd.SectorData = DiskData.Slice(diskCursor, DiskData.Length).Pad(sd.SectorSize, (byte)0x00);
                             else
                                 sd.SectorData = new byte[sd.SectorSize];
-                            diskCursor = DiskData.Length;
+                            diskCursor = DiskData.Length; // push cursor past end; we're done
                         }
                         else
                         {
@@ -157,9 +155,10 @@ namespace Sharp80.TRS80
 
                             if (ss.SideOne)
                                 temp[cursor] |= JV3_SIDE_ONE;
-
                             if (ss.CrcError)
                                 temp[cursor] |= JV3_CRC_ERROR;
+                            if (ss.NonIbm)
+                                temp[cursor] |= JV3_NON_IBM;
 
                             switch (ss.DAM)
                             {

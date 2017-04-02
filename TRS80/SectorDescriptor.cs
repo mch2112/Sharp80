@@ -13,6 +13,7 @@ namespace Sharp80.TRS80
         public byte DAM { get; set; }
         public bool SideOne { get; set; }
         public bool CrcError { get; set; }
+        public bool NonIbm { get; set; } // unused
         public bool InUse { get; set; } = true;
         public ushort SectorSize { get; set; }
         public byte SectorSizeCode { get; set; }

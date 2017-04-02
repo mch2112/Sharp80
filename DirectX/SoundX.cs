@@ -209,6 +209,7 @@ namespace Sharp80.DirectX
                 await playingTask;
                 playingTask = null;
             }
+            Dispose();
         }
         public void Dispose()
         {
