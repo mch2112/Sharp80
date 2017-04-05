@@ -60,6 +60,7 @@
     <Compile Include="ISerializable.cs" />
     <Compile Include="Lib.cs" />
     <Compile Include="Register.cs" />
+    <Compile Include="TraceLog.cs" />
     <Compile Include="Z80.cs" />
     <Compile Include="IStatus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

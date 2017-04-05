@@ -9,6 +9,7 @@ namespace Sharp80Tests
         public bool AutoStartOnReset { get; set; } = false;
         public ushort Breakpoint { get; set; } = 0;
         public bool BreakpointOn { get; set; } = false;
+        public ClockSpeed ClockSpeed { get; set; }
         public string DefaultFloppyDirectory { get; set; } = "";
         public string Disk0Filename
         {
@@ -37,7 +38,6 @@ namespace Sharp80Tests
         public string LastCmdFile { get; set; } = "";
         public string LastSnapshotFile { get; set; } = "";
         public string LastTapeFile { get; set; } = "";
-        public bool NormalSpeed { get; set; } = true;
         public bool SoundOn { get => false; set { } }
         public int WindowHeight { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public int WindowWidth { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

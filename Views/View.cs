@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -110,219 +111,236 @@ namespace Sharp80.Views
         protected virtual void Activate() { }
         protected virtual bool processKey(KeyState Key)
         {
-            if (Key.IsUnmodified)
+            Invalidate();
+            if (Key.Pressed)
             {
-                if (Key.Pressed && !Key.Shift)
+                if (Key.IsUnmodified)
                 {
-                    switch (Key.Key)
+                    if (Key.Shift)
                     {
-                        case KeyCode.Escape:
-                            RevertMode();
-                            return true;
-                        case KeyCode.F1:
-                            CurrentMode = ViewMode.Help;
-                            return true;
-                        case KeyCode.F2:
-                            CurrentMode = ViewMode.Options;
-                            return true;
-                        case KeyCode.F3:
-                            CurrentMode = ViewMode.Disk;
-                            return true;
-                        case KeyCode.F4:
-                            CurrentMode = ViewMode.Tape;
-                            return true;
-                        case KeyCode.F5:
-                            InvokeUserCommand(UserCommand.ToggleAdvancedView);
-                            MessageCallback(Settings.AdvancedView ? "Advanced View" : "Normal View");
-                            return true;
-                        case KeyCode.F6:
-                            InvokeUserCommand(UserCommand.ShowAdvancedView);
-                            CurrentMode = ViewMode.Jump;
-                            return true;
-                        case KeyCode.F7:
-                            InvokeUserCommand(UserCommand.ShowAdvancedView);
-                            CurrentMode = ViewMode.Breakpoint;
-                            return true;
-                        case KeyCode.F8:
-                            if (Computer.IsRunning)
-                            {
+                        switch (Key.Key)
+                        {
+                            case KeyCode.F12:
+                                if (Computer.TraceOn)
+                                    Computer.ClockSpeed = Computer.ClockSpeed == ClockSpeed.XSlow ? ClockSpeed.XXSlow : ClockSpeed.XSlow;
+                                else
+                                    Computer.ClockSpeed = (ClockSpeed)(((int)Computer.ClockSpeed + 1) % (int)ClockSpeed.Count);
+                                MessageCallback(ClockSpeedToString(Computer.ClockSpeed) + " Speed");
+                                Settings.ClockSpeed = Computer.ClockSpeed;
+                                return true;
+                        }
+                    }
+                    else
+                    {
+                        switch (Key.Key)
+                        {
+                            case KeyCode.Escape:
+                                RevertMode();
+                                return true;
+                            case KeyCode.F1:
+                                CurrentMode = ViewMode.Help;
+                                return true;
+                            case KeyCode.F2:
+                                CurrentMode = ViewMode.Options;
+                                return true;
+                            case KeyCode.F3:
+                                CurrentMode = ViewMode.Disk;
+                                return true;
+                            case KeyCode.F4:
+                                CurrentMode = ViewMode.Tape;
+                                return true;
+                            case KeyCode.F5:
+                                InvokeUserCommand(UserCommand.ToggleAdvancedView);
+                                MessageCallback(Settings.AdvancedView ? "Advanced View" : "Normal View");
+                                return true;
+                            case KeyCode.F6:
+                                InvokeUserCommand(UserCommand.ShowAdvancedView);
+                                CurrentMode = ViewMode.Jump;
+                                return true;
+                            case KeyCode.F7:
+                                InvokeUserCommand(UserCommand.ShowAdvancedView);
+                                CurrentMode = ViewMode.Breakpoint;
+                                return true;
+                            case KeyCode.F8:
+                                if (Computer.IsRunning)
+                                {
+                                    Computer.Stop(true);
+                                    if (Settings.AdvancedView)
+                                        MessageCallback("Paused");
+                                }
+                                else
+                                {
+                                    Computer.Start();
+                                    MessageCallback("Started");
+                                }
+                                Invalidate();
+                                return true;
+                            case KeyCode.F9:
+                                Computer.Step();
+                                Invalidate();
+                                return true;
+                            case KeyCode.F10:
+                                Computer.StepOver();
+                                return true;
+                            case KeyCode.F11:
+                                Computer.StepOut();
+                                return true;
+                            case KeyCode.F12:
+                                if (Computer.TraceOn)
+                                    Computer.ClockSpeed = Computer.ClockSpeed == ClockSpeed.XSlow ? ClockSpeed.XXSlow : ClockSpeed.XSlow;
+                                else
+                                    Computer.ClockSpeed = Computer.ClockSpeed == ClockSpeed.Normal ? ClockSpeed.Unlimited : ClockSpeed.Normal;
+                                MessageCallback(ClockSpeedToString(Computer.ClockSpeed) + " Speed");
+                                Settings.ClockSpeed = Computer.ClockSpeed;
+                                return true;
+                        }
+                    }
+                }
+                else if (Key.Alt)
+                {
+                    if (!Key.Control && Key.Shift)
+                    {
+                        // SHIFT-ALT
+                        switch (Key.Key)
+                        {
+                            case KeyCode.M:
+                                DumpMemory();
+                                MessageCallback("Memory Dumped");
+                                break;
+                            case KeyCode.N:
+                                bool wasRunning = Computer.IsRunning;
                                 Computer.Stop(true);
-                                if (Settings.AdvancedView)
-                                    MessageCallback("Paused");
-                            }
-                            else
-                            {
-                                Computer.Start();
-                                MessageCallback("Started");
-                            }
-                            Invalidate();
-                            return true;
-                        case KeyCode.F9:
-                            Computer.Step();
-                            Invalidate();
-                            return true;
-                        case KeyCode.F10:
-                            Computer.StepOver();
-                            return true;
-                        case KeyCode.F11:
-                            Computer.StepOut();
-                            return true;
-                        case KeyCode.F12:
-                            if (Settings.NormalSpeed)
-                            {
-                                Computer.NormalSpeed = false;
-                                MessageCallback("Fast Speed");
-                            }
-                            else
-                            {
-                                Computer.NormalSpeed = true;
-                                MessageCallback("Normal Speed");
-                            }
-                            Settings.NormalSpeed = Computer.NormalSpeed;
-                            return true;
+                                System.IO.Directory.CreateDirectory(Storage.DefaultSnapshotDir);
+                                string path = Dialogs.GetSnapshotFile(Storage.DefaultSnapshotDir, true);
+                                if (path.Length > 0)
+                                {
+                                    Computer.SaveSnapshotFile(path);
+                                    Settings.LastSnapshotFile = path;
+                                }
+                                if (wasRunning)
+                                    Computer.Start();
+                                return true;
+                            case KeyCode.S:
+                                Settings.DriveNoise = Computer.DriveNoise = !Computer.DriveNoise;
+                                MessageCallback(Settings.DriveNoise ? "Drive noise on" : "Drive noise off");
+                                return true;
+                            case KeyCode.X:
+                                InvokeUserCommand(UserCommand.Exit);
+                                return true;
+                            case KeyCode.End:
+                                MessageCallback("Hard Reset...");
+                                InvokeUserCommand(UserCommand.HardReset);
+                                // don't just leave a blank screen
+                                if (!Computer.IsRunning)
+                                    CurrentMode = ViewMode.Splash;
+                                return true;
+                        }
+                    }
+                    else if (!Key.Control && !Key.Shift)
+                    {
+                        // ALT
+                        switch (Key.Key)
+                        {
+                            case KeyCode.Return:
+                                InvokeUserCommand(UserCommand.ToggleFullScreen);
+                                return true;
+                            case KeyCode.End:
+                                MessageCallback("Reset...");
+                                Computer.Reset();
+                                return true;
+                            case KeyCode.A:
+                                Settings.AutoStartOnReset = !Settings.AutoStartOnReset;
+                                MessageCallback("Auto Start on Reset " + (Settings.AutoStartOnReset ? "On" : "Off"));
+                                return true;
+                            case KeyCode.B:
+                                MakeAndSaveBlankFloppy(true);
+                                return true;
+                            case KeyCode.C:
+                                CurrentMode = ViewMode.CmdFile;
+                                return true;
+                            case KeyCode.D:
+                                CurrentMode = ViewMode.FloppyController;
+                                return true;
+                            case KeyCode.E:
+                                CurrentMode = ViewMode.Disassembler;
+                                return true;
+                            case KeyCode.G:
+                                InvokeUserCommand(UserCommand.GreenScreen);
+                                MessageCallback("Screen color changed.");
+                                return true;
+                            case KeyCode.H:
+                                Computer.HistoricDisassemblyMode = !Computer.HistoricDisassemblyMode;
+                                MessageCallback(Computer.HistoricDisassemblyMode ? "Historic Disassembly Mode" : "Normal Disassembly Mode");
+                                return true;
+                            case KeyCode.I:
+                                string iPath = System.IO.Path.Combine(Storage.AppDataPath, "Z80 Instruction Set.txt");
+                                System.IO.File.WriteAllText(iPath, Computer.GetInstructionSetReport());
+                                InvokeUserCommand(UserCommand.Window);
+                                Dialogs.ShowTextFile(iPath);
+                                return true;
+                            case KeyCode.K:
+                                Settings.AltKeyboardLayout = Computer.AltKeyboardLayout = !Computer.AltKeyboardLayout;
+                                MessageCallback(Settings.AltKeyboardLayout ? "Alternate Keyboard Layout" : "Normal Keyboard Layout");
+                                return true;
+                            case KeyCode.M:
+                                CurrentMode = ViewMode.Memory;
+                                return true;
+                            case KeyCode.N:
+                                string path = Dialogs.GetSnapshotFile(Settings.LastSnapshotFile, false);
+                                if (path.Length > 0 && Computer.SaveChangedStorage())
+                                {
+                                    Computer.LoadSnapshotFile(path);
+                                    Settings.LastSnapshotFile = path;
+                                    MessageCallback("Snapshot Loaded");
+                                }
+                                return true;
+                            case KeyCode.P:
+                                CurrentMode = ViewMode.Printer;
+                                break;
+                            case KeyCode.Q:
+                                MakeFloppyFromFile(out string _);
+                                return true;
+                            case KeyCode.R:
+                                CurrentMode = ViewMode.Cpu;
+                                return true;
+                            case KeyCode.S:
+                                Settings.SoundOn = Computer.SoundOn = !Computer.SoundOn;
+                                MessageCallback(Settings.SoundOn ? "Sound On" : "Sound Off");
+                                return true;
+                            case KeyCode.U:
+                                MakeAndSaveBlankFloppy(false);
+                                return true;
+                            case KeyCode.V:
+                                ToggleTrace();
+                                return true;
+                            case KeyCode.Y:
+                                CurrentMode = ViewMode.Assembler;
+                                return true;
+                            case KeyCode.Z:
+                                if (Computer.AnyDriveLoaded)
+                                    CurrentMode = ViewMode.Zap;
+                                return true;
+                        }
                     }
                 }
-                if (!Key.Repeat && CanSendKeysToEmulation)
-                    return Computer.NotifyKeyboardChange(Key);
-            }
-            else if (Key.Pressed && Key.Alt)
-            {
-                if (!Key.Control && Key.Shift)
+                else if (Key.Control && !Key.Alt)
                 {
-                    // SHIFT-ALT
+                    // Control pressed, ignores shift status
                     switch (Key.Key)
                     {
-                        case KeyCode.M:
-                            DumpMemory();
-                            MessageCallback("Memory Dumped");
-                            break;
-                        case KeyCode.N:
-                            bool wasRunning = Computer.IsRunning;
-                            Computer.Stop(true);
-                            System.IO.Directory.CreateDirectory(Storage.DefaultSnapshotDir);
-                            string path = Dialogs.GetSnapshotFile(Storage.DefaultSnapshotDir, true);
-                            if (path.Length > 0)
-                            {
-                                Computer.SaveSnapshotFile(path);
-                                Settings.LastSnapshotFile = path;
-                            }
-                            if (wasRunning)
-                                Computer.Start();
+                        case KeyCode.Equals:
+                            InvokeUserCommand(UserCommand.ZoomIn);
                             return true;
-                        case KeyCode.S:
-                            Settings.DriveNoise = Computer.DriveNoise = !Computer.DriveNoise;
-                            MessageCallback(Settings.DriveNoise ? "Drive noise on" : "Drive noise off");
-                            return true;
-                        case KeyCode.X:
-                            InvokeUserCommand(UserCommand.Exit);
-                            return true;
-                        case KeyCode.End:
-                            MessageCallback("Hard Reset...");
-                            InvokeUserCommand(UserCommand.HardReset);
-                            // don't just leave a blank screen
-                            if (!Computer.IsRunning)
-                                CurrentMode = ViewMode.Splash;
-                            return true;
-                    }
-                }
-                else if (!Key.Control && !Key.Shift)
-                {
-                    // ALT
-                    switch (Key.Key)
-                    {
-                        case KeyCode.Return:
-                            InvokeUserCommand(UserCommand.ToggleFullScreen);
-                            return true;
-                        case KeyCode.End:
-                            MessageCallback("Reset...");
-                            Computer.Reset();
-                            return true;
-                        case KeyCode.A:
-                            Settings.AutoStartOnReset = !Settings.AutoStartOnReset;
-                            MessageCallback("Auto Start on Reset " + (Settings.AutoStartOnReset ? "On" : "Off"));
-                            return true;
-                        case KeyCode.B:
-                            MakeAndSaveBlankFloppy(true);
-                            return true;
-                        case KeyCode.C:
-                            CurrentMode = ViewMode.CmdFile;
-                            return true;
-                        case KeyCode.D:
-                            CurrentMode = ViewMode.FloppyController;
-                            return true;
-                        case KeyCode.E:
-                            CurrentMode = ViewMode.Disassembler;
-                            return true;
-                        case KeyCode.G:
-                            InvokeUserCommand(UserCommand.GreenScreen);
-                            MessageCallback("Screen color changed.");
-                            return true;
-                        case KeyCode.H:
-                            Computer.HistoricDisassemblyMode = !Computer.HistoricDisassemblyMode;
-                            MessageCallback(Computer.HistoricDisassemblyMode ? "Historic Disassembly Mode" : "Normal Disassembly Mode");
-                            return true;
-                        case KeyCode.I:
-                            string iPath = System.IO.Path.Combine(Storage.AppDataPath, "Z80 Instruction Set.txt");
-                            System.IO.File.WriteAllText(iPath, Computer.GetInstructionSetReport());
-                            InvokeUserCommand(UserCommand.Window);
-                            Dialogs.ShowTextFile(iPath);
-                            return true;
-                        case KeyCode.K:
-                            Settings.AltKeyboardLayout = Computer.AltKeyboardLayout = !Computer.AltKeyboardLayout;
-                            MessageCallback(Settings.AltKeyboardLayout ? "Alternate Keyboard Layout" : "Normal Keyboard Layout");
-                            return true;
-                        case KeyCode.M:
-                            CurrentMode = ViewMode.Memory;
-                            return true;
-                        case KeyCode.N:
-                            string path = Dialogs.GetSnapshotFile(Settings.LastSnapshotFile, false);
-                            if (path.Length > 0 && Computer.SaveChangedStorage())
-                            {
-                                Computer.LoadSnapshotFile(path);
-                                Settings.LastSnapshotFile = path;
-                                MessageCallback("Snapshot Loaded");
-                            }
-                            return true;
-                        case KeyCode.P:
-                            CurrentMode = ViewMode.Printer;
-                            break;
-                        case KeyCode.Q:
-                            MakeFloppyFromFile(out string _);
-                            return true;
-                        case KeyCode.R:
-                            CurrentMode = ViewMode.Cpu;
-                            return true;
-                        case KeyCode.S:
-                            Settings.SoundOn = Computer.SoundOn = !Computer.SoundOn;
-                            MessageCallback(Settings.SoundOn ? "Sound On" : "Sound Off");
-                            return true;
-                        case KeyCode.U:
-                            MakeAndSaveBlankFloppy(false);
-                            return true;
-                        case KeyCode.Y:
-                            CurrentMode = ViewMode.Assembler;
-                            return true;
-                        case KeyCode.Z:
-                            if (Computer.AnyDriveLoaded)
-                                CurrentMode = ViewMode.Zap;
+                        case KeyCode.Minus:
+                            InvokeUserCommand(UserCommand.ZoomOut);
                             return true;
                     }
                 }
             }
-            else if (Key.Pressed && Key.Control && !Key.Alt)
-            {
-                // Control pressed, ignores shift status
-                switch (Key.Key)
-                {
-                    case KeyCode.Equals:
-                        InvokeUserCommand(UserCommand.ZoomIn);
-                        return true;
-                    case KeyCode.Minus:
-                        InvokeUserCommand(UserCommand.ZoomOut);
-                        return true;
-                }
-            }
-            return false;
+            if (Key.IsUnmodified && !Key.Repeat && CanSendKeysToEmulation)
+                return Computer.NotifyKeyboardChange(Key);
+            else
+                return false;
         }
         protected static bool InvokeAssembler(bool SuppressDialogOnSuccess)
         {
@@ -469,6 +487,36 @@ namespace Sharp80.Views
 
         // MISC
 
+        private void ToggleTrace()
+        {
+            if (Computer.TraceOn)
+            {
+                Computer.TraceOn = false;
+                string trace = Computer.Trace;
+                if (trace.Length > 0)
+                {
+                    string dir = Path.Combine(Storage.AppDataPath, @"trace_logs/");
+                    if (!Directory.Exists(dir))
+                        Directory.CreateDirectory(dir);
+                    string path = Path.Combine(dir, "trace.txt").MakeUniquePath();
+                    File.WriteAllText(path, trace);
+                    Dialogs.ShowTextFile(path);
+                }
+                else
+                {
+                    Dialogs.InformUser("No trace data saved yet.");
+                }
+                MessageCallback("Trace: OFF");
+            }
+            else
+            {
+                if (Computer.ClockSpeed != ClockSpeed.XXSlow && Computer.ClockSpeed != ClockSpeed.XSlow)
+                    Computer.ClockSpeed = ClockSpeed.XSlow;
+
+                Computer.TraceOn = true;
+                MessageCallback("&Trace: ON");
+            }
+        }
         protected bool MakeFloppyFromFile(out string NewPath, string FilePath = null)
         {
             FilePath = FilePath ?? Dialogs.GetFilePath(Storage.DocsPath);
@@ -546,6 +594,26 @@ namespace Sharp80.Views
             {
                 Dialogs.ExceptionAlert(Ex);
                 return false;
+            }
+        }
+        protected static string ClockSpeedToString(TRS80.ClockSpeed Speed)
+        {
+            switch (Speed)
+            {
+                case ClockSpeed.XXSlow:
+                    return "XX Slow";
+                case ClockSpeed.XSlow:
+                    return "X Slow";
+                case ClockSpeed.Slow:
+                    return "Slow";
+                case ClockSpeed.Normal:
+                    return "Normal";
+                case ClockSpeed.Fast:
+                    return "Fast";
+                case ClockSpeed.Unlimited:
+                    return "Unlimited";
+                default:
+                    throw new Exception("Unknown clock speed!");
             }
         }
     }

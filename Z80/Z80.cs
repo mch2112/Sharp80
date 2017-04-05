@@ -75,24 +75,6 @@ namespace Sharp80.Z80
         private bool halted;
         private ushort breakPoint = 0;
 
-        // User vectors
-
-        public ushort BreakPoint
-        {
-            get => breakPoint;
-            set
-            {
-                if (breakPoint != value)
-                {
-                    breakPoint = value;
-                    skipOneBreakpoint = PC.val == value && !computer.IsRunning;
-                }
-            }
-        }
-        public bool BreakPointOn { get; set; } = false;
-        private ushort? systemBreakPoint = null;
-        private bool skipOneBreakpoint = false;
-
         // CONSTRUCTORS
 
         static Z80() => InitFlagsString();
@@ -213,8 +195,10 @@ namespace Sharp80.Z80
 
             historyBuffer.Clear();
         }
-
-        // returns ticks used
+        /// <summary>
+        /// Executes an instruction
+        /// </summary>
+        /// <returns>Number of ticks consumed</returns>
         public ulong Exec()
         {
             ulong retVal;
@@ -247,7 +231,11 @@ namespace Sharp80.Z80
             }
 
             CurrentInstruction = GetInstructionAt(PC.val);
-            retVal = ExecuteInstruction(CurrentInstruction);
+
+            if (TraceOn)
+                retVal = TraceLog.Log(computer.ElapsedTStates, ExecuteInstruction);
+            else
+                retVal = ExecuteInstruction(CurrentInstruction);
 
             if (RestoreInterrupts)
             {
@@ -294,17 +282,18 @@ namespace Sharp80.Z80
                 historyBuffer.ReplaceLast(PC.val);
             }
         }
+        
         // Returns ticks used
         private ushort ExecuteInstruction(Instruction Instruction)
         {
             // returns ticks used
 
-            Debug.Assert(this.RecordExtraTicks == false);
+            Debug.Assert(RecordExtraTicks == false);
 
             NextPC = PC.val;
             NextPC += Instruction.Size;
 
-            Debug.Assert(this.RecordExtraTicks == false);
+            Debug.Assert(RecordExtraTicks == false);
 
             Instruction.Execute();
 
@@ -324,6 +313,24 @@ namespace Sharp80.Z80
         }
 
         private Instruction GetInstructionAt(ushort Address) => instructionSet.GetInstruction(Memory, Address);
+
+        // BREAKPOINTS
+
+        public ushort BreakPoint
+        {
+            get => breakPoint;
+            set
+            {
+                if (breakPoint != value)
+                {
+                    breakPoint = value;
+                    skipOneBreakpoint = PC.val == value && !computer.IsRunning;
+                }
+            }
+        }
+        public bool BreakPointOn { get; set; } = false;
+        private ushort? systemBreakPoint = null;
+        private bool skipOneBreakpoint = false;
 
         // INTERRUPTS
 
@@ -490,6 +497,25 @@ namespace Sharp80.Z80
             }
         }
 
+        // TRACE
+
+        private bool traceOn;
+        public bool TraceOn
+        {
+            get => traceOn;
+            set
+            {
+                if (traceOn != value)
+                {
+                    if (value)
+                        TraceLog = new TraceLog(this, computer.ElapsedTStates);
+                    traceOn = value;
+                }
+            }
+        }
+        public string Trace => TraceLog?.GetLogAndClear() ?? String.Empty;
+        private TraceLog TraceLog { get; set;}
+
         // INSTRUCTION SUPPORT
 
         private void InitInstructionSet()
@@ -497,7 +523,6 @@ namespace Sharp80.Z80
             SetupInstructionObjects();
             instructionSet.Initialize();
         }
-
         private void PushWord(ushort val)
         {
             SP.val -= 2;
@@ -509,7 +534,6 @@ namespace Sharp80.Z80
             SP.val += 2;
             return val;
         }
-
         private bool IsSteppable(Instruction i)
         {
             return i.Mnemonic == "CALL" ||
@@ -525,16 +549,18 @@ namespace Sharp80.Z80
                    i.Mnemonic == "DJNZ";
         }
 
-        private static byte SZ(byte input) => Lib.SZ[input];
-        private static byte SZ53P(byte input) => Lib.SZ53P[input];
-        private static byte SZ53(byte input) => Lib.SZ53[input];
-        private static byte F53(byte input) => Lib.F53[input];
-        private static byte P(byte input) => Lib.P[input];
+        // HELPERS
 
-        private static byte SZ(int input) => Lib.SZ[input & 0xFF];
-        private static byte SZ53P(int input) => Lib.SZ53P[input & 0xFF];
-        private static byte SZ53(int input) => Lib.SZ53[input & 0xFF];
-        private static byte F53(int input) => Lib.F53[input & 0xFF];
-        private static byte P(int input) => Lib.P[input & 0xFF];
+        private static byte SZ(byte input) =>    Lib.SZ[input];
+        private static byte SZ53P(byte input) => Lib.SZ53P[input];
+        private static byte SZ53(byte input) =>  Lib.SZ53[input];
+        private static byte F53(byte input) =>   Lib.F53[input];
+        private static byte P(byte input) =>     Lib.P[input];
+
+        private static byte SZ(int input) =>     Lib.SZ[input & 0xFF];
+        private static byte SZ53P(int input) =>  Lib.SZ53P[input & 0xFF];
+        private static byte SZ53(int input) =>   Lib.SZ53[input & 0xFF];
+        private static byte F53(int input) =>    Lib.F53[input & 0xFF];
+        private static byte P(int input) =>      Lib.P[input & 0xFF];
     }
 }

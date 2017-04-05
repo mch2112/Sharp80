@@ -20,8 +20,8 @@
     <Setting Name="last_asm_file" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="normal_speed" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+    <Setting Name="clock_speed" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="sound" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>

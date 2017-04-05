@@ -16,8 +16,7 @@ namespace Sharp80.Views
         {
             return PadScreen(Encoding.ASCII.GetBytes(
                 Header("Sharp 80 Options") +
-                Indent(string.Format("[F12] Speed                        {0}",
-                    Computer.NormalSpeed ? "[NORMAL] /  FAST" : " NORMAL  / [FAST]")) +
+                Indent(string.Format("[F12] Speed                        [{0}]", ClockSpeedToString(Computer.ClockSpeed))) +
                 Format() +
                 Indent(string.Format("[Alt]+[S] Sound                    {0}",
                     Computer.SoundOn ? "[ON] /  OFF" : " ON  / [OFF]")) +
@@ -42,6 +41,6 @@ namespace Sharp80.Views
                 Indent(string.Format("[Alt]+[Enter] Full-Screen View     {0}",
                     Settings.FullScreen ? "[ON] /  OFF " : " ON  / [OFF]")) +
                 Format()));
-        }
+        }        
     }
 }

@@ -35,7 +35,7 @@ namespace Sharp80.Z80
 
             while (PC <= end)
             {
-                li.Add(PC, inst = InstructionSet.GetInstruction(Memory[PC], Memory[PC + 1], Memory[PC + 3]));
+                li.Add(PC, inst = InstructionSet.GetInstruction(Memory[PC], Memory[(ushort)(PC + 1)], Memory[(ushort)(PC + 3)]));
                 PC += inst.Size;
             }
 

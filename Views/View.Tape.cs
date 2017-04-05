@@ -7,7 +7,7 @@ namespace Sharp80.Views
     internal class ViewTape : View
     {
         protected override ViewMode Mode => ViewMode.Tape;
-        protected override bool ForceRedraw => Computer.TapeStatus == TRS80.TapeStatus.Reading || Computer.TapeStatus == TRS80.TapeStatus.Writing;
+        protected override bool ForceRedraw => true;
         protected override bool CanSendKeysToEmulation => false;
 
         protected override bool processKey(KeyState Key)

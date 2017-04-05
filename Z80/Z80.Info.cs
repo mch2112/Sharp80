@@ -28,11 +28,8 @@ namespace Sharp80.Z80
             while (b++ < 0xFF);
         }
 
-        public string GetInternalsReport()
-        {
-            return string.Format("{0}\r\nPC   {1}\r\nSP   {2}\r\n\r\nAF   {3}\r\nBC   {4}\r\nDE   {5}\r\nHL   {6}\r\n\r\nIX   {7}\r\nIY   {8}\r\n\r\nAF'  {9}\r\nBC'  {10}\r\nDE'  {11}\r\nHL'  {12}\r\n\r\nIR   {13}{14}\r\nWZ   {15}\r\n\r\n(HL) {16}\r\n(SP) {17}", flagsToString[F.val], PC, SP, AF, BC, DE, HL, IX, IY, AFp, BCp, DEp, HLp, I, R, WZ, HLM, SPM);
-        }
-
+        public string GetInternalsReport() => $"{flagsToString[F.val]}\r\nPC   {PC}\r\nSP   {SP}\r\n\r\nAF   {AF}\r\nBC   {BC}\r\nDE   {DE}\r\nHL   {HL}\r\n\r\nIX   {IX}\r\nIY   {IY}\r\n\r\nAF'  {AFp}\r\nBC'  {BCp}\r\nDE'  {DEp}\r\nHL'  {HLp}\r\n\r\nIR   {I}{R}\r\nWZ   {WZ}\r\n\r\n(HL) {HLM}\r\n(SP) {SPM}";
+        
         public string Disassemble(ushort Start, ushort End, bool MakeAssemblable) => disassembler.Disassemble(Memory, Start, End, MakeAssemblable);
 
         public string GetDisassembly() => HistoricDisassemblyMode ? GetDisassemblyHistoric() : GetDisassemblyNormal();
@@ -82,6 +79,7 @@ namespace Sharp80.Z80
         public ushort PcVal => PC.val;
         public ushort SpVal => SP.val;
         public ushort AfVal => AF.val;
+        public byte AVal => A.val;
         public ushort BcVal => BC.val;
         public ushort DeVal => DE.val;
         public ushort HlVal => HL.val;
@@ -91,7 +89,9 @@ namespace Sharp80.Z80
         public ushort BcpVal => BCp.val;
         public ushort DepVal => DEp.val;
         public ushort HlpVal => HLp.val;
+        public byte HlmVal => HLM.val;
         public ushort WzVal => WZ.val;
+        public string Flags => flagsToString[F.val];
         public ushort IrVal => (ushort)((I.val << 8) | R.val);
     }
 }

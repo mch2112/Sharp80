@@ -33,7 +33,7 @@ namespace Sharp80.Views
                                         Indent("[F3]        Floppy Disk Manager") +
                                         Indent("[F4]        Tape Manager") +
                                         Format() +
-                                        Indent("[F12]       Toggle Normal / Fast emulation speed") +
+                                        Indent("[F12]       Toggle emulation speed") +
                                         Indent("[Ctrl]+[+] / [Ctrl]+[-]   Zoom In / Out") +
                                         Format() +
                                         Footer(footerText)));
@@ -88,10 +88,10 @@ namespace Sharp80.Views
                                         Indent("[F10] Step Over") +
                                         Indent("[F11] Step Out") +
                                         Format() +
+                                        Indent("[F6]  Jump to Address") +
                                         Indent("[F7]  Set/Clear Breakpoint") +
                                         Format() +
-                                        Indent("[F6]  Jump to Address") +
-                                        Format() +
+                                        Indent("[Alt]+[V]  Trace On / Off") +
                                         Format() +
                                         Footer(footerText)));
                 case 5:

@@ -19,13 +19,13 @@ namespace Sharp80Tests
         {
             await DoAssembly();
 
-            Log($"TS Before: {computer.GetElapsedTStates():0,000,000}");
+            Log($"TS Before: {computer.ElapsedTStates:0,000,000}");
             Log($"PC Before: {computer.ProgramCounter:X4}");
 
             await computer.StartAndAwait();
             await computer.Delay(200);
 
-            Log($"TS After: {computer.GetElapsedTStates():0,000,000}");
+            Log($"TS After: {computer.ElapsedTStates:0,000,000}");
             Log($"PC After: {computer.ProgramCounter:X4}");
             Log($"IsRunning: {computer.IsRunning}");
             Log($"IsStopped: {computer.IsStopped}");
@@ -106,7 +106,7 @@ namespace Sharp80Tests
                 "HIGH\tDS\t2" + NL +
                 "\tEND";
 
-            await StartToBasic();
+            await StartToBasic(ClockSpeed.Unlimited);
             var assembly = computer.Assemble(program);
             var cmdFile = new CmdFile(assembly, Path.GetTempFileName());
 

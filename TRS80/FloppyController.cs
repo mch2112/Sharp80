@@ -977,7 +977,7 @@ namespace Sharp80.TRS80
             nextCallback = null;
             isPolling = false;
 
-            if (Bytes == 0 && DelayInUsec == 0)
+            if (Bytes <= 0 && DelayInUsec == 0)
             {
                 Callback();
             }
@@ -985,7 +985,7 @@ namespace Sharp80.TRS80
             {
                 throw new Exception("Can't have both Byte and Time based delays");
             }
-            else if (DelayInUsec == 0 && track != null)
+            else if (DelayInUsec == 0)
             {
                 // Byte based delay
 
@@ -993,15 +993,16 @@ namespace Sharp80.TRS80
                     Bytes *= 2;
 
                 // we want to come back exactly when the target byte is under the drive head
-                targetDataIndex = (TrackDataIndex + Bytes) % track.DataLength;
-
+                targetDataIndex = (TrackDataIndex + Bytes) % TrackLength;
                 if (!DoubleDensitySelected)
-                    targetDataIndex &= 0xFFFE;
+                    targetDataIndex &= 0xFFFE; // find the first of the doubled bytes
 
                 nextCallback = Callback;
                 isPolling = true;
-                commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds,
-                                               DoubleDensitySelected ? BYTE_POLL_TIME_DD : BYTE_POLL_TIME_SD,
+                // Calculate how long it will take for the right byte to be under the head
+                // just like the real life controller does.
+                commandPulseReq = new PulseReq(PulseReq.DelayBasis.Ticks,
+                                               ((((ulong)targetDataIndex * DISK_ANGLE_DIVISIONS / (ulong)TrackLength) + DISK_ANGLE_DIVISIONS) - DiskAngle) % DISK_ANGLE_DIVISIONS * TicksPerDiskRev / DISK_ANGLE_DIVISIONS + 10000,
                                                Poll,
                                                false);
                 computer.Activate(commandPulseReq);
@@ -1015,21 +1016,23 @@ namespace Sharp80.TRS80
         }
         private void Poll()
         {
-            if (isPolling && TrackDataIndex == targetDataIndex)
+            if (!isPolling)
+            {
+                throw new Exception("Polling error.");
+            }
+            else if (TrackDataIndex == targetDataIndex)
             {
                 // this is the byte we're looking for
                 isPolling = false;
                 nextCallback();
             }
-            else if (isPolling)
-            {
-                System.Diagnostics.Debug.Assert(TrackDataIndex != targetDataIndex + 1, "Just missed the target!!");
-                // keep looking for the target index
-                computer.Activate(commandPulseReq);
-            }
             else
             {
-                throw new Exception("Polling error.");
+                System.Diagnostics.Debug.Assert(false, "Missed the target!");
+                // we could cheat and wait for the target by calling Poll() again but that's not good emulation
+                // so just behave as if there were a controller fault. This shouldn't ever happen IRL.
+                isPolling = false;
+                nextCallback();
             }
         }
 
@@ -1597,14 +1600,9 @@ namespace Sharp80.TRS80
 
         // TRACK DATA HANLDING
 
-        public int TrackDataIndex
-        {
-            get =>
-                (int)(DiskAngle * (ulong)(track?.DataLength ??
-                    (DoubleDensitySelected ? Floppy.STANDARD_TRACK_LENGTH_DOUBLE_DENSITY
-                                           : Floppy.STANDARD_TRACK_LENGTH_SINGLE_DENSITY)) / DISK_ANGLE_DIVISIONS);
-
-        }
+        public int TrackDataIndex => (int)(DiskAngle * (ulong)TrackLength  / DISK_ANGLE_DIVISIONS);
+        private int TrackLength => track?.DataLength ??
+                        (DoubleDensitySelected ? Floppy.STANDARD_TRACK_LENGTH_DOUBLE_DENSITY : Floppy.STANDARD_TRACK_LENGTH_SINGLE_DENSITY);
         private byte ReadTrackByte() => track?.ReadByte(TrackDataIndex, DoubleDensitySelected) ?? 0;
         private void WriteTrackByte(byte B) => track?.WriteByte(TrackDataIndex, DoubleDensitySelected, B);
 

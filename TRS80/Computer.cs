@@ -64,7 +64,7 @@ namespace Sharp80.TRS80
                               ticksPerSoundSample,
                               new SoundEventCallback(Sound.Sample));
 
-            Clock.SpeedChanged += (s, e) => Sound.Mute = !Clock.NormalSpeed;
+            Clock.SpeedChanged += (s, e) => Sound.Mute = Clock.ClockSpeed != ClockSpeed.Normal;
 
             DiskUserEnabled = Settings.DiskEnabled;
 
@@ -85,7 +85,7 @@ namespace Sharp80.TRS80
             BreakPoint = Settings.Breakpoint;
             BreakPointOn = Settings.BreakpointOn;
             SoundOn = Settings.SoundOn;
-            NormalSpeed = Settings.NormalSpeed;
+            ClockSpeed = Settings.ClockSpeed;
             Ready = true;
         }
 
@@ -99,7 +99,7 @@ namespace Sharp80.TRS80
         public bool IsRunning => Clock.IsRunning;
         public bool IsStopped => Clock.IsStopped;
         public ushort ProgramCounter => Processor.PcVal;
-        public ulong GetElapsedTStates() => Clock.ElapsedTStates;
+        public ulong ElapsedTStates => Clock.ElapsedTStates;
 
         public IReadOnlyList<byte> Memory => memory;
         public SubArray<byte> VideoMemory => memory.VideoMemory;
@@ -167,7 +167,7 @@ namespace Sharp80.TRS80
         }
         public void SaveFloppy(byte DriveNum) => FloppyController.SaveFloppy(DriveNum);
 
-        // RUN COMMANDS
+        // RUN AND STEP COMMANDS
 
         public void Start()
         {
@@ -189,7 +189,7 @@ namespace Sharp80.TRS80
 
                 HasRunYet = true;
             }
-            Sound.Mute = !Clock.NormalSpeed;
+            Sound.Mute = Clock.ClockSpeed != ClockSpeed.Normal;
         }
         public void Stop(bool WaitForStop)
         {
@@ -207,7 +207,14 @@ namespace Sharp80.TRS80
             await Clock.StopAndAwait();
         }
         public void ResetButton() => IntMgr.ResetButtonLatch.Latch();
-
+        public void Reset()
+        {
+            if (Ready)
+            {
+                ResetButton();
+                Screen.Reset();
+            }
+        }
         public void StepOver()
         {
             if (!IsRunning)
@@ -237,19 +244,17 @@ namespace Sharp80.TRS80
             Stop(true);
             Processor.Jump(Address);
         }
-        public bool NormalSpeed
+        
+        // CLOCK SPEED
+
+        public ClockSpeed ClockSpeed
         {
-            get => Clock.NormalSpeed;
-            set => Clock.NormalSpeed = value;
+            get => Clock.ClockSpeed;
+            set => Clock.ClockSpeed = value;
         }
-        public void Reset()
-        {
-            if (Ready)
-            {
-                ResetButton();
-                Screen.Reset();
-            }
-        }
+        
+        // CHARGEN MODES
+
         public bool WideCharMode
         {
             get => Screen.WideCharMode;
@@ -260,6 +265,15 @@ namespace Sharp80.TRS80
             get => Screen.AltCharMode;
             set => Screen.AltCharMode = value;
         }
+
+        // TRACE
+
+        public bool TraceOn
+        {
+            get => Processor.TraceOn;
+            set => Processor.TraceOn = value;
+        }
+        public string Trace => Processor.Trace;
 
         // CALLBACK MANAGEMENT
 
@@ -447,7 +461,9 @@ namespace Sharp80.TRS80
 
         // MISC
 
-        public bool LoadCMDFile(CmdFile File)
+        public string GetInternalsReport() => Processor.GetInternalsReport();
+        public string GetClockReport() => Clock.GetInternalsReport();
+        public string GetDisassembly() => Processor.GetDisassembly();public bool LoadCMDFile(CmdFile File)
         {
             Stop(WaitForStop: true);
 
@@ -464,18 +480,24 @@ namespace Sharp80.TRS80
                 return false;
             }
         }
+
         public string Disassemble(ushort Start, ushort End, bool MakeAssemblable) => Processor.Disassemble(Start, End, MakeAssemblable);
         public string GetInstructionSetReport() => Processor.GetInstructionSetReport();
         public Z80.Assembler.Assembly Assemble(string SourceText) => Processor.Assemble(SourceText);
-
+        public async Task Delay(uint VirtualMSec)
+        {
+            bool done = false;
+            var pr = new PulseReq(PulseReq.DelayBasis.Microseconds, VirtualMSec * 1000, () => { done = true; });
+            Clock.ActivatePulseReq(pr);
+            while (!done && pr.Active && IsRunning)
+                await Task.Delay(Math.Max(2, (int)VirtualMSec / 100));
+        }
         public bool HistoricDisassemblyMode
         {
             get => Processor.HistoricDisassemblyMode;
             set => Processor.HistoricDisassemblyMode = value;
         }
-        public string GetInternalsReport() => Processor.GetInternalsReport();
-        public string GetClockReport() => Clock.GetInternalsReport();
-        public string GetDisassembly() => Processor.GetDisassembly();
+
 
         // KEYBOARD
 
@@ -517,16 +539,8 @@ namespace Sharp80.TRS80
             }
         }
 
-        // TEST SUPPORT
+        // SHUTDOWN
 
-        public async Task Delay(uint VirtualMSec)
-        {
-            bool done = false;
-            var pr = new PulseReq(PulseReq.DelayBasis.Microseconds, VirtualMSec * 1000, () => { done = true; });
-            Clock.ActivatePulseReq(pr);
-            while (!done && pr.Active && IsRunning)
-                await Task.Delay(NormalSpeed ? (int)Math.Max(5, VirtualMSec / 5) : Math.Max(2, (int)VirtualMSec / 100));
-        }
         public async Task Shutdown()
         {
             FloppyController.Shutdown();

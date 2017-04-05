@@ -47,7 +47,7 @@ namespace Sharp80.Z80
             Debug.Assert(IsPrefix);
             this.IsPrefix = IsPrefix;
 
-            this.RIncrement = 1;
+            RIncrement = 1;
         }
         public Instruction(string Name, byte Op0, byte TStates, InstructionDelegate exec, byte TStatesAlt)
             : this(Name, Op0, null, null, TStates, exec, TStatesAlt)

@@ -12,7 +12,7 @@ namespace Sharp80Tests
         [TestMethod]
         public async Task BasicStartTest()
         {
-            await StartToBasic();
+            await StartToBasic(ClockSpeed.Unlimited);
             bool result = ScreenContainsText("READY");
             await DisposeComputer();
             Assert.IsTrue(result);
@@ -20,7 +20,7 @@ namespace Sharp80Tests
         [TestMethod]
         public async Task TrsdosStartTest()
         {
-            await StartToTrsdos();
+            await StartToTrsdos(ClockSpeed.Unlimited);
             bool result = ScreenContainsText("TRSDOS Ready");
             await DisposeComputer();
             Assert.IsTrue(result);
@@ -28,7 +28,7 @@ namespace Sharp80Tests
         [TestMethod]
         public async Task SuPlusStartTest()
         {
-            await StartWithFloppy(@"\Disks\Utilities & Operating Systems\Super Utility+ 3.2.dsk");
+            await StartWithFloppy(@"\Disks\Utilities & Operating Systems\Super Utility+ 3.2.dsk", ClockSpeed.Unlimited);
             await computer.KeyStroke(KeyCode.Return, false, 1000);
             bool result = ScreenContainsText("Zap Utilities");
             await DisposeComputer();

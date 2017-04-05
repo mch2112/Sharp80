@@ -10,22 +10,22 @@ namespace Sharp80Tests
     {
         protected Computer computer;
         
-        protected async Task StartToBasic(bool Fast = true)
+        protected async Task StartToBasic(ClockSpeed ClockSpeed)
         {
-            InitComputer(false, !Fast);
+            InitComputer(false, ClockSpeed.Unlimited);
             await computer.StartAndAwait();
             await computer.Delay(500);
             await KeyPress(KeyCode.Return, false, 500);
             await KeyPress(KeyCode.Return, false, 500);
             await computer.Delay(2000);
         }
-        protected async Task StartToTrsdos(bool fast = true)
+        protected async Task StartToTrsdos(ClockSpeed ClockSpeed)
         {
-            await StartWithFloppy(Storage.FILE_NAME_TRSDOS, fast);
+            await StartWithFloppy(Storage.FILE_NAME_TRSDOS, ClockSpeed);
         }
-        protected async Task StartWithFloppy(string Path, bool Fast = true)
+        protected async Task StartWithFloppy(string Path, ClockSpeed ClockSpeed)
         {
-            InitComputer(true, !Fast);
+            InitComputer(true, ClockSpeed);
             computer.LoadFloppy(0, Path);
             await computer.StartAndAwait();
             await computer.Delay(20000);
@@ -37,18 +37,18 @@ namespace Sharp80Tests
 
         protected bool ScreenContainsText(string Text) => computer.VideoMemory.Contains(Text.ToByteArray());
 
-        protected void InitComputer(bool EnableFloppyController, bool NormalSpeed)
+        protected void InitComputer(bool EnableFloppyController, ClockSpeed ClockSpeed)
         {
             var settings = new Settings()
             {
-                NormalSpeed = NormalSpeed,
+                ClockSpeed = ClockSpeed,
                 DiskEnabled = EnableFloppyController
             };
             InitComputer(settings);
         }
         protected void InitComputer(ISettings Settings)
         {
-            computer = new Computer(new ScreenNull(), new SoundNull(), new Sharp80.Timer(), Settings, new NullDialogs());
+            computer = new Computer(new ScreenNull(), new SoundNull(), new Timer(), Settings, new NullDialogs());
         }
         protected async Task DisposeComputer()
         {

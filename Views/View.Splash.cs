@@ -29,7 +29,7 @@ namespace Sharp80.Views
                                 Indent("[F3] Floppy Disk Manager") +
                                 Indent("[F4] Tape Manager") +
                                 Format() +
-                                Indent("[F12] Toggle Normal / Fast emulation speed") +
+                                Indent("[F12] Toggle emulation speed") +
                                 Format() +
                                 Footer($"Visit {ProductInfo.ProductURL} for more information.")
                                 ));

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,6 +11,8 @@ using Sharp80.Z80;
 
 namespace Sharp80.TRS80
 {
+    public enum ClockSpeed { XXSlow = 0, XSlow = 1, Slow = 2, Normal = 3, Fast = 4, Unlimited = 5, Count = 6 }
+
     public class Clock : ISerializable
     {
         public event EventHandler SpeedChanged;
@@ -33,7 +36,9 @@ namespace Sharp80.TRS80
 
         private ITimer timer;
         private long realTimeElapsedTicksOffset;
-        private double z80TicksPerRealtimeTick;
+        private double[] z80TicksPerRealtimeTick;
+        private ulong[] speedMeasureTickInterval;
+        private string[] clockReportFormat;
 
         private ulong emuSpeedInHz;
         private ulong z80TicksOnLastMeasure;
@@ -41,7 +46,7 @@ namespace Sharp80.TRS80
         private long realTimeTicksOnLastMeasure;
         private ulong waitTimeout;
 
-        private bool normalSpeed;
+        private ClockSpeed clockSpeed;
         private bool stopReq = false;
 
         private Task execThread;
@@ -60,13 +65,11 @@ namespace Sharp80.TRS80
 
         private Trigger waitTrigger;
 
-        private long cyclesUntilNextSyncCheck = 0;
-
         // CONSTRUCTOR
 
         internal Clock(Computer Computer, Z80.Z80 Processor, ITimer Timer, InterruptManager InterruptManager, ulong TicksPerSoundSample, SoundEventCallback SoundCallback)
         {
-            z80TicksPerRealtimeTick = TICKS_PER_SECOND / Timer.TicksPerSecond;
+            SetupTickMeasurement(Timer.TicksPerSecond);
 
             TickCount = 0;
 
@@ -77,7 +80,8 @@ namespace Sharp80.TRS80
 
             ticksPerSoundSample = TicksPerSoundSample;
             soundCallback = SoundCallback;
-            normalSpeed = true;
+            clockSpeed = TRS80.ClockSpeed.Normal;
+
             nextRtcIrqTick = TICKS_PER_IRQ;
 
             ResetTriggers();
@@ -110,19 +114,19 @@ namespace Sharp80.TRS80
                 {
                     ulong z80TickDiff = TickCount - z80TicksOnLastMeasure;
                     long currentRealTimeTicks = timer.ElapsedTicks;
-                    double realTimeTickDiff = currentRealTimeTicks - realTimeTicksOnLastMeasure;
+                    long realTimeTickDiff = currentRealTimeTicks - realTimeTicksOnLastMeasure;
 
                     emuSpeedInHz = (ulong)(timer.TicksPerSecond * (double)z80TickDiff / realTimeTickDiff) / TICKS_PER_TSTATE;
 
-                    nextEmuSpeedMeasureTicks = TickCount + emuSpeedInHz * 500; // 1/2 sec interval
+                    nextEmuSpeedMeasureTicks = TickCount + speedMeasureTickInterval[(int)ClockSpeed];
 
                     z80TicksOnLastMeasure = TickCount;
                     realTimeTicksOnLastMeasure = currentRealTimeTicks;
                 }
             }
-            s.Append(((float)emuSpeedInHz / 1000000f).ToString("#0.00") + " MHz ");
+            s.Append(((float)emuSpeedInHz / 1000000f).ToString(clockReportFormat[(int)ClockSpeed]));
 
-            s.Append("T: " + (TickCount / TICKS_PER_TSTATE).ToString("000,000,000,000,000"));
+            s.Append(" T: " + (TickCount / TICKS_PER_TSTATE).ToString("000,000,000,000,000"));
 
             if (waitTrigger.Latched)
                 s.Append(" WAIT");
@@ -159,15 +163,15 @@ namespace Sharp80.TRS80
                 waitTimeout = TickCount + (TICKS_PER_SECOND * 1024ul / 1000000ul); // max 1024 usec
             waitTrigger.Latch();
         }
-        internal bool NormalSpeed
+        internal ClockSpeed ClockSpeed
         {
-            get => normalSpeed;
+            get => clockSpeed;
             set
             {
-                if (normalSpeed != value)
+                if (clockSpeed != value)
                 {
                     ResetTriggers();
-                    normalSpeed = value;
+                    clockSpeed = value;
                     SpeedChanged?.Invoke(this, EventArgs.Empty);
                     SyncRealTimeOffset();
                 }
@@ -192,7 +196,7 @@ namespace Sharp80.TRS80
                 while (!stopReq)
                 {
                     ExecOne();
-                    if (NormalSpeed)
+                    if (clockSpeed != TRS80.ClockSpeed.Unlimited)
                         await Throttle();
                 }
                 IsRunning = false;
@@ -251,48 +255,47 @@ namespace Sharp80.TRS80
             // Do callbacks
             if (TickCount > nextPulseReqTick)
             {
-                // descending to avoid problems with new reqs being added
+                // descending to avoid problems with new reqs being added during the trigger callback
                 for (int i = pulseReqs.Count - 1; i >= 0; i--)
                 {
                     if (TickCount > pulseReqs[i].Trigger)
                         pulseReqs[i].Execute();
                 }
-                pulseReqs.RemoveAll(r => r.Inactive);
-                SetNextPulseReqTick();
+                pulseReqs.RemoveAll(req => req.Inactive);       
+                if (pulseReqs.Count == 0)
+                {
+                    nextPulseReqTick = ulong.MaxValue;
+                }
+                else
+                {
+                    lock (pulseReqs)
+                        nextPulseReqTick = pulseReqs.Min(req => req.Trigger);
+                }
             }
         }
         private async Task Throttle()
         {
-            System.Diagnostics.Debug.Assert(NormalSpeed);
-
             if (TickCount > nextSoundSampleTick)
             {
                 soundCallback();
                 nextSoundSampleTick += ticksPerSoundSample;
             }
-            if (--cyclesUntilNextSyncCheck <= 0)
-            {
-                SyncRealTimeOffset();
-                cyclesUntilNextSyncCheck = 200000;   // couple times a second
-            }
-            else
-            {
-                // at z80 speed, how many ticks should have elapsed by now?
-                ulong virtualTicksReal = (ulong)((timer.ElapsedTicks - realTimeElapsedTicksOffset) * z80TicksPerRealtimeTick);
+            // at z80 speed, how many ticks should have elapsed by now?
+            ulong virtualTicksReal = (ulong)((timer.ElapsedTicks - realTimeElapsedTicksOffset) * z80TicksPerRealtimeTick[(int)ClockSpeed]);
 
-                // Are we ahead? Slow down if so
-                if (TickCount > virtualTicksReal)
-                {
-                    // How far ahead are we?
-                    ulong virtualTicksAhead = TickCount - virtualTicksReal;
+            // Are we ahead? Slow down if so
+            if (TickCount > virtualTicksReal)
+            {
+                // How far ahead are we?
+                var usecAhead = (TickCount - virtualTicksReal) * 1000000 / TICKS_PER_SECOND;
 
-                    // Sleep
-                    if (virtualTicksAhead > 0)
-                        if (virtualTicksAhead > TICKS_PER_SECOND / 1000) // 1 msec
-                            await Task.Delay(1);
-                        else
-                            await Task.Yield();
-                }
+                // Sleep
+                if (usecAhead < 1000)
+                    await Task.Yield();
+                else if (usecAhead < 100000)
+                    await Task.Delay((int)usecAhead / 1000);
+                else
+                    await Task.Delay(100);
             }
         }
 
@@ -306,9 +309,9 @@ namespace Sharp80.TRS80
         internal void AddPulseReq(PulseReq Req)
         {
             if (!pulseReqs.Contains(Req))
-                pulseReqs.Add(Req);
-
-            SetNextPulseReqTick();
+                lock (pulseReqs)
+                    pulseReqs.Add(Req);
+            nextPulseReqTick = 0;
         }
  
         /// <summary>
@@ -317,19 +320,7 @@ namespace Sharp80.TRS80
         /// </summary>
         private void SyncRealTimeOffset()
         {
-            long z80EquivalentTicks = (long)(TickCount / z80TicksPerRealtimeTick);
-            long newRealTimeElapsedTicksOffset = timer.ElapsedTicks - z80EquivalentTicks;
-
-            // if we're already synced to within 100 microseconds don't bother
-            if (Math.Abs(newRealTimeElapsedTicksOffset - realTimeElapsedTicksOffset) > 100000)
-                realTimeElapsedTicksOffset = newRealTimeElapsedTicksOffset;
-        }
-        private void SetNextPulseReqTick()
-        {
-            if (pulseReqs.Count == 0)
-                nextPulseReqTick = UInt64.MaxValue; // no need to check until a pulseReq is added
-            else
-                nextPulseReqTick = 0; // check asap
+            realTimeElapsedTicksOffset = timer.ElapsedTicks - (long)(TickCount / z80TicksPerRealtimeTick[(int)ClockSpeed]);
         }
         private void ResetTriggers()
         {
@@ -371,6 +362,34 @@ namespace Sharp80.TRS80
             {
                 return false;
             }
+        }
+
+        // SETUP
+        private void SetupTickMeasurement(double TicksPerSecond)
+        {
+            var z80TicksPerRtTick = TICKS_PER_SECOND / TicksPerSecond;
+
+            z80TicksPerRealtimeTick = new double[]
+            {
+                z80TicksPerRtTick / 2000,
+                z80TicksPerRtTick / 200,
+                z80TicksPerRtTick / 20,
+                z80TicksPerRtTick,
+                z80TicksPerRtTick * 2,
+                z80TicksPerRtTick * 1000000
+            };
+
+            speedMeasureTickInterval = new ulong[] { 500000, 5000000, 50000000, 1000000000, 2000000000, 10000000000 };
+
+            clockReportFormat = new string[]
+            {
+                "#0.0000 MHz",
+                "#0.000 MHz",
+                "#0.000 MHz",
+                "#0.00 MHz",
+                "#0.00 MHz",
+                "#0.00 MHz"
+            };
         }
     }
 }

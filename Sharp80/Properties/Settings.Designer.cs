@@ -97,13 +97,13 @@ namespace Sharp80.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool normal_speed {
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int clock_speed {
             get {
-                return ((bool)(this["normal_speed"]));
+                return ((int)(this["clock_speed"]));
             }
             set {
-                this["normal_speed"] = value;
+                this["clock_speed"] = value;
             }
         }
         

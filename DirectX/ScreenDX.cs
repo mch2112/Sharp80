@@ -25,6 +25,7 @@ namespace Sharp80.DirectX
     public class ScreenDX : IScreen
     {
         private const Format PixelFormat = Format.R8G8B8A8_UNorm;
+        private const int MESSAGE_DURATION_INFINITE = 100000000;
 
         private Computer computer;
         private TextFormat textFormat;
@@ -120,7 +121,7 @@ namespace Sharp80.DirectX
         /// </summary>
         public string StatusMessage
         {
-            private get { return statusMessage; }
+            private get => statusMessage;
             set
             {
                 statusMessage = value;
@@ -131,7 +132,7 @@ namespace Sharp80.DirectX
                 else if (statusMessage[0] == '&')
                 {
                     statusMessage = statusMessage.Substring(1);
-                    cyclesForMessageRemaining = 10000000;
+                    cyclesForMessageRemaining = MESSAGE_DURATION_INFINITE;
                 }
                 else
                 {
@@ -581,7 +582,12 @@ namespace Sharp80.DirectX
                 if (--cyclesForMessageRemaining == 0)
                 {
                     invalid = true;
-                    StatusMessage = String.Empty;
+                    if (!computer.IsRunning && computer.HasRunYet)
+                        StatusMessage = "&Paused";
+                    else if (computer.TraceOn)
+                        StatusMessage = "&Trace: ON";
+                    else
+                        StatusMessage = String.Empty;
                 }
 
                 // Draw the screen

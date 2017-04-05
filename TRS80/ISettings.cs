@@ -7,6 +7,7 @@
         bool AutoStartOnReset { get; set; }
         ushort Breakpoint { get; set; }
         bool BreakpointOn { get; set; }
+        ClockSpeed ClockSpeed { get; set; }
         string DefaultFloppyDirectory { get; set; }
         string Disk0Filename { get; set; }
         string Disk1Filename { get; set; }
@@ -20,7 +21,6 @@
         string LastCmdFile { get; set; }
         string LastSnapshotFile { get; set; }
         string LastTapeFile { get; set; }
-        bool NormalSpeed { get; set; }
         bool SoundOn { get; set; }
         int WindowHeight { get; set; }
         int WindowWidth { get; set; }

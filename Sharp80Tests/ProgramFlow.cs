@@ -11,8 +11,8 @@ namespace Sharp80Tests
         [TestMethod]
         public async Task BreakpointTest()
         {
-            InitComputer(false, false);
-            computer.NormalSpeed = false;
+            InitComputer(false, ClockSpeed.Unlimited);
+            computer.ClockSpeed = ClockSpeed.Unlimited;
             computer.BreakPoint = 0x1A7B; // BASIC Ready
             computer.BreakPointOn = true;
             await computer.StartAndAwait();

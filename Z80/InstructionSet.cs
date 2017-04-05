@@ -169,9 +169,7 @@ namespace Sharp80.Z80
                 NOP = STD[0x00];
 
                 for (byte b = 0; b < 0xFF; b++)
-                {
                     ED[b] = ED[b] ?? new Instruction("NOP", 0xED, b, 8, NOP.Execute);
-                }
 
                 DDPrefixNOP = new Instruction("NOP", 0xDD, 4, NOP.Execute, true);
                 FDPrefixNOP = new Instruction("NOP", 0xFD, 4, NOP.Execute, true);
