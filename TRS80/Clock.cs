@@ -65,7 +65,7 @@ namespace Sharp80.TRS80
 
         internal Clock(Computer Computer, Z80.Z80 Processor, ITimer Timer, InterruptManager InterruptManager, ulong TicksPerSoundSample, Action SoundCallback)
         {
-            SetupTickMeasurement(Timer.TicksPerSecond);
+            InitTickMeasurement(Timer.TicksPerSecond);
 
             TickCount = 0;
 
@@ -332,7 +332,8 @@ namespace Sharp80.TRS80
         }
 
         // SETUP
-        private void SetupTickMeasurement(double TicksPerSecond)
+
+        private void InitTickMeasurement(double TicksPerSecond)
         {
             var z80TicksPerRtTick = TICKS_PER_SECOND / TicksPerSecond;
 

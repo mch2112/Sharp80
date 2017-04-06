@@ -131,11 +131,11 @@ namespace Sharp80.Views
                     WriteToByteArray(cells, 0x380, "CRC");
             }
 
-            if (f == null)
+            if (f is null)
             {
                 WriteToByteArray(cells, 0x006, string.Format("Drive {0} is empty.", DriveNumber));
             }
-            else if (sd == null || numBytes == 0)
+            else if (sd is null || numBytes == 0)
             {
                 WriteToByteArray(cells, 0x006, "Sector is empty.");
             }
@@ -189,13 +189,13 @@ namespace Sharp80.Views
             for (byte i = DriveNumber.Value; i < DriveNumber.Value + TRS80.FloppyController.NUM_DRIVES; i++)
             {
                 f = Computer.GetFloppy((byte)(i % TRS80.FloppyController.NUM_DRIVES));
-                if (f != null)
+                if (!(f is null))
                 {
                     DriveNumber = i;
                     break;
                 }
             }
-            if (f == null)
+            if (f is null)
             {
                 sideOne = false;
                 trackNum = 0;

@@ -192,7 +192,7 @@ namespace Sharp80.TRS80
         {
             get
             {
-                if (header == null)
+                if (header is null)
                     RebuildHeader();
                 return header;
             }
@@ -202,7 +202,7 @@ namespace Sharp80.TRS80
             if (density.HasValue)
                 return density.Value;
 
-            if (densityMap == null)
+            if (densityMap is null)
                 RebuildDensity();
 
             return densityMap[Index];
@@ -211,7 +211,7 @@ namespace Sharp80.TRS80
         {
             if (density != Value)
             {
-                if (densityMap == null)
+                if (densityMap is null)
                     RebuildDensity();
                 densityMap[Index] = Value;
             }
@@ -274,7 +274,7 @@ namespace Sharp80.TRS80
         }
         internal bool HasIdamAt(int TrackIndex, bool DoubleDensity)
         {
-            if (Header == null)
+            if (Header is null)
                 RebuildHeader();
 
             ushort target = (ushort)(TrackIndex + HEADER_LENGTH_BYTES + (DoubleDensity ? DOUBLE_DENSITY_MASK : 0));
@@ -469,7 +469,7 @@ namespace Sharp80.TRS80
                 default: // mixed density
                     RebuildDensity();
 
-                    if (densityMap == null || densityMap.Length != Data.Length)
+                    if (densityMap is null || densityMap.Length != Data.Length)
                         throw new Exception("Error generating density map in Track.ConvertFromSingleByte");
 
                     // Adjust the data

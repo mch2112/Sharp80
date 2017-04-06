@@ -10,7 +10,7 @@ namespace Sharp80.TRS80
             public Floppy Floppy { get; set; }
             public byte PhysicalTrackNumber { get; set; }
             public bool IsLoaded => Floppy != null;
-            public bool IsUnloaded => Floppy == null;
+            public bool IsUnloaded => Floppy is null;
             public bool OnTrackZero => PhysicalTrackNumber == 0;
 
             public bool WriteProtected

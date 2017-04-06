@@ -241,7 +241,7 @@ namespace Sharp80.TRS80
 
         private void InitTape(byte[] Bytes = null)
         {
-            if (Bytes == null)
+            if (Bytes is null)
             {
                 FilePath = Storage.FILE_NAME_NEW;
                 data = new byte[DEFAULT_BLANK_TAPE_LENGTH];

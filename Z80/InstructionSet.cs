@@ -40,7 +40,7 @@ namespace Sharp80.Z80
             {
                 Instruction i = STD[b];
 
-                if (i == null)
+                if (i is null)
                 {
                     switch (b)
                     {

@@ -643,7 +643,7 @@ namespace Sharp80.DirectX
 
             // Figure out what we are displaying and which char set to use
 
-            if (ViewBytes == null)
+            if (ViewBytes is null)
             {
                 ViewBytes = computer.VideoMemory;
                 stdWidth = !isWideCharMode;

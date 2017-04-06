@@ -274,7 +274,7 @@ namespace Sharp80.Views
             var d = Computer.GetFloppy(DiskNum);
 
             string line1;
-            if (d == null)
+            if (d is null)
                 line1 = $"Drive #{DiskNum}: Unloaded";
             else
                 line1 = string.Format("Drive #{0}: {1}  {2} Tks  {3} {4}",
@@ -285,7 +285,7 @@ namespace Sharp80.Views
                                       d.Formatted ? string.Empty : "UNFORMATTED");
 
             string line2;
-            if (d == null)
+            if (d is null)
                 line2 = String.Empty;
             else
                 line2 = FitFilePath(d.FileDisplayName, ScreenMetrics.NUM_SCREEN_CHARS_X);

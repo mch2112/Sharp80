@@ -14,9 +14,9 @@ namespace Sharp80.TRS80
     internal class Trigger : ISerializable
     {
         public bool Triggered { get; private set; }
+        public bool Latched { get; private set; }
 
         private bool enabled;
-        private bool latched;
         private bool triggerLock;
         private bool canLatchBeforeEnabled;
 
@@ -33,19 +33,18 @@ namespace Sharp80.TRS80
         }
         public bool Enabled
         {
-            get { return enabled; }
-            set { Update(Enabled: value, Latched: null); }
+            get => enabled;
+            set => Update(Enabled: value, Latched: null);
         }
-        public bool Latched { get { return latched; } }
-        public void LatchIf(bool Latch) { Update(Enabled: null, Latched: Latch); }
-        public void Latch() { LatchIf(true); }
-        public void Unlatch() { LatchIf(false); }
-        public void ResetTrigger() { Triggered = false; }
+        public void LatchIf(bool Latch) => Update(Enabled: null, Latched: Latch);
+        public void Latch() => LatchIf(true);
+        public void Unlatch() => LatchIf(false);
+        public void ResetTrigger() => Triggered = false;
 
         public void Serialize(System.IO.BinaryWriter Writer)
         {
             Writer.Write(enabled);
-            Writer.Write(latched);
+            Writer.Write(Latched);
             Writer.Write(triggerLock);
             Writer.Write(canLatchBeforeEnabled);
             Writer.Write(Triggered);
@@ -55,7 +54,7 @@ namespace Sharp80.TRS80
             try
             {
                 enabled = Reader.ReadBoolean();
-                latched = Reader.ReadBoolean();
+                Latched = Reader.ReadBoolean();
                 triggerLock = Reader.ReadBoolean();
                 canLatchBeforeEnabled = Reader.ReadBoolean();
                 Triggered = Reader.ReadBoolean();
@@ -71,18 +70,18 @@ namespace Sharp80.TRS80
         {
             System.Diagnostics.Debug.Assert(!Enabled.HasValue || !Latched.HasValue);
 
-            bool wasLatchedAndEnabled = latched && enabled;
+            bool wasLatchedAndEnabled = this.Latched && enabled;
 
             enabled = Enabled ?? enabled;
 
             if (Enabled == false && !canLatchBeforeEnabled)
-                latched = false;
+                this.Latched = false;
             else if (Latched == true && (enabled || canLatchBeforeEnabled))
-                latched = true;
+                this.Latched = true;
             else
-                latched = Latched ?? latched;
+                this.Latched = Latched ?? this.Latched;
 
-            if (latched && enabled)
+            if (this.Latched && enabled)
             {
                 if (!Triggered)
                 {
@@ -101,7 +100,7 @@ namespace Sharp80.TRS80
         }
         public override string ToString()
         {
-            return String.Format("Latched: {0} Enabled: {1} Triggered: {2}", Latched, Enabled, Triggered);
+            return $"Latched: {Latched} Enabled: {Enabled} Triggered: {Triggered}";
         }
     }
 }

@@ -369,7 +369,7 @@ namespace Sharp80.TRS80
                 for (int j = 0; j < numSides; j++)
                 {
                     var t = tracks.FirstOrDefault(tt => tt.PhysicalTrackNum == i && tt.SideOne == (j == 1));
-                    if (t == null)
+                    if (t is null)
                     {
                         emptyTrack = emptyTrack ?? new byte[trackLength];
                         Array.Copy(emptyTrack, 0, diskData, diskCursor, emptyTrack.Length);

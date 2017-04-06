@@ -17,7 +17,7 @@ namespace Sharp80.TRS80
             if (TickCount > nextPulseReqTick)
             {
                 // descending to avoid problems with new reqs being added during the trigger callback
-                for (int i = pulseReqs.Count - 1; i >= 0; i--)
+                for (int i = pulseReqs.Count - 1; i >= 0; --i)
                 {
                     if (TickCount > pulseReqs[i].Trigger)
                         pulseReqs[i].Execute();
