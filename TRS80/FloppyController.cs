@@ -75,7 +75,6 @@ namespace Sharp80.TRS80
         // FDC Flags, etc.
         public bool Busy { get; private set; }
         public bool DoubleDensitySelected { get; private set; }
-        public bool SideOneSelected { get; private set; }
         public bool Drq { get; private set; }
         public bool CrcError { get; private set; }
         public bool LostData { get; private set; }
@@ -86,14 +85,27 @@ namespace Sharp80.TRS80
 
         // The physical state
         private byte currentDriveNumber = 0xFF;
+        private bool sideOneSelected = false;
         public byte CurrentDriveNumber
         {
-            get { return currentDriveNumber; }
+            get => currentDriveNumber;
             set
             {
                 if (currentDriveNumber != value)
                 {
                     currentDriveNumber = value;
+                    UpdateTrack();
+                }
+            }
+        }
+        public bool SideOneSelected
+        {
+            get => sideOneSelected;
+            private set
+            {
+                if (sideOneSelected != value)
+                {
+                    sideOneSelected = value;
                     UpdateTrack();
                 }
             }
@@ -1154,7 +1166,7 @@ namespace Sharp80.TRS80
                 }
 
                 currentDriveNumber = Reader.ReadByte();
-                SideOneSelected = Reader.ReadBoolean();
+                sideOneSelected = Reader.ReadBoolean();
 
                 Clock.ClockCallback callback;
 
@@ -1435,11 +1447,7 @@ namespace Sharp80.TRS80
             if (floppyNum.HasValue && CurrentDriveNumber != floppyNum.Value)
                 CurrentDriveNumber = floppyNum.Value;
 
-            bool sideOne = Value.IsBitSet(4);
-            if (SideOneSelected != sideOne)
-            {
-                SideOneSelected = sideOne;
-            }
+            SideOneSelected = Value.IsBitSet(4);
 
             if (Value.IsBitSet(6))
                 clock.Wait();

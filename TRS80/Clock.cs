@@ -80,7 +80,7 @@ namespace Sharp80.TRS80
 
             ticksPerSoundSample = TicksPerSoundSample;
             soundCallback = SoundCallback;
-            clockSpeed = TRS80.ClockSpeed.Normal;
+            clockSpeed = ClockSpeed.Normal;
 
             nextRtcIrqTick = TICKS_PER_IRQ;
 
@@ -196,7 +196,7 @@ namespace Sharp80.TRS80
                 while (!stopReq)
                 {
                     ExecOne();
-                    if (clockSpeed != TRS80.ClockSpeed.Unlimited)
+                    if (clockSpeed != ClockSpeed.Unlimited)
                         await Throttle();
                 }
                 IsRunning = false;
@@ -379,7 +379,7 @@ namespace Sharp80.TRS80
                 z80TicksPerRtTick * 1000000
             };
 
-            speedMeasureTickInterval = new ulong[] { 500000, 5000000, 50000000, 1000000000, 2000000000, 10000000000 };
+            speedMeasureTickInterval = new ulong[] { 500000, 5000000, 50000000, 1000000000, 2000000000, 40000000000 };
 
             clockReportFormat = new string[]
             {

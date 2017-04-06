@@ -177,17 +177,6 @@ namespace Sharp80.TRS80
         {
             return GetTrack(TrackNum, SideOne)?.GetSectorDescriptor(SectorIndex);
         }
-
-        public static Floppy MakeBlankFloppy(byte NumTracks, bool DoubleSided, bool Formatted)
-        {
-            return Formatted ? MakeFloppy(Sectors: GetDiskSectorDescriptors(NumTracks: NumTracks,
-                                                                            DoubleSided: DoubleSided,
-                                                                            DoubleDensity: true),
-                                          WriteProtected: false,
-                                          OriginalFileType: FileType.DMK)
-                             : MakeUnformattedFloppy(NumTracks: NumTracks,
-                                                     DoubleSided: DoubleSided);
-        }
         public override byte[] Serialize(bool ForceDMK)
         {
             if (ForceDMK)
@@ -343,9 +332,6 @@ namespace Sharp80.TRS80
             }
             return bytes.Slice(0, k);
         }
-
-        private static DMK MakeUnformattedFloppy(byte NumTracks, bool DoubleSided) => new DMK(UnformattedDmkBytes(NumTracks, DoubleSided));
-
         private static byte[] UnformattedDmkBytes(byte NumTracks, bool DoubleSided)
         {
             byte numSides = DoubleSided ? (byte)2 : (byte)1;
