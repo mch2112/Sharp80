@@ -10,30 +10,31 @@ namespace Sharp80.TRS80
         public enum DelayBasis { Microseconds, Ticks }
 
         public bool Active { get; private set; }
-        public ulong Trigger { get; private set; }
+        public ulong Trigger { get; private set; } = ulong.MaxValue;
 
         private ulong delay;
         private DelayBasis delayBasis;
-        private Clock.ClockCallback callback;
+        private Action callback;
 
         private const ulong MICROSECONDS_PER_SECOND = 1000000;
 
-        public PulseReq(DelayBasis DelayBasis, ulong Delay, Clock.ClockCallback Callback, bool Active = false)
+        public PulseReq(DelayBasis DelayBasis, ulong Delay, Action Callback)
         {
             delayBasis = DelayBasis;
             delay = Delay;
             callback = Callback;
-            this.Active = Active;
+            Active = false;
         }
         /// <summary>
         /// Empty PulseReq to be deserialized
         /// </summary>
-        public PulseReq() : this(DelayBasis.Ticks, 0, null, true) { }
+        public PulseReq() : this(DelayBasis.Ticks, 0, null) { }
         public void Execute()
         {
             if (Active)
             {
                 Active = false;
+                Trigger = ulong.MaxValue;
                 callback();
             }
         }
@@ -61,7 +62,7 @@ namespace Sharp80.TRS80
             Writer.Write(Trigger);
             Writer.Write(Active);
         }
-        public bool Deserialize(System.IO.BinaryReader Reader, Clock.ClockCallback Callback, int SerializationVersion)
+        public bool Deserialize(System.IO.BinaryReader Reader, Action Callback, int SerializationVersion)
         {
             try
             {

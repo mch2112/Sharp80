@@ -20,12 +20,10 @@ namespace Sharp80.TRS80
         private bool triggerLock;
         private bool canLatchBeforeEnabled;
 
-        public delegate void LatchDelegate();
+        private event Action Fired;
+        private event Action Reset;
 
-        private event LatchDelegate Fired;
-        private event LatchDelegate Reset;
-
-        public Trigger(LatchDelegate FireCallback, LatchDelegate ResetCallback, bool TriggerLock = false, bool CanLatchBeforeEnabled = false)
+        public Trigger(Action FireCallback, Action ResetCallback, bool TriggerLock = false, bool CanLatchBeforeEnabled = false)
         {
             Fired += FireCallback;
             Reset += ResetCallback;

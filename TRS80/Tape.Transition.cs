@@ -12,8 +12,6 @@ namespace Sharp80.TRS80
 
         private class Transition : ISerializable
         {
-            public delegate bool ReadCallback();
-
             public PulseState Before { get; private set; }
             public PulseState After { get; private set; }
             public PulseState LastNonZero { get; private set; }
@@ -21,14 +19,14 @@ namespace Sharp80.TRS80
             public bool FlipFlop { get; private set; }
 
             private Clock Clock;
-            private ReadCallback Callback { get; set; }
+            private Func<bool> Callback { get; set; }
 
             public bool Value { get; private set; }
             private ulong TimeStamp { get; set; }
             private ulong Duration { get; set; }
             private Baud Speed { get; set; }
 
-            public Transition(Baud Speed, Clock Clock, ReadCallback Callback)
+            public Transition(Baud Speed, Clock Clock, Func<bool> Callback)
             {
                 this.Speed = Speed;
                 this.Clock = Clock;

@@ -11,7 +11,7 @@ namespace Sharp80.TRS80
 {
     public class Computer : Z80.IComputer
     {
-        public const int SERIALIZATION_VERSION = 9;
+        public const int SERIALIZATION_VERSION = 10;
 
         private const ushort TAPE_SPEED_SELECT_RAM_LOCATION = 0x4211;
 
@@ -62,7 +62,7 @@ namespace Sharp80.TRS80
                               Timer,
                               IntMgr,
                               ticksPerSoundSample,
-                              new SoundEventCallback(Sound.Sample));
+                              Sound.Sample);
 
             Clock.SpeedChanged += (s, e) => Sound.Mute = Clock.ClockSpeed != ClockSpeed.Normal;
 
@@ -278,15 +278,9 @@ namespace Sharp80.TRS80
         // CALLBACK MANAGEMENT
 
         /// <summary>
-        /// Adds a pulse req and also sets the trigger based on the 
-        /// trigger's delay
-        /// </summary>
-        internal void Activate(PulseReq Req) => Clock.ActivatePulseReq(Req);
-
-        /// <summary>
         /// Adds a pulse req without resetting the trigger
         /// </summary>
-        internal void AddPulseReq(PulseReq Req) => Clock.AddPulseReq(Req);
+        internal void RegisterPulseReq(PulseReq Req, bool SetTrigger) => Clock.RegisterPulseReq(Req, SetTrigger);
 
         // FLOPPY SUPPORT
 
@@ -488,7 +482,7 @@ namespace Sharp80.TRS80
         {
             bool done = false;
             var pr = new PulseReq(PulseReq.DelayBasis.Microseconds, VirtualMSec * 1000, () => { done = true; });
-            Clock.ActivatePulseReq(pr);
+            Clock.RegisterPulseReq(pr, true);
             while (!done && pr.Active && IsRunning)
                 await Task.Delay(Math.Max(2, (int)VirtualMSec / 100));
         }

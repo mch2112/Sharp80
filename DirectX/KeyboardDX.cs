@@ -40,12 +40,12 @@ namespace Sharp80.DirectX
             keyboard.Acquire();
         }
 
-        public async Task Start(float RefreshRateHz, TRS80.KeyPressedDelegate Callback, CancellationToken StopToken)
+        public async Task Start(float RefreshRateHz, Action<KeyState> Callback, CancellationToken StopToken)
         {
             var delay = TimeSpan.FromTicks((int)(10_000_000f / RefreshRateHz));
             await Poll(delay, Callback, (int)(RefreshRateHz / 2), StopToken);
         }
-        private async Task Poll(TimeSpan Delay, TRS80.KeyPressedDelegate Callback, int RepeatThreshold, CancellationToken StopToken)
+        private async Task Poll(TimeSpan Delay, Action<KeyState> Callback, int RepeatThreshold, CancellationToken StopToken)
         {
             while (!StopToken.IsCancellationRequested)
             {

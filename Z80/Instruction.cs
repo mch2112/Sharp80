@@ -11,8 +11,6 @@ namespace Sharp80.Z80
     {
         public const ushort TICKS_PER_TSTATE = 1000;
 
-        public delegate void InstructionDelegate();
-
         private readonly byte[] op = new byte[4];
 
         private string operand0 = null;
@@ -21,7 +19,7 @@ namespace Sharp80.Z80
 
         private int? numOperands = null;
 
-        internal InstructionDelegate Execute { get; private set; }
+        internal Action Execute { get; private set; }
 
         public byte RIncrement { get; private set; }
         public bool IsPrefix { get; private set; }
@@ -36,11 +34,11 @@ namespace Sharp80.Z80
         public byte Op1 => op[1];
         public byte Op3 => op[3];
 
-        public Instruction(string Name, byte Op0, byte TStates, InstructionDelegate exec)
-            : this(Name, Op0, null, null, TStates, exec, 0)
+        public Instruction(string Name, byte Op0, byte TStates, Action Exec)
+            : this(Name, Op0, null, null, TStates, Exec, 0)
         {
         }
-        public Instruction(string Name, byte Op0, byte TStates, InstructionDelegate exec, bool IsPrefix) : this(Name, Op0, 4, exec)
+        public Instruction(string Name, byte Op0, byte TStates, Action Exec, bool IsPrefix) : this(Name, Op0, 4, Exec)
         {
             // Don't "ADD" this instruction, just call this constructor
 
@@ -49,23 +47,23 @@ namespace Sharp80.Z80
 
             RIncrement = 1;
         }
-        public Instruction(string Name, byte Op0, byte TStates, InstructionDelegate exec, byte TStatesAlt)
-            : this(Name, Op0, null, null, TStates, exec, TStatesAlt)
+        public Instruction(string Name, byte Op0, byte TStates, Action Exec, byte TStatesAlt)
+            : this(Name, Op0, null, null, TStates, Exec, TStatesAlt)
         {
         }
-        public Instruction(string Name, byte Op0, byte? Op1, byte TStates, InstructionDelegate exec)
-            : this(Name, Op0, Op1, null, TStates, exec, 0)
+        public Instruction(string Name, byte Op0, byte? Op1, byte TStates, Action Exec)
+            : this(Name, Op0, Op1, null, TStates, Exec, 0)
         {
         }
-        public Instruction(string Name, byte Op0, byte? Op1, byte TStates, InstructionDelegate exec, byte TStatesAlt)
-            : this(Name, Op0, Op1, null, TStates, exec, TStatesAlt)
+        public Instruction(string Name, byte Op0, byte? Op1, byte TStates, Action Exec, byte TStatesAlt)
+            : this(Name, Op0, Op1, null, TStates, Exec, TStatesAlt)
         {
         }
-        public Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstructionDelegate Exec)
+        public Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, Action Exec)
             : this(Name, Op0, Op1, Op3, TStates, Exec, 0)
         {
         }
-        private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, InstructionDelegate Exec, byte TStatesAlt)
+        private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, Action Exec, byte TStatesAlt)
         {
             this.Name = Name;
             Execute = Exec;

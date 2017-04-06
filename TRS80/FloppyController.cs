@@ -59,6 +59,7 @@ namespace Sharp80.TRS80
         private bool sideOneExpected;
         private bool markSectorDeleted;
         private bool multipleRecords;
+
         private PulseReq motorOffPulseReq;
         private PulseReq motorOnPulseReq;
         private PulseReq commandPulseReq;
@@ -126,7 +127,7 @@ namespace Sharp80.TRS80
         private ushort crc;
         private ushort crcCalc;
         private byte crcHigh, crcLow;
-        private Clock.ClockCallback nextCallback;
+        private Action nextCallback;
         private bool isPolling;
         private int targetDataIndex;
         private ulong TicksPerDiskRev { get; }
@@ -203,8 +204,8 @@ namespace Sharp80.TRS80
             motorOnPulseReq?.Expire();
             commandPulseReq?.Expire();
 
-            motorOnPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_ON_DELAY_IN_USEC, MotorOnCallback, true);
-            motorOffPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_OFF_DELAY_IN_USEC, MotorOffCallback, true);
+            motorOnPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_ON_DELAY_IN_USEC, MotorOnCallback);
+            motorOffPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_OFF_DELAY_IN_USEC, MotorOffCallback);
             commandPulseReq = new PulseReq();
 
             isPolling = false;
@@ -879,7 +880,7 @@ namespace Sharp80.TRS80
         {
             MotorOn = true;
             sound.DriveMotorRunning = true;
-            clock.ActivatePulseReq(motorOffPulseReq);
+            clock.RegisterPulseReq(motorOffPulseReq, true);
         }
         private void MotorOffCallback()
         {
@@ -983,7 +984,7 @@ namespace Sharp80.TRS80
 
         // TRIGGERS
 
-        private void SetCommandPulseReq(int Bytes, ulong DelayInUsec, Clock.ClockCallback Callback)
+        private void SetCommandPulseReq(int Bytes, ulong DelayInUsec, Action Callback)
         {
             commandPulseReq.Expire();
             nextCallback = null;
@@ -1015,15 +1016,14 @@ namespace Sharp80.TRS80
                 // just like the real life controller does.
                 commandPulseReq = new PulseReq(PulseReq.DelayBasis.Ticks,
                                                ((((ulong)targetDataIndex * DISK_ANGLE_DIVISIONS / (ulong)TrackLength) + DISK_ANGLE_DIVISIONS) - DiskAngle) % DISK_ANGLE_DIVISIONS * TicksPerDiskRev / DISK_ANGLE_DIVISIONS + 10000,
-                                               Poll,
-                                               false);
-                computer.Activate(commandPulseReq);
+                                               Poll);
+                computer.RegisterPulseReq(commandPulseReq, true);
             }
             else
             {
                 // Time based delay
-                commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, DelayInUsec, Callback, false);
-                computer.Activate(commandPulseReq);
+                commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, DelayInUsec, Callback);
+                computer.RegisterPulseReq(commandPulseReq, true);
             }
         }
         private void Poll()
@@ -1042,7 +1042,8 @@ namespace Sharp80.TRS80
             {
                 System.Diagnostics.Debug.Assert(false, "Missed the target!");
                 // we could cheat and wait for the target by calling Poll() again but that's not good emulation
-                // so just behave as if there were a controller fault. This shouldn't ever happen IRL.
+                // so just behave as if there were a fault. This shouldn't happen unless switching floppings mid
+                // read or write.
                 isPolling = false;
                 nextCallback();
             }
@@ -1100,7 +1101,8 @@ namespace Sharp80.TRS80
                 drives[b].Serialize(Writer);
 
             Writer.Write(currentDriveNumber);
-            Writer.Write(SideOneSelected);
+            Writer.Write(sideOneSelected);
+            Writer.Write(Enabled);
 
             commandPulseReq.Serialize(Writer);
             motorOnPulseReq.Serialize(Writer);
@@ -1164,11 +1166,14 @@ namespace Sharp80.TRS80
                         if (System.IO.File.Exists(drives[b].Floppy.FilePath))
                             Storage.SaveDefaultDriveFileName(b, drives[b].Floppy.FilePath);
                 }
-
                 currentDriveNumber = Reader.ReadByte();
                 sideOneSelected = Reader.ReadBoolean();
+                if (SerializationVersion >= 10)
+                    Enabled = Reader.ReadBoolean();
+                else
+                    Enabled = AnyDriveLoaded;
 
-                Clock.ClockCallback callback;
+                Action callback;
 
                 switch (command)
                 {
@@ -1210,11 +1215,11 @@ namespace Sharp80.TRS80
                 if (ok)
                 {
                     if (commandPulseReq.Active)
-                        computer.AddPulseReq(commandPulseReq);
+                        computer.RegisterPulseReq(commandPulseReq, false);
                     if (motorOnPulseReq.Active)
-                        computer.AddPulseReq(motorOnPulseReq);
+                        computer.RegisterPulseReq(motorOnPulseReq, false);
                     if (motorOffPulseReq.Active)
-                        computer.AddPulseReq(motorOffPulseReq);
+                        computer.RegisterPulseReq(motorOffPulseReq, false);
 
                     UpdateTrack();
                 }
@@ -1457,7 +1462,7 @@ namespace Sharp80.TRS80
             if (MotorOn)
                 MotorOnCallback();
             else
-                computer.Activate(motorOnPulseReq);
+                computer.RegisterPulseReq(motorOnPulseReq, true);
         }
         private void UpdateStatus()
         {

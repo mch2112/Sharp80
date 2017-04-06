@@ -7,8 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Sharp80.Z80;
-
 namespace Sharp80.TRS80
 {
     public enum ClockSpeed { XXSlow = 0, XSlow = 1, Slow = 2, Normal = 3, Fast = 4, Unlimited = 5, Count = 6 }
@@ -16,7 +14,6 @@ namespace Sharp80.TRS80
     public class Clock : ISerializable
     {
         public event EventHandler SpeedChanged;
-        public delegate void ClockCallback();
 
         public const ulong CLOCK_RATE = 2027520;
 
@@ -55,11 +52,10 @@ namespace Sharp80.TRS80
         private Z80.Z80 z80;
         private InterruptManager IntMgr;
 
-        private List<PulseReq> pulseReqs = new List<PulseReq>();
-        private ulong nextPulseReqTick = UInt64.MaxValue;
+        private PulseScheduler pulseScheduler = new PulseScheduler();
         private ulong nextRtcIrqTick;
 
-        private SoundEventCallback soundCallback;
+        private Action soundCallback;
         private ulong nextSoundSampleTick;
         private readonly ulong ticksPerSoundSample;
 
@@ -67,7 +63,7 @@ namespace Sharp80.TRS80
 
         // CONSTRUCTOR
 
-        internal Clock(Computer Computer, Z80.Z80 Processor, ITimer Timer, InterruptManager InterruptManager, ulong TicksPerSoundSample, SoundEventCallback SoundCallback)
+        internal Clock(Computer Computer, Z80.Z80 Processor, ITimer Timer, InterruptManager InterruptManager, ulong TicksPerSoundSample, Action SoundCallback)
         {
             SetupTickMeasurement(Timer.TicksPerSecond);
 
@@ -253,25 +249,7 @@ namespace Sharp80.TRS80
             }
 
             // Do callbacks
-            if (TickCount > nextPulseReqTick)
-            {
-                // descending to avoid problems with new reqs being added during the trigger callback
-                for (int i = pulseReqs.Count - 1; i >= 0; i--)
-                {
-                    if (TickCount > pulseReqs[i].Trigger)
-                        pulseReqs[i].Execute();
-                }
-                pulseReqs.RemoveAll(req => req.Inactive);       
-                if (pulseReqs.Count == 0)
-                {
-                    nextPulseReqTick = ulong.MaxValue;
-                }
-                else
-                {
-                    lock (pulseReqs)
-                        nextPulseReqTick = pulseReqs.Min(req => req.Trigger);
-                }
-            }
+            pulseScheduler.Execute(TickCount);            
         }
         private async Task Throttle()
         {
@@ -301,19 +279,8 @@ namespace Sharp80.TRS80
 
         // PULSE REQ CALLBACKS
 
-        internal void ActivatePulseReq(PulseReq Req)
-        {
-            Req.SetTrigger(BaselineTicks: TickCount);
-            AddPulseReq(Req);
-        }
-        internal void AddPulseReq(PulseReq Req)
-        {
-            if (!pulseReqs.Contains(Req))
-                lock (pulseReqs)
-                    pulseReqs.Add(Req);
-            nextPulseReqTick = 0;
-        }
- 
+        internal void RegisterPulseReq(PulseReq Req, bool SetTrigger) => pulseScheduler.RegisterPulseReq(Req, SetTrigger, TickCount);
+
         /// <summary>
         /// This zeroes the difference between the virtual and realtime clocks
         /// in case of large differences (like when starting or changing speeds)
@@ -339,7 +306,7 @@ namespace Sharp80.TRS80
             Writer.Write(TickCount);
             Writer.Write(nextRtcIrqTick);
             Writer.Write(stopReq);
-            Writer.Write(nextPulseReqTick);
+            Writer.Write(ulong.MaxValue);
             Writer.Write(nextSoundSampleTick);
             Writer.Write(waitTimeout);
 
@@ -352,7 +319,7 @@ namespace Sharp80.TRS80
                 TickCount = Reader.ReadUInt64();
                 nextRtcIrqTick = Reader.ReadUInt64();
                 stopReq = Reader.ReadBoolean();
-                nextPulseReqTick = Reader.ReadUInt64();
+                Reader.ReadUInt64(); // unused
                 nextSoundSampleTick = Reader.ReadUInt64();
                 waitTimeout = Reader.ReadUInt64();
 

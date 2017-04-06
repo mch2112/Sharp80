@@ -10,7 +10,7 @@ namespace Sharp80.TRS80
     {
         public int SampleRate => 16000;
         public bool Stopped => false;
-        public SampleCallback SampleCallback { set; private get; }
+        public Func<byte> SampleCallback { set; private get; }
         public bool On { get; set; } = false;
         public bool Mute { get; set; } = true;
         public bool UseDriveNoise { get; set; } = false;

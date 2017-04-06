@@ -369,9 +369,9 @@ namespace Sharp80.TRS80
                 }
                 // Keep coming back as long as we're in read status
                 readPulseReq?.Expire();
-                computer.Activate(readPulseReq = new PulseReq(PulseReq.DelayBasis.Ticks,
+                computer.RegisterPulseReq(readPulseReq = new PulseReq(PulseReq.DelayBasis.Ticks,
                                                                       t.TicksUntilNext,
-                                                                      Update));
+                                                                      Update), true);
             }
         }
         private bool Read() => AdvanceCursor() && data[byteCursor].IsBitSet(bitCursor);
@@ -557,7 +557,7 @@ namespace Sharp80.TRS80
                     readPulseReq = readPulseReq ?? new PulseReq();
                     ok = readPulseReq.Deserialize(Reader, Update, SerializationVersion);
                     if (ok && readPulseReq.Active)
-                        computer.AddPulseReq(readPulseReq);
+                        computer.RegisterPulseReq(readPulseReq, false);
                 }
                 else
                 {

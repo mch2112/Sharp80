@@ -19,10 +19,7 @@ namespace Sharp80.Views
     {
         private const int STANDARD_INDENT = 3;
 
-        public delegate void MessageDelegate(string Message);
-        public delegate void UserCommandHandler(UserCommand Command);
-
-        public static event UserCommandHandler OnUserCommand;
+        public static event Action<UserCommand> OnUserCommand;
 
         private static bool initialized = false;
         private static bool invalid = false;
@@ -60,7 +57,7 @@ namespace Sharp80.Views
             private set => invalid = value;
         }
         public static void Validate() => invalid = false;
-        public static void Initialize(IProductInfo ProductInfo, IDialogs Dialogs, ISettings Settings, Computer Computer, MessageDelegate MessageCallback)
+        public static void Initialize(IProductInfo ProductInfo, IDialogs Dialogs, ISettings Settings, Computer Computer, Action<string> MessageCallback)
         {
             View.ProductInfo = ProductInfo;
             View.Dialogs = Dialogs;
@@ -97,7 +94,7 @@ namespace Sharp80.Views
         protected static Computer Computer { get; private set; }
         protected static byte? DriveNumber { get; set; } = null;
         protected static CmdFile CmdFile { get; set; } = null;
-        protected static MessageDelegate MessageCallback { get; private set; }
+        protected static Action<string> MessageCallback { get; private set; }
 
         protected static void Invalidate() => invalid = true;
         protected static void RevertMode() => CurrentMode = Computer.HasRunYet ? ViewMode.Normal : ViewMode.Splash;

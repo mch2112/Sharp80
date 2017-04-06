@@ -81,7 +81,7 @@ namespace Sharp80.DirectX
         private DataPointer[] memBuffers = new DataPointer[RING_SIZE];
         private FrameBuffer<short> frameBuffer;
 
-        public SampleCallback SampleCallback { private get; set; }
+        public Func<byte> SampleCallback { private get; set; }
 
         public SoundX(int SampleRate)
         {

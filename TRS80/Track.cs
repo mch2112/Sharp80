@@ -41,6 +41,11 @@ namespace Sharp80.TRS80
             header = Data.Slice(0, HEADER_LENGTH_BYTES).ToUShortArray().Select(h => (ushort)(h & (OFFSET_MASK | DOUBLE_DENSITY_MASK))).ToArray();
 
             this.Data = Data.Slice(HEADER_LENGTH_BYTES);
+
+            System.Diagnostics.Debug.Assert(Data.Length % 2 == 0);
+            if (Data.Length % 2 == 1)
+                Data = Data.Pad(Data.Length + 1, (byte)0x00);
+
             SetDensity();
 
             if (SingleDensitySingleByte)
@@ -240,6 +245,11 @@ namespace Sharp80.TRS80
         }
         internal void WriteByte(int TrackIndex, bool DoubleDensity, byte Value)
         {
+            System.Diagnostics.Debug.Assert(TrackIndex < Data.Length);
+
+            if (TrackIndex >= Data.Length)
+                return;
+
             header = null;
             Changed = true;
 

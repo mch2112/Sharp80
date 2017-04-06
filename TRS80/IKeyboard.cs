@@ -7,14 +7,12 @@ using System.Threading.Tasks;
 
 namespace Sharp80.TRS80
 {
-    public delegate void KeyPressedDelegate(KeyState KeyState);
-
     /// <summary>
     /// This interface is used to allow for future non-DirectInput based implementations
     /// </summary>
     public interface IKeyboard : IDisposable
     {
-        Task Start(float PollRateInHz, KeyPressedDelegate Callback, CancellationToken StopToken);
+        Task Start(float PollRateInHz, Action<KeyState> Callback, CancellationToken StopToken);
         bool Enabled { get; set; }
         bool IsShifted { get; }
         bool LeftShiftPressed { get; }

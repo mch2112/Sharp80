@@ -5,8 +5,6 @@ using System;
 
 namespace Sharp80.TRS80
 {
-    public delegate void DialogDelegate();
-
     public interface IDialogs
     {
         string ClipboardText { get; set; }

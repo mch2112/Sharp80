@@ -18,10 +18,10 @@ namespace Sharp80
 
         private IWin32Window Parent { get; set; }
         private Views.IProductInfo ProductInfo { get; set; }
-        private event DialogDelegate BeforeShowDialog;
-        private event DialogDelegate AfterShowDialog;
+        private event Action BeforeShowDialog;
+        private event Action AfterShowDialog;
 
-        public WinDialogs(IWin32Window Parent, Views.IProductInfo ProductInfo, DialogDelegate BeforeShowDialog, DialogDelegate AfterShowDialog)
+        public WinDialogs(IWin32Window Parent, Views.IProductInfo ProductInfo, Action BeforeShowDialog, Action AfterShowDialog)
         {
             this.Parent = Parent;
             this.ProductInfo = ProductInfo;
