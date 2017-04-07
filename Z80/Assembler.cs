@@ -27,8 +27,8 @@ namespace Sharp80.Z80.Assembler
         private const char MINUS_SIGN = '-';
         private const char SPACE = ' ';
 
-        private const int MAX_LABEL_LENGTH = 12;
-        private const int MIN_LABEL_LENGTH = 2;
+        public const int MAX_LABEL_LENGTH = 12;
+        public const int MIN_LABEL_LENGTH = 2;
 
         private static string[] registers = new string[] { "A", "B", "C", "D", "E", "F", "H", "L",
                                                        "AF", "BC", "DE", "HL",

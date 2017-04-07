@@ -347,11 +347,16 @@ namespace Sharp80.Views
                 if (LoadTextFile(sourcePath, out string source))
                 {
                     var assembly = Computer.Assemble(source);
-                    var cmdFile = new CmdFile(assembly, System.IO.Path.ChangeExtension(sourcePath, ".cmd"));
+
+                    string intText = assembly.IntermediateOutput;
+                    if (intText.Length > 0)
+                        File.WriteAllText(Path.ChangeExtension(sourcePath, ".int.txt"), intText);
+                    
+                    var cmdFile = new CmdFile(assembly, Path.ChangeExtension(sourcePath, ".cmd"));
                     if (cmdFile.Valid)
                     {
                         if (!SuppressDialogOnSuccess)
-                            Dialogs.InformUser(string.Format("Assembled {0} to {1}.", System.IO.Path.GetFileName(sourcePath), System.IO.Path.GetFileName(cmdFile.FilePath)));
+                            Dialogs.InformUser(string.Format("Assembled {0} to {1}.", Path.GetFileName(sourcePath), Path.GetFileName(cmdFile.FilePath)));
                         CmdFile = cmdFile;
                         return true;
                     }

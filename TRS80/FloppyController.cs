@@ -9,9 +9,6 @@ namespace Sharp80.TRS80
     public partial class FloppyController : ISerializable, IFloppyControllerStatus
     {
         public const int NUM_DRIVES = 4;
-
-        private enum Command
-        { Reset, Restore, Seek, Step, ReadSector, WriteSector, ReadTrack, WriteTrack, ReadAddress, ForceInterrupt, ForceInterruptImmediate, Invalid }
         private enum OpStatus
         { Prepare, Delay, Step, CheckVerify, VerifyTrack, CheckingWriteProtectStatus, SetDrq, DrqCheck, SeekingIndexHole, SeekingIDAM, ReadingAddressData, CheckingAddressData, SeekingDAM, ReadingData, WritingData, WriteFiller, WriteFilter2, WriteDAM, WriteCRCHigh, WriteCRCLow, ReadCRCHigh, ReadCRCLow, Finalize, NMI, OpDone }
 
@@ -31,10 +28,6 @@ namespace Sharp80.TRS80
         private const ulong INDEX_PULSE_END = 10000;//INDEX_PULSE_WIDTH_IN_USEC * DISK_ANGLE_DIVISIONS / TRACK_FULL_ROTATION_TIME_IN_USEC;
         private const ulong MOTOR_OFF_DELAY_IN_USEC = 2 * SECONDS_TO_MICROSECONDS;
         private const ulong MOTOR_ON_DELAY_IN_USEC = 10;
-        private const ulong BYTE_TIME_IN_USEC_DD = 1000000 / Floppy.STANDARD_TRACK_LENGTH_DOUBLE_DENSITY / 5;
-        private const ulong BYTE_TIME_IN_USEC_SD = 1000000 / Floppy.STANDARD_TRACK_LENGTH_SINGLE_DENSITY / 5;
-        private const ulong BYTE_POLL_TIME_DD = BYTE_TIME_IN_USEC_DD / 10;
-        private const ulong BYTE_POLL_TIME_SD = BYTE_TIME_IN_USEC_SD / 10;
         private const ulong STANDARD_DELAY_TIME_IN_USEC = 30 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ;
         private const ulong HEAD_LOAD_TIME_INI_USEC = 50 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ;
         private const ulong FDC_CLOCK_MHZ = 1;
@@ -50,16 +43,7 @@ namespace Sharp80.TRS80
 
         public bool Enabled { get; private set; }
         public bool MotorOn { get; private set; }
-        private ulong stepRateInUsec;
-        private readonly ulong[] stepRates;
-        private bool verify;
-        private bool delay;
-        private bool updateRegisters;
-        private bool sideSelectVerify;
-        private bool sideOneExpected;
-        private bool markSectorDeleted;
-        private bool multipleRecords;
-
+        
         private PulseReq motorOffPulseReq;
         private PulseReq motorOnPulseReq;
         private PulseReq commandPulseReq;
@@ -67,11 +51,11 @@ namespace Sharp80.TRS80
         private Track track;
 
         // FDC Hardware Registers
+        public byte CommandRegister => command.CommandRegister;
         public byte TrackRegister { get; private set; }
-        public byte CommandRegister { get; private set; }
         public byte DataRegister { get; private set; }
         public byte SectorRegister { get; private set; }
-        private byte statusRegister;
+        private byte StatusRegister { get; set; }
 
         // FDC Flags, etc.
         public bool Busy { get; private set; }
@@ -114,7 +98,7 @@ namespace Sharp80.TRS80
         private DriveState[] drives;
 
         // Operation state
-        private Command command;
+        private FdcCommand command;
         private OpStatus opStatus = OpStatus.OpDone;
         private byte[] readAddressData = new byte[ADDRESS_DATA_BYTES];
         private byte readAddressIndex;
@@ -145,14 +129,7 @@ namespace Sharp80.TRS80
 
             TicksPerDiskRev = Clock.TICKS_PER_SECOND / DISK_REV_PER_SEC;
 
-            stepRates = new ulong[4] {  6 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ,
-                                       12 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ,
-                                       20 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ,
-                                       30 * MILLISECONDS_TO_MICROSECONDS / FDC_CLOCK_MHZ };
-
-            drives = new DriveState[NUM_DRIVES];
-            for (int i = 0; i < NUM_DRIVES; i++)
-                drives[i] = new DriveState();
+            drives = new DriveState[] { new DriveState(), new DriveState(), new DriveState(), new DriveState() };
 
             CurrentDriveNumber = 0x00;
 
@@ -178,13 +155,12 @@ namespace Sharp80.TRS80
             // This is a hardware reset, not an FDC command
             // We need to set the results as if a Restore command was completed.
 
-            CommandRegister = 0x03;
             DataRegister = 0;
             TrackRegister = 0;
             SectorRegister = 0x01;
-            statusRegister = 0;
+            StatusRegister = 0;
 
-            command = Command.Restore;
+            command = new FdcCommand(0x03);
 
             Busy = false;
             Drq = false;
@@ -196,8 +172,6 @@ namespace Sharp80.TRS80
 
             lastStepDirUp = true;
 
-            sideOneExpected = false;
-            sideSelectVerify = false;
             DoubleDensitySelected = false;
 
             motorOffPulseReq?.Expire();
@@ -230,7 +204,7 @@ namespace Sharp80.TRS80
                 {
                     ret = false;
                 }
-                if (f == null)
+                if (f is null)
                     UnloadDrive(DriveNum);
                 else
                     LoadDrive(DriveNum, f);
@@ -300,595 +274,6 @@ namespace Sharp80.TRS80
                 drives[DriveNumber].WriteProtected = WriteProtected;
         }
 
-        // CALLBACKS
-
-        private void TypeOneCommandCallback()
-        {
-            ulong delayTime = 0;
-            int delayBytes = 0;
-
-            switch (opStatus)
-            {
-                case OpStatus.Prepare:
-                    verify = CommandRegister.IsBitSet(2);
-                    stepRateInUsec = stepRates[CommandRegister & 0x03];
-                    updateRegisters = command == Command.Seek || command == Command.Restore || CommandRegister.IsBitSet(4);
-                    opStatus = OpStatus.Step;
-                    break;
-                case OpStatus.Step:
-
-                    if (command == Command.Seek || command == Command.Restore)
-                    {
-                        if (DataRegister == TrackRegister)
-                            opStatus = OpStatus.CheckVerify;
-                        else
-                            lastStepDirUp = (DataRegister > TrackRegister);
-                    }
-                    if (opStatus == OpStatus.Step)
-                    {
-                        if (updateRegisters)
-                            TrackRegister = lastStepDirUp ? (byte)Math.Min(MAX_TRACKS, TrackRegister + 1)
-                                                          : (byte)Math.Max(0, TrackRegister - 1);
-
-                        if (lastStepDirUp)
-                            StepUp();
-                        else
-                            StepDown();
-
-                        if (CurrentDrive.OnTrackZero && !lastStepDirUp)
-                        {
-                            TrackRegister = 0;
-                            opStatus = OpStatus.CheckVerify;
-                        }
-                        else if (command == Command.Step)
-                        {
-                            opStatus = OpStatus.CheckVerify;
-                        }
-                        delayTime = stepRateInUsec;
-                    }
-                    break;
-                case OpStatus.CheckVerify:
-                    if (verify)
-                    {
-                        delayTime = STANDARD_DELAY_TIME_IN_USEC;
-                        ResetIndexCount();
-                        ResetCRC();
-                        opStatus = OpStatus.SeekingIDAM;
-                    }
-                    else
-                    {
-                        opStatus = OpStatus.NMI;
-                        delayTime = NMI_DELAY_IN_USEC;
-                    }
-                    break;
-                case OpStatus.SeekingIDAM:
-                case OpStatus.ReadingAddressData:
-                    byte b = ReadByte(opStatus == OpStatus.SeekingIDAM);
-                    delayBytes = 1;
-                    SeekAddressData(b, OpStatus.VerifyTrack, false);
-                    break;
-                case OpStatus.VerifyTrack:
-                    if (TrackRegister == readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE])
-                    {
-                        opStatus = OpStatus.NMI;
-                        delayTime = NMI_DELAY_IN_USEC;
-                    }
-                    else
-                    {
-                        delayBytes = 1;
-                        opStatus = OpStatus.SeekingIDAM;
-                    }
-                    break;
-                case OpStatus.NMI:
-                    opStatus = OpStatus.OpDone;
-                    DoNmi();
-                    break;
-            }
-            if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, TypeOneCommandCallback);
-        }
-        private void ReadSectorCallback()
-        {
-            byte b = ReadByte(false);
-
-            ulong delayTime = 0;
-            int delayBytes = 0;
-
-            switch (opStatus)
-            {
-                case OpStatus.Prepare:
-
-                    ResetIndexCount();
-
-                    ResetCRC();
-
-                    sideSelectVerify = CommandRegister.IsBitSet(1);
-                    sideOneExpected = CommandRegister.IsBitSet(3);
-                    multipleRecords = CommandRegister.IsBitSet(4);
-
-                    if (delay)
-                        opStatus = OpStatus.Delay;
-                    else
-                        opStatus = OpStatus.SeekingIDAM;
-
-                    break;
-                case OpStatus.Delay:
-                    delayTime = STANDARD_DELAY_TIME_IN_USEC;
-                    opStatus = OpStatus.SeekingIDAM;
-                    break;
-                case OpStatus.SeekingIDAM:
-                case OpStatus.ReadingAddressData:
-                    SeekAddressData(b, OpStatus.SeekingDAM, true);
-                    delayBytes = 1;
-                    break;
-                case OpStatus.SeekingDAM:
-                    delayBytes = 1;
-                    if (damBytesChecked++ > (DoubleDensitySelected ? 43 : 30))
-                    {
-                        SeekError = true;
-                        opStatus = OpStatus.NMI;
-                        delayTime = NMI_DELAY_IN_USEC;
-                        delayBytes = 0;
-                    }
-                    else if (IsDAM(b, out sectorDeleted))
-                    {
-                        ResetCRC();
-                        crc = Lib.Crc(crc, b);
-                        opStatus = OpStatus.ReadingData;
-                        bytesRead = 0;
-                    }
-                    break;
-                case OpStatus.ReadingData:
-                    if (Drq)
-                    {
-                        LostData = true;
-                    }
-                    if (++bytesRead >= sectorLength)
-                    {
-                        crcCalc = crc;
-                        opStatus = OpStatus.ReadCRCHigh;
-                    }
-                    DataRegister = b;
-                    SetDRQ();
-                    delayBytes = 1;
-                    break;
-                case OpStatus.ReadCRCHigh:
-                    crcHigh = b;
-                    delayBytes = 1;
-                    opStatus = OpStatus.ReadCRCLow;
-                    break;
-                case OpStatus.ReadCRCLow:
-                    crcLow = b;
-                    CrcError = crcCalc != Lib.CombineBytes(crcLow, crcHigh);
-                    if (CrcError)
-                    {
-                        delayTime = NMI_DELAY_IN_USEC;
-                        opStatus = OpStatus.NMI;
-                    }
-                    else if (!multipleRecords)
-                    {
-                        delayTime = NMI_DELAY_IN_USEC;
-                        opStatus = OpStatus.NMI;
-                    }
-                    else
-                    {
-                        // mutiple records
-                        SectorRegister++;
-                        delayBytes = 1;
-                        opStatus = OpStatus.SeekingIDAM;
-                    }
-
-                    break;
-                case OpStatus.NMI:
-                    opStatus = OpStatus.OpDone;
-                    DoNmi();
-                    break;
-            }
-            if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, ReadSectorCallback);
-        }
-        private void WriteSectorCallback()
-        {
-            ulong delayTime = 0;
-            int delayBytes = 0;
-
-            switch (opStatus)
-            {
-                case OpStatus.Prepare:
-
-                    ResetIndexCount();
-
-                    crc = 0xFFFF;
-
-                    sideOneExpected = CommandRegister.IsBitSet(3);
-                    delay = CommandRegister.IsBitSet(2);
-                    sideSelectVerify = CommandRegister.IsBitSet(1);
-                    markSectorDeleted = CommandRegister.IsBitSet(0);
-
-                    if (delay)
-                        opStatus = OpStatus.Delay;
-                    else
-                        opStatus = OpStatus.CheckingWriteProtectStatus;
-
-                    delayTime = 0;
-                    break;
-                case OpStatus.Delay:
-                    opStatus = OpStatus.CheckingWriteProtectStatus;
-                    delayTime = STANDARD_DELAY_TIME_IN_USEC;
-                    break;
-                case OpStatus.CheckingWriteProtectStatus:
-                    if (CurrentDrive.WriteProtected)
-                    {
-                        writeProtected = true;
-                        opStatus = OpStatus.NMI;
-                        delayTime = NMI_DELAY_IN_USEC;
-                    }
-                    else
-                    {
-                        opStatus = OpStatus.SeekingIDAM;
-                    }
-                    break;
-                case OpStatus.SeekingIDAM:
-                case OpStatus.ReadingAddressData:
-                    byte b = ReadByte(true);
-                    SeekAddressData(b, OpStatus.SetDrq, true);
-                    if (opStatus == OpStatus.SetDrq)
-                        delayBytes = 2;
-                    else
-                        delayBytes = 1;
-                    break;
-                case OpStatus.SetDrq:
-                    ResetCRC();
-                    opStatus = OpStatus.DrqCheck;
-                    SetDRQ();
-                    delayBytes = 8;
-                    break;
-                case OpStatus.DrqCheck:
-                    if (Drq)
-                    {
-                        LostData = true;
-                        opStatus = OpStatus.NMI;
-                        delayTime = NMI_DELAY_IN_USEC;
-                    }
-                    else
-                    {
-                        opStatus = OpStatus.WriteFiller;
-                        delayBytes = DoubleDensitySelected ? 12 : 1;
-                        bytesToWrite = DoubleDensitySelected ? 12 : 6;
-                    }
-                    break;
-                case OpStatus.WriteFiller:
-                    WriteByte(0x00, false);
-                    if (--bytesToWrite == 0)
-                    {
-                        opStatus = OpStatus.WriteDAM;
-                        bytesToWrite = 4;
-                        crc = Floppy.CRC_RESET;
-                    }
-                    delayBytes = 1;
-                    break;
-                case OpStatus.WriteDAM:
-                    if (--bytesToWrite > 0)
-                    {
-                        WriteByte(0xA1, false);
-                    }
-                    else
-                    {
-                        opStatus = OpStatus.WritingData;
-                        if (markSectorDeleted)
-                            WriteByte(Floppy.DAM_DELETED, true);
-                        else
-                            WriteByte(Floppy.DAM_NORMAL, true);
-                        bytesToWrite = sectorLength;
-                    }
-                    delayBytes = 1;
-                    break;
-                case OpStatus.WritingData:
-                    if (Drq)
-                    {
-                        LostData = true;
-                        WriteByte(0x00, false);
-                    }
-                    else
-                    {
-                        WriteByte(DataRegister, false);
-                    }
-                    if (--bytesToWrite == 0)
-                    {
-                        opStatus = OpStatus.WriteCRCHigh;
-                        crc.Split(out crcLow, out crcHigh);
-                    }
-                    else
-                    {
-                        SetDRQ();
-                    }
-                    delayBytes = 1;
-                    break;
-                case OpStatus.WriteCRCHigh:
-                    opStatus = OpStatus.WriteCRCLow;
-                    WriteByte(crcHigh, false);
-                    delayBytes = 1;
-                    break;
-                case OpStatus.WriteCRCLow:
-                    opStatus = OpStatus.WriteFilter2;
-                    WriteByte(crcLow, false);
-                    delayBytes = 1;
-                    break;
-                case OpStatus.WriteFilter2:
-                    WriteByte(0xFF, false);
-                    if (multipleRecords)
-                    {
-                        opStatus = OpStatus.SetDrq;
-                        delayBytes = 2;
-                    }
-                    else
-                    {
-                        opStatus = OpStatus.NMI;
-                        delayTime = NMI_DELAY_IN_USEC;
-                    }
-                    break;
-                case OpStatus.NMI:
-                    opStatus = OpStatus.OpDone;
-                    DoNmi();
-                    break;
-
-            }
-            if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, WriteSectorCallback);
-        }
-        private void ReadAddressCallback()
-        {
-            ulong delayTime = 0;
-            int delayBytes = 1;
-
-            byte b = ReadByte(true);
-            switch (opStatus)
-            {
-                case OpStatus.Prepare:
-                    ResetIndexCount();
-
-                    delay = CommandRegister.IsBitSet(2);
-
-                    if (delay)
-                        opStatus = OpStatus.Delay;
-                    else
-                        opStatus = OpStatus.SeekingIDAM;
-                    delayBytes = 0;
-                    break;
-                case OpStatus.Delay:
-                    opStatus = OpStatus.SeekingIDAM;
-                    delayTime = STANDARD_DELAY_TIME_IN_USEC;
-                    delayBytes = 0;
-                    break;
-                case OpStatus.SeekingIDAM:
-                    SeekAddressData(b, OpStatus.Finalize, false);
-                    break;
-                case OpStatus.ReadingAddressData:
-                    DataRegister = b;
-                    SetDRQ();
-                    SeekAddressData(b, OpStatus.Finalize, false);
-                    break;
-                case OpStatus.Finalize:
-                    // Error in doc? from the doc: "The Track Address of the ID field is written
-                    // into the sector register so that a comparison can be made
-                    // by the user"
-                    TrackRegister = readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE];
-                    SectorRegister = readAddressData[ADDRESS_DATA_SECTOR_REGISTER_BYTE];
-                    opStatus = OpStatus.NMI;
-                    delayTime = NMI_DELAY_IN_USEC;
-                    delayBytes = 0;
-                    break;
-                case OpStatus.NMI:
-                    opStatus = OpStatus.OpDone;
-                    DoNmi();
-                    break;
-            }
-            if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, ReadAddressCallback);
-        }
-        private void WriteTrackCallback()
-        {
-            ulong delayTime = 0;
-            int delayBytes = 1;
-
-            switch (opStatus)
-            {
-                case OpStatus.Prepare:
-                    ResetIndexCount();
-
-                    if (delay)
-                        opStatus = OpStatus.Delay;
-                    else
-                        opStatus = OpStatus.CheckingWriteProtectStatus;
-
-                    delayTime = 100;
-                    delayBytes = 0;
-
-                    break;
-                case OpStatus.Delay:
-                    opStatus = OpStatus.CheckingWriteProtectStatus;
-                    delayTime = STANDARD_DELAY_TIME_IN_USEC;
-                    delayBytes = 0;
-                    break;
-                case OpStatus.CheckingWriteProtectStatus:
-                    if (CurrentDrive.WriteProtected)
-                    {
-                        writeProtected = true;
-                        opStatus = OpStatus.NMI;
-                        delayTime = NMI_DELAY_IN_USEC;
-                        delayBytes = 0;
-                    }
-                    else
-                    {
-                        opStatus = OpStatus.DrqCheck;
-                        SetDRQ();
-                        delayBytes = 3;
-                    }
-                    break;
-                case OpStatus.DrqCheck:
-                    if (Drq)
-                    {
-                        LostData = true;
-                        opStatus = OpStatus.NMI;
-                        delayTime = NMI_DELAY_IN_USEC;
-                    }
-                    else
-                    {
-                        opStatus = OpStatus.SeekingIndexHole;
-                    }
-                    delayBytes = 0;
-                    break;
-                case OpStatus.SeekingIndexHole:
-                    if (IndexesFound > 0)
-                        opStatus = OpStatus.WritingData;
-                    break;
-                case OpStatus.WritingData:
-                    byte b = DataRegister;
-                    bool doDrq = true;
-                    bool allowCrcReset = true;
-                    if (Drq)
-                    {
-                        LostData = true;
-                        b = 0x00;
-                    }
-                    else
-                    {
-                        if (DoubleDensitySelected)
-                        {
-                            switch (b)
-                            {
-                                case 0xF5:
-                                    b = 0xA1;
-                                    break;
-                                case 0xF6:
-                                    b = 0xC2;
-                                    break;
-                                case 0xF7:
-                                    // write 2 bytes CRC
-                                    crcCalc = crc;
-                                    crc.Split(out crcLow, out crcHigh);
-                                    b = crcHigh;
-                                    opStatus = OpStatus.WriteCRCLow;
-                                    doDrq = false;
-                                    allowCrcReset = false;
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            switch (b)
-                            {
-                                case 0xF7:
-                                    // write 2 bytes CRC
-                                    crc.Split(out crcLow, out crcHigh);
-                                    b = crcHigh;
-                                    opStatus = OpStatus.WriteCRCLow;
-                                    doDrq = false;
-                                    allowCrcReset = false;
-                                    break;
-                                case 0xF8:
-                                case 0xF9:
-                                case 0xFA:
-                                case 0xFB:
-                                case 0xFD:
-                                case 0xFE:
-                                    crc = 0xFFFF;
-                                    break;
-                            }
-                        }
-                    }
-                    WriteByte(b, allowCrcReset);
-                    if (IndexesFound > 1)
-                    {
-                        opStatus = OpStatus.NMI;
-                        delayTime = NMI_DELAY_IN_USEC;
-                        delayBytes = 0;
-                    }
-                    else
-                    {
-                        if (doDrq)
-                            SetDRQ();
-                    }
-                    break;
-                case OpStatus.WriteCRCLow:
-                    opStatus = OpStatus.WritingData;
-                    WriteByte(crcLow, false);
-                    SetDRQ();
-                    break;
-                case OpStatus.NMI:
-                    opStatus = OpStatus.OpDone;
-                    DoNmi();
-                    break;
-            }
-            if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, WriteTrackCallback);
-        }
-        private void ReadTrackCallback()
-        {
-            ulong delayTime = 0;
-            int delayBytes = 0;
-
-            byte b = ReadByte(true);
-
-            switch (opStatus)
-            {
-                case OpStatus.Prepare:
-                    ResetIndexCount();
-
-                    if (delay)
-                        opStatus = OpStatus.Delay;
-                    else
-                        opStatus = OpStatus.SeekingIndexHole;
-
-                    break;
-
-                case OpStatus.Delay:
-                    delayTime = STANDARD_DELAY_TIME_IN_USEC;
-                    opStatus = OpStatus.SeekingIndexHole;
-                    break;
-                case OpStatus.SeekingIndexHole:
-                    if (IndexesFound > 0)
-                        opStatus = OpStatus.ReadingData;
-                    delayBytes = 1;
-                    break;
-                case OpStatus.ReadingData:
-                    DataRegister = b;
-                    if (Drq)
-                    {
-                        LostData = true;
-                    }
-                    SetDRQ();
-                    if (IndexesFound > 1)
-                    {
-                        opStatus = OpStatus.NMI;
-                        delayTime = NMI_DELAY_IN_USEC;
-                    }
-                    else
-                    {
-                        delayBytes = 1;
-                    }
-                    break;
-                case OpStatus.NMI:
-                    opStatus = OpStatus.OpDone;
-                    DoNmi();
-                    break;
-            }
-            if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, ReadTrackCallback);
-        }
-        private void MotorOnCallback()
-        {
-            MotorOn = true;
-            sound.DriveMotorRunning = true;
-            clock.RegisterPulseReq(motorOffPulseReq, true);
-        }
-        private void MotorOffCallback()
-        {
-            MotorOn = false;
-            sound.DriveMotorRunning = false;
-            IntMgr.FdcMotorOffNmiLatch.Latch();
-        }
-
         private void SeekAddressData(byte ByteRead, OpStatus NextStatus, bool Check)
         {
             damBytesChecked++;
@@ -936,7 +321,7 @@ namespace Sharp80.TRS80
                         CrcError = crcCalc != Lib.CombineBytes(crcLow, crcHigh);
 
                         var match = (TrackRegister == readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE] &&
-                                     (!sideSelectVerify || (sideOneExpected == (readAddressData[ADDRESS_DATA_SIDE_ONE_BYTE] != 0))) &&
+                                     (!command.SideSelectVerify || (command.SideOneExpected == (readAddressData[ADDRESS_DATA_SIDE_ONE_BYTE] != 0))) &&
                                      (SectorRegister == readAddressData[ADDRESS_DATA_SECTOR_REGISTER_BYTE]));
 
                         if (Check && !match)
@@ -1055,11 +440,12 @@ namespace Sharp80.TRS80
         {
             Writer.Write(TrackRegister);
             Writer.Write(SectorRegister);
-            Writer.Write(CommandRegister);
+            Writer.Write(command.CommandRegister);
             Writer.Write(DataRegister);
-            Writer.Write(statusRegister);
+            Writer.Write(StatusRegister);
 
-            Writer.Write((int)command);
+            Writer.Write((int)0);  // not used
+
             Writer.Write((int)opStatus);
 
             Writer.Write(DoubleDensitySelected);
@@ -1072,14 +458,15 @@ namespace Sharp80.TRS80
             Writer.Write(lastStepDirUp);
             Writer.Write(writeProtected);
             Writer.Write(MotorOn);
-            Writer.Write(stepRateInUsec);
 
-            Writer.Write(verify);
-            Writer.Write(updateRegisters);
-            Writer.Write(sideSelectVerify);
-            Writer.Write(sideOneExpected);
-            Writer.Write(markSectorDeleted);
-            Writer.Write(multipleRecords);
+            // now unused vals
+            Writer.Write((ulong)0);
+            Writer.Write(false);
+            Writer.Write(false);
+            Writer.Write(false);
+            Writer.Write(false);
+            Writer.Write(false);
+            Writer.Write(false);
 
             Writer.Write(readAddressData);
             Writer.Write(readAddressIndex);
@@ -1116,11 +503,12 @@ namespace Sharp80.TRS80
 
                 TrackRegister = Reader.ReadByte();
                 SectorRegister = Reader.ReadByte();
-                CommandRegister = Reader.ReadByte();
+                command = new FdcCommand(Reader.ReadByte());
                 DataRegister = Reader.ReadByte();
-                statusRegister = Reader.ReadByte();
+                StatusRegister = Reader.ReadByte();
 
-                command = (Command)Reader.ReadInt32();
+                Reader.ReadInt32(); // not used
+
                 opStatus = (OpStatus)Reader.ReadInt32();
 
                 DoubleDensitySelected = Reader.ReadBoolean();
@@ -1133,13 +521,15 @@ namespace Sharp80.TRS80
                 lastStepDirUp = Reader.ReadBoolean();
                 writeProtected = Reader.ReadBoolean();
                 MotorOn = Reader.ReadBoolean();
-                stepRateInUsec = Reader.ReadUInt64();
-                verify = Reader.ReadBoolean();
-                updateRegisters = Reader.ReadBoolean();
-                sideSelectVerify = Reader.ReadBoolean();
-                sideOneExpected = Reader.ReadBoolean();
-                markSectorDeleted = Reader.ReadBoolean();
-                multipleRecords = Reader.ReadBoolean();
+
+                // now unused vals
+                Reader.ReadUInt64();
+                Reader.ReadBoolean();
+                Reader.ReadBoolean();
+                Reader.ReadBoolean();
+                Reader.ReadBoolean();
+                Reader.ReadBoolean();
+                Reader.ReadBoolean();
 
                 Array.Copy(Reader.ReadBytes(ADDRESS_DATA_BYTES), readAddressData, ADDRESS_DATA_BYTES);
 
@@ -1175,26 +565,26 @@ namespace Sharp80.TRS80
 
                 Action callback;
 
-                switch (command)
+                switch (command.Type)
                 {
-                    case Command.ReadAddress:
+                    case FdcCommandType.ReadAddress:
                         callback = ReadAddressCallback;
                         break;
-                    case Command.ReadSector:
+                    case FdcCommandType.ReadSector:
                         callback = ReadSectorCallback;
                         break;
-                    case Command.ReadTrack:
+                    case FdcCommandType.ReadTrack:
                         callback = ReadTrackCallback;
                         break;
-                    case Command.WriteSector:
+                    case FdcCommandType.WriteSector:
                         callback = WriteSectorCallback;
                         break;
-                    case Command.WriteTrack:
+                    case FdcCommandType.WriteTrack:
                         callback = WriteTrackCallback;
                         break;
-                    case Command.Restore:
-                    case Command.Seek:
-                    case Command.Step:
+                    case FdcCommandType.Restore:
+                    case FdcCommandType.Seek:
+                    case FdcCommandType.Step:
                         callback = TypeOneCommandCallback;
                         break;
                     default:
@@ -1311,39 +701,32 @@ namespace Sharp80.TRS80
 
         private void GetStatusRegister()
         {
-            UpdateStatus();
+            StatusRegister = command.GetStatus(MotorOn, Busy, IndexDetect, CurrentDrive.IsLoaded, writeProtected, Drq, sectorDeleted, SeekError, CrcError, LostData, CurrentDrive.OnTrackZero);
 
             if (Enabled)
-                ports.SetPortDirect(0xF0, statusRegister);
+                ports.SetPortDirect(0xF0, StatusRegister);
             else
                 ports.SetPortDirect(0xF0, 0xFF);
 
             IntMgr.FdcNmiLatch.Unlatch();
             IntMgr.FdcMotorOffNmiLatch.Unlatch();
         }
-        private void GetTrackRegister()
-        {
-            ports.SetPortDirect(0xF1, Enabled ? TrackRegister : (byte)0xFF);
-        }
-        private void GetSectorRegister()
-        {
-            ports.SetPortDirect(0xF2, Enabled ? SectorRegister : (byte)0xFF);
-        }
+        private void GetTrackRegister() => ports.SetPortDirect(0xF1, Enabled ? TrackRegister : (byte)0xFF);
+        private void GetSectorRegister() => ports.SetPortDirect(0xF2, Enabled ? SectorRegister : (byte)0xFF);
         private void GetDataRegister()
         {
             ports.SetPortDirect(0xF3, Enabled ? DataRegister : (byte)0xFF);
             Drq = false;
         }
-        private void SetCommandRegister(byte value)
-        {
-            command = GetCommand(value);
 
-            CommandRegister = value;
+        private void SetCommandRegister(byte value)
+        {            
+            command = new FdcCommand(value);
 
             IntMgr.FdcNmiLatch.Unlatch();
             IntMgr.FdcMotorOffNmiLatch.Unlatch();
 
-            if (!Busy || (command != Command.Reset))
+            if (!Busy || (command.Type != FdcCommandType.Reset))
             {
                 Drq = false;
                 LostData = false;
@@ -1353,33 +736,20 @@ namespace Sharp80.TRS80
                 sectorDeleted = false;
                 Busy = true;
             }
-            /*
-            if (CurrentDrive.IsUnloaded && command != Command.Reset)
-            {
-                switch (command)
-                {
-                    case Command.Seek:
-                    default:
-                        SeekError = true;
-                        DoNmi();
-                        return;
-                }
-            }
-            */
             opStatus = OpStatus.Prepare;
             idamBytesFound = 0;
 
-            switch (command)
+            switch (command.Type)
             {
-                case Command.Restore:
+                case FdcCommandType.Restore:
                     TrackRegister = 0xFF;
                     DataRegister = 0x00;
                     TypeOneCommandCallback();
                     break;
-                case Command.Seek:
+                case FdcCommandType.Seek:
                     TypeOneCommandCallback();
                     break;
-                case Command.Step:
+                case FdcCommandType.Step:
                     if (value.IsBitSet(6))
                         if (value.IsBitSet(5))
                             lastStepDirUp = false;
@@ -1387,36 +757,30 @@ namespace Sharp80.TRS80
                             lastStepDirUp = true;
                     TypeOneCommandCallback();
                     break;
-                case Command.ReadSector:
-                    delay = CommandRegister.IsBitSet(2);
+                case FdcCommandType.ReadSector:
                     ReadSectorCallback();
                     break;
-                case Command.WriteSector:
+                case FdcCommandType.WriteSector:
                     WriteSectorCallback();
                     break;
-                case Command.ReadAddress:
+                case FdcCommandType.ReadAddress:
                     ReadAddressCallback();
                     break;
-                case Command.Reset:
+                case FdcCommandType.Reset:
                     // puts FDC in mode 1
                     commandPulseReq.Expire();
                     Busy = false;
                     opStatus = OpStatus.OpDone;
                     break;
-                case Command.ForceInterruptImmediate:
+                case FdcCommandType.ForceInterruptImmediate:
+                case FdcCommandType.ForceInterrupt:
                     DoNmi();
                     opStatus = OpStatus.OpDone;
                     break;
-                case Command.ForceInterrupt:
-                    DoNmi();
-                    opStatus = OpStatus.OpDone;
-                    break;
-                case Command.ReadTrack:
-                    delay = CommandRegister.IsBitSet(2);
+                case FdcCommandType.ReadTrack:
                     ReadTrackCallback();
                     break;
-                case Command.WriteTrack:
-                    delay = CommandRegister.IsBitSet(2);
+                case FdcCommandType.WriteTrack:
                     WriteTrackCallback();
                     break;
                 default:
@@ -1464,123 +828,7 @@ namespace Sharp80.TRS80
             else
                 computer.RegisterPulseReq(motorOnPulseReq, true);
         }
-        private void UpdateStatus()
-        {
-            //    Type I Command Status values are:
-            //    ------------------
-            //    80H - Not ready
-            //    40H - Write protect
-            //    20H - Head loaded
-            //    10H - Seek error
-            //    08H - CRC error
-            //    04H - Track 0
-            //    02H - Index Hole
-            //    01H - Busy
-
-            //    Type II / III Command Status values are:
-            //    80H - Not ready
-            //    40H - NA (Read) / Write Protect (Write)
-            //    20H - Deleted (Read) / Write Fault (Write)
-            //    10H - Record Not Found
-            //    08H - CRC error
-            //    04H - Lost Data
-            //    02H - DRQ
-            //    01H - Busy
-
-            //    60H - Rec Type / F8 (1771)
-            //    40H - F9 (1771)
-            //    20H - F8 (1791) / FA (1771)
-            //    00H - FB (1791, 1771)
-
-            statusRegister = 0x00;
-            bool indexHole = false;
-            bool headLoaded = false;
-            if (!MotorOn)
-            {
-                statusRegister |= 0x80; // not ready
-            }
-            else if (DriveIsUnloaded(CurrentDriveNumber))
-            {
-                // indexHole = true;
-            }
-            else
-            {
-                indexHole = IndexDetect;
-                headLoaded = true;
-            }
-
-            switch (command)
-            {
-                case Command.Restore:
-                case Command.Seek:
-                case Command.Step:
-                case Command.Reset:
-                    if (writeProtected)
-                        statusRegister |= 0x40;   // Bit 6: Write Protect detect
-                    if (headLoaded)
-                        statusRegister |= 0x20;   // Bit 5: head loaded and engaged
-                    if (SeekError)
-                        statusRegister |= 0x10;   // Bit 4: Seek error
-                    if (CrcError)
-                        statusRegister |= 0x08;   // Bit 3: CRC Error
-                    if (CurrentDrive.OnTrackZero) // Bit 2: Track Zero detect
-                        statusRegister |= 0x04;
-                    if (indexHole)
-                        statusRegister |= 0x02;   // Bit 1: Index Detect
-                    break;
-                case Command.ReadAddress:
-                    if (SeekError)
-                        statusRegister |= 0x10; // Bit 4: Record Not found
-                    if (CrcError)
-                        statusRegister |= 0x08; // Bit 3: CRC Error
-                    if (LostData)
-                        statusRegister |= 0x04; // Bit 2: Lost Data
-                    if (Drq)
-                        statusRegister |= 0x02; // Bit 1: DRQ
-                    break;
-                case Command.ReadSector:
-                    if (sectorDeleted)
-                        statusRegister |= 0x20; // Bit 5: Detect "deleted" address mark
-                    if (SeekError)
-                        statusRegister |= 0x10; // Bit 4: Record Not found
-                    if (CrcError)
-                        statusRegister |= 0x08; // Bit 3: CRC Error
-                    if (LostData)
-                        statusRegister |= 0x04; // Bit 2: Lost Data
-                    if (Drq)
-                        statusRegister |= 0x02; // Bit 1: DRQ
-                    break;
-                case Command.ReadTrack:
-                    if (LostData)
-                        statusRegister |= 0x04; // Bit 2: Lost Data
-                    if (Drq)
-                        statusRegister |= 0x02; // Bit 1: DRQ
-                    break;
-                case Command.WriteSector:
-                    if (writeProtected)
-                        statusRegister |= 0x40; // Bit 6: Write Protect detect
-                    if (SeekError)
-                        statusRegister |= 0x10; // Bit 4: Record Not found
-                    if (CrcError)
-                        statusRegister |= 0x08; // Bit 3: CRC Error
-                    if (LostData)
-                        statusRegister |= 0x04; // Bit 2: Lost Data
-                    if (Drq)
-                        statusRegister |= 0x02; // Bit 1: DRQ
-                    break;
-                case Command.WriteTrack:
-                    if (writeProtected)
-                        statusRegister |= 0x40; // Bit 6: Write Protect detect
-                    if (LostData)
-                        statusRegister |= 0x04; // Bit 2: Lost Data
-                    if (Drq)
-                        statusRegister |= 0x02; // Bit 1: DRQ
-                    break;
-            }
-            if (Busy)
-                statusRegister |= 0x01; // Bit 0: Busy
-        }
-
+        
         // INTERRUPTS
 
         private void DoNmi()
@@ -1593,18 +841,9 @@ namespace Sharp80.TRS80
 
         // SPIN SIMULATION
 
-        private ulong DiskAngle
-        {
-            get => DISK_ANGLE_DIVISIONS * (clock.TickCount % TicksPerDiskRev) / TicksPerDiskRev;
-        }
-        public bool IndexDetect
-        {
-            get => MotorOn && DiskAngle < INDEX_PULSE_END;
-        }
-        public int IndexesFound
-        {
-            get => (int)((clock.TickCount - indexCheckStartTick) / TicksPerDiskRev);
-        }
+        private ulong DiskAngle => DISK_ANGLE_DIVISIONS * (clock.TickCount % TicksPerDiskRev) / TicksPerDiskRev;
+        public bool IndexDetect => MotorOn && DiskAngle < INDEX_PULSE_END;
+        public int IndexesFound => (int)((clock.TickCount - indexCheckStartTick) / TicksPerDiskRev);
         public void ResetIndexCount()
         {
             // make as if we started checking just after the index pulse started
@@ -1620,67 +859,7 @@ namespace Sharp80.TRS80
         private void WriteTrackByte(byte B) => track?.WriteByte(TrackDataIndex, DoubleDensitySelected, B);
 
         // HELPERS
-
-        private static int CommandType(Command Command)
-        {
-            switch (Command)
-            {
-                case Command.Restore:
-                case Command.Seek:
-                case Command.Step:
-                    return 1;
-                case Command.ReadSector:
-                case Command.WriteSector:
-                    return 2;
-                case Command.ReadTrack:
-                case Command.WriteTrack:
-                case Command.ReadAddress:
-                    return 3;
-                case Command.ForceInterrupt:
-                case Command.ForceInterruptImmediate:
-                    return 4;
-                default:
-                    return 0;
-            }
-        }
-        private static Command GetCommand(byte CommandRegister)
-        {
-            switch (CommandRegister & 0xF0)
-            {
-                case 0x00:
-                    return Command.Restore;
-                case 0x10:
-                    return Command.Seek;
-                case 0x20:
-                case 0x30:
-                case 0x40:
-                case 0x50:
-                case 0x60:
-                case 0x70:
-                    return Command.Step;
-                case 0x80:
-                case 0x90:
-                    return Command.ReadSector;
-                case 0xA0: // write sector  
-                case 0xB0:
-                    return Command.WriteSector;
-                case 0xC0: // read address
-                    return Command.ReadAddress;
-                case 0xD0:
-                    if (CommandRegister == 0xD0)
-                        return Command.Reset;
-                    else if (CommandRegister == 0xD8)
-                        return Command.ForceInterruptImmediate;
-                    else
-                        return Command.ForceInterrupt;
-                case 0xE0: // read track
-                    return Command.ReadTrack;
-                case 0xF0:  // write track
-                    return Command.WriteTrack;
-                default:
-                    return Command.Invalid;
-            }
-        }
+        
         internal static ushort UpdateCRC(ushort crc, byte ByteRead, bool AllowReset, bool DoubleDensity)
         {
             if (AllowReset)

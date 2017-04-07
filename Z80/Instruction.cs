@@ -30,40 +30,18 @@ namespace Sharp80.Z80
         public uint Signature { get; private set; }
         public uint PaddedSig { get; private set; }
 
-        public byte Op0 => op[0];
-        public byte Op1 => op[1];
-        public byte Op3 => op[3];
+        public Func<IReadOnlyList<byte>, ushort, string> FullName { get; private set; }
+        public Func<IReadOnlyList<byte>, ushort, string> AssemblableName { get; private set; }
 
-        public Instruction(string Name, byte Op0, byte TStates, Action Exec)
-            : this(Name, Op0, null, null, TStates, Exec, 0)
-        {
-        }
-        public Instruction(string Name, byte Op0, byte TStates, Action Exec, bool IsPrefix) : this(Name, Op0, 4, Exec)
-        {
-            // Don't "ADD" this instruction, just call this constructor
+        public string Name { get; private set; }
+        public string Mnemonic { get; private set; }
+        private string PostMnemonic { get; set; }
 
-            Debug.Assert(IsPrefix);
-            this.IsPrefix = IsPrefix;
-
-            RIncrement = 1;
-        }
-        public Instruction(string Name, byte Op0, byte TStates, Action Exec, byte TStatesAlt)
-            : this(Name, Op0, null, null, TStates, Exec, TStatesAlt)
-        {
-        }
-        public Instruction(string Name, byte Op0, byte? Op1, byte TStates, Action Exec)
-            : this(Name, Op0, Op1, null, TStates, Exec, 0)
-        {
-        }
-        public Instruction(string Name, byte Op0, byte? Op1, byte TStates, Action Exec, byte TStatesAlt)
-            : this(Name, Op0, Op1, null, TStates, Exec, TStatesAlt)
-        {
-        }
-        public Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, Action Exec)
-            : this(Name, Op0, Op1, Op3, TStates, Exec, 0)
-        {
-        }
-        private Instruction(string Name, byte Op0, byte? Op1, byte? Op3, byte TStates, Action Exec, byte TStatesAlt)
+        public byte Size { get; private set; }
+        public byte OpcodeSize { get; private set; }
+        public byte OpcodeCoreSize { get; private set; }
+        
+        public Instruction(string Name, byte TStates, Action Exec, byte Op0, byte? Op1 = null, byte? Op3 = null)
         {
             this.Name = Name;
             Execute = Exec;
@@ -116,10 +94,9 @@ namespace Sharp80.Z80
             bool hasReplaceableTokens = hasDisp || hasLiteral8 || hasLiteral16 || hasRelJump || hasPortRefNum;
 
             this.TStates = TStates;
-            this.TStatesAlt = TStatesAlt;
+            TStatesAlt = 0;
             Ticks = (ushort)(TStates * TICKS_PER_TSTATE);
-            TicksWithExtra = (ushort)((TStates + TStatesAlt) * TICKS_PER_TSTATE);
-
+            TicksWithExtra = Ticks; 
             RIncrement = 1;
 
             if ((op[0] == 0xDD) || (op[0] == 0xFD) || (op[0] == 0xCB) || (op[0] == 0xED))
@@ -136,18 +113,19 @@ namespace Sharp80.Z80
 
             InitNameFn(hasReplaceableTokens);
         }
-
-        public Func<IReadOnlyList<byte>, ushort, string> FullName { get; private set; }
-        public Func<IReadOnlyList<byte>, ushort, string> AssemblableName { get; private set; }
-
-        public string Name { get; private set; }
-        public string Mnemonic { get; private set; }
-        private string PostMnemonic { get; set; }
-
-        public byte Size { get; private set; }
-        public byte OpcodeSize { get; private set; }
-        public byte OpcodeCoreSize { get; private set; }
-
+        public Instruction AsPrefix()
+        {
+            Debug.Assert(Op0 == 0xDD || Op0 == 0xFD);
+            IsPrefix = true;
+            RIncrement = 1;
+            return this;
+        }
+        public Instruction WithTStatesAlt(byte TStates)
+        {
+            TStatesAlt = TStates;
+            TicksWithExtra = (ushort)((TStates + TStatesAlt) * TICKS_PER_TSTATE);
+            return this;
+        }
         public int NumOperands
         {
             get
@@ -166,6 +144,9 @@ namespace Sharp80.Z80
                 return numOperands.Value;
             }
         }
+        public byte Op0 => op[0];
+        public byte Op1 => op[1];
+        public byte Op3 => op[3];
         internal string GetOperand(int Index)
         {
             switch (Index)

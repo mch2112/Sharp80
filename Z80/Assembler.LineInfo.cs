@@ -36,6 +36,7 @@ namespace Sharp80.Z80.Assembler
             public Dictionary<string, LineInfo> SymbolTable { get; private set; }
 
             public int SourceFileLine { get; private set; }
+            public string SymbolTableReference => Address.ToHexString() + (Mnemonic.Length > 0 ? $" (Line {SourceFileLine}, {Mnemonic})" : $" (Line {SourceFileLine})");
             public bool IsSuppressed { get; private set; } = false;
             public bool IsMetaInstruction => metaInstructions.Contains(Mnemonic);
             public bool IsInstruction => instructionNames.Contains(Mnemonic);

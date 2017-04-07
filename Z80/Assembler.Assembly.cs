@@ -9,10 +9,8 @@ namespace Sharp80.Z80.Assembler
 
     public class Assembly
     {
-        public string IntFilePath { get; private set; }
         public string Title { get; private set; }
         public string SourceText { get; private set; }
-        public string IntermediateOutput { get; private set; }
         public ushort ExecAddress { get; private set; }
         public int NumErrors { get; private set; }
         public List<(ushort SegmentAddress, byte[] Bytes)> Segments { get; private set; }
@@ -46,7 +44,7 @@ namespace Sharp80.Z80.Assembler
                     Status = Status.AssembleFailed;
             }
         }
-        public string Intermediate
+        public string IntermediateOutput
         {
             get
             {
@@ -58,7 +56,6 @@ namespace Sharp80.Z80.Assembler
                                        Environment.NewLine +
                                        Environment.NewLine +
                                        SymbolTableToString();
-
             }
         }
         private string SymbolTableToString()
@@ -67,9 +64,7 @@ namespace Sharp80.Z80.Assembler
                    "============================================" + Environment.NewLine +
                    String.Join(Environment.NewLine,
                                SymbolTable.OrderBy(kv => kv.Key)
-                                          .Select(kv => kv.Key.PadRight(15) +
-                                                        kv.Value.Address.ToHexString() +
-                                                        string.Format(" (Line {0}, {1})", kv.Value.SourceFileLine, kv.Value.Mnemonic)));
+                                          .Select(kv => kv.Key.PadRight(Assembler.MAX_LABEL_LENGTH + 1) + " " + kv.Value.SymbolTableReference));
         }
         private void Segmentize()
         {

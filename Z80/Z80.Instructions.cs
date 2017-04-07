@@ -206,6 +206,7 @@ namespace Sharp80.Z80
             F3 = diff.IsBitSet(3);
         }
 
+        private void nop() { }
         private void halt()
         {
             // TODO: Push the address of the next instruction after the halt.

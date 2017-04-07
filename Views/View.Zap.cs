@@ -36,7 +36,7 @@ namespace Sharp80.Views
                     DriveNumber = DriveNumber ?? 0;
                     for (int i = DriveNumber.Value + 1; i < DriveNumber.Value + 5; i++)
                     {
-                        DriveNumber = (byte)(i % TRS80.FloppyController.NUM_DRIVES);
+                        DriveNumber = (byte)(i % FloppyController.NUM_DRIVES);
                         if (!Computer.DriveIsUnloaded(DriveNumber.Value))
                             break;
                     }
@@ -133,7 +133,7 @@ namespace Sharp80.Views
 
             if (f is null)
             {
-                WriteToByteArray(cells, 0x006, string.Format("Drive {0} is empty.", DriveNumber));
+                WriteToByteArray(cells, 0x006, $"Drive {DriveNumber} is empty.");
             }
             else if (sd is null || numBytes == 0)
             {
@@ -186,9 +186,9 @@ namespace Sharp80.Views
 
             TRS80.IFloppy f = null;
 
-            for (byte i = DriveNumber.Value; i < DriveNumber.Value + TRS80.FloppyController.NUM_DRIVES; i++)
+            for (byte i = DriveNumber.Value; i < DriveNumber.Value + FloppyController.NUM_DRIVES; i++)
             {
-                f = Computer.GetFloppy((byte)(i % TRS80.FloppyController.NUM_DRIVES));
+                f = Computer.GetFloppy((byte)(i % FloppyController.NUM_DRIVES));
                 if (!(f is null))
                 {
                     DriveNumber = i;

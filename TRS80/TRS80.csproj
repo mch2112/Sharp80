@@ -52,6 +52,8 @@
     <Compile Include="Floppy.cs" />
     <Compile Include="Floppy.DMK.cs" />
     <Compile Include="Floppy.DMK.JV.cs" />
+    <Compile Include="FloppyController.Callbacks.cs" />
+    <Compile Include="FloppyController.Command.cs" />
     <Compile Include="FloppyController.cs" />
     <Compile Include="FloppyController.DriveState.cs" />
     <Compile Include="IAppWindow.cs" />
