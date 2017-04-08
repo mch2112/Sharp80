@@ -304,6 +304,11 @@ namespace Sharp80
         }
         private void SetWindowed()
         {
+            // make sure it really becomes windowed and doesn't snap back to full screen.
+            var wa = Screen.GetWorkingArea(this);
+            if (previousClientRect.Height > wa.Height * 3 / 4)
+                previousClientRect = new Rectangle(previousClientRect.X, previousClientRect.Y, 0, wa.Height * 3 / 4);
+
             Settings.FullScreen = screen.IsFullScreen = false;
             SetWindowStyle(false);
             SetClientRect();

@@ -124,14 +124,18 @@ namespace Sharp80.TRS80
         /// Pads an array to minimum length with given value
         /// NOTE: The origiinal array might be returned!
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="Array"></param>
         /// <param name="Length">The minimum desired length</param>
         /// <param name="Value">The value to pad with</param>
         /// <returns></returns>
         public static T[] Pad<T>(this T[] Array, int Length, T Value)
         {
             return (Array.Length >= Length) ? Array : Array.Concat(new T[Length - Array.Length].SetAll(Value));
+        }
+        public static T[] Fill<T>(this T[] Array, T Value)
+        {
+            for (int i = 0; i < Array.Length; i++)
+                Array[i] = Value;
+            return Array;
         }
         public static bool ArrayEquals<T>(this T[] Source, T[] Other)
         {

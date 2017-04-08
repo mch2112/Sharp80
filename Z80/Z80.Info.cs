@@ -30,7 +30,7 @@ namespace Sharp80.Z80
 
         public string GetInternalsReport() => $"{flagsToString[F.val]}\r\nPC   {PC}\r\nSP   {SP}\r\n\r\nAF   {AF}\r\nBC   {BC}\r\nDE   {DE}\r\nHL   {HL}\r\n\r\nIX   {IX}\r\nIY   {IY}\r\n\r\nAF'  {AFp}\r\nBC'  {BCp}\r\nDE'  {DEp}\r\nHL'  {HLp}\r\n\r\nIR   {I}{R}\r\nWZ   {WZ}\r\n\r\n(HL) {HLM}\r\n(SP) {SPM}";
         
-        public string Disassemble(ushort Start, ushort End, bool MakeAssemblable) => disassembler.Disassemble(Memory, Start, End, MakeAssemblable);
+        public string Disassemble(ushort Start, ushort End, DisassemblyMode Mode) => disassembler.Disassemble(Memory, Start, End, Mode);
 
         public string GetDisassembly() => HistoricDisassemblyMode ? GetDisassemblyHistoric() : GetDisassemblyNormal();
 
@@ -74,7 +74,7 @@ namespace Sharp80.Z80
         }
         public string GetLineInfo(ushort PC) => GetLineInfo(string.Empty, PC, GetInstructionAt(PC));
 
-        public string GetInstructionSetReport() => instructionSet.GetInstructionSetReport();
+        public string GetInstructionSetReport() => InstructionSet.GetInstructionSetReport();
 
         public ushort PcVal => PC.val;
         public ushort SpVal => SP.val;

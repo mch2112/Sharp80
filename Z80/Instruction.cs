@@ -102,8 +102,6 @@ namespace Sharp80.Z80
             if ((op[0] == 0xDD) || (op[0] == 0xFD) || (op[0] == 0xCB) || (op[0] == 0xED))
                 RIncrement++;
 
-            Debug.Assert(Size.IsBetween(1, 4));
-            Debug.Assert(OpcodeSize.IsBetween(1, Size));
             Debug.Assert(!hasReplaceableTokens || Size > OpcodeSize);
             Debug.Assert(!(Op1 is null) || Op3 is null);
             Debug.Assert(Op1 is null || Size >= 2);
@@ -120,9 +118,9 @@ namespace Sharp80.Z80
             RIncrement = 1;
             return this;
         }
-        public Instruction WithTStatesAlt(byte TStates)
+        public Instruction WithTStatesAlt(byte AddedTStates)
         {
-            TStatesAlt = TStates;
+            TStatesAlt = AddedTStates;
             TicksWithExtra = (ushort)((TStates + TStatesAlt) * TICKS_PER_TSTATE);
             return this;
         }

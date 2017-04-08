@@ -44,7 +44,7 @@ namespace Sharp80Tests
         public async Task DisassemblerTest()
         {
             await DoAssembly();
-            var dis = computer.Disassemble(0x8000, 0x8029, true);
+            var dis = computer.Disassemble(0x8000, 0x8029, Sharp80.Z80.DisassemblyMode.Assemblable);
 
             // remove comment lines
             dis = string.Join(Environment.NewLine, dis.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).Where(l => !l.Trim().StartsWith(";")));

@@ -2,6 +2,7 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +11,7 @@ namespace Sharp80.Z80
 {
     public partial class Z80 : IStatus
     {
-        internal class InstructionSet
+        public class Z80InstructionSet : IEnumerable<Instruction>
         {
             public Instruction NOP { get; private set; }
 
@@ -21,7 +22,7 @@ namespace Sharp80.Z80
             private Instruction DDPrefixNOP;
             private Instruction FDPrefixNOP;
 
-            public InstructionSet()
+            public Z80InstructionSet()
             {
                 instructions = new SortedDictionary<uint, Instruction>();
 
@@ -73,7 +74,7 @@ namespace Sharp80.Z80
                 return i ?? NOP;
             }
 
-            public Instruction GetInstruction(IReadOnlyList<byte> Memory, ushort Address)
+            internal Instruction GetInstruction(IReadOnlyList<byte> Memory, ushort Address)
             {
                 byte b = Memory[Address++];
 
@@ -131,7 +132,7 @@ namespace Sharp80.Z80
 
             }
 
-            public void Initialize()
+            internal void Initialize()
             {
                 foreach (KeyValuePair<uint, Instruction> kvp in instructions)
                 {
@@ -174,7 +175,18 @@ namespace Sharp80.Z80
                 DDPrefixNOP = new Instruction("NOP", 4, NOP.Execute, 0xDD).AsPrefix();
                 FDPrefixNOP = new Instruction("NOP", 4, NOP.Execute, 0xFD).AsPrefix();
             }
-            public void Add(Instruction i) => instructions.Add(i.Signature, i);
+            internal void Add(Instruction i) => instructions.Add(i.Signature, i);
+
+            public IEnumerator<Instruction> GetEnumerator()
+            {
+                foreach (var i in STD.Concat(CB).Concat(DD).Concat(ED).Concat(FD).Concat(DDCB).Concat(FDCB))
+                    if (!(i is null))
+                        yield return i;
+            }
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
         }
     }
 }

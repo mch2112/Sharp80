@@ -46,23 +46,23 @@ namespace Sharp80.TRS80
             if (Data.Length % 2 == 1)
                 Data = Data.Pad(Data.Length + 1, (byte)0x00);
 
-            SetDensity();
+            InitDensity();
+            InitDensityMap();
 
             if (SingleDensitySingleByte)
                 ConvertFromSingleByte();
 
             LengthWithHeader = this.Data.Length + HEADER_LENGTH_BYTES;
-            densityMap = null;
 
             //RebuildHeader();
             //Changed = true;
         }
 
-        private void SetDensity()
+        private void InitDensity()
         {
-            if (header.All(h => h >= DOUBLE_DENSITY_MASK || h == 0))
+            if (Header.All(h => h >= DOUBLE_DENSITY_MASK || h == 0))
                 density = true;
-            else if (header.All(h => h < DOUBLE_DENSITY_MASK))
+            else if (Header.All(h => h < DOUBLE_DENSITY_MASK))
                 density = false;
             else
                 density = null;
@@ -201,18 +201,18 @@ namespace Sharp80.TRS80
         {
             if (density.HasValue)
                 return density.Value;
-
-            if (densityMap is null)
-                RebuildDensity();
-
-            return densityMap[Index];
+            else
+                return densityMap[Index];
         }
-        private void SetDensity(int Index, bool Value)
+        private void SetDensity(int Index, bool Value, bool ForceRebuild)
         {
             if (density != Value)
             {
-                if (densityMap is null)
-                    RebuildDensity();
+                if (density.HasValue)
+                {
+                    densityMap = new bool[Data.Length].Fill(density.Value);
+                    density = null;
+                }
                 densityMap[Index] = Value;
             }
         }
@@ -257,7 +257,7 @@ namespace Sharp80.TRS80
             {
                 Data[TrackIndex] = Value;
                 if (density != true)
-                    SetDensity(TrackIndex, true);
+                    SetDensity(TrackIndex, true, true);
             }
             else
             {
@@ -266,8 +266,8 @@ namespace Sharp80.TRS80
                 Data[TrackIndex + 1] = Value;
                 if (density != false)
                 {
-                    SetDensity(TrackIndex, false);
-                    SetDensity(TrackIndex + 1, false);
+                    SetDensity(TrackIndex, false, true);
+                    SetDensity(TrackIndex + 1, false, true);
                 }
             }
             sectorDescriptorCache = null;
@@ -427,10 +427,8 @@ namespace Sharp80.TRS80
             }
             this.header = header;
         }
-        internal void RebuildDensity()
+        internal void InitDensityMap()
         {
-            SetDensity();
-
             if (density.HasValue)
             {
                 densityMap = null;
@@ -467,11 +465,6 @@ namespace Sharp80.TRS80
                         Header[i] *= 2; // don't need to worry about the DD flag
                     break;
                 default: // mixed density
-                    RebuildDensity();
-
-                    if (densityMap is null || densityMap.Length != Data.Length)
-                        throw new Exception("Error generating density map in Track.ConvertFromSingleByte");
-
                     // Adjust the data
                     var sdDoubled = new List<byte>();
                     for (int i = 0; i < densityMap.Length; i++)
@@ -487,7 +480,7 @@ namespace Sharp80.TRS80
                     for (int i = 0; i < Header.Length && Header[i] > 0; i++)
                         Header[i] += (ushort)(densityMap.Take((Header[i] & OFFSET_MASK) - HEADER_LENGTH_BYTES).Count(d => !d));
 
-                    densityMap = null; // no longer valid
+                    InitDensityMap();
 
                     break;
             }

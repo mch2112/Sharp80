@@ -119,5 +119,13 @@ namespace Sharp80.Z80
         public static bool IsBetween(this char Value, char Min, char Max) => Value >= Min && Value <= Max;
         public static bool IsBetween(this int Value, int Min, int Max) => Value >= Min && Value <= Max;
         public static bool IsBetween(this byte Value, byte Min, byte Max) => Value >= Min && Value <= Max;
+
+        public static char AsAscii(this byte Value)
+        {
+            if (Value < 32 || Value > 127)
+                return '.';
+            else
+                return (char)Value;
+        }
     }
 }

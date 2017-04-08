@@ -60,7 +60,7 @@ namespace Sharp80.Z80
 
         internal IMemory Memory { get; private set; }
         internal Instruction CurrentInstruction { get; private set; }
-        public Assembler.Assembly Assemble(string SourceText) => new Assembler.Assembler(instructionSet.Instructions.Values).Assemble(SourceText);
+        public Assembler.Assembly Assemble(string SourceText) => new Assembler.Assembler(InstructionSet.Instructions.Values).Assemble(SourceText);
 
         // INTERRUPTS
 
@@ -79,18 +79,17 @@ namespace Sharp80.Z80
 
         static Z80() => InitFlagsString();
 
-        public Z80(IComputer Computer, IMemory Memory, IPorts Ports)
+        public Z80(IComputer Computer)
         {
-            instructionSet = new InstructionSet();
+            InstructionSet = new Z80InstructionSet();
             historyBuffer = new CircularBuffer(NUM_DISASSEMBLY_LINES);
 
-            disassembler = new Disassembler(instructionSet);
+            disassembler = new Disassembler(InstructionSet);
 
             computer = Computer;
 
-            this.Memory = Memory;
-
-            ports = Ports;
+            Memory = Computer.Memory;
+            ports = Computer.Ports;
 
             PC = new Register16("PC");
             SP = new Register16("SP");
@@ -141,7 +140,7 @@ namespace Sharp80.Z80
             InitInstructionSet();
             Reset();
 
-            CurrentInstruction = instructionSet.NOP; // NOP
+            CurrentInstruction = InstructionSet.NOP; // NOP
 
             historyBuffer.Add(0);
         }
@@ -312,7 +311,7 @@ namespace Sharp80.Z80
             }
         }
 
-        private Instruction GetInstructionAt(ushort Address) => instructionSet.GetInstruction(Memory, Address);
+        private Instruction GetInstructionAt(ushort Address) => InstructionSet.GetInstruction(Memory, Address);
 
         // BREAKPOINTS
 
@@ -521,7 +520,7 @@ namespace Sharp80.Z80
         private void InitInstructionSet()
         {
             SetupInstructionObjects();
-            instructionSet.Initialize();
+            InstructionSet.Initialize();
         }
         private void PushWord(ushort val)
         {

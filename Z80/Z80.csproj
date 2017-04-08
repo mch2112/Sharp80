@@ -54,7 +54,7 @@
     <Compile Include="IComputer.cs" />
     <Compile Include="IMemory.cs" />
     <Compile Include="Instruction.cs" />
-    <Compile Include="InstructionSet.cs" />
+    <Compile Include="Z80InstructionSet.cs" />
     <Compile Include="IPorts.cs" />
     <Compile Include="IRegister.cs" />
     <Compile Include="ISerializable.cs" />

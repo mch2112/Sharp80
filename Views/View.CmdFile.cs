@@ -212,7 +212,7 @@ namespace Sharp80.Views
             {
                 Load();
                 var txt = String.Join(Environment.NewLine + Environment.NewLine,
-                                      CmdFile.Segments.Select(s => Computer.Disassemble(s.Address, (ushort)(s.Address + s.Bytes.Count), false)));
+                                      CmdFile.Segments.Select(s => Computer.Disassemble(s.Address, (ushort)(s.Address + s.Bytes.Count), Z80.DisassemblyMode.Normal)));
                 var path = Path.Combine(Storage.AppDataPath,
                                         Path.GetFileNameWithoutExtension(CmdFile.FilePath) + ".txt")
                                             .MakeUniquePath();

@@ -34,10 +34,14 @@ namespace Sharp80Tests
         {
             await computer.KeyStroke(Key, Shift, DelayMSecDown, DelayMSecUp);
         }
-
+        protected async Task PasteLine() => await PasteLine(Environment.NewLine);
+        protected async Task PasteLine(string Text)
+        {
+            await computer.Paste(Text + Environment.NewLine, new System.Threading.CancellationToken());
+        }
         protected bool ScreenContainsText(string Text) => computer.VideoMemory.Contains(Text.ToByteArray());
 
-        protected void InitComputer(bool EnableFloppyController, ClockSpeed ClockSpeed)
+        protected void InitComputer(bool EnableFloppyController, ClockSpeed ClockSpeed = ClockSpeed.Unlimited)
         {
             var settings = new Settings()
             {

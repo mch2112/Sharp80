@@ -21,7 +21,7 @@ namespace Sharp80.TRS80
         private Z80.Z80 Processor { get; set; }
         private Clock Clock { get; set; }
         private FloppyController FloppyController { get; set; }
-        private PortSet Ports { get; set; }
+        private PortSet PortSet { get; set; }
         private InterruptManager IntMgr { get; set; }
         private IScreen Screen { get; set; }
         private ISound Sound { get; set; }
@@ -48,14 +48,14 @@ namespace Sharp80.TRS80
             memory = new Memory();
             IntMgr = new InterruptManager(this);
             Tape = new Tape(this);
-            Ports = new PortSet(this);
-            Processor = new Z80.Z80(this, memory, Ports);
+            PortSet = new PortSet(this);
+            Processor = new Z80.Z80(this);
             Printer = new Printer();
 
             if (this.Sound.Stopped)
                 this.Sound = new SoundNull();
             else
-                this.Sound.SampleCallback = Ports.CassetteOut;
+                this.Sound.SampleCallback = PortSet.CassetteOut;
 
             Clock = new Clock(this,
                               Processor,
@@ -68,11 +68,11 @@ namespace Sharp80.TRS80
 
             DiskUserEnabled = Settings.DiskEnabled;
 
-            FloppyController = new FloppyController(this, Ports, Clock, IntMgr, Sound, DiskUserEnabled);
+            FloppyController = new FloppyController(this, PortSet, Clock, IntMgr, Sound, DiskUserEnabled);
 
-            IntMgr.Initialize(Ports, Tape);
+            IntMgr.Initialize(PortSet, Tape);
             Tape.Initialize(Clock, IntMgr);
-            Ports.Initialize(FloppyController, IntMgr, Tape, Printer);
+            PortSet.Initialize(FloppyController, IntMgr, Tape, Printer);
 
             for (byte i = 0; i < 4; i++)
                 LoadFloppy(i);
@@ -101,7 +101,8 @@ namespace Sharp80.TRS80
         public ushort ProgramCounter => Processor.PcVal;
         public ulong ElapsedTStates => Clock.ElapsedTStates;
 
-        public IReadOnlyList<byte> Memory => memory;
+        public Z80.IMemory Memory => memory;
+        public Z80.IPorts Ports => PortSet;
         public SubArray<byte> VideoMemory => memory.VideoMemory;
 
         public ushort BreakPoint
@@ -420,7 +421,7 @@ namespace Sharp80.TRS80
             Writer.Write(SERIALIZATION_VERSION);
 
             Processor.Serialize(Writer);
-            Ports.Serialize(Writer);
+            PortSet.Serialize(Writer);
             memory.Serialize(Writer);
             Clock.Serialize(Writer);
             FloppyController.Serialize(Writer);
@@ -437,7 +438,7 @@ namespace Sharp80.TRS80
                 if (ver >= 8) // currently supporting v 8 & 9
                 {
                     if (Processor.Deserialize(Reader, ver) &&
-                        Ports.Deserialize(Reader, ver) &&
+                        PortSet.Deserialize(Reader, ver) &&
                         memory.Deserialize(Reader, ver) &&
                         Clock.Deserialize(Reader, ver) &&
                         FloppyController.Deserialize(Reader, ver) &&
@@ -475,7 +476,7 @@ namespace Sharp80.TRS80
             }
         }
 
-        public string Disassemble(ushort Start, ushort End, bool MakeAssemblable) => Processor.Disassemble(Start, End, MakeAssemblable);
+        public string Disassemble(ushort Start, ushort End, Z80.DisassemblyMode Mode) => Processor.Disassemble(Start, End, Mode);
         public string GetInstructionSetReport() => Processor.GetInstructionSetReport();
         public Z80.Assembler.Assembly Assemble(string SourceText) => Processor.Assemble(SourceText);
         public async Task Delay(uint VirtualMSec)

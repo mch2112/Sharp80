@@ -6,6 +6,34 @@ namespace Sharp80.TRS80
     {
         // CALLBACKS
 
+        private void DoCallback()
+        {
+           switch (command.Type)
+            {
+                case FdcCommandType.ReadAddress:
+                    ReadAddressCallback();
+                    break;
+                case FdcCommandType.ReadSector:
+                    ReadSectorCallback();
+                    break;
+                case FdcCommandType.ReadTrack:
+                    ReadTrackCallback();
+                    break;
+                case FdcCommandType.WriteSector:
+                    WriteSectorCallback();
+                    break;
+                case FdcCommandType.WriteTrack:
+                    WriteTrackCallback();
+                    break;
+                case FdcCommandType.Restore:
+                case FdcCommandType.Seek:
+                case FdcCommandType.Step:
+                    TypeOneCommandCallback();
+                    break;
+                default:
+                    break;
+            }
+        }
         private void TypeOneCommandCallback()
         {
             ulong delayTime = 0;
@@ -63,9 +91,8 @@ namespace Sharp80.TRS80
                     break;
                 case OpStatus.SeekingIDAM:
                 case OpStatus.ReadingAddressData:
-                    byte b = ReadByte(opStatus == OpStatus.SeekingIDAM);
                     delayBytes = 1;
-                    SeekAddressData(b, OpStatus.VerifyTrack, false);
+                    SeekAddressData(ReadByte(opStatus == OpStatus.SeekingIDAM), OpStatus.VerifyTrack, false);
                     break;
                 case OpStatus.VerifyTrack:
                     if (TrackRegister == readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE])
@@ -85,7 +112,7 @@ namespace Sharp80.TRS80
                     break;
             }
             if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, TypeOneCommandCallback);
+                SetCommandPulseReq(delayBytes, delayTime);
         }
         private void ReadSectorCallback()
         {
@@ -172,7 +199,6 @@ namespace Sharp80.TRS80
                         delayTime = NMI_DELAY_IN_USEC;
                         opStatus = OpStatus.NMI;
                     }
-
                     break;
                 case OpStatus.NMI:
                     opStatus = OpStatus.OpDone;
@@ -180,7 +206,7 @@ namespace Sharp80.TRS80
                     break;
             }
             if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, ReadSectorCallback);
+                SetCommandPulseReq(delayBytes, delayTime);
         }
         private void WriteSectorCallback()
         {
@@ -324,7 +350,7 @@ namespace Sharp80.TRS80
 
             }
             if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, WriteSectorCallback);
+                SetCommandPulseReq(delayBytes, delayTime);
         }
         private void ReadAddressCallback()
         {
@@ -372,7 +398,7 @@ namespace Sharp80.TRS80
                     break;
             }
             if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, ReadAddressCallback);
+                SetCommandPulseReq(delayBytes, delayTime);
         }
         private void WriteTrackCallback()
         {
@@ -509,7 +535,7 @@ namespace Sharp80.TRS80
                     break;
             }
             if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, WriteTrackCallback);
+                SetCommandPulseReq(delayBytes, delayTime);
         }
         private void ReadTrackCallback()
         {
@@ -562,7 +588,7 @@ namespace Sharp80.TRS80
                     break;
             }
             if (Busy)
-                SetCommandPulseReq(delayBytes, delayTime, ReadTrackCallback);
+                SetCommandPulseReq(delayBytes, delayTime);
         }
         private void MotorOnCallback()
         {
@@ -575,6 +601,76 @@ namespace Sharp80.TRS80
             MotorOn = false;
             sound.DriveMotorRunning = false;
             IntMgr.FdcMotorOffNmiLatch.Latch();
+        }
+        private void SeekAddressData(byte ByteRead, OpStatus NextStatus, bool Check)
+        {
+            damBytesChecked++;
+            switch (opStatus)
+            {
+                case OpStatus.SeekingIDAM:
+                    if (IndexesFound >= 5)
+                    {
+                        SeekError = true;
+                        opStatus = OpStatus.NMI;
+                    }
+                    else
+                    {
+                        switch (ByteRead)
+                        {
+                            case Floppy.IDAM:
+                                if (track?.HasIdamAt(TrackDataIndex, DoubleDensitySelected) ?? false)
+                                {
+                                    readAddressIndex = 0;
+                                    ResetCRC();
+                                    crc = Lib.Crc(crc, ByteRead);
+                                    opStatus = OpStatus.ReadingAddressData;
+                                }
+                                idamBytesFound = 0;
+                                break;
+                            default:
+                                idamBytesFound = 0;
+                                break;
+                        }
+                    }
+                    break;
+                case OpStatus.ReadingAddressData:
+                    readAddressData[readAddressIndex] = ByteRead;
+                    if (readAddressIndex == ADDRESS_DATA_CRC_HIGH_BYTE - 1)
+                    {
+                        // save the value before the first crc on the sector comes in
+                        crcCalc = crc;
+                    }
+                    else if (readAddressIndex >= ADDRESS_DATA_CRC_LOW_BYTE)
+                    {
+                        damBytesChecked = 0;
+
+                        crcHigh = readAddressData[ADDRESS_DATA_CRC_HIGH_BYTE];
+                        crcLow = readAddressData[ADDRESS_DATA_CRC_LOW_BYTE];
+                        CrcError = crcCalc != Lib.CombineBytes(crcLow, crcHigh);
+
+                        var match = (TrackRegister == readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE] &&
+                                     (!command.SideSelectVerify || (command.SideOneExpected == (readAddressData[ADDRESS_DATA_SIDE_ONE_BYTE] != 0))) &&
+                                     (SectorRegister == readAddressData[ADDRESS_DATA_SECTOR_REGISTER_BYTE]));
+
+                        if (Check && !match)
+                        {
+                            opStatus = OpStatus.SeekingIDAM;
+                        }
+                        else
+                        {
+                            sectorLength = Floppy.GetDataLengthFromCode(readAddressData[ADDRESS_DATA_SECTOR_SIZE_BYTE]);
+
+                            if (CrcError)
+                                opStatus = OpStatus.SeekingIDAM;
+                            else
+                                opStatus = NextStatus;
+                        }
+                    }
+                    readAddressIndex++;
+                    break;
+                default:
+                    throw new Exception();
+            }
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Sharp80.Views
         protected override bool CanSendKeysToEmulation => false;
 
         private ushort startAddress = 0;
-        private bool makeAssemblable = false;
+        private Z80.DisassemblyMode DisassemblyMode = Z80.DisassemblyMode.WithAscii;
         private bool lowercase = false;
 
         protected override bool processKey(KeyState Key)
@@ -36,7 +36,15 @@ namespace Sharp80.Views
                         processed = true;
                         break;
                     case KeyCode.M:
-                        makeAssemblable = !makeAssemblable;
+                        switch (DisassemblyMode)
+                        {
+                            case Z80.DisassemblyMode.Assemblable:
+                                DisassemblyMode = Z80.DisassemblyMode.WithAscii;
+                                break;
+                            default:
+                                DisassemblyMode = Z80.DisassemblyMode.Assemblable;
+                                break;
+                        }
                         processed = true;
                         break;
                     case KeyCode.S:
@@ -69,13 +77,13 @@ namespace Sharp80.Views
                                 Format() +
                                 Indent("[S] Start disassembly") +
                                 Format() +
-                                Indent("[M] Make reassemblable (strip opcode info): " + (makeAssemblable ? "[ON] /  OFF" : " ON  / [OFF]")) +
+                                Indent("[M] Make reassemblable (strip opcode info): " + ((DisassemblyMode == Z80.DisassemblyMode.Assemblable) ? "[ON] /  OFF" : " ON  / [OFF]")) +
                                 Indent("[L] Lower case output:                      " + (lowercase ? "[ON] /  OFF" : " ON  / [OFF]"))
                                 ));
         }
         private void Disassemble()
         {
-            var txt = Computer.Disassemble(startAddress, 0xFFFF, makeAssemblable);
+            var txt = Computer.Disassemble(startAddress, 0xFFFF, DisassemblyMode);
             if (lowercase)
                 txt = txt.ToLower();
             var path = Path.Combine(Storage.AppDataPath, "Disassembly.txt").MakeUniquePath();
