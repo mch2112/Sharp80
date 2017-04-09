@@ -30,11 +30,10 @@ namespace Sharp80.Z80
 
         public string GetInternalsReport() => $"{flagsToString[F.val]}\r\nPC   {PC}\r\nSP   {SP}\r\n\r\nAF   {AF}\r\nBC   {BC}\r\nDE   {DE}\r\nHL   {HL}\r\n\r\nIX   {IX}\r\nIY   {IY}\r\n\r\nAF'  {AFp}\r\nBC'  {BCp}\r\nDE'  {DEp}\r\nHL'  {HLp}\r\n\r\nIR   {I}{R}\r\nWZ   {WZ}\r\n\r\n(HL) {HLM}\r\n(SP) {SPM}";
         
-        public string Disassemble(ushort Start, ushort End, DisassemblyMode Mode) => disassembler.Disassemble(Memory, Start, End, Mode);
+        // REALTIME DISASSEMBLY
 
-        public string GetDisassembly() => HistoricDisassemblyMode ? GetDisassemblyHistoric() : GetDisassemblyNormal();
-
-        public string GetDisassemblyNormal()
+        public string GetRealtimeDisassembly() => HistoricDisassemblyMode ? GetRealtimeDisassemblyHistoric() : GetRealtimeDisassemblyNormal();
+        public string GetRealtimeDisassemblyNormal()
         {
             ushort startLocation = PC.val;
 
@@ -52,7 +51,7 @@ namespace Sharp80.Z80
                                          new { addr = disassemblyAddresses[j++] = startLocation })
                                          .Select(n => GetLineInfo((n.addr == PC.val) ? ">" : " ", ref startLocation, GetInstructionAt(n.addr))));
         }
-        public string GetDisassemblyHistoric()
+        public string GetRealtimeDisassemblyHistoric()
         {
             return string.Join(Environment.NewLine,
                                historyBuffer.Select(i => new { addr = i, inst = GetInstructionAt(i) })
@@ -74,7 +73,11 @@ namespace Sharp80.Z80
         }
         public string GetLineInfo(ushort PC) => GetLineInfo(string.Empty, PC, GetInstructionAt(PC));
 
+        // INSTRUCTION SET
+
         public string GetInstructionSetReport() => InstructionSet.GetInstructionSetReport();
+
+        // ISTATUS IMPLEMENTATION
 
         public ushort PcVal => PC.val;
         public ushort SpVal => SP.val;

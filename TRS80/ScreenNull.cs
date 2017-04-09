@@ -27,7 +27,6 @@ namespace Sharp80.TRS80
         public string StatusMessage { set { } }
 
         public void Reset() { }
-        //public void Initialize(IAppWindow Parent) { }
         public void Initialize(Computer Computer) { computer = Computer; }
 
         public bool Deserialize(BinaryReader Reader, int SerializationVersion)
@@ -38,6 +37,5 @@ namespace Sharp80.TRS80
         {
             throw new NotImplementedException();
         }
-        public void Dispose() { }
     }
 }

@@ -13,46 +13,45 @@ namespace Sharp80.Z80.Assembler
         public string SourceText { get; private set; }
         public ushort ExecAddress { get; private set; }
         public int NumErrors { get; private set; }
+
         public List<(ushort SegmentAddress, byte[] Bytes)> Segments { get; private set; }
 
-        public bool AssembledOK => Status == Status.AssembleOK;
+        public bool AssembledOK => status == Status.AssembleOK;
         public IEnumerable<string> SourceLines => SourceText.Split(new string[] { Environment.NewLine, "\n", "\r" }, StringSplitOptions.None);
 
-        private List<Assembler.LineInfo> Lines { get; set; }
-        private Status Status { get; set; }
-        private Dictionary<string, Assembler.LineInfo> SymbolTable { get; set; }
+        private List<Assembler.LineInfo> lines;
+        private Status status;
+        private Dictionary<string, Assembler.LineInfo> symbolTable;
 
-        internal Assembly(string SourceText)
-        {
-            this.SourceText = SourceText;
-        }
+        internal Assembly(string SourceText) => this.SourceText = SourceText;
+        
         internal void Finalize(string Title, IEnumerable<Assembler.LineInfo> Lines, Dictionary<String, Assembler.LineInfo> SymbolTable, ushort? ExecAddress)
         {
             this.Title = Title;
-            this.Lines = Lines.ToList();
-            this.SymbolTable = SymbolTable;
+            lines = Lines.ToList();
+            symbolTable = SymbolTable;
             Segmentize();
             if (Segments.Count == 0)
             {
-                Status = Status.Empty;
+                status = Status.Empty;
             }
             else
             {
                 this.ExecAddress = ExecAddress ?? Segments.Min(s => s.SegmentAddress);
                 NumErrors = Lines.Count(l => l.HasError);
                 if (NumErrors > 0)
-                    Status = Status.AssembleFailed;
+                    status = Status.AssembleFailed;
             }
         }
         public string IntermediateOutput
         {
             get
             {
-                if (Status == Status.New || Status == Status.Empty)
+                if (status == Status.New || status == Status.Empty)
                     return String.Empty;
                 else
                     return string.Join(Environment.NewLine,
-                                       Lines.Select(lp => string.Format("{0:00000} {1}", lp.SourceFileLine, lp.FullNameWithOriginalLineAsCommentWithErrorIfAny))) +
+                                       lines.Select(lp => string.Format("{0:00000} {1}", lp.SourceFileLine, lp.FullNameWithOriginalLineAsCommentWithErrorIfAny))) +
                                        Environment.NewLine +
                                        Environment.NewLine +
                                        SymbolTableToString();
@@ -63,12 +62,12 @@ namespace Sharp80.Z80.Assembler
             return "SYMBOL TABLE" + Environment.NewLine +
                    "============================================" + Environment.NewLine +
                    String.Join(Environment.NewLine,
-                               SymbolTable.OrderBy(kv => kv.Key)
+                               symbolTable.OrderBy(kv => kv.Key)
                                           .Select(kv => kv.Key.PadRight(Assembler.MAX_LABEL_LENGTH + 1) + " " + kv.Value.SymbolTableReference));
         }
         private void Segmentize()
         {
-            if (Status == Status.New)
+            if (status == Status.New)
             {
                 try
                 {
@@ -84,11 +83,11 @@ namespace Sharp80.Z80.Assembler
                         data.Add((lowAddress, segment));
                     }
                     Segments = data;
-                    Status = Status.AssembleOK;
+                    status = Status.AssembleOK;
                 }
                 catch (Exception Ex)
                 {
-                    Status = Status.AssembleFailed;
+                    status = Status.AssembleFailed;
                     Segments = null;
                     throw Ex;
                 }
@@ -104,9 +103,9 @@ namespace Sharp80.Z80.Assembler
             highAddress = 0x0000;
             bool any = false;
 
-            while (LineNumber < Lines.Count)
+            while (LineNumber < lines.Count)
             {
-                var lp = Lines[LineNumber++];
+                var lp = lines[LineNumber++];
 
                 if (lp.IsOrg && any)
                 {

@@ -111,9 +111,6 @@ namespace Sharp80.TRS80
         private ushort crc;
         private ushort crcCalc;
         private byte crcHigh, crcLow;
-        private Action nextCallback;
-        private bool isPolling;
-        private int targetDataIndex;
         private ulong TicksPerDiskRev { get; }
 
         // CONSTRUCTOR
@@ -181,8 +178,6 @@ namespace Sharp80.TRS80
             motorOnPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_ON_DELAY_IN_USEC, MotorOnCallback);
             motorOffPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, MOTOR_OFF_DELAY_IN_USEC, MotorOffCallback);
             commandPulseReq = new PulseReq();
-
-            isPolling = false;
         }
         internal bool LoadFloppy(byte DriveNum, string FilePath)
         {
@@ -274,77 +269,6 @@ namespace Sharp80.TRS80
                 drives[DriveNumber].WriteProtected = WriteProtected;
         }
 
-        private void SeekAddressData(byte ByteRead, OpStatus NextStatus, bool Check)
-        {
-            damBytesChecked++;
-            switch (opStatus)
-            {
-                case OpStatus.SeekingIDAM:
-                    if (IndexesFound >= 5)
-                    {
-                        SeekError = true;
-                        opStatus = OpStatus.NMI;
-                    }
-                    else
-                    {
-                        switch (ByteRead)
-                        {
-                            case Floppy.IDAM:
-                                if (track?.HasIdamAt(TrackDataIndex, DoubleDensitySelected) ?? false)
-                                {
-                                    readAddressIndex = 0;
-                                    ResetCRC();
-                                    crc = Lib.Crc(crc, ByteRead);
-                                    opStatus = OpStatus.ReadingAddressData;
-                                }
-                                idamBytesFound = 0;
-                                break;
-                            default:
-                                idamBytesFound = 0;
-                                break;
-                        }
-                    }
-                    break;
-                case OpStatus.ReadingAddressData:
-                    readAddressData[readAddressIndex] = ByteRead;
-                    if (readAddressIndex == ADDRESS_DATA_CRC_HIGH_BYTE - 1)
-                    {
-                        // save the value before the first crc on the sector comes in
-                        crcCalc = crc;
-                    }
-                    else if (readAddressIndex >= ADDRESS_DATA_CRC_LOW_BYTE)
-                    {
-                        damBytesChecked = 0;
-
-                        crcHigh = readAddressData[ADDRESS_DATA_CRC_HIGH_BYTE];
-                        crcLow = readAddressData[ADDRESS_DATA_CRC_LOW_BYTE];
-                        CrcError = crcCalc != Lib.CombineBytes(crcLow, crcHigh);
-
-                        var match = (TrackRegister == readAddressData[ADDRESS_DATA_TRACK_REGISTER_BYTE] &&
-                                     (!command.SideSelectVerify || (command.SideOneExpected == (readAddressData[ADDRESS_DATA_SIDE_ONE_BYTE] != 0))) &&
-                                     (SectorRegister == readAddressData[ADDRESS_DATA_SECTOR_REGISTER_BYTE]));
-
-                        if (Check && !match)
-                        {
-                            opStatus = OpStatus.SeekingIDAM;
-                        }
-                        else
-                        {
-                            sectorLength = Floppy.GetDataLengthFromCode(readAddressData[ADDRESS_DATA_SECTOR_SIZE_BYTE]);
-
-                            if (CrcError)
-                                opStatus = OpStatus.SeekingIDAM;
-                            else
-                                opStatus = NextStatus;
-                        }
-                    }
-                    readAddressIndex++;
-                    break;
-                default:
-                    throw new Exception();
-            }
-        }
-
         // TRACK ACTIONS
 
         private void StepUp() => SetTrackNumber(CurrentDrive.PhysicalTrackNumber + 1);
@@ -369,15 +293,13 @@ namespace Sharp80.TRS80
 
         // TRIGGERS
 
-        private void SetCommandPulseReq(int Bytes, ulong DelayInUsec, Action Callback)
+        private void SetCommandPulseReq(int Bytes, ulong DelayInUsec)
         {
             commandPulseReq.Expire();
-            nextCallback = null;
-            isPolling = false;
 
             if (Bytes <= 0 && DelayInUsec == 0)
             {
-                Callback();
+                DoCallback();
             }
             else if (Bytes > 0 && DelayInUsec > 0)
             {
@@ -391,46 +313,22 @@ namespace Sharp80.TRS80
                     Bytes *= 2;
 
                 // we want to come back exactly when the target byte is under the drive head
-                targetDataIndex = (TrackDataIndex + Bytes) % TrackLength;
+                int targetDataIndex = (TrackDataIndex + Bytes) % TrackLength;
                 if (!DoubleDensitySelected)
                     targetDataIndex &= 0xFFFE; // find the first of the doubled bytes
 
-                nextCallback = Callback;
-                isPolling = true;
                 // Calculate how long it will take for the right byte to be under the head
                 // just like the real life controller does.
                 commandPulseReq = new PulseReq(PulseReq.DelayBasis.Ticks,
                                                ((((ulong)targetDataIndex * DISK_ANGLE_DIVISIONS / (ulong)TrackLength) + DISK_ANGLE_DIVISIONS) - DiskAngle) % DISK_ANGLE_DIVISIONS * TicksPerDiskRev / DISK_ANGLE_DIVISIONS + 10000,
-                                               Poll);
+                                               DoCallback);
                 computer.RegisterPulseReq(commandPulseReq, true);
             }
             else
             {
                 // Time based delay
-                commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, DelayInUsec, Callback);
+                commandPulseReq = new PulseReq(PulseReq.DelayBasis.Microseconds, DelayInUsec, DoCallback);
                 computer.RegisterPulseReq(commandPulseReq, true);
-            }
-        }
-        private void Poll()
-        {
-            if (!isPolling)
-            {
-                throw new Exception("Polling error.");
-            }
-            else if (TrackDataIndex == targetDataIndex)
-            {
-                // this is the byte we're looking for
-                isPolling = false;
-                nextCallback();
-            }
-            else
-            {
-                System.Diagnostics.Debug.Assert(false, "Missed the target!");
-                // we could cheat and wait for the target by calling Poll() again but that's not good emulation
-                // so just behave as if there were a fault. This shouldn't happen unless switching floppings mid
-                // read or write.
-                isPolling = false;
-                nextCallback();
             }
         }
 
@@ -476,8 +374,8 @@ namespace Sharp80.TRS80
             Writer.Write(bytesRead);
             Writer.Write(bytesToWrite);
             Writer.Write(indexCheckStartTick);
-            Writer.Write(isPolling);
-            Writer.Write(targetDataIndex);
+            Writer.Write(false);
+            Writer.Write((int)0);
 
             Writer.Write(crc);
             Writer.Write(crcCalc);
@@ -541,8 +439,9 @@ namespace Sharp80.TRS80
                 bytesToWrite = Reader.ReadInt32();
 
                 indexCheckStartTick = Reader.ReadUInt64();
-                isPolling = Reader.ReadBoolean();
-                targetDataIndex = Reader.ReadInt32();
+
+                Reader.ReadBoolean();
+                Reader.ReadInt32();
 
                 crc = Reader.ReadUInt16();
                 crcCalc = Reader.ReadUInt16();
@@ -563,42 +462,7 @@ namespace Sharp80.TRS80
                 else
                     Enabled = AnyDriveLoaded;
 
-                Action callback;
-
-                switch (command.Type)
-                {
-                    case FdcCommandType.ReadAddress:
-                        callback = ReadAddressCallback;
-                        break;
-                    case FdcCommandType.ReadSector:
-                        callback = ReadSectorCallback;
-                        break;
-                    case FdcCommandType.ReadTrack:
-                        callback = ReadTrackCallback;
-                        break;
-                    case FdcCommandType.WriteSector:
-                        callback = WriteSectorCallback;
-                        break;
-                    case FdcCommandType.WriteTrack:
-                        callback = WriteTrackCallback;
-                        break;
-                    case FdcCommandType.Restore:
-                    case FdcCommandType.Seek:
-                    case FdcCommandType.Step:
-                        callback = TypeOneCommandCallback;
-                        break;
-                    default:
-                        callback = null;
-                        break;
-                }
-
-                if (isPolling)
-                {
-                    nextCallback = callback;
-                    callback = Poll;
-                }
-
-                ok &= commandPulseReq.Deserialize(Reader, callback, SerializationVersion) &&
+                ok &= commandPulseReq.Deserialize(Reader, DoCallback, SerializationVersion) &&
                       motorOnPulseReq.Deserialize(Reader, MotorOnCallback, SerializationVersion) &&
                       motorOffPulseReq.Deserialize(Reader, MotorOffCallback, SerializationVersion);
 
@@ -620,29 +484,7 @@ namespace Sharp80.TRS80
                 return false;
             }
         }
-
-        private byte ReadByte(bool AllowResetCRC)
-        {
-            byte b = ReadTrackByte();
-
-            if (AllowResetCRC)
-                crc = UpdateCRC(crc, b, true, DoubleDensitySelected);
-            else
-                crc = Lib.Crc(crc, b);
-
-            return b;
-        }
-        private void WriteByte(byte B, bool AllowResetCRC)
-        {
-            if (AllowResetCRC)
-                crc = UpdateCRC(crc, B, true, DoubleDensitySelected);
-            else
-                crc = Lib.Crc(crc, B);
-
-            WriteTrackByte(B);
-        }
-        private void ResetCRC() => crc = DoubleDensitySelected ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET;
-
+ 
         // REGISTER I/O
 
         internal void FdcIoEvent(byte portNum, byte value, bool isOut)
@@ -852,14 +694,37 @@ namespace Sharp80.TRS80
 
         // TRACK DATA HANLDING
 
+
         public int TrackDataIndex => (int)(DiskAngle * (ulong)TrackLength  / DISK_ANGLE_DIVISIONS);
         private int TrackLength => track?.DataLength ??
                         (DoubleDensitySelected ? Floppy.STANDARD_TRACK_LENGTH_DOUBLE_DENSITY : Floppy.STANDARD_TRACK_LENGTH_SINGLE_DENSITY);
-        private byte ReadTrackByte() => track?.ReadByte(TrackDataIndex, DoubleDensitySelected) ?? 0;
-        private void WriteTrackByte(byte B) => track?.WriteByte(TrackDataIndex, DoubleDensitySelected, B);
+      
+        // DISK READ/WRITE
+
+        private byte ReadByte(bool AllowResetCRC)
+        {
+            byte b = track?.ReadByte(TrackDataIndex, DoubleDensitySelected) ?? 0;
+
+            if (AllowResetCRC)
+                crc = UpdateCRC(crc, b, true, DoubleDensitySelected);
+            else
+                crc = Lib.Crc(crc, b);
+
+            return b;
+        }
+        private void WriteByte(byte B, bool AllowResetCRC)
+        {
+            if (AllowResetCRC)
+                crc = UpdateCRC(crc, B, true, DoubleDensitySelected);
+            else
+                crc = Lib.Crc(crc, B);
+
+            track?.WriteByte(TrackDataIndex, DoubleDensitySelected, B);
+        }
+        private void ResetCRC() => crc = DoubleDensitySelected ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET;
 
         // HELPERS
-        
+
         internal static ushort UpdateCRC(ushort crc, byte ByteRead, bool AllowReset, bool DoubleDensity)
         {
             if (AllowReset)

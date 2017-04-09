@@ -14,7 +14,7 @@ namespace Sharp80.TRS80
         public int LengthWithHeader { get; }
         public bool Changed { get; private set; } = false;
 
-        private byte[] Data { get; set; }
+        private byte[] data;
         private ushort[] header;
         private bool? density = null;
         private bool[] densityMap = null;
@@ -29,8 +29,7 @@ namespace Sharp80.TRS80
         private const ushort HEADER_MASK = DOUBLE_DENSITY_MASK | OFFSET_MASK;
 
         private List<SectorDescriptor> sectorDescriptorCache = null;
-
-        private static Random r = new Random();
+        private static Random rand = new Random();
 
         internal Track(byte PhysicalTrackNum, bool SideOne, byte[] Data, bool SingleDensitySingleByte)
         {
@@ -40,7 +39,7 @@ namespace Sharp80.TRS80
             // Combine to single ushort, strip out unused bit 14
             header = Data.Slice(0, HEADER_LENGTH_BYTES).ToUShortArray().Select(h => (ushort)(h & (OFFSET_MASK | DOUBLE_DENSITY_MASK))).ToArray();
 
-            this.Data = Data.Slice(HEADER_LENGTH_BYTES);
+            this.data = Data.Slice(HEADER_LENGTH_BYTES);
 
             System.Diagnostics.Debug.Assert(Data.Length % 2 == 0);
             if (Data.Length % 2 == 1)
@@ -52,21 +51,12 @@ namespace Sharp80.TRS80
             if (SingleDensitySingleByte)
                 ConvertFromSingleByte();
 
-            LengthWithHeader = this.Data.Length + HEADER_LENGTH_BYTES;
+            LengthWithHeader = this.data.Length + HEADER_LENGTH_BYTES;
 
             //RebuildHeader();
             //Changed = true;
         }
 
-        private void InitDensity()
-        {
-            if (Header.All(h => h >= DOUBLE_DENSITY_MASK || h == 0))
-                density = true;
-            else if (Header.All(h => h < DOUBLE_DENSITY_MASK))
-                density = false;
-            else
-                density = null;
-        }
         internal static byte[] ToTrackBytes(IEnumerable<SectorDescriptor> Sectors, int Length = 0)
         {
             byte[] ret = new byte[MAX_LENGTH_WITH_HEADER * 2]; // big
@@ -188,6 +178,16 @@ namespace Sharp80.TRS80
 
             return ret;
         }
+
+        private void InitDensity()
+        {
+            if (Header.All(h => h >= DOUBLE_DENSITY_MASK || h == 0))
+                density = true;
+            else if (Header.All(h => h < DOUBLE_DENSITY_MASK))
+                density = false;
+            else
+                density = null;
+        }
         private ushort[] Header
         {
             get
@@ -210,44 +210,44 @@ namespace Sharp80.TRS80
             {
                 if (density.HasValue)
                 {
-                    densityMap = new bool[Data.Length].Fill(density.Value);
+                    densityMap = new bool[data.Length].Fill(density.Value);
                     density = null;
                 }
                 densityMap[Index] = Value;
             }
         }
 
-        internal int DataLength => Data.Length;
+        internal int DataLength => data.Length;
 
         internal byte[] Serialize()
         {
-            return Header.ToByteArray().Concat(Data);
+            return Header.ToByteArray().Concat(data);
         }
         internal byte ReadByte(int TrackIndex, bool? DoubleDensity)
         {
             if (DoubleDensity.HasValue && DoubleDensity != GetDensity(TrackIndex))
-                return (byte)r.Next(0, 0x100);
+                return (byte)rand.Next(0, 0x100);
 
             if (DoubleDensity == false)
                 TrackIndex &= 0x7FFFFFFE;
 
-            if (TrackIndex >= Data.Length)
+            if (TrackIndex >= data.Length)
                 TrackIndex = 0;
 
-            var b = Data[TrackIndex];
+            var b = data[TrackIndex];
 #if DEBUG
             if (DoubleDensity.HasValue && !DoubleDensity.Value)
-                if (Data[TrackIndex + 1] != b &&
-                    Data[Math.Max(0, TrackIndex - 1)] != b)
+                if (data[TrackIndex + 1] != b &&
+                    data[Math.Max(0, TrackIndex - 1)] != b)
                     throw new Exception("Density Inconsistency");
 #endif
             return b;
         }
         internal void WriteByte(int TrackIndex, bool DoubleDensity, byte Value)
         {
-            System.Diagnostics.Debug.Assert(TrackIndex < Data.Length);
+            System.Diagnostics.Debug.Assert(TrackIndex < data.Length);
 
-            if (TrackIndex >= Data.Length)
+            if (TrackIndex >= data.Length)
                 return;
 
             header = null;
@@ -255,15 +255,15 @@ namespace Sharp80.TRS80
 
             if (DoubleDensity)
             {
-                Data[TrackIndex] = Value;
+                data[TrackIndex] = Value;
                 if (density != true)
                     SetDensity(TrackIndex, true, true);
             }
             else
             {
                 TrackIndex &= 0xFFFFFFE;
-                Data[TrackIndex] = Value;
-                Data[TrackIndex + 1] = Value;
+                data[TrackIndex] = Value;
+                data[TrackIndex + 1] = Value;
                 if (density != false)
                 {
                     SetDensity(TrackIndex, false, true);
@@ -299,7 +299,7 @@ namespace Sharp80.TRS80
                 bool density = Header[SectorIndex] >= DOUBLE_DENSITY_MASK;
                 int offset = (Header[SectorIndex] & OFFSET_MASK) - HEADER_LENGTH_BYTES;
                 int byteMultiple = density ? 1 : 2;
-                if (Data[offset] != Floppy.IDAM)
+                if (data[offset] != Floppy.IDAM)
                     continue;
 
                 byte dam = 0x00;
@@ -307,22 +307,22 @@ namespace Sharp80.TRS80
                 bool deleted = false;
                 for (int i = offset + 7 * byteMultiple; i < offset + (7 + (density ? 43 : 30)) * byteMultiple; i += byteMultiple)
                 {
-                    if (FloppyController.IsDAM(Data[i], out deleted))
+                    if (FloppyController.IsDAM(data[i], out deleted))
                     {
-                        dam = Data[i];
+                        dam = data[i];
                         dataStart = i + byteMultiple;
                         break;
                     }
                 }
 
-                var sizeCode = Data[offset + 4 * byteMultiple];
+                var sizeCode = data[offset + 4 * byteMultiple];
                 var dataLength = Floppy.GetDataLengthFromCode(sizeCode);
 
                 var sd = new SectorDescriptor()
                 {
-                    TrackNumber = Data[offset + 1 * byteMultiple],
-                    SideOne = Data[offset + 2 * byteMultiple] > 0,
-                    SectorNumber = Data[offset + 3 * byteMultiple],
+                    TrackNumber = data[offset + 1 * byteMultiple],
+                    SideOne = data[offset + 2 * byteMultiple] > 0,
+                    SectorNumber = data[offset + 3 * byteMultiple],
                     SectorSizeCode = sizeCode,
                     SectorSize = dataLength,
                     DoubleDensity = density,
@@ -341,10 +341,10 @@ namespace Sharp80.TRS80
                     ushort actualCrc = Lib.Crc(sd.DoubleDensity ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET, sd.DAM);
                     for (int i = 0; i < dataLength; i++)
                     {
-                        sd.SectorData[i] = Data[dataStart + i * byteMultiple];
+                        sd.SectorData[i] = data[dataStart + i * byteMultiple];
                         actualCrc = Lib.Crc(actualCrc, sd.SectorData[i]);
                     }
-                    ushort recordedCrc = Lib.CombineBytes(Data[dataStart + (dataLength + 1) * byteMultiple], Data[dataStart + dataLength * byteMultiple]);
+                    ushort recordedCrc = Lib.CombineBytes(data[dataStart + (dataLength + 1) * byteMultiple], data[dataStart + dataLength * byteMultiple]);
                     sd.CrcError = actualCrc != recordedCrc;
                 }
                 sds.Add(sd);
@@ -366,9 +366,9 @@ namespace Sharp80.TRS80
 #endif
             }
             byte b = 0;
-            if (TrackIndex < Data.Length)
+            if (TrackIndex < data.Length)
             {
-                b = Data[TrackIndex];
+                b = data[TrackIndex];
                 Crc = FloppyController.UpdateCRC(Crc, b, AllowResetCRC, DoubleDensityMode);
             }
             TrackIndex++;
@@ -382,18 +382,18 @@ namespace Sharp80.TRS80
 
             int headerCursor = 0;
 
-            int end = Data.Length - 10;
+            int end = data.Length - 10;
             int i = 4;
             while (i < end)
             {
                 bool density = GetDensity(i);
 
-                if (Data[i] == Floppy.IDAM)
+                if (data[i] == Floppy.IDAM)
                 {
                     // is it a real IDAM? Check preceding bytes
                     if (density)
                     {
-                        if (Data[i - 1] != 0xA1 || Data[i - 2] != 0xA1 || Data[i - 3] != 0xA1)
+                        if (data[i - 1] != 0xA1 || data[i - 2] != 0xA1 || data[i - 3] != 0xA1)
                         {
                             i++;
                             continue;
@@ -401,7 +401,7 @@ namespace Sharp80.TRS80
                     }
                     else
                     {
-                        if (Data[i - 2] != 0x00)
+                        if (data[i - 2] != 0x00)
                         {
                             i += 2;
                             continue;
@@ -414,7 +414,7 @@ namespace Sharp80.TRS80
                     // now skip forward past the sector contents
                     // advance to length
                     if (density) i += 4; else i += 8;
-                    i += Floppy.GetDataLengthFromCode(Data[i]) * (density ? 1 : 2);
+                    i += Floppy.GetDataLengthFromCode(data[i]) * (density ? 1 : 2);
                     i += 20 * (density ? 1 : 2); // filler minimum
                 }
                 else
@@ -435,7 +435,7 @@ namespace Sharp80.TRS80
             }
             else
             {
-                densityMap = new bool[Data.Length];
+                densityMap = new bool[data.Length];
 
                 int idamOffset = 0x10;
                 bool d = Header[0] >= DOUBLE_DENSITY_MASK;
@@ -460,7 +460,7 @@ namespace Sharp80.TRS80
                     break;
                 case false:
                     // just duplicate bytes everywhere
-                    Data = Data.Double().Truncate(MAX_LENGTH_WITH_HEADER);
+                    data = data.Double().Truncate(MAX_LENGTH_WITH_HEADER);
                     for (int i = 0; i < Header.Length; i++)
                         Header[i] *= 2; // don't need to worry about the DD flag
                     break;
@@ -469,13 +469,13 @@ namespace Sharp80.TRS80
                     var sdDoubled = new List<byte>();
                     for (int i = 0; i < densityMap.Length; i++)
                     {
-                        sdDoubled.Add(Data[i]);
+                        sdDoubled.Add(data[i]);
                         if (!densityMap[i])
-                            sdDoubled.Add(Data[i]);
+                            sdDoubled.Add(data[i]);
                     }
 
-                    Data = sdDoubled.ToArray();
-                    Data = Data.Pad(DEFAULT_LENGTH_WITHOUT_HEADER, Floppy.FILLER_BYTE_DD);
+                    data = sdDoubled.ToArray();
+                    data = data.Pad(DEFAULT_LENGTH_WITHOUT_HEADER, Floppy.FILLER_BYTE_DD);
 
                     for (int i = 0; i < Header.Length && Header[i] > 0; i++)
                         Header[i] += (ushort)(densityMap.Take((Header[i] & OFFSET_MASK) - HEADER_LENGTH_BYTES).Count(d => !d));

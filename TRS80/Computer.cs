@@ -458,7 +458,7 @@ namespace Sharp80.TRS80
 
         public string GetInternalsReport() => Processor.GetInternalsReport();
         public string GetClockReport() => Clock.GetInternalsReport();
-        public string GetDisassembly() => Processor.GetDisassembly();public bool LoadCMDFile(CmdFile File)
+        public string GetDisassembly() => Processor.GetRealtimeDisassembly();public bool LoadCMDFile(CmdFile File)
         {
             Stop(WaitForStop: true);
 

@@ -16,57 +16,42 @@ namespace Sharp80.TRS80
             public PulseState After { get; private set; }
             public PulseState LastNonZero { get; private set; }
 
+            public bool Value { get; private set; }
             public bool FlipFlop { get; private set; }
 
-            private Clock Clock;
-            private Func<bool> Callback { get; set; }
-
-            public bool Value { get; private set; }
-            private ulong TimeStamp { get; set; }
-            private ulong Duration { get; set; }
-            private Baud Speed { get; set; }
+            private Clock clock;
+            private Func<bool> callback;
+            private ulong timeStamp;
+            private ulong duration;
+            private Baud speed;
 
             public Transition(Baud Speed, Clock Clock, Func<bool> Callback)
             {
-                this.Speed = Speed;
-                this.Clock = Clock;
-                this.Callback = Callback;
-                TimeStamp = Clock.TickCount;
-                Duration = 0;
+                speed = Speed;
+                clock = Clock;
+                callback = Callback;
+                timeStamp = Clock.TickCount;
+                duration = 0;
             }
 
-            public ulong TicksUntilNext { get { return TimeStamp + Duration - Clock.TickCount; } }
-            public bool IsRising
-            {
-                get
-                {
-                    return GetPolarity(After) == PulsePolarity.Positive &&
-                           GetPolarity(Before) == PulsePolarity.Negative;
-                }
-            }
-            public bool IsFalling
-            {
-                get
-                {
-                    return GetPolarity(After) == PulsePolarity.Negative &&
-                           GetPolarity(Before) == PulsePolarity.Positive;
-                }
-            }
+            public ulong TicksUntilNext => timeStamp + duration - clock.TickCount;
+            public bool IsRising => GetPolarity(After) == PulsePolarity.Positive && GetPolarity(Before) == PulsePolarity.Negative;
+            public bool IsFalling => GetPolarity(After) == PulsePolarity.Negative && GetPolarity(Before) == PulsePolarity.Positive;
 
             public bool Update(Baud Speed)
             {
-                if (this.Speed != Speed)
+                if (speed != Speed)
                 {
-                    this.Speed = Speed;
+                    speed = Speed;
                     Before = PulseState.Negative;
                     After = PulseState.Positive;
-                    Duration = 0;
+                    duration = 0;
                 }
                 if (Expired)
                 {
                     Before = After;
-                    TimeStamp += Duration;
-                    switch (Speed)
+                    timeStamp += duration;
+                    switch (speed)
                     {
                         case Baud.High:
                             switch (After)
@@ -75,41 +60,41 @@ namespace Sharp80.TRS80
                                     After = PulseState.Negative;
                                     break;
                                 case PulseState.Negative:
-                                    Value = Callback();
+                                    Value = callback();
                                     After = PulseState.Positive;
                                     break;
                             }
-                            Duration = Value ? HIGH_SPEED_PULSE_ONE : HIGH_SPEED_PULSE_ZERO;
+                            duration = Value ? HIGH_SPEED_PULSE_ONE : HIGH_SPEED_PULSE_ZERO;
                             break;
                         case Baud.Low:
                             switch (After)
                             {
                                 case PulseState.PositiveClock:
                                     After = PulseState.NegativeClock;
-                                    Duration = LOW_SPEED_PULSE_NEGATIVE;
+                                    duration = LOW_SPEED_PULSE_NEGATIVE;
                                     break;
                                 case PulseState.NegativeClock:
                                     // If zero bit, skip the data pulse
                                     After = Value ? PulseState.PostClockOne : PulseState.PostDataZero;
-                                    Duration = Value ? LOW_SPEED_POST_CLOCK_ONE : LOW_SPEED_POST_DATA_ZERO;
+                                    duration = Value ? LOW_SPEED_POST_CLOCK_ONE : LOW_SPEED_POST_DATA_ZERO;
                                     break;
                                 case PulseState.PostClockOne:
                                     After = PulseState.Positive;
-                                    Duration = LOW_SPEED_PULSE_POSITIVE;
+                                    duration = LOW_SPEED_PULSE_POSITIVE;
                                     break;
                                 case PulseState.Positive:
                                     After = PulseState.Negative;
-                                    Duration = LOW_SPEED_PULSE_NEGATIVE;
+                                    duration = LOW_SPEED_PULSE_NEGATIVE;
                                     break;
                                 case PulseState.Negative:
                                     After = PulseState.PostDataOne;
-                                    Duration = LOW_SPEED_POST_DATA_ONE;
+                                    duration = LOW_SPEED_POST_DATA_ONE;
                                     break;
                                 case PulseState.PostDataOne:
                                 case PulseState.PostDataZero:
-                                    Value = Callback();
+                                    Value = callback();
                                     After = PulseState.PositiveClock;
-                                    Duration = LOW_SPEED_PULSE_POSITIVE;
+                                    duration = LOW_SPEED_PULSE_POSITIVE;
                                     break;
                             }
                             break;
@@ -132,8 +117,8 @@ namespace Sharp80.TRS80
                 FlipFlop = false;
             }
 
-            private bool Expired { get { return Clock.TickCount > Expiration; } }
-            private ulong Expiration { get { return TimeStamp + Duration; } }
+            private bool Expired => clock.TickCount > Expiration;
+            private ulong Expiration => timeStamp + duration;
             private PulsePolarity GetPolarity(PulseState State)
             {
                 switch (State)
@@ -148,10 +133,7 @@ namespace Sharp80.TRS80
                         return PulsePolarity.Zero;
                 }
             }
-            private bool IsNonZero(PulseState State)
-            {
-                return GetPolarity(State) != PulsePolarity.Zero;
-            }
+            private bool IsNonZero(PulseState State) => GetPolarity(State) != PulsePolarity.Zero;
             private bool IsOpposite(PulseState State1, PulseState State2)
             {
                 var p1 = GetPolarity(State1);
@@ -165,27 +147,27 @@ namespace Sharp80.TRS80
 
             public void Serialize(System.IO.BinaryWriter Writer)
             {
-                Writer.Write((int)Speed);
+                Writer.Write((int)speed);
                 Writer.Write((int)Before);
                 Writer.Write((int)After);
                 Writer.Write((int)LastNonZero);
                 Writer.Write(FlipFlop);
                 Writer.Write(Value);
-                Writer.Write(TimeStamp);
-                Writer.Write(Duration);
+                Writer.Write(timeStamp);
+                Writer.Write(duration);
             }
             public bool Deserialize(System.IO.BinaryReader Reader, int DeserializationVersion)
             {
                 try
                 {
-                    Speed = (Baud)Reader.ReadInt32();
+                    speed = (Baud)Reader.ReadInt32();
                     Before = (PulseState)Reader.ReadInt32();
                     After = (PulseState)Reader.ReadInt32();
                     LastNonZero = (PulseState)Reader.ReadInt32();
                     FlipFlop = Reader.ReadBoolean();
                     Value = Reader.ReadBoolean();
-                    TimeStamp = Reader.ReadUInt64();
-                    Duration = Reader.ReadUInt64();
+                    timeStamp = Reader.ReadUInt64();
+                    duration = Reader.ReadUInt64();
                     return true;
                 }
                 catch

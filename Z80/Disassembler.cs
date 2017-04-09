@@ -13,9 +13,9 @@ namespace Sharp80.Z80
         public const int NUM_DISASSEMBLY_LINES = 22;
 
         public bool HistoricDisassemblyMode { get; set; }
-        private Z80.Z80InstructionSet InstructionSet { get; set; }
+        private Z80.Z80InstructionSet instructionSet;
 
-        public Disassembler(Z80.Z80InstructionSet InstructionSet) => this.InstructionSet = InstructionSet;
+        public Disassembler(Z80.Z80InstructionSet InstructionSet) => instructionSet = InstructionSet;
 
         public string Disassemble(IReadOnlyList<byte> Memory, ushort Start, ushort End, DisassemblyMode Mode)
         {
@@ -37,12 +37,11 @@ namespace Sharp80.Z80
             int PC = Start;
             while (PC <= end)
             {
-                li.Add((ushort)PC, inst = InstructionSet.GetInstruction(Memory[(ushort)PC], Memory[(ushort)(PC + 1)], Memory[(ushort)(PC + 3)]));
+                li.Add((ushort)PC, inst = instructionSet.GetInstruction(Memory[(ushort)PC], Memory[(ushort)(PC + 1)], Memory[(ushort)(PC + 3)]));
                 PC += inst.Size;
             }
 
-            var header = $"; Disassembly from memory {Start:X4}H to {end:X4}H" +
-                           Environment.NewLine;
+            var header = $"; Disassembly from memory {Start:X4}H to {end:X4}H" + Environment.NewLine;
 
             switch (Mode)
             {

@@ -25,8 +25,7 @@ namespace Sharp80.DirectX
         private bool rightControlPressed = false;
         private bool leftAltPressed = false;
         private bool rightAltPressed = false;
-
-        private TRS80.KeyCode repeatKey = TRS80.KeyCode.None;
+        private KeyCode repeatKey = KeyCode.None;
         private uint repeatKeyCount = 0;
 
         public KeyboardDX()
@@ -45,7 +44,7 @@ namespace Sharp80.DirectX
             var delay = TimeSpan.FromTicks((int)(10_000_000f / RefreshRateHz));
             await Poll(delay, Callback, (int)(RefreshRateHz / 2), StopToken);
         }
-        private async Task Poll(TimeSpan Delay, Action<KeyState> Callback, int RepeatThreshold, CancellationToken StopToken)
+        private async Task Poll(TimeSpan PollRate, Action<KeyState> Callback, int RepeatThreshold, CancellationToken StopToken)
         {
             while (!StopToken.IsCancellationRequested)
             {
@@ -94,15 +93,15 @@ namespace Sharp80.DirectX
                         Callback(new KeyState(keyCode, IsShifted, IsControlPressed, IsAltPressed, d.IsPressed));
                     }
                 }
-                if (repeatKey != TRS80.KeyCode.None && ++repeatKeyCount > RepeatThreshold)
-                    Callback(new TRS80.KeyState(repeatKey, IsShifted, IsControlPressed, IsAltPressed, true, true));
+                if (repeatKey != KeyCode.None && ++repeatKeyCount > RepeatThreshold)
+                    Callback(new KeyState(repeatKey, IsShifted, IsControlPressed, IsAltPressed, true, true));
 
-                await Task.Delay(Delay, StopToken);
+                await Task.Delay(PollRate, StopToken);
             }
         }
         public bool Enabled
         {
-            get { return enabled; }
+            get => enabled;
             set
             {
                 // Throw away strays that may have accumulated

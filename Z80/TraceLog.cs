@@ -9,8 +9,8 @@ namespace Sharp80.Z80
     internal class TraceLog
     {
         private const int MAX_LINES = 1000000;
-        Z80 cpu;
-        List<string> trace;
+        private Z80 cpu;
+        private List<string> trace;
 
         private ushort pc;
         private byte a;
@@ -23,7 +23,7 @@ namespace Sharp80.Z80
         private byte hlm;
         private string flags;
 
-        int lineCount;
+        private int lineCount;
 
         private Object logLock = new Object();
 

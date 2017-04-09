@@ -10,7 +10,7 @@ namespace Sharp80.TRS80
     /// <summary>
     /// This interface is used to allow for future non-DirectInput based implementations
     /// </summary>
-    public interface IKeyboard : IDisposable
+    public interface IKeyboard
     {
         Task Start(float PollRateInHz, Action<KeyState> Callback, CancellationToken StopToken);
         bool Enabled { get; set; }

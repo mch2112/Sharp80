@@ -29,14 +29,14 @@ namespace Sharp80.Z80
 
         // FLAGS
 
-        private bool CF { get { return (F.val & S_CF) != 0; } set { if (value) F.val |= S_CF; else F.val &= R_CF; } }	// carry flag 
-        private bool NF { get { return (F.val & S_NF) != 0; } set { if (value) F.val |= S_NF; else F.val &= R_NF; } }	// add / subtract flag
-        private bool VF { get { return (F.val & S_VF) != 0; } set { if (value) F.val |= S_VF; else F.val &= R_VF; } }	// parity / overflow flag
-        private bool F3 { get { return (F.val & S_F3) != 0; } set { if (value) F.val |= S_F3; else F.val &= R_F3; } }	// not used
-        private bool HF { get { return (F.val & S_HF) != 0; } set { if (value) F.val |= S_HF; else F.val &= R_HF; } }	// half-carry flag
-        private bool F5 { get { return (F.val & S_F5) != 0; } set { if (value) F.val |= S_F5; else F.val &= R_F5; } }	// not used
-        private bool ZF { get { return (F.val & S_ZF) != 0; } set { if (value) F.val |= S_ZF; else F.val &= R_ZF; } }	// zero flag
-        private bool SF { get { return (F.val & S_SF) != 0; } set { if (value) F.val |= S_SF; else F.val &= R_SF; } }	// sign flag
+        private bool CF { get => (F.val & S_CF) != 0; set { if (value) F.val |= S_CF; else F.val &= R_CF; } }	// carry flag 
+        private bool NF { get => (F.val & S_NF) != 0; set { if (value) F.val |= S_NF; else F.val &= R_NF; } }	// add / subtract flag
+        private bool VF { get => (F.val & S_VF) != 0; set { if (value) F.val |= S_VF; else F.val &= R_VF; } }	// parity / overflow flag
+        private bool F3 { get => (F.val & S_F3) != 0; set { if (value) F.val |= S_F3; else F.val &= R_F3; } }	// not used
+        private bool HF { get => (F.val & S_HF) != 0; set { if (value) F.val |= S_HF; else F.val &= R_HF; } }	// half-carry flag
+        private bool F5 { get => (F.val & S_F5) != 0; set { if (value) F.val |= S_F5; else F.val &= R_F5; } }	// not used
+        private bool ZF { get => (F.val & S_ZF) != 0; set { if (value) F.val |= S_ZF; else F.val &= R_ZF; } }	// zero flag
+        private bool SF { get => (F.val & S_SF) != 0; set { if (value) F.val |= S_SF; else F.val &= R_SF; } }	// sign flag
 
         private bool NZ => (F.val & S_ZF) == 0;
         private bool NC => (F.val & S_CF) == 0;
@@ -60,7 +60,6 @@ namespace Sharp80.Z80
 
         internal IMemory Memory { get; private set; }
         internal Instruction CurrentInstruction { get; private set; }
-        public Assembler.Assembly Assemble(string SourceText) => new Assembler.Assembler(InstructionSet.Instructions.Values).Assemble(SourceText);
 
         // INTERRUPTS
 
@@ -547,6 +546,11 @@ namespace Sharp80.Z80
                    i.Mnemonic == "INDR" ||
                    i.Mnemonic == "DJNZ";
         }
+
+        // ASSEMBLER / DISASSEMBLER
+
+        public Assembler.Assembly Assemble(string SourceText) => new Assembler.Assembler(InstructionSet.Instructions.Values).Assemble(SourceText);
+        public string Disassemble(ushort Start, ushort End, DisassemblyMode Mode) => disassembler.Disassemble(Memory, Start, End, Mode);
 
         // HELPERS
 

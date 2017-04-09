@@ -19,18 +19,15 @@ namespace Sharp80
         private static Thread uiThread;
         private static MainForm instance;
 
-        private ProductInfo ProductInfo { get; set; }
-        private Settings Settings { get; set; }
-        private IDialogs Dialogs { get; set; }
-
+        private ProductInfo productInfo;
+        private Settings settings;
+        private IDialogs dialogs;
         private Computer computer;
-        private IScreen screen;
-        private IKeyboard keyboard;
-
-        private Task ScreenTask;
-        private Task KeyboardPollTask;
-        private CancellationTokenSource StopToken;
-
+        private ScreenDX screen;
+        private KeyboardDX keyboard;
+        private Task screenTask;
+        private Task keyboardPollTask;
+        private CancellationTokenSource stopToken;
         private bool isDisposing = false;
         private Rectangle previousClientRect = Rectangle.Empty;
 
@@ -41,31 +38,32 @@ namespace Sharp80
         private static bool suppressCursor = false;
         private static int dialogLevel = 0;
         private static bool cursorHidden = false;
-    
+
+        private bool isActive;
+        private Rectangle clientExcess = Rectangle.Empty;
+
         public static bool IsUiThread => Thread.CurrentThread == uiThread;
         public static MainForm Instance => instance;
         public bool DrawOK => WindowState != FormWindowState.Minimized;
-
-        private bool IsActive { get; set; }
-        private Rectangle ClientExcess { get; set; } = Rectangle.Empty;
-
+        
         public MainForm()
         {
             instance = this;
-            Settings = new Settings();
-            ProductInfo = new ProductInfo();
-            Dialogs = new WinDialogs(this, ProductInfo, BeforeDialog, AfterDialog);
+            settings = new Settings();
+            productInfo = new ProductInfo();
+            dialogs = new WinDialogs(this, productInfo, BeforeDialog, AfterDialog);
 
             uiThread = Thread.CurrentThread;
+
             KeyPreview = true;
-            Text = ProductInfo.ProductName + " - TRS-80 Model III Emulator";
+            Text = productInfo.ProductName + " - TRS-80 Model III Emulator";
             BackColor = Color.Black;
 
             keyboard = new KeyboardDX();
 
             screen = new ScreenDX(this,
-                                  Dialogs,
-                                  Settings,
+                                  dialogs,
+                                  settings,
                                   DISPLAY_MESSAGE_CYCLE_DURATION);
 
             InitializeComponent();
@@ -76,29 +74,29 @@ namespace Sharp80
         {
             try
             {
-                Activated += (s, ee) => { SyncKeyboard(); IsActive = true; };
-                Deactivate += (s, ee) => { IsActive = false; computer.ResetKeyboard(false, false); };
+                Activated += (s, ee) => { SyncKeyboard(); isActive = true; };
+                Deactivate += (s, ee) => { isActive = false; computer.ResetKeyboard(false, false); };
 
                 Views.View.OnUserCommand += ProcessUserCommand;
 
                 HardReset();
 
-                if (Settings.FullScreen)
+                if (settings.FullScreen)
                     ToggleFullScreen();
 
-                if (Settings.AutoStartOnReset)
+                if (settings.AutoStartOnReset)
                     AutoStart();
 
                 UpdateDialogLevel();
 
-                StopToken = new CancellationTokenSource();
+                stopToken = new CancellationTokenSource();
 
-                ScreenTask = screen.Start(SCREEN_REFRESH_RATE_HZ, StopToken.Token);
-                KeyboardPollTask = keyboard.Start(KEYBOARD_REFRESH_RATE_HZ, ProcessKey, StopToken.Token);
+                screenTask = screen.Start(SCREEN_REFRESH_RATE_HZ, stopToken.Token);
+                keyboardPollTask = keyboard.Start(KEYBOARD_REFRESH_RATE_HZ, ProcessKey, stopToken.Token);
             }
             catch (Exception Ex)
             {
-                Dialogs.ExceptionAlert(Ex);
+                dialogs.ExceptionAlert(Ex);
             }
         }
         
@@ -124,15 +122,15 @@ namespace Sharp80
                 }
                 var sound = new SoundX(16000);
                 if (sound.Stopped)
-                    Dialogs.AlertUser("Sound failed to start. Continuing without sound.");
+                    dialogs.AlertUser("Sound failed to start. Continuing without sound.");
 
-                computer = new Computer(screen, sound, new Timer(), Settings, Dialogs);
+                computer = new Computer(screen, sound, new Timer(), settings, dialogs);
 
                 screen.Initialize(computer);
 
-                Views.View.Initialize(ProductInfo, Dialogs, Settings, computer, (msg) => screen.StatusMessage = msg);
+                Views.View.Initialize(productInfo, dialogs, settings, computer, (msg) => screen.StatusMessage = msg);
 
-                if (Settings.AutoStartOnReset)
+                if (settings.AutoStartOnReset)
                 {
                     computer.Start();
                     Views.View.CurrentMode = ViewMode.Normal;
@@ -140,7 +138,7 @@ namespace Sharp80
             }
             catch (Exception Ex)
             {
-                Dialogs.ExceptionAlert(Ex);
+                dialogs.ExceptionAlert(Ex);
             }
         }
         private void AutoStart()
@@ -198,7 +196,7 @@ namespace Sharp80
         }
         private void ProcessKey(KeyState Key)
         {
-            if (IsActive)
+            if (isActive)
             {
                 try
                 {
@@ -208,7 +206,7 @@ namespace Sharp80
                 }
                 catch (Exception Ex)
                 {
-                    Dialogs.ExceptionAlert(Ex);
+                    dialogs.ExceptionAlert(Ex);
                 }
             }
         }
@@ -275,7 +273,7 @@ namespace Sharp80
         {
             // Store some invariant values for future use
             var pts = PointToScreen(new Point(0, 0));
-            ClientExcess = new Rectangle(pts.X - Left,
+            clientExcess = new Rectangle(pts.X - Left,
                                          pts.Y - Top,
                                          Size.Width - ClientSize.Width,
                                          Size.Height - ClientSize.Height);
@@ -284,16 +282,16 @@ namespace Sharp80
 
             Rectangle workingArea = Screen.FromHandle(Handle).WorkingArea;
 
-            int w = Settings.WindowWidth;
-            int h = Settings.WindowHeight;
+            int w = settings.WindowWidth;
+            int h = settings.WindowHeight;
 
             // if not contained within screen working area, punt
-            if (w <= 0 || h <= 0 || w + ClientExcess.Width > workingArea.Width || h + ClientExcess.Height > workingArea.Height)
+            if (w <= 0 || h <= 0 || w + clientExcess.Width > workingArea.Width || h + clientExcess.Height > workingArea.Height)
             {
                 w = (int)(screen.AdvancedView ? ScreenMetrics.WINDOWED_WIDTH_ADVANCED : ScreenMetrics.WINDOWED_WIDTH_NORMAL);
                 h = (int)ScreenMetrics.WINDOWED_HEIGHT;
             }
-            SetClientRect(new Rectangle(Settings.WindowX, Settings.WindowY, w, h));
+            SetClientRect(new Rectangle(settings.WindowX, settings.WindowY, w, h));
         }
         private void ToggleFullScreen()
         {
@@ -309,7 +307,7 @@ namespace Sharp80
             if (previousClientRect.Height > wa.Height * 3 / 4)
                 previousClientRect = new Rectangle(previousClientRect.X, previousClientRect.Y, 0, wa.Height * 3 / 4);
 
-            Settings.FullScreen = screen.IsFullScreen = false;
+            settings.FullScreen = screen.IsFullScreen = false;
             SetWindowStyle(false);
             SetClientRect();
             SuppressCursor = false;
@@ -318,7 +316,7 @@ namespace Sharp80
         {
             previousClientRect = new Rectangle(PointToScreen(Point.Empty), ClientSize);
 
-            Settings.FullScreen = screen.IsFullScreen = true;
+            settings.FullScreen = screen.IsFullScreen = true;
             SetWindowStyle(true);
             Bounds = Screen.GetBounds(this);
             SuppressCursor = true;
@@ -352,17 +350,15 @@ namespace Sharp80
             newH = Math.Max(newH, ScreenMetrics.WINDOWED_HEIGHT / 2);
             float newW = newH * aspectRatio;
 
-            Rectangle r = new Rectangle((int)(Location.X + ClientExcess.Left - (newW - ClientSize.Width) / 2),
-                                        (int)(Location.Y + ClientExcess.Top - (newH - ClientSize.Height) / 2),
+            Rectangle r = new Rectangle((int)(Location.X + clientExcess.Left - (newW - ClientSize.Width) / 2),
+                                        (int)(Location.Y + clientExcess.Top - (newH - ClientSize.Height) / 2),
                                         (int)newW,
                                         (int)newH);
 
             SetClientRect(r);
         }
-        private void SetClientRect()
-        {
-            SetClientRect(previousClientRect);
-        }
+        private void SetClientRect() => SetClientRect(previousClientRect);
+        
         /// <summary>
         /// Width is always recomupted
         /// </summary>
@@ -382,10 +378,10 @@ namespace Sharp80
                                   w,
                                   h);
 
-            bounds = new Rectangle(Input.X - ClientExcess.Left,
-                                   Input.Y - ClientExcess.Top,
-                                   Input.Width + ClientExcess.Width,
-                                   Input.Height + ClientExcess.Height);
+            bounds = new Rectangle(Input.X - clientExcess.Left,
+                                   Input.Y - clientExcess.Top,
+                                   Input.Width + clientExcess.Width,
+                                   Input.Height + clientExcess.Height);
 
             Rectangle workingArea;
             if (!(workingArea = Screen.GetWorkingArea(this)).Contains(bounds))
@@ -416,8 +412,8 @@ namespace Sharp80
             // screen area adjusted for difference between size and client size
             int screenWidth = scn.WorkingArea.Width;
             int screenHeight = scn.WorkingArea.Height;
-            int adjScreenWidth = screenWidth - ClientExcess.Width;
-            int adjScreenHeight = screenHeight - ClientExcess.Height;
+            int adjScreenWidth = screenWidth - clientExcess.Width;
+            int adjScreenHeight = screenHeight - clientExcess.Height;
 
             float h = ClientHeight;
             float aspectRatio = screen.AdvancedView ? ScreenMetrics.WINDOWED_ASPECT_RATIO_ADVANCED : ScreenMetrics.WINDOWED_ASPECT_RATIO_NORMAL;
@@ -437,8 +433,8 @@ namespace Sharp80
             // adjust all for client borders
             float x = X;
             float y = Y;
-            w += ClientExcess.Width;
-            h += ClientExcess.Height;
+            w += clientExcess.Width;
+            h += clientExcess.Height;
 
             // constrain to be on screen
             x = Math.Min(Math.Max(x, 0), screenWidth - w);
@@ -487,11 +483,11 @@ namespace Sharp80
         {
             if (computer.SaveChangedStorage())
             {
-                Settings.WindowX = Location.X;
-                Settings.WindowY = Location.Y;
-                Settings.WindowWidth = ClientSize.Width;
-                Settings.WindowHeight = ClientSize.Height;
-                Settings.Save();
+                settings.WindowX = Location.X;
+                settings.WindowY = Location.Y;
+                settings.WindowWidth = ClientSize.Width;
+                settings.WindowHeight = ClientSize.Height;
+                settings.Save();
                 Task.Run(Stop);
             }
             else
@@ -504,14 +500,14 @@ namespace Sharp80
         {
             try
             {
-                StopToken.Cancel();
-                await KeyboardPollTask;
+                stopToken.Cancel();
+                await keyboardPollTask;
                 await computer.Shutdown();
-                await ScreenTask;
+                await screenTask;
                 screen.Dispose();
                 keyboard.Dispose();
                 Dispose();
-                StopToken.Dispose();
+                stopToken.Dispose();
                 Application.Exit();
             }
             catch (AggregateException e)

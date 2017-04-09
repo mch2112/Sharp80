@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Sharp80.TRS80
 {
-    public interface IScreen : ISerializable, IDisposable
+    public interface IScreen : ISerializable
     {
         IList<byte> ScreenBytes { get; }
 
