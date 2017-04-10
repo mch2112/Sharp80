@@ -25,10 +25,7 @@ namespace Sharp80.Z80.Assembler
                 for (int i = 0; i < arguments.Count; i++)
                     Debug.Assert(arguments[i] == arguments[i].ToUpper());
             }
-            public void AddLine(string Line)
-            {
-                this.lines.Add(Line);
-            }
+            public void AddLine(string Line) => lines.Add(Line);
             public List<string> Expand(string inputArguments, int InputLineNumber, out string Error)
             {
                 Error = String.Empty;
@@ -39,22 +36,18 @@ namespace Sharp80.Z80.Assembler
                 string[] inputArgs = GetCSV(inputArguments, 1000);
 
                 if (inputArgs.Length != arguments.Count)
-                    Error = string.Format("Macro {0} Arguments Mismatch: {1} Required, {2} Specified, Line {3}",
-                                           Name,
-                                           arguments.Count,
-                                           inputArgs.Length,
-                                           InputLineNumber);
+                    Error = string.Format($"Macro {Name} Arguments Mismatch: {arguments.Count} Required, {inputArgs.Length} Specified, Line {InputLineNumber}");
 
                 foreach (string l in lines)
                 {
                     argNum = 0;
                     line = l;
-                    foreach (string a in arguments)
+                    foreach (string arg in arguments)
                     {
                         if (argNum < inputArgs.Length)
-                            line = line.Replace("&" + a, inputArgs[argNum++]);
+                            line = line.Replace("&" + arg, inputArgs[argNum++]);
                         else
-                            line = line.Replace("&" + a, String.Empty);
+                            line = line.Replace("&" + arg, String.Empty);
                     }
                     returnLines.Add(line);
                 }

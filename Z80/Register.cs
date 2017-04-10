@@ -8,7 +8,7 @@ namespace Sharp80.Z80
     internal class Register8 : IRegister<byte>
     {
         public byte val { get; set; }
-        public string Name { get; private set; }
+        public string Name { get; }
 
         public Register8(string Name) => this.Name = Name;
 
@@ -21,8 +21,8 @@ namespace Sharp80.Z80
     }
     internal class Register8Indirect : IRegister<byte>
     {
-        public IRegister<ushort> Proxy { get; set; }
-        public string Name { get; private set; }
+        public IRegister<ushort> Proxy { get; }
+        public string Name { get; }
         private Z80 z80;
         public Register8Indirect(Z80 Processor, IRegister<ushort> Proxy, string Name)
         {
@@ -36,17 +36,15 @@ namespace Sharp80.Z80
             set => z80.Memory[Proxy.val] = value;
         }
 
-        //public ushort ProxyVal { get { return Proxy.val; } }
-
-        public void inc() { val++; }
-        public void dec() { val--; }
-        public bool NZ { get { return val != 0; } }
-        public override string ToString() { return val.ToHexString(); }
+        public void inc() => val++;
+        public void dec() => val--;
+        public bool NZ => val != 0;
+        public override string ToString() => val.ToHexString();
     }
     internal class RegisterIndexed : IRegisterIndexed
     {
-        public IRegister<ushort> Proxy { get; set; }
-        public string Name { get; private set; }
+        public IRegister<ushort> Proxy { get; }
+        public string Name { get; }
         private Z80 z80;
 
         public RegisterIndexed(Z80 Processor, IRegister<ushort> Proxy, string Name)
@@ -68,7 +66,7 @@ namespace Sharp80.Z80
     }
     internal class Register16 : IRegister<ushort>
     {
-        public string Name { get; private set; }
+        public string Name { get; }
         public ushort val { get; set; }
 
         public Register16(string Name) => this.Name = Name;
@@ -80,9 +78,9 @@ namespace Sharp80.Z80
     }
     internal class RegisterCompound : IRegisterCompound
     {
-        public string Name { get; private set; }
-        public IRegister<byte> L { get; private set; }
-        public IRegister<byte> H { get; private set; }
+        public string Name { get; }
+        public IRegister<byte> L { get; }
+        public IRegister<byte> H { get; }
 
         public RegisterCompound(IRegister<byte> Low, IRegister<byte> High, string Name)
         {
@@ -122,7 +120,7 @@ namespace Sharp80.Z80
     // Used only for the stack pointer indirection
     internal class Register16Indirect : IRegister<ushort>
     {
-        public string Name { get; private set; }
+        public string Name { get; }
 
         private Z80 z80;
         private IRegister<ushort> proxy;
@@ -135,8 +133,8 @@ namespace Sharp80.Z80
         }
         public ushort val
         {
-            get { return z80.Memory.GetWordAt(proxy.val); }
-            set { z80.Memory.SetWordAt(proxy.val, value); }
+            get => z80.Memory.GetWordAt(proxy.val);
+            set => z80.Memory.SetWordAt(proxy.val, value);
         }
         public void inc() => val++;
         public void dec() => val--;

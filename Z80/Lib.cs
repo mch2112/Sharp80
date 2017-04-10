@@ -18,13 +18,13 @@ namespace Sharp80.Z80
                 case 1:
                     return $"{memory[index]:X2}         ";
                 case 2:
-                    return $"{memory[index]:X2} {memory[index + 1]:X2}      ";
+                    return $"{memory[index]:X2} {memory[(index + 1) & 0xFFFF]:X2}      ";
                 case 3:
-                    return $"{memory[index]:X2} {memory[index + 1]:X2} {memory[index + 2]:X2}   ";
+                    return $"{memory[index]:X2} {memory[(index + 1) & 0xFFFF]:X2} {memory[(index + 2) & 0xFFFF]:X2}   ";
                 case 4:
-                    return $"{memory[index]:X2} {memory[index + 1]:X2} {memory[index + 2]:X2} {memory[index + 3]:X2}";
+                    return $"{memory[index]:X2} {memory[(index + 1) & 0xFFFF]:X2} {memory[(index + 2) & 0xFFFF]:X2} {memory[(index + 3) & 0xFFFF]:X2}";
                 default:
-                    throw new Exception();
+                    throw new Exception("GetSpacedHex: Too many bytes");
             }
         }
         public static ushort HexToUShort(string input) => ushort.Parse(input,

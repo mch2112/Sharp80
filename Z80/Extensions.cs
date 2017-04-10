@@ -117,7 +117,7 @@ namespace Sharp80.Z80
         public static string Truncate(this string Input, int Chars) => Input.Length < Chars ? Input : Input.Substring(0, Chars);
 
         public static bool IsBetween(this char Value, char Min, char Max) => Value >= Min && Value <= Max;
-        public static bool IsBetween(this int Value, int Min, int Max) => Value >= Min && Value <= Max;
+        public static bool IsBetween(this int Value, int Min, int Max)    => Value >= Min && Value <= Max;
         public static bool IsBetween(this byte Value, byte Min, byte Max) => Value >= Min && Value <= Max;
 
         public static char AsAscii(this byte Value)

@@ -36,13 +36,13 @@ namespace Sharp80.Z80
             InstructionSet.Add(new Instruction("SUB N", 7, sub_n, 0xD6));
             InstructionSet.Add(new Instruction("SBC N", 7, sbc_n, 0xDE));
             InstructionSet.Add(new Instruction("AND N", 7, and_n, 0xE6));
-            InstructionSet.Add(new Instruction("OR N", 7, or_n, 0xF6));
+            InstructionSet.Add(new Instruction("OR N",  7, or_n,  0xF6));
             InstructionSet.Add(new Instruction("XOR N", 7, xor_n, 0xEE));
-            InstructionSet.Add(new Instruction("CP N", 7, cp_n, 0xFE));
+            InstructionSet.Add(new Instruction("CP N",  7, cp_n,  0xFE));
 
-            InstructionSet.Add(new Instruction("LDI", 16, ldi, 0xED, 0xA0));
+            InstructionSet.Add(new Instruction("LDI",  16, ldi,  0xED, 0xA0));
             InstructionSet.Add(new Instruction("LDIR", 16, ldir, 0xED, 0xB0).WithTStatesAlt(5));
-            InstructionSet.Add(new Instruction("LDD", 16, ldd, 0xED, 0xA8));
+            InstructionSet.Add(new Instruction("LDD",  16, ldd,  0xED, 0xA8));
             InstructionSet.Add(new Instruction("LDDR", 16, lddr, 0xED, 0xB8).WithTStatesAlt(5));
 
             InstructionSet.Add(new Instruction("CPI", 16, cpi, 0xED, 0xA1));
@@ -87,8 +87,8 @@ namespace Sharp80.Z80
                 InstructionSet.Add(new Instruction($"SBC {r8[i].Name}", tStates, () => sbc(r8[i]), (byte)(0x98 + i)));
                 InstructionSet.Add(new Instruction($"AND {r8[i].Name}", tStates, () => and(r8[i]), (byte)(0xA0 + i)));
                 InstructionSet.Add(new Instruction($"XOR {r8[i].Name}", tStates, () => xor(r8[i]), (byte)(0xA8 + i)));
-                InstructionSet.Add(new Instruction($"OR {r8[i].Name}", tStates, () => or(r8[i]), (byte)(0xB0 + i)));
-                InstructionSet.Add(new Instruction($"CP {r8[i].Name}", tStates, () => cp(r8[i]), (byte)(0xB8 + i)));
+                InstructionSet.Add(new Instruction($"OR {r8[i].Name}",  tStates, () => or(r8[i]),  (byte)(0xB0 + i)));
+                InstructionSet.Add(new Instruction($"CP {r8[i].Name}",  tStates, () => cp(r8[i]),  (byte)(0xB8 + i))); 
 
                 tStates = (byte)(i == HLMIndex ? 11 : 4);
 
@@ -99,8 +99,8 @@ namespace Sharp80.Z80
 
                 InstructionSet.Add(new Instruction($"RLC {r8[i].Name}", tStates, () => rlc(r8[i]), 0xCB, i));
                 InstructionSet.Add(new Instruction($"RRC {r8[i].Name}", tStates, () => rrc(r8[i]), 0xCB, (byte)(i + 0x08)));
-                InstructionSet.Add(new Instruction($"RL {r8[i].Name}", tStates, () => rl(r8[i]), 0xCB, (byte)(i + 0x10)));
-                InstructionSet.Add(new Instruction($"RR {r8[i].Name}", tStates, () => rr(r8[i]), 0xCB, (byte)(i + 0x18)));
+                InstructionSet.Add(new Instruction($"RL {r8[i].Name}",  tStates, () => rl(r8[i]),  0xCB, (byte)(i + 0x10)));
+                InstructionSet.Add(new Instruction($"RR {r8[i].Name}",  tStates, () => rr(r8[i]),  0xCB, (byte)(i + 0x18)));
                 InstructionSet.Add(new Instruction($"SLA {r8[i].Name}", tStates, () => sla(r8[i]), 0xCB, (byte)(i + 0x20)));
                 InstructionSet.Add(new Instruction($"SRA {r8[i].Name}", tStates, () => sra(r8[i]), 0xCB, (byte)(i + 0x28)));
                 InstructionSet.Add(new Instruction($"SLL {r8[i].Name}", tStates, () => sll(r8[i]), 0xCB, (byte)(i + 0x30)));
@@ -120,8 +120,8 @@ namespace Sharp80.Z80
                         // COMPOUND INSTRUCTIONS (UNDOCUMENTED)
                         InstructionSet.Add(new Instruction($"RLC ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", 23, () => rlc_compound(rxyi[j], r8[i]), (byte)(0xDD + 0x20 * j), 0xCB, i));
                         InstructionSet.Add(new Instruction($"RRC ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", 23, () => rrc_compound(rxyi[j], r8[i]), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x08 + i)));
-                        InstructionSet.Add(new Instruction($"RL ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", 23, () => rl_compound(rxyi[j], r8[i]), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x10 + i)));
-                        InstructionSet.Add(new Instruction($"RR ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", 23, () => rr_compound(rxyi[j], r8[i]), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x18 + i)));
+                        InstructionSet.Add(new Instruction($"RL ({rxyi[j].Proxy.Name}+d), {r8[i].Name}",  23, () => rl_compound(rxyi[j], r8[i]),  (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x10 + i)));
+                        InstructionSet.Add(new Instruction($"RR ({rxyi[j].Proxy.Name}+d), {r8[i].Name}",  23, () => rr_compound(rxyi[j], r8[i]),  (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x18 + i)));
                         InstructionSet.Add(new Instruction($"SLA ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", 23, () => sla_compound(rxyi[j], r8[i]), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x20 + i)));
                         InstructionSet.Add(new Instruction($"SRA ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", 23, () => sra_compound(rxyi[j], r8[i]), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x28 + i)));
                         InstructionSet.Add(new Instruction($"SLL ({rxyi[j].Proxy.Name}+d), {r8[i].Name}", 23, () => sll_compound(rxyi[j], r8[i]), (byte)(0xDD + 0x20 * j), 0xCB, (byte)(0x30 + i)));
@@ -147,7 +147,7 @@ namespace Sharp80.Z80
                         InstructionSet.Add(new Instruction($"LD IYl, {r8y[i].Name}", 8, () => load(IY.L, r8y[i]), 0xFD, (byte)(0x68 + i)));
                     }
 
-                    InstructionSet.Add(new Instruction($"IN {r8[i].Name}, (C)", 12, () => InPortR(r8[i]), 0xED, (byte)(0x40 + i * 0x08)));
+                    InstructionSet.Add(new Instruction($"IN {r8[i].Name}, (C)",  12, () => InPortR(r8[i]),  0xED, (byte)(0x40 + i * 0x08)));
                     InstructionSet.Add(new Instruction($"OUT (C), {r8[i].Name}", 12, () => OutPortR(r8[i]), 0xED, (byte)(0x41 + i * 0x08)));
                 }
 
@@ -183,16 +183,16 @@ namespace Sharp80.Z80
 
             foreach (var i in iter4)
             {
-                InstructionSet.Add(new Instruction(string.Format("LD {0}, NN", r16s[i].Name), 10, () => load_reg_nnnn(r16s[i]), (byte)(0x01 + i * 0x10)));
+                InstructionSet.Add(new Instruction(string.Format("LD {0}, NN",   r16s[i].Name), 10, () => load_reg_nnnn(r16s[i]),      (byte)(0x01 + i * 0x10)));
                 InstructionSet.Add(new Instruction(string.Format("LD {0}, (NN)", r16s[i].Name), 20, () => load_xx_mmmm(r16s[i]), 0xED, (byte)(0x4B + i * 0x10)));
                 InstructionSet.Add(new Instruction(string.Format("LD (NN), {0}", r16s[i].Name), 20, () => load_mmmm_xx(r16s[i]), 0xED, (byte)(0x43 + i * 0x10)));
-                InstructionSet.Add(new Instruction(string.Format("INC {0}", r16s[i].Name), 6, () => inc(r16s[i]), (byte)(0x03 + i * 0x10)));
-                InstructionSet.Add(new Instruction(string.Format("DEC {0}", r16s[i].Name), 6, () => dec(r16s[i]), (byte)(0x0B + i * 0x10)));
-                InstructionSet.Add(new Instruction(string.Format("ADD HL, {0}", r16s[i].Name), 11, () => add(HL, r16s[i]), (byte)(0x09 + i * 0x10)));
-                InstructionSet.Add(new Instruction(string.Format("SBC HL, {0}", r16s[i].Name), 15, () => sbc(HL, r16s[i]), 0xED, (byte)(0x42 + i * 0x10)));
-                InstructionSet.Add(new Instruction(string.Format("ADC HL, {0}", r16s[i].Name), 15, () => adc(HL, r16s[i]), 0xED, (byte)(0x4A + i * 0x10)));
+                InstructionSet.Add(new Instruction(string.Format("INC {0}",      r16s[i].Name),  6, () => inc(r16s[i]),                (byte)(0x03 + i * 0x10)));
+                InstructionSet.Add(new Instruction(string.Format("DEC {0}",      r16s[i].Name),  6, () => dec(r16s[i]),                (byte)(0x0B + i * 0x10)));
+                InstructionSet.Add(new Instruction(string.Format("ADD HL, {0}",  r16s[i].Name), 11, () => add(HL, r16s[i]),            (byte)(0x09 + i * 0x10)));
+                InstructionSet.Add(new Instruction(string.Format("SBC HL, {0}",  r16s[i].Name), 15, () => sbc(HL, r16s[i]), 0xED,      (byte)(0x42 + i * 0x10)));
+                InstructionSet.Add(new Instruction(string.Format("ADC HL, {0}",  r16s[i].Name), 15, () => adc(HL, r16s[i]), 0xED,      (byte)(0x4A + i * 0x10)));
 
-                InstructionSet.Add(new Instruction($"POP {r16a[i].Name}", 10, () => pop(r16a[i]), (byte)(0xC1 + i * 0x10)));
+                InstructionSet.Add(new Instruction($"POP {r16a[i].Name}",  10, () => pop(r16a[i]),  (byte)(0xC1 + i * 0x10)));
                 InstructionSet.Add(new Instruction($"PUSH {r16a[i].Name}", 11, () => push(r16a[i]), (byte)(0xC5 + i * 0x10)));
 
                 InstructionSet.Add(new Instruction($"ADD {IX.Name}, {r16xs[i].Name}", 15, () => add(IX, r16xs[i]), 0xDD, (byte)(0x09 + i * 0x10)));
@@ -200,14 +200,14 @@ namespace Sharp80.Z80
             }
             foreach (var i in iter2)
             {
-                InstructionSet.Add(new Instruction(string.Format("LD ({0}+d), N", rxyi[i].Proxy.Name), 10, () => load_ixy_nn(rxyi[i]), (byte)(0xDD + i * 0x20), 0x36));
-                InstructionSet.Add(new Instruction(string.Format("LD {0}, NN", rxy[i].Name), 14, () => load_reg_nnnn(rxy[i]), (byte)(0xDD + i * 0x20), 0x21));
-                InstructionSet.Add(new Instruction(string.Format("LD (NN), {0}", rxy[i].Name), 20, () => load_mmmm_ixy(rxy[i]), (byte)(0xDD + i * 0x20), 0x22));
-                InstructionSet.Add(new Instruction(string.Format("LD {0}, (NN)", rxy[i].Name), 20, () => load_ixy_mmmm(rxy[i]), (byte)(0xDD + i * 0x20), 0x2A));
-                InstructionSet.Add(new Instruction(string.Format("INC {0}", rxy[i].Name), 10, () => inc(rxy[i]), (byte)(0xDD + i * 0x20), 0x23));
-                InstructionSet.Add(new Instruction(string.Format("DEC {0}", rxy[i].Name), 10, () => dec(rxy[i]), (byte)(0xDD + i * 0x20), 0x2B));
-                InstructionSet.Add(new Instruction(string.Format("POP {0}", rxy[i].Name), 14, () => pop(rxy[i]), (byte)(0xDD + i * 0x20), 0xE1));
-                InstructionSet.Add(new Instruction(string.Format("PUSH {0}", rxy[i].Name), 15, () => push(rxy[i]), (byte)(0xDD + i * 0x20), 0xE5));
+                InstructionSet.Add(new Instruction(string.Format("LD ({0}+d), N", rxyi[i].Proxy.Name), 10, () => load_ixy_nn(rxyi[i]),  (byte)(0xDD + i * 0x20), 0x36));
+                InstructionSet.Add(new Instruction(string.Format("LD {0}, NN",    rxy[i].Name),        14, () => load_reg_nnnn(rxy[i]), (byte)(0xDD + i * 0x20), 0x21));
+                InstructionSet.Add(new Instruction(string.Format("LD (NN), {0}",  rxy[i].Name),        20, () => load_mmmm_ixy(rxy[i]), (byte)(0xDD + i * 0x20), 0x22));
+                InstructionSet.Add(new Instruction(string.Format("LD {0}, (NN)",  rxy[i].Name),        20, () => load_ixy_mmmm(rxy[i]), (byte)(0xDD + i * 0x20), 0x2A));
+                InstructionSet.Add(new Instruction(string.Format("INC {0}",       rxy[i].Name),        10, () => inc(rxy[i]),           (byte)(0xDD + i * 0x20), 0x23));
+                InstructionSet.Add(new Instruction(string.Format("DEC {0}",       rxy[i].Name),        10, () => dec(rxy[i]),           (byte)(0xDD + i * 0x20), 0x2B));
+                InstructionSet.Add(new Instruction(string.Format("POP {0}",       rxy[i].Name),        14, () => pop(rxy[i]),           (byte)(0xDD + i * 0x20), 0xE1));
+                InstructionSet.Add(new Instruction(string.Format("PUSH {0}",      rxy[i].Name),        15, () => push(rxy[i]),          (byte)(0xDD + i * 0x20), 0xE5));
 
                 InstructionSet.Add(new Instruction(string.Format("INC ({0}+d)", rxyi[i].Proxy.Name), 23, () => inc(rxyi[i]), (byte)(0xDD + i * 0x20), 0x34));
                 InstructionSet.Add(new Instruction(string.Format("DEC ({0}+d)", rxyi[i].Proxy.Name), 23, () => dec(rxyi[i]), (byte)(0xDD + i * 0x20), 0x35));
@@ -219,13 +219,13 @@ namespace Sharp80.Z80
 
                 InstructionSet.Add(new Instruction(string.Format("AND ({0}+d)", rxyi[i].Proxy.Name), 19, () => and(rxyi[i]), (byte)(0xDD + i * 0x20), 0xA6));
                 InstructionSet.Add(new Instruction(string.Format("XOR ({0}+d)", rxyi[i].Proxy.Name), 19, () => xor(rxyi[i]), (byte)(0xDD + i * 0x20), 0xAE));
-                InstructionSet.Add(new Instruction(string.Format("OR ({0}+d)", rxyi[i].Proxy.Name), 19, () => or(rxyi[i]), (byte)(0xDD + i * 0x20), 0xB6));
-                InstructionSet.Add(new Instruction(string.Format("CP ({0}+d)", rxyi[i].Proxy.Name), 19, () => cp(rxyi[i]), (byte)(0xDD + i * 0x20), 0xBE));
+                InstructionSet.Add(new Instruction(string.Format("OR ({0}+d)", rxyi[i].Proxy.Name),  19, () => or(rxyi[i]),  (byte)(0xDD + i * 0x20), 0xB6));
+                InstructionSet.Add(new Instruction(string.Format("CP ({0}+d)", rxyi[i].Proxy.Name),  19, () => cp(rxyi[i]),  (byte)(0xDD + i * 0x20), 0xBE));
 
                 InstructionSet.Add(new Instruction(string.Format("RLC ({0}+d)", rxyi[i].Proxy.Name), 23, () => rlc(rxyi[i]), (byte)(0xDD + i * 0x20), 0xCB, 0x06));
                 InstructionSet.Add(new Instruction(string.Format("RRC ({0}+d)", rxyi[i].Proxy.Name), 23, () => rrc(rxyi[i]), (byte)(0xDD + i * 0x20), 0xCB, 0x0E));
-                InstructionSet.Add(new Instruction(string.Format("RL ({0}+d)", rxyi[i].Proxy.Name),  23, () => rl(rxyi[i]), (byte)(0xDD + i * 0x20), 0xCB, 0x16));
-                InstructionSet.Add(new Instruction(string.Format("RR ({0}+d)", rxyi[i].Proxy.Name),  23, () => rr(rxyi[i]), (byte)(0xDD + i * 0x20), 0xCB, 0x1E));
+                InstructionSet.Add(new Instruction(string.Format("RL ({0}+d)", rxyi[i].Proxy.Name),  23, () => rl(rxyi[i]),  (byte)(0xDD + i * 0x20), 0xCB, 0x16));
+                InstructionSet.Add(new Instruction(string.Format("RR ({0}+d)", rxyi[i].Proxy.Name),  23, () => rr(rxyi[i]),  (byte)(0xDD + i * 0x20), 0xCB, 0x1E));
                 InstructionSet.Add(new Instruction(string.Format("SLA ({0}+d)", rxyi[i].Proxy.Name), 23, () => sla(rxyi[i]), (byte)(0xDD + i * 0x20), 0xCB, 0x26));
                 InstructionSet.Add(new Instruction(string.Format("SRA ({0}+d)", rxyi[i].Proxy.Name), 23, () => sra(rxyi[i]), (byte)(0xDD + i * 0x20), 0xCB, 0x2E));
                 InstructionSet.Add(new Instruction(string.Format("SLL ({0}+d)", rxyi[i].Proxy.Name), 23, () => sll(rxyi[i]), (byte)(0xDD + i * 0x20), 0xCB, 0x36));
@@ -257,12 +257,12 @@ namespace Sharp80.Z80
             InstructionSet.Add(new Instruction("LD IXl, N", 11, () => load_reg_nn(IX.L), 0xDD, 0x2E));
             InstructionSet.Add(new Instruction("LD IYl, N", 11, () => load_reg_nn(IY.L), 0xFD, 0x2E));
 
-            InstructionSet.Add(new Instruction("EXX", 4, exx, 0xD9));
-            InstructionSet.Add(new Instruction("EX DE, HL", 4, () => ex(DE, HL), 0xEB));
-            InstructionSet.Add(new Instruction("EX AF, AF'", 4, () => ex(AF, AFp), 0x08));
-            InstructionSet.Add(new Instruction("EX (SP), HL", 19, () => ex_spm(HL), 0xE3));
-            InstructionSet.Add(new Instruction("EX (SP), IX", 23, () => ex_spm(IX), 0xDD, 0xE3));
-            InstructionSet.Add(new Instruction("EX (SP), IY", 23, () => ex_spm(IY), 0xFD, 0xE3));
+            InstructionSet.Add(new Instruction("EXX",          4, exx,               0xD9));
+            InstructionSet.Add(new Instruction("EX DE, HL",    4, () => ex(DE, HL),  0xEB));
+            InstructionSet.Add(new Instruction("EX AF, AF'",   4, () => ex(AF, AFp), 0x08));
+            InstructionSet.Add(new Instruction("EX (SP), HL", 19, () => ex_spm(HL),  0xE3));
+            InstructionSet.Add(new Instruction("EX (SP), IX", 23, () => ex_spm(IX),  0xDD, 0xE3));
+            InstructionSet.Add(new Instruction("EX (SP), IY", 23, () => ex_spm(IY),  0xFD, 0xE3));
 
             InstructionSet.Add(new Instruction("ADD IXh", 19, () => add(IX.H), 0xDD, 0x84));
             InstructionSet.Add(new Instruction("ADD IYh", 19, () => add(IY.H), 0xFD, 0x84));
@@ -328,7 +328,7 @@ namespace Sharp80.Z80
             InstructionSet.Add(new Instruction("JP (HL)",  4, () => jp(HL), 0xE9));
             InstructionSet.Add(new Instruction("JP (IX)",  8, () => jp(IX), 0xDD, 0xE9));
             InstructionSet.Add(new Instruction("JP (IY)",  8, () => jp(IY), 0xFD, 0xE9));
-            InstructionSet.Add(new Instruction("JR e",    12, jr, 0x18));
+            InstructionSet.Add(new Instruction("JR e",    12, jr,           0x18));
             InstructionSet.Add(new Instruction("JR NZ, e", 7, () => jr(NZ), 0x20).WithTStatesAlt(5));
             InstructionSet.Add(new Instruction("JR Z, e",  7, () => jr(ZF), 0x28).WithTStatesAlt(5));
             InstructionSet.Add(new Instruction("JR NC, e", 7, () => jr(NC), 0x30).WithTStatesAlt(5));
@@ -336,15 +336,15 @@ namespace Sharp80.Z80
 
             InstructionSet.Add(new Instruction("DJNZ e",   8, djnz, 0x10).WithTStatesAlt(5));
 
-            InstructionSet.Add(new Instruction("CALL NN",     17, () => call(), 0xCD));
-            InstructionSet.Add(new Instruction("CALL NZ, NN", 10, () => call(NZ), 0xC4 + 0x00).WithTStatesAlt(7));
-            InstructionSet.Add(new Instruction("CALL Z, NN",  10, () => call(ZF), 0xC4 + 0x08).WithTStatesAlt(7));
-            InstructionSet.Add(new Instruction("CALL NC, NN", 10, () => call(NC), 0xC4 + 0x10).WithTStatesAlt(7));
-            InstructionSet.Add(new Instruction("CALL C, NN",  10, () => call(CF), 0xC4 + 0x18).WithTStatesAlt(7));
-            InstructionSet.Add(new Instruction("CALL PO, NN", 10, () => call(PO), 0xC4 + 0x20).WithTStatesAlt(7));
-            InstructionSet.Add(new Instruction("CALL PE, NN", 10, () => call(PE), 0xC4 + 0x28).WithTStatesAlt(7));
+            InstructionSet.Add(new Instruction("CALL NN",     17, () => call(),    0xCD));
+            InstructionSet.Add(new Instruction("CALL NZ, NN", 10, () => call(NZ),  0xC4 + 0x00).WithTStatesAlt(7));
+            InstructionSet.Add(new Instruction("CALL Z, NN",  10, () => call(ZF),  0xC4 + 0x08).WithTStatesAlt(7));
+            InstructionSet.Add(new Instruction("CALL NC, NN", 10, () => call(NC),  0xC4 + 0x10).WithTStatesAlt(7));
+            InstructionSet.Add(new Instruction("CALL C, NN",  10, () => call(CF),  0xC4 + 0x18).WithTStatesAlt(7));
+            InstructionSet.Add(new Instruction("CALL PO, NN", 10, () => call(PO),  0xC4 + 0x20).WithTStatesAlt(7));
+            InstructionSet.Add(new Instruction("CALL PE, NN", 10, () => call(PE),  0xC4 + 0x28).WithTStatesAlt(7));
             InstructionSet.Add(new Instruction("CALL P, NN",  10, () => call(!SF), 0xC4 + 0x30).WithTStatesAlt(7));
-            InstructionSet.Add(new Instruction("CALL M, NN",  10, () => call(SF), 0xC4 + 0x38).WithTStatesAlt(7));
+            InstructionSet.Add(new Instruction("CALL M, NN",  10, () => call(SF),  0xC4 + 0x38).WithTStatesAlt(7));
 
             InstructionSet.Add(new Instruction("RST 00", 11, () => rst(0x00), 0xC7));
             InstructionSet.Add(new Instruction("RST 08", 11, () => rst(0x08), 0xCF));
@@ -355,27 +355,27 @@ namespace Sharp80.Z80
             InstructionSet.Add(new Instruction("RST 30", 11, () => rst(0x30), 0xF7));
             InstructionSet.Add(new Instruction("RST 38", 11, () => rst(0x38), 0xFF));
 
-            InstructionSet.Add(new Instruction("RET", 10, () => ret(), 0xC9));
-            InstructionSet.Add(new Instruction("RET NZ", 5, () => ret(NZ), 0xC0).WithTStatesAlt(6));
-            InstructionSet.Add(new Instruction("RET Z", 5, () => ret(ZF), 0xC8).WithTStatesAlt(6));
-            InstructionSet.Add(new Instruction("RET NC", 5, () => ret(NC), 0xD0).WithTStatesAlt(6));
-            InstructionSet.Add(new Instruction("RET C", 5, () => ret(CF), 0xD8).WithTStatesAlt(6));
-            InstructionSet.Add(new Instruction("RET PO", 5, () => ret(PO), 0xE0).WithTStatesAlt(6));
-            InstructionSet.Add(new Instruction("RET PE", 5, () => ret(PE), 0xE8).WithTStatesAlt(6));
-            InstructionSet.Add(new Instruction("RET P", 5, () => ret(!SF), 0xF0).WithTStatesAlt(6));
-            InstructionSet.Add(new Instruction("RET M", 5, () => ret(SF), 0xF8).WithTStatesAlt(6));
-            InstructionSet.Add(new Instruction("RETI", 14, retin, 0xED, 0x4D));
-            InstructionSet.Add(new Instruction("RETN", 14, retin, 0xED, 0x45));
+            InstructionSet.Add(new Instruction("RET",   10, () => ret(),    0xC9));
+            InstructionSet.Add(new Instruction("RET NZ", 5, () => ret(NZ),  0xC0).WithTStatesAlt(6));
+            InstructionSet.Add(new Instruction("RET Z",  5, () => ret(ZF),  0xC8).WithTStatesAlt(6));
+            InstructionSet.Add(new Instruction("RET NC", 5, () => ret(NC),  0xD0).WithTStatesAlt(6));
+            InstructionSet.Add(new Instruction("RET C",  5, () => ret(CF),  0xD8).WithTStatesAlt(6));
+            InstructionSet.Add(new Instruction("RET PO", 5, () => ret(PO),  0xE0).WithTStatesAlt(6));
+            InstructionSet.Add(new Instruction("RET PE", 5, () => ret(PE),  0xE8).WithTStatesAlt(6));
+            InstructionSet.Add(new Instruction("RET P",  5, () => ret(!SF), 0xF0).WithTStatesAlt(6));
+            InstructionSet.Add(new Instruction("RET M",  5, () => ret(SF),  0xF8).WithTStatesAlt(6));
+            InstructionSet.Add(new Instruction("RETI",  14, retin,          0xED, 0x4D));
+            InstructionSet.Add(new Instruction("RETN",  14, retin,          0xED, 0x45));
 
-            InstructionSet.Add(new Instruction("INI", 16, ini, 0xED, 0xA2));
-            InstructionSet.Add(new Instruction("INIR", 16, inir, 0xED, 0xB2).WithTStatesAlt(5));
-            InstructionSet.Add(new Instruction("IND", 16, ind, 0xED, 0xAA));
-            InstructionSet.Add(new Instruction("INDR", 16, indr, 0xED, 0xBA).WithTStatesAlt(5));
+            InstructionSet.Add(new Instruction("INI",        16, ini,      0xED, 0xA2));
+            InstructionSet.Add(new Instruction("INIR",       16, inir,     0xED, 0xB2).WithTStatesAlt(5));
+            InstructionSet.Add(new Instruction("IND",        16, ind,      0xED, 0xAA));
+            InstructionSet.Add(new Instruction("INDR",       16, indr,     0xED, 0xBA).WithTStatesAlt(5));
             InstructionSet.Add(new Instruction("OUT (N), A", 11, OutPortN, 0xD3));
-            InstructionSet.Add(new Instruction("OUTI", 16, outi, 0xED, 0xA3));
-            InstructionSet.Add(new Instruction("OTIR", 16, otir, 0xED, 0xB3).WithTStatesAlt(5));
-            InstructionSet.Add(new Instruction("OUTD", 16, outd, 0xED, 0xAB));
-            InstructionSet.Add(new Instruction("OTDR", 16, otdr, 0xED, 0xBB).WithTStatesAlt(5));
+            InstructionSet.Add(new Instruction("OUTI",       16, outi,     0xED, 0xA3));
+            InstructionSet.Add(new Instruction("OTIR",       16, otir,     0xED, 0xB3).WithTStatesAlt(5));
+            InstructionSet.Add(new Instruction("OUTD",       16, outd,     0xED, 0xAB));
+            InstructionSet.Add(new Instruction("OTDR",       16, otdr,     0xED, 0xBB).WithTStatesAlt(5));
 
             InstructionSet.Add(new Instruction("NEG", 8, neg, 0xED, 0x4C));
             InstructionSet.Add(new Instruction("NEG", 8, neg, 0xED, 0x54));

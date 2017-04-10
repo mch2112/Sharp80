@@ -48,8 +48,8 @@ namespace Sharp80.Z80
             return string.Join(Environment.NewLine,
                                disassemblyAddresses
                                          .Select(i =>
-                                         new { addr = disassemblyAddresses[j++] = startLocation })
-                                         .Select(n => GetLineInfo((n.addr == PC.val) ? ">" : " ", ref startLocation, GetInstructionAt(n.addr))));
+                                            new { addr = disassemblyAddresses[j++] = startLocation })
+                                                .Select(n => GetLineInfo((n.addr == PC.val) ? ">" : " ", ref startLocation, GetInstructionAt(n.addr))));
         }
         public string GetRealtimeDisassemblyHistoric()
         {

@@ -162,7 +162,7 @@ namespace Sharp80.Z80.Assembler
                 get
                 {
                     if (!IsNumeric)
-                        throw new Exception(string.Format("Numeric Value Expected; found {0}", RawText));
+                        throw new Exception($"Numeric Value Expected; found {RawText}");
 
                     return GetNumericValue(RawText) ?? GetSymbolValue(LineInfo.SymbolTable, LineInfo, RawText);
                 }

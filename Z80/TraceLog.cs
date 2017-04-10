@@ -1,4 +1,4 @@
-﻿using System;
+﻿ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -66,7 +66,7 @@ namespace Sharp80.Z80
             var retVal = Exec(i);
 
             //if (pc == cpu.PcVal) inst += "        "; else inst += $"PC {cpu.PcVal:X4} ";
-            if (a == cpu.AVal) inst += "     "; else inst += $"A:{cpu.AVal:X2} ";
+            if (a == cpu.AVal) inst += "     ";      else inst += $"A:{cpu.AVal:X2} ";
             if (hl == cpu.HlVal) inst += "        "; else inst += $"HL:{cpu.HlVal:X4} ";
             if (bc == cpu.BcVal) inst += "        "; else inst += $"BC:{cpu.BcVal:X4} ";
             if (de == cpu.DeVal) inst += "        "; else inst += $"DE:{cpu.DeVal:X4} ";

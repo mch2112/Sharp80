@@ -15,10 +15,9 @@ namespace Sharp80.Z80.Assembler
 
         public bool OK { get; private set; } = false;
 
-        private Assembly Assembly = null;
-        private string Title { get; set; } = null;
+        private Assembly assembly = null;
+        private string title = null;
         private List<Instruction> instructionSet;
-
         private readonly List<LineInfo> unit = new List<LineInfo>();
         private Dictionary<string, LineInfo> symbolTable = new Dictionary<string, LineInfo>();
 
@@ -61,7 +60,7 @@ namespace Sharp80.Z80.Assembler
 
         public Assembly Assemble(string SourceText)
         {
-            Assembly = new Assembly(SourceText);
+            assembly = new Assembly(SourceText);
             try
             {
                 Assemble();
@@ -72,7 +71,7 @@ namespace Sharp80.Z80.Assembler
                 OK = false;
                 throw Ex;
             }
-            return Assembly;
+            return assembly;
         }
 
 
@@ -85,11 +84,11 @@ namespace Sharp80.Z80.Assembler
             ResolveSymbols();
             DetermineData();
 
-            Assembly.Finalize(Title, unit, symbolTable, GetSymbolValue(symbolTable, null, "ENTRY") ?? execAddress);
+            assembly.Finalize(title, unit, symbolTable, GetSymbolValue(symbolTable, null, "ENTRY") ?? execAddress);
         }
         private void Load()
         {
-            var lines = Assembly.SourceLines.ToList();
+            var lines = assembly.SourceLines.ToList();
 
             int sourceFileLine = 0;
             Macro m = null;
@@ -156,10 +155,10 @@ namespace Sharp80.Z80.Assembler
             {
                 case "TITLE":
                     var title = lp.Operand0.RawText;
-                    if (!(Title is null))
+                    if (!(this.title is null))
                         lp.SetError("Title already defined.");
                     else if (IsValidTitle(ref title))
-                        Title = title;
+                        this.title = title;
                     else
                         lp.SetError("Invalid Title");
                     lp.Suppress();
@@ -598,14 +597,14 @@ namespace Sharp80.Z80.Assembler
             else if (SymbolTable.ContainsKey(s))
             {
                 var symbolLine = SymbolTable[s];
-                if (symbolLine.Mnemonic == "EQU")
+                if (symbolLine.HasError)
+                {
+                    CurrentLP?.SetError($"Symbol {Symbol} defined on line {CurrentLP.SourceFileLine} which has an error.");
+                }
+                else if (symbolLine.Mnemonic == "EQU")
                 {
                     ret = symbolLine.Operand0.NumericValue;
                     ret += Offset;
-                }
-                else if (symbolLine.HasError)
-                {
-                    CurrentLP?.SetError($"Symbol {Symbol} defined on line {CurrentLP.SourceFileLine} which has an error.");
                 }
                 else
                 {
@@ -648,7 +647,7 @@ namespace Sharp80.Z80.Assembler
                 string hexString = s;
                 if (hexString.EndsWith("H"))
                     hexString = hexString.Substring(0, s.Length - 1);
-
+                 
                 if (ushort.TryParse(hexString,
                                     System.Globalization.NumberStyles.HexNumber,
                                     System.Globalization.CultureInfo.InvariantCulture,
@@ -785,10 +784,10 @@ namespace Sharp80.Z80.Assembler
 
             return GetCol(s, 0).Replace(":", String.Empty).Trim();
         }
-        private static bool IsRegister(string s) => registers.Contains(s);
+        private static bool IsRegister(string s)           => registers.Contains(s);
         private static bool IsMetaInstruction(string inst) => metaInstructions.Contains(inst);
-        private static bool IsInstruction(string inst) => instructionNames.Contains(inst);
-        private static bool IsFlagState(string s) => flagStates.Contains(s);
+        private static bool IsInstruction(string inst)     => instructionNames.Contains(inst);
+        private static bool IsFlagState(string s)          => flagStates.Contains(s);
         private static bool IsValidTitle(ref string Input)
         {
             Input = Unquote(Input).ToUpper();
