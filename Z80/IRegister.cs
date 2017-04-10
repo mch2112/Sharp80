@@ -8,9 +8,9 @@ namespace Sharp80.Z80
     internal interface IRegister<T> where T : struct
     {
         string Name { get; }
-        T val { get; set; }
-        void inc();
-        void dec();
+        T Value { get; set; }
+        void Inc();
+        void Dec();
         bool NZ { get; }
     }
     internal interface IRegisterCompound : IRegister<ushort>

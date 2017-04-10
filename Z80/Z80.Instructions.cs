@@ -11,100 +11,100 @@ namespace Sharp80.Z80
         private static readonly byte[] BIT = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
         private static readonly byte[] NOT = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F };
 
-        private void load(IRegister<byte> r1, IRegister<byte> r2) => r1.val = r2.val;
+        private void load(IRegister<byte> r1, IRegister<byte> r2) => r1.Value = r2.Value;
         private void load(IRegister<byte> r1, IRegisterIndexed r2)
         {
             load(r1, (IRegister<byte>)r2);
-            WZ.val = r2.OffsetAddress;
+            WZ.Value = r2.OffsetAddress;
         }
         private void load(IRegisterIndexed r1, IRegister<byte> r2)
         {
-            r1.val = r2.val;
-            WZ.val = r1.OffsetAddress;
+            r1.Value = r2.Value;
+            WZ.Value = r1.OffsetAddress;
         }
-        private void load<T>(IRegister<T> r1, T Val) where T : struct => r1.val = Val;
-        private void load_reg_nn(IRegister<byte> r) => r.val = ByteAtPCPlusCoreOpCodeSize;
+        private void load<T>(IRegister<T> r1, T Val) where T : struct => r1.Value = Val;
+        private void load_reg_nn(IRegister<byte> r) => r.Value = ByteAtPCPlusCoreOpCodeSize;
         private void load_ixy_nn(IRegisterIndexed r)
         {
-            r.val = ByteAtPCPlusCoreOpCodeSizePlusOne;
-            WZ.val = r.OffsetAddress;
+            r.Value = ByteAtPCPlusCoreOpCodeSizePlusOne;
+            WZ.Value = r.OffsetAddress;
         }
         private void load_a_mmmm()
         {
             ushort addr = WordAtPCPlusInitialOpcodeLength;
-            A.val = Memory[addr];
-            WZ.val = addr;
-            WZ.inc();
+            A.Value = Memory[addr];
+            WZ.Value = addr;
+            WZ.Inc();
         }
         private void load_mmmm_a()
         {
             ushort addr = WordAtPCPlusInitialOpcodeLength;
-            Memory[addr] = A.val;
+            Memory[addr] = A.Value;
 
-            WZ.val = (ushort)((A.val << 8) | ((addr + 1) & 0xFF));
+            WZ.Value = (ushort)((A.Value << 8) | ((addr + 1) & 0xFF));
 
             //Note for *BM1: MEMPTR_low = (addr + 1) & #FF,  MEMPTR_hi = 0
         }
-        private void load<T>(IRegister<T> r1, IRegister<T> r2) where T : struct => r1.val = r2.val;
-        private void load_reg_nnnn(IRegister<ushort> r) => r.val = WordAtPCPlusInitialOpcodeLength;
+        private void load<T>(IRegister<T> r1, IRegister<T> r2) where T : struct => r1.Value = r2.Value;
+        private void load_reg_nnnn(IRegister<ushort> r) => r.Value = WordAtPCPlusInitialOpcodeLength;
         private void load_ixy_mmmm(IRegister<ushort> r)
         {
-            r.val = Memory.GetWordAt(WordAtPCPlusInitialOpcodeLength);
+            r.Value = Memory.GetWordAt(WordAtPCPlusInitialOpcodeLength);
             // WZ?
         }
         private void load_mmmm_ixy(IRegister<ushort> r)
         {
-            Memory.SetWordAt(WordAtPCPlusInitialOpcodeLength, r.val);
+            Memory.SetWordAt(WordAtPCPlusInitialOpcodeLength, r.Value);
             // WZ?
         }
         private void load_xx_mmmm(IRegister<ushort> XX)
         {
             var addr = WordAtPCPlusInitialOpcodeLength;
-            XX.val = Memory.GetWordAt(addr);
-            WZ.val = addr;
-            WZ.inc();
+            XX.Value = Memory.GetWordAt(addr);
+            WZ.Value = addr;
+            WZ.Inc();
         }
         private void load_mmmm_xx(IRegister<ushort> XX)
         {
             var addr = WordAtPCPlusInitialOpcodeLength;
-            Memory.SetWordAt(WordAtPCPlusInitialOpcodeLength, XX.val);
-            WZ.val = addr;
-            WZ.inc();
+            Memory.SetWordAt(WordAtPCPlusInitialOpcodeLength, XX.Value);
+            WZ.Value = addr;
+            WZ.Inc();
         }
         private void load_a_i()
         {
-            A.val = I.val;
-            F.val = (byte)((F.val & S_CF) | SZ53(A.val));
+            A.Value = I.Value;
+            F.Value = (byte)((F.Value & S_CF) | SZ53(A.Value));
             VF = IFF2;
         }
         private void load_a_r()
         {
-            A.val = R.val;
-            F.val = (byte)((F.val & S_CF) | SZ53(A.val));
+            A.Value = R.Value;
+            F.Value = (byte)((F.Value & S_CF) | SZ53(A.Value));
             VF = IFF2;
         }
 
         private void ldi()
         {
             ldx();
-            DE.inc();
-            HL.inc();
+            DE.Inc();
+            HL.Inc();
         }
         private void ldd()
         {
             ldx();
-            DE.dec();
-            HL.dec();
+            DE.Dec();
+            HL.Dec();
         }
         private void ldx()
         {
-            byte b = HLM.val;
+            byte b = HLM.Value;
 
-            DEM.val = b;
-            BC.dec();
-            b = (byte)((b + A.val) & 0xFF);
+            DEM.Value = b;
+            BC.Dec();
+            b = (byte)((b + A.Value) & 0xFF);
 
-            F.val &= (S_SF | S_ZF | S_CF);
+            F.Value &= (S_SF | S_ZF | S_CF);
 
             VF = BC.NZ;
             F5 = b.IsBitSet(1);
@@ -120,8 +120,8 @@ namespace Sharp80.Z80
             }
             else
             {
-                WZ.val = PC.val;
-                WZ.inc();
+                WZ.Value = PC.Value;
+                WZ.Inc();
             }
         }
         private void lddr()
@@ -134,13 +134,13 @@ namespace Sharp80.Z80
             }
             else
             {
-                WZ.val = PC.val;
-                WZ.inc();
+                WZ.Value = PC.Value;
+                WZ.Inc();
             }
         }
 
-        private void push(IRegister<ushort> r) => PushWord(r.val);
-        private void pop(IRegister<ushort> r) => r.val = PopWord();
+        private void push(IRegister<ushort> r) => PushWord(r.Value);
+        private void pop(IRegister<ushort> r) => r.Value = PopWord();
 
         private void cpir()
         {
@@ -165,38 +165,38 @@ namespace Sharp80.Z80
 
             if (BC.NZ && !ZF)
             {
-                WZ.val = PC.val;
-                WZ.inc();
+                WZ.Value = PC.Value;
+                WZ.Inc();
                 RecordExtraTicks = true;
                 NextPC -= 2;
-                Debug.Assert(PC.val == NextPC);
+                Debug.Assert(PC.Value == NextPC);
             }
         }
         private void cpi()
         {
-            WZ.inc();
+            WZ.Inc();
             cpx();
-            HL.inc();
+            HL.Inc();
         }
         private void cpd()
         {
-            WZ.dec();
+            WZ.Dec();
             cpx();
-            HL.dec();
+            HL.Dec();
         }
         private void cpx()
         {
-            BC.dec();
+            BC.Dec();
 
-            byte diff = (byte)((A.val - HLM.val) & 0xFF);
+            byte diff = (byte)((A.Value - HLM.Value) & 0xFF);
             bool cf = CF;
 
-            F.val = SZ(diff);
+            F.Value = SZ(diff);
             NF = true;
             CF = cf;
             VF = BC.NZ;
 
-            if ((A.val & 0x0F) < (diff & 0x0F))
+            if ((A.Value & 0x0F) < (diff & 0x0F))
             {
                 HF = true;
                 diff--;
@@ -212,7 +212,7 @@ namespace Sharp80.Z80
             // TODO: Push the address of the next instruction after the halt.
             // need to prevent additional pushes since this is implemented as a loop of halts
             halted = true;
-            NextPC = PC.val;
+            NextPC = PC.Value;
         }
         private void daa()
         {
@@ -227,8 +227,8 @@ namespace Sharp80.Z80
             bool nf = NF;
             bool hf = HF;
 
-            int lowNibble = A.val & 0x0F;
-            int highNibble = A.val >> 0x04;
+            int lowNibble = A.Value & 0x0F;
+            int highNibble = A.Value >> 0x04;
 
             int diff;
 
@@ -247,29 +247,29 @@ namespace Sharp80.Z80
             }
 
             if (nf)
-                A.val -= (byte)diff;
+                A.Value -= (byte)diff;
             else
-                A.val += (byte)diff;
+                A.Value += (byte)diff;
 
-            F.val = SZ53P(A.val);
+            F.Value = SZ53P(A.Value);
             NF = nf;
             CF = (cf || ((lowNibble < 0x0A) ? (highNibble > 0x09) : (highNibble > 0x08)));
             HF = (nf ? (hf && (lowNibble < 0x06)) : (lowNibble > 0x09));
         }
         private void cpl()
         {
-            A.val ^= 0xFF;
+            A.Value ^= 0xFF;
 
             HF = true;
             NF = true;
 
-            F5 = (A.val & S_F5) == S_F5;
-            F3 = (A.val & S_F3) == S_F3;
+            F5 = (A.Value & S_F5) == S_F5;
+            F3 = (A.Value & S_F3) == S_F3;
         }
         private void neg()
         {
-            byte temp = A.val;
-            A.val = 0;
+            byte temp = A.Value;
+            A.Value = 0;
             sub(temp);
         }
         private void ccf()
@@ -277,8 +277,8 @@ namespace Sharp80.Z80
             HF = CF;
             CF = !CF;
 
-            F5 = (A.val & S_F5) == S_F5;
-            F3 = (A.val & S_F3) == S_F3;
+            F5 = (A.Value & S_F5) == S_F5;
+            F3 = (A.Value & S_F3) == S_F3;
 
             NF = false;
         }
@@ -288,20 +288,20 @@ namespace Sharp80.Z80
             NF = false;
             CF = true;
 
-            F5 = (A.val & S_F5) == S_F5;
-            F3 = (A.val & S_F3) == S_F3;
+            F5 = (A.Value & S_F5) == S_F5;
+            F3 = (A.Value & S_F3) == S_F3;
         }
 
         private void bitHLM(int shift)
         {
-            bit(HLM.val, shift);
-            F3 = WZ.val.IsBitSet(11);
-            F5 = WZ.val.IsBitSet(13);
+            bit(HLM.Value, shift);
+            F3 = WZ.Value.IsBitSet(11);
+            F5 = WZ.Value.IsBitSet(13);
         }
-        private void bit(IRegister<byte> r, int shift) => bit(r.val, shift);
+        private void bit(IRegister<byte> r, int shift) => bit(r.Value, shift);
         private void bit(IRegisterIndexed r, int shift)
         {
-            bit(r.val, shift);
+            bit(r.Value, shift);
 
             var off = r.OffsetAddress;
             var ixdh = off >> 8;
@@ -309,81 +309,81 @@ namespace Sharp80.Z80
             F3 = (ixdh & S_F3) == S_F3;
             F5 = (ixdh & S_F5) == S_F5;
 
-            WZ.val = off;
+            WZ.Value = off;
         }
         private void bit(byte val, int shift)
         {
-            F.val &= (R_NF & R_F3 & R_F5 & R_SF);
-            F.val |= S_HF;
+            F.Value &= (R_NF & R_F3 & R_F5 & R_SF);
+            F.Value |= S_HF;
 
             ZF = ((val >> shift) & BIT_0_MASK) == 0x00;
             VF = ZF;
 
             if (NZ && shift == 7)
-                F.val |= S_SF;
+                F.Value |= S_SF;
 
             F3 = (val & S_F3) == S_F3;
             F5 = (val & S_F5) == S_F5;
         }
 
-        private void set(IRegister<byte> r, byte bit) => r.val |= BIT[bit];
-        private void res(IRegister<byte> r, byte bit) => r.val &= NOT[bit];
+        private void set(IRegister<byte> r, byte bit) => r.Value |= BIT[bit];
+        private void res(IRegister<byte> r, byte bit) => r.Value &= NOT[bit];
 
-        private void set(IRegisterIndexed r, byte b) { r.val |= BIT[b]; WZ.val = r.OffsetAddress; }
-        private void res(IRegisterIndexed r, byte b) { r.val &= NOT[b]; WZ.val = r.OffsetAddress; }
+        private void set(IRegisterIndexed r, byte b) { r.Value |= BIT[b]; WZ.Value = r.OffsetAddress; }
+        private void res(IRegisterIndexed r, byte b) { r.Value &= NOT[b]; WZ.Value = r.OffsetAddress; }
 
-        private void add(IRegister<byte> r) => add(r.val);
+        private void add(IRegister<byte> r) => add(r.Value);
         private void add(IRegisterIndexed r)
         {
-            add(r.val);
-            WZ.val = r.OffsetAddress;
+            add(r.Value);
+            WZ.Value = r.OffsetAddress;
         }
         private void add(byte val)
         {
-            int a = A.val;
+            int a = A.Value;
             int sum = a + val;
 
-            F.val = SZ53(sum & 0xFF);
+            F.Value = SZ53(sum & 0xFF);
             CF = sum > 0xFF;
             HF = ((a & 0x0F) + (val & 0x0F)) > 0x0F;
 
             VF = ((a ^ val ^ 0x80) & (val ^ sum) & 0x80) == 0x80;
 
-            A.val = (byte)sum;
+            A.Value = (byte)sum;
         }
         private void add_n() => add(ByteAtPCPlusCoreOpCodeSize);
         private void add(IRegister<ushort> r1, IRegister<ushort> r2)
         {
-            WZ.val = r1.val;
-            WZ.inc();
+            WZ.Value = r1.Value;
+            WZ.Inc();
 
-            int sum = r1.val + r2.val;
+            int sum = r1.Value + r2.Value;
 
-            F.val = (byte)(F.val & (S_SF | S_ZF | S_VF));
+            F.Value = (byte)(F.Value & (S_SF | S_ZF | S_VF));
 
-            HF = ((r1.val & 0x0FFF) + (r2.val & 0x0FFF)) > 0x0FFF;
+            HF = ((r1.Value & 0x0FFF) + (r2.Value & 0x0FFF)) > 0x0FFF;
 
             F5 = ((sum >> 8) & S_F5) == S_F5;
             F3 = ((sum >> 8) & S_F3) == S_F3;
             CF = sum > 0xFFFF;
 
-            r1.val = (ushort)sum;
+            r1.Value = (ushort)sum;
         }
 
-        private void adc(IRegister<byte> r) => adc(r.val);
+        private void adc(IRegister<byte> r) => adc(r.Value);
         private void adc(IRegisterIndexed r)
         {
-            adc(r.val);
-            WZ.val = r.OffsetAddress;
+            adc(r.Value);
+            WZ.Value = r.OffsetAddress;
         }
         private void adc_n() => adc(ByteAtPCPlusCoreOpCodeSize);
         private void adc(byte val)
         {
-            int a = A.val;
+            int a = A.Value;
             int cfVal = CF ? 1 : 0;
             int sum = a + val + cfVal;
 
-            F.val = SZ53(sum);
+            F.Value = SZ53(sum);
 
             HF = (a & 0x0F) + (val & 0x0F) + cfVal > 0x0F;
             Debug.Assert(HF == (((a ^ sum ^ val) & S_HF) == S_HF));
@@ -391,42 +391,42 @@ namespace Sharp80.Z80
             CF = sum > 0xFF;
             VF = ((a ^ val ^ 0x80) & (val ^ sum) & 0x80) == 0x80;
 
-            A.val = (byte)sum;
+            A.Value = (byte)sum;
         }
         private void adc(IRegister<ushort> r1, IRegister<ushort> r2)
         {
-            WZ.val = r1.val;
-            WZ.inc();
+            WZ.Value = r1.Value;
+            WZ.Inc();
 
             int cfVal = CF ? 1 : 0;
-            int sum = r1.val + r2.val + cfVal;
+            int sum = r1.Value + r2.Value + cfVal;
 
-            F.val = (byte)((sum >> 8) & (S_SF | S_F5 | S_F3));
+            F.Value = (byte)((sum >> 8) & (S_SF | S_F5 | S_F3));
 
-            HF = ((r1.val & 0x0FFF) + (r2.val & 0x0FFF) + cfVal) > 0x0FFF;
-            Debug.Assert(HF == ((((r1.val ^ sum ^ r2.val) >> 8) & S_HF) != 0));
+            HF = ((r1.Value & 0x0FFF) + (r2.Value & 0x0FFF) + cfVal) > 0x0FFF;
+            Debug.Assert(HF == ((((r1.Value ^ sum ^ r2.Value) >> 8) & S_HF) != 0));
 
-            VF = ((r1.val ^ r2.val ^ 0x8000) & (r2.val ^ sum) & 0x8000) == 0x8000;
+            VF = ((r1.Value ^ r2.Value ^ 0x8000) & (r2.Value ^ sum) & 0x8000) == 0x8000;
             ZF = (sum & 0xFFFF) == 0;
             CF = sum > 0xFFFF;
 
-            r1.val = (ushort)sum;
+            r1.Value = (ushort)sum;
         }
 
-        private void sub(IRegister<byte> r) => sub(r.val);
+        private void sub(IRegister<byte> r) => sub(r.Value);
         private void sub(IRegisterIndexed r)
         {
-            sub(r.val);
-            WZ.val = r.OffsetAddress;
+            sub(r.Value);
+            WZ.Value = r.OffsetAddress;
         }
         private void sub_n() => sub(ByteAtPCPlusCoreOpCodeSize);
         private void sub(byte val)
         {
-            int a = A.val;
+            int a = A.Value;
             int diff = a - val;
 
-            A.val = (byte)diff;
-            F.val = (byte)(SZ53(diff & 0xFF) | S_NF);
+            A.Value = (byte)diff;
+            F.Value = (byte)(SZ53(diff & 0xFF) | S_NF);
 
             HF = (a & 0x0F) - (val & 0x0F) < 0;
 
@@ -436,21 +436,21 @@ namespace Sharp80.Z80
             VF = ((val ^ a) & (a ^ diff) & 0x80) == 0x80;
         }
 
-        private void sbc(IRegister<byte> r) => sbc(r.val);
+        private void sbc(IRegister<byte> r) => sbc(r.Value);
         private void sbc(IRegisterIndexed r)
         {
-            sbc(r.val);
-            WZ.val = r.OffsetAddress;
+            sbc(r.Value);
+            WZ.Value = r.OffsetAddress;
         }
         private void sbc_n() => sbc(ByteAtPCPlusCoreOpCodeSize);
         private void sbc(byte val)
         {
-            int a = A.val;
+            int a = A.Value;
             int cfVal = CF ? 1 : 0;
             int diff = a - val - cfVal;
 
-            A.val = (byte)diff;
-            F.val = (byte)(SZ53(diff) | S_NF);
+            A.Value = (byte)diff;
+            F.Value = (byte)(SZ53(diff) | S_NF);
 
             HF = (a & 0x0F) - (val & 0x0F) - cfVal < 0;
 
@@ -463,93 +463,93 @@ namespace Sharp80.Z80
         {
             Debug.Assert(r1.Equals(HL));
 
-            WZ.val = r1.val;
-            WZ.inc();
+            WZ.Value = r1.Value;
+            WZ.Inc();
 
             int cfVal = CF ? 1 : 0;
-            int diff = r1.val - r2.val - cfVal;
+            int diff = r1.Value - r2.Value - cfVal;
 
-            F.val = (byte)(S_NF | (diff >> 8) & (S_SF | S_F5 | S_F3));
-            HF = ((r1.val & 0x0FFF) - (r2.val & 0x0FFF)) - cfVal < 0;
+            F.Value = (byte)(S_NF | (diff >> 8) & (S_SF | S_F5 | S_F3));
+            HF = ((r1.Value & 0x0FFF) - (r2.Value & 0x0FFF)) - cfVal < 0;
 
-            Debug.Assert(HF == ((((r1.val ^ diff ^ r2.val) >> 8) & S_HF) != 0x00));
+            Debug.Assert(HF == ((((r1.Value ^ diff ^ r2.Value) >> 8) & S_HF) != 0x00));
 
-            VF = ((r2.val ^ r1.val) & (r1.val ^ diff) & 0x8000) != 0x0000;
+            VF = ((r2.Value ^ r1.Value) & (r1.Value ^ diff) & 0x8000) != 0x0000;
             ZF = diff == 0;
             CF = diff < 0;
 
-            r1.val = (ushort)diff;
+            r1.Value = (ushort)diff;
         }
 
         private void inc(IRegister<byte> r)
         {
-            r.inc();
+            r.Inc();
 
-            F.val = (byte)(F53(r.val) | (F.val & S_CF));
+            F.Value = (byte)(F53(r.Value) | (F.Value & S_CF));
             Debug.Assert(!NF);
-            VF = r.val == 0x80;
-            HF = (r.val & 0x0F) == 0;
-            ZF = r.val == 0;
-            SF = (r.val & 0x80) == 0x80;
+            VF = r.Value == 0x80;
+            HF = (r.Value & 0x0F) == 0;
+            ZF = r.Value == 0;
+            SF = (r.Value & 0x80) == 0x80;
         }
         private void dec(IRegister<byte> r)
         {
-            r.dec();
+            r.Dec();
 
-            F.val = (byte)(F53(r.val) | (F.val & S_CF));
+            F.Value = (byte)(F53(r.Value) | (F.Value & S_CF));
             NF = true;
-            SF = (r.val & 0x80) == 0x80;
-            ZF = r.val == 0;
-            HF = (r.val & 0x0F) == 0x0F;
-            VF = r.val == 0x7F;
+            SF = (r.Value & 0x80) == 0x80;
+            ZF = r.Value == 0;
+            HF = (r.Value & 0x0F) == 0x0F;
+            VF = r.Value == 0x7F;
         }
-        private void inc(IRegister<ushort> r) => r.inc();
-        private void dec(IRegister<ushort> r) => r.dec();
+        private void inc(IRegister<ushort> r) => r.Inc();
+        private void dec(IRegister<ushort> r) => r.Dec();
 
-        private void and(IRegister<byte> r) => and(r.val);
+        private void and(IRegister<byte> r) => and(r.Value);
         private void and(IRegisterIndexed r)
         {
-            and(r.val);
-            WZ.val = r.OffsetAddress;
+            and(r.Value);
+            WZ.Value = r.OffsetAddress;
         }
         private void and_n() => and(ByteAtPCPlusCoreOpCodeSize);
         private void and(byte b)
         {
-            A.val &= b;
-            F.val = (byte)(SZ53P(A.val) | S_HF);
+            A.Value &= b;
+            F.Value = (byte)(SZ53P(A.Value) | S_HF);
         }
 
-        private void or(IRegister<byte> r) => or(r.val);
+        private void or(IRegister<byte> r) => or(r.Value);
         private void or(IRegisterIndexed r)
         {
-            or(r.val);
-            WZ.val = r.OffsetAddress;
+            or(r.Value);
+            WZ.Value = r.OffsetAddress;
         }
         private void or_n() => or(ByteAtPCPlusCoreOpCodeSize);
         private void or(byte b)
         {
-            A.val |= b;
-            F.val = SZ53P(A.val);
+            A.Value |= b;
+            F.Value = SZ53P(A.Value);
         }
 
-        private void xor(IRegister<byte> r) => xor(r.val);
+        private void xor(IRegister<byte> r) => xor(r.Value);
         private void xor(IRegisterIndexed r)
         {
-            xor(r.val);
-            WZ.val = r.OffsetAddress;
+            xor(r.Value);
+            WZ.Value = r.OffsetAddress;
         }
         private void xor_n() => xor(ByteAtPCPlusCoreOpCodeSize);
         private void xor(byte b)
         {
-            A.val ^= b;
-            F.val = SZ53P(A.val);
+            A.Value ^= b;
+            F.Value = SZ53P(A.Value);
         }
 
-        private void cp(IRegister<byte> r) => cp(r.val);
+        private void cp(IRegister<byte> r) => cp(r.Value);
         private void cp(IRegisterIndexed r)
         {
-            cp(r.val);
-            WZ.val = r.OffsetAddress;
+            cp(r.Value);
+            WZ.Value = r.OffsetAddress;
         }
         private void cp_n()
         {
@@ -557,19 +557,19 @@ namespace Sharp80.Z80
         }
         private void cp(byte val)
         {
-            int a = A.val;
+            int a = A.Value;
             int diff = a - val;
 
-            F.val = (byte)(SZ(diff & 0xFF) | S_NF);
+            F.Value = (byte)(SZ(diff & 0xFF) | S_NF);
 
-            HF = (A.val & 0x0F) - (val & 0x0F) < 0;
+            HF = (A.Value & 0x0F) - (val & 0x0F) < 0;
 
             Debug.Assert(HF == (((a ^ diff ^ val) & S_HF) == S_HF));
 
             VF = ((((a ^ val) & (a ^ diff)) >> 5) & S_VF) == S_VF;
             CF = diff < 0;
 
-            F.val |= F53(val);
+            F.Value |= F53(val);
         }
 
         private void im(int mode)
@@ -604,7 +604,7 @@ namespace Sharp80.Z80
 
             PushWord(NextPC);
             NextPC = addr;
-            WZ.val = addr;
+            WZ.Value = addr;
         }
         private void call(bool ConditionMet)
         {
@@ -616,14 +616,14 @@ namespace Sharp80.Z80
             else
             {
                 // set WZ anyway
-                WZ.val = WordAtPCPlusInitialOpcodeLength;
+                WZ.Value = WordAtPCPlusInitialOpcodeLength;
             }
         }
 
         private void ret()
         {
             NextPC = PopWord();
-            WZ.val = NextPC;
+            WZ.Value = NextPC;
             if (SteppedOut == false)
                 SteppedOut = true;
         }
@@ -646,7 +646,7 @@ namespace Sharp80.Z80
             PushWord(NextPC);
             NextPC = addr;
 
-            WZ.val = NextPC;
+            WZ.Value = NextPC;
         }
 
         private void jp()
@@ -654,7 +654,7 @@ namespace Sharp80.Z80
             ushort addr = WordAtPCPlusInitialOpcodeLength;
 
             NextPC = addr;
-            WZ.val = addr;
+            WZ.Value = addr;
         }
         private void jp(bool ConditionMet)
         {
@@ -666,15 +666,15 @@ namespace Sharp80.Z80
             else
             {
                 // Set WZ anyway
-                WZ.val = WordAtPCPlusInitialOpcodeLength;
+                WZ.Value = WordAtPCPlusInitialOpcodeLength;
             }
         }
-        private void jp(IRegister<ushort> r) => NextPC = r.val;
+        private void jp(IRegister<ushort> r) => NextPC = r.Value;
 
         private void jr()
         {
-            NextPC = PC.val.Offset(2 + ByteAtPCPlusCoreOpCodeSize.TwosComp());
-            WZ.val = NextPC;
+            NextPC = PC.Value.Offset(2 + ByteAtPCPlusCoreOpCodeSize.TwosComp());
+            WZ.Value = NextPC;
         }
         private void jr(bool ConditionMet)
         {
@@ -687,190 +687,190 @@ namespace Sharp80.Z80
 
         private void djnz()
         {
-            B.dec();
+            B.Dec();
             if (B.NZ)
             {
                 RecordExtraTicks = true;
-                NextPC = PC.val.Offset(2 + ByteAtPCPlusCoreOpCodeSize.TwosComp());
-                WZ.val = NextPC;
+                NextPC = PC.Value.Offset(2 + ByteAtPCPlusCoreOpCodeSize.TwosComp());
+                WZ.Value = NextPC;
             }
         }
 
         private void rlca()
         {
-            A.val = (byte)((A.val << 1) | (A.val >> 7));
-            F.val = (byte)((F.val & (S_SF | S_ZF | S_VF)) | (A.val & (S_F5 | S_F3 | S_CF)));
+            A.Value = (byte)((A.Value << 1) | (A.Value >> 7));
+            F.Value = (byte)((F.Value & (S_SF | S_ZF | S_VF)) | (A.Value & (S_F5 | S_F3 | S_CF)));
         }
         private void rla()
         {
-            byte val = A.val;
+            byte val = A.Value;
             val <<= 1;
 
             if (CF)
                 val |= 0x01;
 
-            F.val = (byte)((F.val & (S_SF | S_ZF | S_VF)) | (val & (S_F5 | S_F3)));
-            CF = (A.val & 0x80) == 0x80;
-            A.val = val;
+            F.Value = (byte)((F.Value & (S_SF | S_ZF | S_VF)) | (val & (S_F5 | S_F3)));
+            CF = (A.Value & 0x80) == 0x80;
+            A.Value = val;
         }
         private void rrca()
         {
-            bool cf = ((A.val & 0x01) == 0x01);
+            bool cf = ((A.Value & 0x01) == 0x01);
 
-            A.val = (byte)((A.val >> 1) | (A.val << 7));
-            F.val &= (S_SF | S_ZF | S_VF);
+            A.Value = (byte)((A.Value >> 1) | (A.Value << 7));
+            F.Value &= (S_SF | S_ZF | S_VF);
 
             CF = cf;
-            F.val |= F53(A.val);
+            F.Value |= F53(A.Value);
         }
         private void rra()
         {
-            int newA = A.val >> 1;
+            int newA = A.Value >> 1;
 
             if (CF)
                 newA |= 0x80;
 
-            F.val = (byte)(F.val & (S_SF | S_ZF | S_VF));
-            CF = (A.val & 0x01) == 0x01;
-            F.val |= F53(newA);
+            F.Value = (byte)(F.Value & (S_SF | S_ZF | S_VF));
+            CF = (A.Value & 0x01) == 0x01;
+            F.Value |= F53(newA);
 
-            A.val = (byte)newA;
+            A.Value = (byte)newA;
         }
         private void rlc(IRegister<byte> r)
         {
-            int oldVal = r.val;
+            int oldVal = r.Value;
             bool cf = ((oldVal & 0x80) == 0x80);
             byte newVal = (byte)((oldVal << 1) | (oldVal >> 7));
 
-            r.val = newVal;
-            F.val = SZ53P(newVal);
+            r.Value = newVal;
+            F.Value = SZ53P(newVal);
             CF = cf;
         }
         private void rlc(IRegisterIndexed r)
         {
             rlc((IRegister<byte>)r);
-            WZ.val = r.OffsetAddress;
+            WZ.Value = r.OffsetAddress;
         }
         private void rl(IRegister<byte> r)
         {
-            bool cf = ((r.val & 0x80) == 0x80);
-            int newVal = (r.val << 1);
+            bool cf = ((r.Value & 0x80) == 0x80);
+            int newVal = (r.Value << 1);
             if (CF)
                 newVal |= 0x01;
-            F.val = SZ53P(newVal);
+            F.Value = SZ53P(newVal);
             CF = cf;
-            r.val = (byte)newVal;
+            r.Value = (byte)newVal;
         }
         private void rl(IRegisterIndexed r)
         {
             rl((IRegister<byte>)r);
-            WZ.val = r.OffsetAddress;
+            WZ.Value = r.OffsetAddress;
         }
         private void rrc(IRegister<byte> r)
         {
-            int oldVal = r.val;
+            int oldVal = r.Value;
             bool cf = (oldVal & 0x01) == 0x01;
             byte newVal = (byte)((oldVal >> 1) | (oldVal << 7));
 
-            F.val = SZ53P(newVal);
+            F.Value = SZ53P(newVal);
             CF = cf;
-            r.val = newVal;
+            r.Value = newVal;
         }
         private void rrc(IRegisterIndexed r)
         {
             rrc((IRegister<byte>)r);
-            WZ.val = r.OffsetAddress;
+            WZ.Value = r.OffsetAddress;
         }
         private void rr(IRegister<byte> r)
         {
-            bool cf = (r.val & 0x01) == 0x01;
-            int newVal = (r.val >> 1);
+            bool cf = (r.Value & 0x01) == 0x01;
+            int newVal = (r.Value >> 1);
             if (CF)
                 newVal |= 0x80;
-            F.val = SZ53P(newVal);
+            F.Value = SZ53P(newVal);
             CF = cf;
-            r.val = (byte)newVal;
+            r.Value = (byte)newVal;
         }
         private void rr(IRegisterIndexed r)
         {
             rr((IRegister<byte>)r);
-            WZ.val = r.OffsetAddress;
+            WZ.Value = r.OffsetAddress;
         }
         private void sla(IRegister<byte> r)
         {
-            bool cf = (r.val & 0x80) == 0x80;
-            int newVal = (r.val << 1);
-            F.val = SZ53P(newVal);
+            bool cf = (r.Value & 0x80) == 0x80;
+            int newVal = (r.Value << 1);
+            F.Value = SZ53P(newVal);
             CF = cf;
-            r.val = (byte)newVal;
+            r.Value = (byte)newVal;
         }
         private void sla(IRegisterIndexed r)
         {
             sla((IRegister<byte>)r);
-            WZ.val = r.OffsetAddress;
+            WZ.Value = r.OffsetAddress;
         }
         private void sll(IRegister<byte> r)
         {
-            bool cf = (r.val & 0x80) == 0x80;
-            int newVal = (r.val << 1) | 0x01;
-            F.val = SZ53P(newVal);
+            bool cf = (r.Value & 0x80) == 0x80;
+            int newVal = (r.Value << 1) | 0x01;
+            F.Value = SZ53P(newVal);
             CF = cf;
-            r.val = (byte)newVal;
+            r.Value = (byte)newVal;
         }
         private void sll(IRegisterIndexed r)
         {
             sll((IRegister<byte>)r);
-            WZ.val = r.OffsetAddress;
+            WZ.Value = r.OffsetAddress;
         }
         private void sra(IRegister<byte> r)
         {
-            bool cf = (r.val & 0x01) == 0x01;
-            int newVal = ((r.val >> 1) | (r.val & 0x80));
-            F.val = SZ53P(newVal);
+            bool cf = (r.Value & 0x01) == 0x01;
+            int newVal = ((r.Value >> 1) | (r.Value & 0x80));
+            F.Value = SZ53P(newVal);
             CF = cf;
-            r.val = (byte)newVal;
+            r.Value = (byte)newVal;
         }
         private void sra(IRegisterIndexed r)
         {
             sra((IRegister<byte>)r);
-            WZ.val = r.OffsetAddress;
+            WZ.Value = r.OffsetAddress;
         }
         private void srl(IRegister<byte> r)
         {
-            bool cf = (r.val & 0x01) == 0x01;
-            int newVal = (r.val >> 1);
-            F.val = SZ53P(newVal);
+            bool cf = (r.Value & 0x01) == 0x01;
+            int newVal = (r.Value >> 1);
+            F.Value = SZ53P(newVal);
             CF = cf;
-            r.val = (byte)newVal;
+            r.Value = (byte)newVal;
         }
         private void srl(IRegisterIndexed r)
         {
             srl((IRegister<byte>)r);
-            WZ.val = r.OffsetAddress;
+            WZ.Value = r.OffsetAddress;
         }
         private void rld()
         {
-            int oldHlm = HLM.val;
-            int newHlm = (oldHlm << 4) | (A.val & 0x0F);
+            int oldHlm = HLM.Value;
+            int newHlm = (oldHlm << 4) | (A.Value & 0x0F);
 
-            HLM.val = (byte)newHlm;
-            A.val = (byte)((A.val & 0xF0) | (oldHlm >> 4));
-            F.val = (byte)((F.val & 0x01) | SZ53P(A.val));
+            HLM.Value = (byte)newHlm;
+            A.Value = (byte)((A.Value & 0xF0) | (oldHlm >> 4));
+            F.Value = (byte)((F.Value & 0x01) | SZ53P(A.Value));
 
-            WZ.val = HL.val;
-            WZ.inc();
+            WZ.Value = HL.Value;
+            WZ.Inc();
         }
         private void rrd()
         {
-            int oldHlm = HLM.val;
-            int newHlm = (oldHlm >> 4) | (A.val << 4);
+            int oldHlm = HLM.Value;
+            int newHlm = (oldHlm >> 4) | (A.Value << 4);
 
-            A.val = (byte)((A.val & 0xF0) | (oldHlm & 0x0F));
-            HLM.val = (byte)newHlm;
-            F.val = (byte)((F.val & 0x01) | SZ53P(A.val));
+            A.Value = (byte)((A.Value & 0xF0) | (oldHlm & 0x0F));
+            HLM.Value = (byte)newHlm;
+            F.Value = (byte)((F.Value & 0x01) | SZ53P(A.Value));
 
-            WZ.val = HL.val;
-            WZ.inc();
+            WZ.Value = HL.Value;
+            WZ.Inc();
         }
 
         private void exx()
@@ -881,16 +881,16 @@ namespace Sharp80.Z80
         }
         private void ex(IRegister<ushort> r1, IRegister<ushort> r2)
         {
-            ushort temp = r1.val;
-            r1.val = r2.val;
-            r2.val = temp;
+            ushort temp = r1.Value;
+            r1.Value = r2.Value;
+            r2.Value = temp;
         }
         private void ex_spm(IRegister<ushort> r2)
         {
-            ushort temp = SPM.val;
-            SPM.val = r2.val;
-            r2.val = temp;
-            WZ.val = r2.val;
+            ushort temp = SPM.Value;
+            SPM.Value = r2.Value;
+            r2.Value = temp;
+            WZ.Value = r2.Value;
         }
 
         private void inir()
@@ -913,62 +913,62 @@ namespace Sharp80.Z80
         }
         private void ini()
         {
-            WZ.val = BC.val;
-            WZ.inc();
+            WZ.Value = BC.Value;
+            WZ.Inc();
             inx(true);
         }
         private void ind()
         {
-            WZ.val = BC.val;
-            WZ.dec();
+            WZ.Value = BC.Value;
+            WZ.Dec();
             inx(false);
         }
         private void inx(bool IncHL)
         {
-            HLM.val = InPort(C.val);
+            HLM.Value = InPort(C.Value);
             dec(B);
-            NF = (HLM.val & 0x80) != 0x00;
+            NF = (HLM.Value & 0x80) != 0x00;
 
-            if (IncHL) HL.inc(); else HL.dec();
+            if (IncHL) HL.Inc(); else HL.Dec();
 
             // See http://www.z80.info/zip/z80-documented.pdf for weird flag behavior
 
-            byte c = C.val;
+            byte c = C.Value;
 
             if (IncHL) c++; else c--;
 
-            int k = c + HLM.val;
+            int k = c + HLM.Value;
             if (k > 0xFF)
             {
                 CF = true;
                 HF = true;
             }
-            VF = P((k & 0x07) ^ B.val) != 0;
+            VF = P((k & 0x07) ^ B.Value) != 0;
         }
         private byte InPort(byte pornNum) => ports[pornNum];
         private byte InPortC()
         {
-            byte b = InPort(C.val);
-            F.val = (byte)((F.val & S_CF) | SZ53P(b));
+            byte b = InPort(C.Value);
+            F.Value = (byte)((F.Value & S_CF) | SZ53P(b));
             return b;
         }
-        private void InPortR(IRegister<byte> r) => r.val = InPortC();
+        private void InPortR(IRegister<byte> r) => r.Value = InPortC();
         private void InPortZero() => InPortC();
         private void InPortN()
         {
-            byte aVal = A.val;
+            byte aVal = A.Value;
             byte portNum = ByteAtPCPlusCoreOpCodeSize;
 
-            A.val = InPort(portNum);
+            A.Value = InPort(portNum);
 
             portNum++;
-            WZ.val = (ushort)((aVal << 8) | portNum);
+            WZ.Value = (ushort)((aVal << 8) | portNum);
         }
         private void InPortA()
         {
             InPortR(A);
-            WZ.val = BC.val;
-            WZ.inc();
+            WZ.Value = BC.Value;
+            WZ.Inc();
         }
         private void otir()
         {
@@ -982,7 +982,7 @@ namespace Sharp80.Z80
         private void otdr()
         {
             outd();
-            if (B.val != 0x00)
+            if (B.Value != 0x00)
             {
                 NextPC -= 2;
                 RecordExtraTicks = true;
@@ -991,51 +991,51 @@ namespace Sharp80.Z80
         private void outi()
         {
             outx(true);
-            WZ.val = BC.val;
-            WZ.inc();
+            WZ.Value = BC.Value;
+            WZ.Inc();
         }
         private void outd()
         {
             outx(false);
-            WZ.val = BC.val;
-            WZ.dec();
+            WZ.Value = BC.Value;
+            WZ.Dec();
         }
         private void outx(bool IncHL)
         {
-            OutPort(C.val, HLM.val);
+            OutPort(C.Value, HLM.Value);
             dec(B);
 
-            if (IncHL) HL.inc(); else HL.dec();
+            if (IncHL) HL.Inc(); else HL.Dec();
 
             // See http://www.z80.info/zip/z80-documented.pdf for weird flag behavior
 
-            int k = L.val + HLM.val;
+            int k = L.Value + HLM.Value;
             if (k > 0xFF)
             {
                 CF = true;
                 HF = true;
             }
-            VF = P((k & 0x07) ^ B.val) != 0;
+            VF = P((k & 0x07) ^ B.Value) != 0;
         }
         private void OutPort(byte pornNum, byte value) => ports[pornNum] = value;
-        private void OutPortR(IRegister<byte> r) => OutPort(C.val, r.val);
-        private void OutPortZero() => OutPort(C.val, (byte)0);
+        private void OutPortR(IRegister<byte> r) => OutPort(C.Value, r.Value);
+        private void OutPortZero() => OutPort(C.Value, (byte)0);
         private void OutPortN()
         {
-            byte aVal = A.val;
+            byte aVal = A.Value;
             byte portNum = ByteAtPCPlusCoreOpCodeSize;
 
             OutPort(portNum, aVal);
 
             // Note for *BM1: WZ_low = (port + 1) & #FF,  WZ_hi = 0
             portNum++;
-            WZ.val = (ushort)((aVal << 8) | portNum);
+            WZ.Value = (ushort)((aVal << 8) | portNum);
         }
         private void OutPortA()
         {
-            OutPort(C.val, A.val);
-            WZ.val = BC.val;
-            WZ.inc();
+            OutPort(C.Value, A.Value);
+            WZ.Value = BC.Value;
+            WZ.Inc();
         }
 
         // COMPOUND INSTRUCTIONS

@@ -11,20 +11,20 @@ namespace Sharp80.Z80
 
         private void SetupInstructionObjects()
         {
-            IRegister<byte>[] r8 = new IRegister<byte>[] { B, C, D, E, H, L, HLM, A };
-            IRegister<ushort>[] r16s = new IRegister<ushort>[] { BC, DE, HL, SP };
-            IRegister<ushort>[] r16a = new IRegister<ushort>[] { BC, DE, HL, AF };
+            IRegister<byte>[]   r8 =    new IRegister<byte>[]   { B, C, D, E, H, L, HLM, A };
+            IRegister<ushort>[] r16s =  new IRegister<ushort>[] { BC, DE, HL, SP };
+            IRegister<ushort>[] r16a =  new IRegister<ushort>[] { BC, DE, HL, AF };
             IRegister<ushort>[] r16xs = new IRegister<ushort>[] { BC, DE, IX, SP };
             IRegister<ushort>[] r16ys = new IRegister<ushort>[] { BC, DE, IY, SP };
-            IRegisterIndexed[] rxyi = new IRegisterIndexed[] { IXM, IYM };
-            IRegister<ushort>[] rxy = new IRegister<ushort>[] { IX, IY };
+            IRegisterIndexed[]  rxyi =  new IRegisterIndexed[]  { IXM, IYM };
+            IRegister<ushort>[] rxy =   new IRegister<ushort>[] { IX, IY };
+            IRegister<byte>[]   r8x =   new IRegister<byte>[]   { B, C, D, E, IX.H, IX.L, null, A };
+            IRegister<byte>[]   r8y =   new IRegister<byte>[]   { B, C, D, E, IY.H, IY.L, null, A };
 
-            IRegister<byte>[] r8x = new IRegister<byte>[] { B, C, D, E, IX.H, IX.L, null, A };
-            IRegister<byte>[] r8y = new IRegister<byte>[] { B, C, D, E, IY.H, IY.L, null, A };
-
-            byte[] iter8 = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 }; // prevent closure capture by using foreach instead of for
-            byte[] iter4 = new byte[] { 0, 1, 2, 3 };
-            byte[] iter2 = new byte[] { 0, 1 };
+            // prevent closure capture by using foreach instead of for
+            byte[] iter8 = new byte[]    { 0, 1, 2, 3, 4, 5, 6, 7 }; 
+            byte[] iter4 = new byte[]    { 0, 1, 2, 3 };
+            byte[] iter2 = new byte[]    { 0, 1 };
             byte[] iter8alt = new byte[] { 0, 1, 2, 3, 4, 5, 7 }; // skips HLM entry
 
             byte HLMIndex = 6;
@@ -50,14 +50,13 @@ namespace Sharp80.Z80
             InstructionSet.Add(new Instruction("CPD", 16, cpd, 0xED, 0xA9));
             InstructionSet.Add(new Instruction("CPDR", 16, cpdr, 0xED, 0xB9).WithTStatesAlt(5));
 
-            InstructionSet.Add(new Instruction("NOP", 4, nop, 0x00));
-            InstructionSet.Add(new Instruction("DAA", 4, daa, 0x27));
-            InstructionSet.Add(new Instruction("CPL", 4, cpl, 0x2F));
-            InstructionSet.Add(new Instruction("CCF", 4, ccf, 0x3F));
-            InstructionSet.Add(new Instruction("SCF", 4, scf, 0x37));
+            InstructionSet.Add(new Instruction("NOP",  4, nop,  0x00));
+            InstructionSet.Add(new Instruction("DAA",  4, daa,  0x27));
+            InstructionSet.Add(new Instruction("CPL",  4, cpl,  0x2F));
+            InstructionSet.Add(new Instruction("CCF",  4, ccf,  0x3F));
+            InstructionSet.Add(new Instruction("SCF",  4, scf,  0x37));
             InstructionSet.Add(new Instruction("HALT", 6, halt, 0x76));
-            InstructionSet.Add(new Instruction("NEG", 8, neg, 0xED, 0x44));
-
+            
             InstructionSet.Add(new Instruction("DI", 4, di, 0xF3));
             InstructionSet.Add(new Instruction("EI", 4, ei, 0xFB));
 
@@ -240,8 +239,8 @@ namespace Sharp80.Z80
             InstructionSet.Add(new Instruction("LD (DE), A",  7, () => load(DEM, A), 0x12));
             InstructionSet.Add(new Instruction("LD (NN), A", 13, load_mmmm_a, 0x32));
 
-            InstructionSet.Add(new Instruction("LD A, I", 9, load_a_i, 0xED, 0x57));
-            InstructionSet.Add(new Instruction("LD A, R", 9, load_a_r, 0xED, 0x5F));
+            InstructionSet.Add(new Instruction("LD A, I", 9, load_a_i,         0xED, 0x57));
+            InstructionSet.Add(new Instruction("LD A, R", 9, load_a_r,         0xED, 0x5F));
             InstructionSet.Add(new Instruction("LD I, A", 9, () => load(I, A), 0xED, 0x47));
             InstructionSet.Add(new Instruction("LD R, A", 9, () => load(R, A), 0xED, 0x4F));
 
@@ -377,6 +376,7 @@ namespace Sharp80.Z80
             InstructionSet.Add(new Instruction("OUTD",       16, outd,     0xED, 0xAB));
             InstructionSet.Add(new Instruction("OTDR",       16, otdr,     0xED, 0xBB).WithTStatesAlt(5));
 
+            InstructionSet.Add(new Instruction("NEG", 8, neg, 0xED, 0x44));
             InstructionSet.Add(new Instruction("NEG", 8, neg, 0xED, 0x4C));
             InstructionSet.Add(new Instruction("NEG", 8, neg, 0xED, 0x54));
             InstructionSet.Add(new Instruction("NEG", 8, neg, 0xED, 0x5C));

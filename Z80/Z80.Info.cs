@@ -28,14 +28,14 @@ namespace Sharp80.Z80
             while (b++ < 0xFF);
         }
 
-        public string GetInternalsReport() => $"{flagsToString[F.val]}\r\nPC   {PC}\r\nSP   {SP}\r\n\r\nAF   {AF}\r\nBC   {BC}\r\nDE   {DE}\r\nHL   {HL}\r\n\r\nIX   {IX}\r\nIY   {IY}\r\n\r\nAF'  {AFp}\r\nBC'  {BCp}\r\nDE'  {DEp}\r\nHL'  {HLp}\r\n\r\nIR   {I}{R}\r\nWZ   {WZ}\r\n\r\n(HL) {HLM}\r\n(SP) {SPM}";
+        public string GetInternalsReport() => $"{flagsToString[F.Value]}\r\nPC   {PC}\r\nSP   {SP}\r\n\r\nAF   {AF}\r\nBC   {BC}\r\nDE   {DE}\r\nHL   {HL}\r\n\r\nIX   {IX}\r\nIY   {IY}\r\n\r\nAF'  {AFp}\r\nBC'  {BCp}\r\nDE'  {DEp}\r\nHL'  {HLp}\r\n\r\nIR   {I}{R}\r\nWZ   {WZ}\r\n\r\n(HL) {HLM}\r\n(SP) {SPM}";
         
         // REALTIME DISASSEMBLY
 
         public string GetRealtimeDisassembly() => HistoricDisassemblyMode ? GetRealtimeDisassemblyHistoric() : GetRealtimeDisassemblyNormal();
         public string GetRealtimeDisassemblyNormal()
         {
-            ushort startLocation = PC.val;
+            ushort startLocation = PC.Value;
 
             const int MAX_HIGHLIGHT_LINE = NUM_DISASSEMBLY_LINES - 4;
 
@@ -49,14 +49,14 @@ namespace Sharp80.Z80
                                disassemblyAddresses
                                          .Select(i =>
                                             new { addr = disassemblyAddresses[j++] = startLocation })
-                                                .Select(n => GetLineInfo((n.addr == PC.val) ? ">" : " ", ref startLocation, GetInstructionAt(n.addr))));
+                                                .Select(n => GetLineInfo((n.addr == PC.Value) ? ">" : " ", ref startLocation, GetInstructionAt(n.addr))));
         }
         public string GetRealtimeDisassemblyHistoric()
         {
             return string.Join(Environment.NewLine,
                                historyBuffer.Select(i => new { addr = i, inst = GetInstructionAt(i) })
                                             .Select(n => string.Format("{0}{1} {2} {3}",
-                                                                        (PC.val == n.addr) ? ">" : " ",
+                                                                        (PC.Value == n.addr) ? ">" : " ",
                                                                         n.addr.ToHexString(),
                                                                         Lib.GetSpacedHex(Memory, n.addr, n.inst.Size),
                                                                         n.inst.FullName(Memory, n.addr))));
@@ -79,22 +79,22 @@ namespace Sharp80.Z80
 
         // ISTATUS IMPLEMENTATION
 
-        public ushort PcVal => PC.val;
-        public ushort SpVal => SP.val;
-        public ushort AfVal => AF.val;
-        public byte AVal => A.val;
-        public ushort BcVal => BC.val;
-        public ushort DeVal => DE.val;
-        public ushort HlVal => HL.val;
-        public ushort IxVal => IX.val;
-        public ushort IyVal => IY.val;
-        public ushort AfpVal => AFp.val;
-        public ushort BcpVal => BCp.val;
-        public ushort DepVal => DEp.val;
-        public ushort HlpVal => HLp.val;
-        public byte HlmVal => HLM.val;
-        public ushort WzVal => WZ.val;
-        public string Flags => flagsToString[F.val];
-        public ushort IrVal => (ushort)((I.val << 8) | R.val);
+        public ushort PcVal => PC.Value;
+        public ushort SpVal => SP.Value;
+        public ushort AfVal => AF.Value;
+        public byte AVal => A.Value;
+        public ushort BcVal => BC.Value;
+        public ushort DeVal => DE.Value;
+        public ushort HlVal => HL.Value;
+        public ushort IxVal => IX.Value;
+        public ushort IyVal => IY.Value;
+        public ushort AfpVal => AFp.Value;
+        public ushort BcpVal => BCp.Value;
+        public ushort DepVal => DEp.Value;
+        public ushort HlpVal => HLp.Value;
+        public byte HlmVal => HLM.Value;
+        public ushort WzVal => WZ.Value;
+        public string Flags => flagsToString[F.Value];
+        public ushort IrVal => (ushort)((I.Value << 8) | R.Value);
     }
 }

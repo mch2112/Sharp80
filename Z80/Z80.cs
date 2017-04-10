@@ -29,19 +29,19 @@ namespace Sharp80.Z80
 
         // FLAGS
 
-        private bool CF { get => (F.val & S_CF) != 0; set { if (value) F.val |= S_CF; else F.val &= R_CF; } }	// carry flag 
-        private bool NF { get => (F.val & S_NF) != 0; set { if (value) F.val |= S_NF; else F.val &= R_NF; } }	// add / subtract flag
-        private bool VF { get => (F.val & S_VF) != 0; set { if (value) F.val |= S_VF; else F.val &= R_VF; } }	// parity / overflow flag
-        private bool F3 { get => (F.val & S_F3) != 0; set { if (value) F.val |= S_F3; else F.val &= R_F3; } }	// not used
-        private bool HF { get => (F.val & S_HF) != 0; set { if (value) F.val |= S_HF; else F.val &= R_HF; } }	// half-carry flag
-        private bool F5 { get => (F.val & S_F5) != 0; set { if (value) F.val |= S_F5; else F.val &= R_F5; } }	// not used
-        private bool ZF { get => (F.val & S_ZF) != 0; set { if (value) F.val |= S_ZF; else F.val &= R_ZF; } }	// zero flag
-        private bool SF { get => (F.val & S_SF) != 0; set { if (value) F.val |= S_SF; else F.val &= R_SF; } }	// sign flag
+        private bool CF { get => (F.Value & S_CF) != 0; set { if (value) F.Value |= S_CF; else F.Value &= R_CF; } }	// carry flag 
+        private bool NF { get => (F.Value & S_NF) != 0; set { if (value) F.Value |= S_NF; else F.Value &= R_NF; } }	// add / subtract flag
+        private bool VF { get => (F.Value & S_VF) != 0; set { if (value) F.Value |= S_VF; else F.Value &= R_VF; } }	// parity / overflow flag
+        private bool F3 { get => (F.Value & S_F3) != 0; set { if (value) F.Value |= S_F3; else F.Value &= R_F3; } }	// not used
+        private bool HF { get => (F.Value & S_HF) != 0; set { if (value) F.Value |= S_HF; else F.Value &= R_HF; } }	// half-carry flag
+        private bool F5 { get => (F.Value & S_F5) != 0; set { if (value) F.Value |= S_F5; else F.Value &= R_F5; } }	// not used
+        private bool ZF { get => (F.Value & S_ZF) != 0; set { if (value) F.Value |= S_ZF; else F.Value &= R_ZF; } }	// zero flag
+        private bool SF { get => (F.Value & S_SF) != 0; set { if (value) F.Value |= S_SF; else F.Value &= R_SF; } }	// sign flag
 
-        private bool NZ => (F.val & S_ZF) == 0;
-        private bool NC => (F.val & S_CF) == 0;
-        private bool PE => (F.val & S_VF) != 0;  // parity even, same flag as overflow
-        private bool PO => (F.val & S_VF) == 0;  // parity odd, opposite of PE / V
+        private bool NZ => (F.Value & S_ZF) == 0;
+        private bool NC => (F.Value & S_CF) == 0;
+        private bool PE => (F.Value & S_VF) != 0;  // parity even, same flag as overflow
+        private bool PO => (F.Value & S_VF) == 0;  // parity odd, opposite of PE / V
 
         private const byte BIT_0_MASK = 0x01, BIT_1_MASK = 0x02, BIT_2_MASK = 0x04, BIT_3_MASK = 0x08,
                            BIT_4_MASK = 0x10, BIT_5_MASK = 0x20, BIT_6_MASK = 0x40, BIT_7_MASK = 0x80;
@@ -149,9 +149,9 @@ namespace Sharp80.Z80
         public byte InterruptMode { get; private set; }
         public bool HistoricDisassemblyMode { get; set; }
 
-        public byte ByteAtPCPlusCoreOpCodeSize => Memory[PC.val.Offset(CurrentInstruction.OpcodeCoreSize)];
-        public byte ByteAtPCPlusCoreOpCodeSizePlusOne => Memory[PC.val.Offset(CurrentInstruction.OpcodeCoreSize + 1)];
-        public ushort WordAtPCPlusInitialOpcodeLength => Memory.GetWordAt(PC.val.Offset(CurrentInstruction.OpcodeCoreSize));
+        public byte ByteAtPCPlusCoreOpCodeSize => Memory[PC.Value.Offset(CurrentInstruction.OpcodeCoreSize)];
+        public byte ByteAtPCPlusCoreOpCodeSizePlusOne => Memory[PC.Value.Offset(CurrentInstruction.OpcodeCoreSize + 1)];
+        public ushort WordAtPCPlusInitialOpcodeLength => Memory.GetWordAt(PC.Value.Offset(CurrentInstruction.OpcodeCoreSize));
 
         // MAIN EXECUTION CONTROL
 
@@ -168,26 +168,26 @@ namespace Sharp80.Z80
 
             halted = false;
 
-            PC.val = 0x0000;
-            SP.val = 0x0000;
+            PC.Value = 0x0000;
+            SP.Value = 0x0000;
 
-            AF.val = 0x0000;
-            BC.val = 0x0000;
-            DE.val = 0x0000;
-            HL.val = 0x0000;
+            AF.Value = 0x0000;
+            BC.Value = 0x0000;
+            DE.Value = 0x0000;
+            HL.Value = 0x0000;
 
-            AFp.val = 0x0000;
-            BCp.val = 0x0000;
-            DEp.val = 0x0000;
-            HLp.val = 0x0000;
+            AFp.Value = 0x0000;
+            BCp.Value = 0x0000;
+            DEp.Value = 0x0000;
+            HLp.Value = 0x0000;
 
-            IX.val = 0xFFFF;
-            IY.val = 0xFFFF;
+            IX.Value = 0xFFFF;
+            IY.Value = 0xFFFF;
 
-            I.val = 0x00;
-            R.val = 0x00;
+            I.Value = 0x00;
+            R.Value = 0x00;
 
-            WZ.val = 0x0000;
+            WZ.Value = 0x0000;
 
             ZF = true;
 
@@ -201,7 +201,7 @@ namespace Sharp80.Z80
         {
             ulong retVal;
 
-            if (BreakPointOn && (PC.val == BreakPoint) && computer.IsRunning)
+            if (BreakPointOn && (PC.Value == BreakPoint) && computer.IsRunning)
             {
                 // skip breakpoint so we don't break before we get started again
                 if (skipOneBreakpoint)
@@ -215,7 +215,7 @@ namespace Sharp80.Z80
                     return 0;
                 }
             }
-            if (systemBreakPoint.HasValue && (PC.val == systemBreakPoint.Value))
+            if (systemBreakPoint.HasValue && (PC.Value == systemBreakPoint.Value))
             {
                 systemBreakPoint = null;
                 computer.Stop(WaitForStop: false);
@@ -228,7 +228,7 @@ namespace Sharp80.Z80
                 return 0;
             }
 
-            CurrentInstruction = GetInstructionAt(PC.val);
+            CurrentInstruction = GetInstructionAt(PC.Value);
 
             if (TraceOn)
                 retVal = TraceLog.Log(computer.ElapsedTStates, ExecuteInstruction);
@@ -249,7 +249,7 @@ namespace Sharp80.Z80
                     restoreInterruptsNow = true;
                 }
             }
-            historyBuffer.Add(PC.val);
+            historyBuffer.Add(PC.Value);
             return retVal;
         }
 
@@ -261,10 +261,10 @@ namespace Sharp80.Z80
         public bool? SteppedOut { get; set; } = null;
         public bool StepOver()
         {
-            var i = GetInstructionAt(PC.val);
+            var i = GetInstructionAt(PC.Value);
             if (IsSteppable(i))
             {
-                systemBreakPoint = PC.val.Offset(i.Size);
+                systemBreakPoint = PC.Value.Offset(i.Size);
                 return true;
             }
             else
@@ -274,10 +274,10 @@ namespace Sharp80.Z80
         }
         public void Jump(ushort Address)
         {
-            if (PC.val != Address)
+            if (PC.Value != Address)
             {
-                PC.val = Address;
-                historyBuffer.ReplaceLast(PC.val);
+                PC.Value = Address;
+                historyBuffer.ReplaceLast(PC.Value);
             }
         }
         
@@ -288,14 +288,14 @@ namespace Sharp80.Z80
 
             Debug.Assert(RecordExtraTicks == false);
 
-            NextPC = PC.val;
+            NextPC = PC.Value;
             NextPC += Instruction.Size;
 
             Debug.Assert(RecordExtraTicks == false);
 
             Instruction.Execute();
 
-            PC.val = NextPC;
+            PC.Value = NextPC;
 
             IncrementR(Instruction.RIncrement);
 
@@ -322,7 +322,7 @@ namespace Sharp80.Z80
                 if (breakPoint != value)
                 {
                     breakPoint = value;
-                    skipOneBreakpoint = PC.val == value && !computer.IsRunning;
+                    skipOneBreakpoint = PC.Value == value && !computer.IsRunning;
                 }
             }
         }
@@ -343,21 +343,21 @@ namespace Sharp80.Z80
 
                 if (halted)
                 {
-                    PushWord(PC.val.Offset(2));
+                    PushWord(PC.Value.Offset(2));
                     halted = false;
                 }
                 else
                 {
-                    PushWord(PC.val);
+                    PushWord(PC.Value);
                 }
 
                 switch (InterruptMode)
                 {
                     case 1:
-                        WZ.val = PC.val = 0x0038;
+                        WZ.Value = PC.Value = 0x0038;
                         return 13000;
                     case 2:
-                        WZ.val = PC.val = (ushort)(I.val * 0x100 + Im2Vector);
+                        WZ.Value = PC.Value = (ushort)(I.Value * 0x100 + Im2Vector);
                         return 19000;
                     default:
                         return 0;
@@ -378,17 +378,17 @@ namespace Sharp80.Z80
 
             if (halted)
             {
-                PushWord(PC.val.Offset(2));
+                PushWord(PC.Value.Offset(2));
                 halted = false;
             }
             else
             {
-                PushWord(PC.val);
+                PushWord(PC.Value);
             }
-            PC.val = 0x0066;
-            WZ.val = 0x0066;
+            PC.Value = 0x0066;
+            WZ.Value = 0x0066;
             IncrementR(1);
-            historyBuffer.Add(PC.val);
+            historyBuffer.Add(PC.Value);
         }
 
         // REFRESH REGISTER
@@ -396,33 +396,33 @@ namespace Sharp80.Z80
         public void IncrementR(byte num)
         {
             // Memory refresh register; sometimes used for pseudo-random numbers. Don't change bit 7.
-            R.val = (byte)((R.val & 0x80) | ((R.val + num) & 0x7F));
+            R.Value = (byte)((R.Value & 0x80) | ((R.Value + num) & 0x7F));
         }
 
         // SNAPSHOTS
 
         public void Serialize(System.IO.BinaryWriter Writer)
         {
-            Writer.Write(PC.val);
-            Writer.Write(SP.val);
+            Writer.Write(PC.Value);
+            Writer.Write(SP.Value);
 
-            Writer.Write(BC.val);
-            Writer.Write(DE.val);
-            Writer.Write(HL.val);
-            Writer.Write(AF.val);
+            Writer.Write(BC.Value);
+            Writer.Write(DE.Value);
+            Writer.Write(HL.Value);
+            Writer.Write(AF.Value);
 
-            Writer.Write(BCp.val);
-            Writer.Write(DEp.val);
-            Writer.Write(HLp.val);
-            Writer.Write(AFp.val);
+            Writer.Write(BCp.Value);
+            Writer.Write(DEp.Value);
+            Writer.Write(HLp.Value);
+            Writer.Write(AFp.Value);
 
-            Writer.Write(IX.val);
-            Writer.Write(IY.val);
+            Writer.Write(IX.Value);
+            Writer.Write(IY.Value);
 
-            Writer.Write(I.val);
-            Writer.Write(R.val);
+            Writer.Write(I.Value);
+            Writer.Write(R.Value);
 
-            Writer.Write(WZ.val);
+            Writer.Write(WZ.Value);
             Writer.Write(NextPC);
 
             Writer.Write(InterruptMode);
@@ -445,26 +445,26 @@ namespace Sharp80.Z80
         {
             try
             {
-                PC.val = Reader.ReadUInt16();
-                SP.val = Reader.ReadUInt16();
+                PC.Value = Reader.ReadUInt16();
+                SP.Value = Reader.ReadUInt16();
 
-                BC.val = Reader.ReadUInt16();
-                DE.val = Reader.ReadUInt16();
-                HL.val = Reader.ReadUInt16();
-                AF.val = Reader.ReadUInt16();
+                BC.Value = Reader.ReadUInt16();
+                DE.Value = Reader.ReadUInt16();
+                HL.Value = Reader.ReadUInt16();
+                AF.Value = Reader.ReadUInt16();
 
-                BCp.val = Reader.ReadUInt16();
-                DEp.val = Reader.ReadUInt16();
-                HLp.val = Reader.ReadUInt16();
-                AFp.val = Reader.ReadUInt16();
+                BCp.Value = Reader.ReadUInt16();
+                DEp.Value = Reader.ReadUInt16();
+                HLp.Value = Reader.ReadUInt16();
+                AFp.Value = Reader.ReadUInt16();
 
-                IX.val = Reader.ReadUInt16();
-                IY.val = Reader.ReadUInt16();
+                IX.Value = Reader.ReadUInt16();
+                IY.Value = Reader.ReadUInt16();
 
-                I.val = Reader.ReadByte();
-                R.val = Reader.ReadByte();
+                I.Value = Reader.ReadByte();
+                R.Value = Reader.ReadByte();
 
-                WZ.val = Reader.ReadUInt16();
+                WZ.Value = Reader.ReadUInt16();
                 NextPC = Reader.ReadUInt16();
 
                 InterruptMode = Reader.ReadByte();
@@ -523,13 +523,13 @@ namespace Sharp80.Z80
         }
         private void PushWord(ushort val)
         {
-            SP.val -= 2;
-            SPM.val = val;
+            SP.Value -= 2;
+            SPM.Value = val;
         }
         private ushort PopWord()
         {
-            ushort val = SPM.val;
-            SP.val += 2;
+            ushort val = SPM.Value;
+            SP.Value += 2;
             return val;
         }
         private bool IsSteppable(Instruction i)

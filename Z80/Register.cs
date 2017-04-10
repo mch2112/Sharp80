@@ -7,17 +7,17 @@ namespace Sharp80.Z80
 {
     internal class Register8 : IRegister<byte>
     {
-        public byte val { get; set; }
         public string Name { get; }
-
+        public byte Value { get; set; }
+        
         public Register8(string Name) => this.Name = Name;
 
-        public void inc() => val++;
-        public void dec() => val--;
+        public void Inc() => Value++;
+        public void Dec() => Value--;
 
-        public bool NZ => val != 0x00;
+        public bool NZ => Value != 0x00;
 
-        public override string ToString() => val.ToHexString();
+        public override string ToString() => Value.ToHexString();
     }
     internal class Register8Indirect : IRegister<byte>
     {
@@ -30,16 +30,16 @@ namespace Sharp80.Z80
             this.Proxy = Proxy;
             this.Name = Name;
         }
-        public byte val
+        public byte Value
         {
-            get => z80.Memory[Proxy.val];
-            set => z80.Memory[Proxy.val] = value;
+            get => z80.Memory[Proxy.Value];
+            set => z80.Memory[Proxy.Value] = value;
         }
 
-        public void inc() => val++;
-        public void dec() => val--;
-        public bool NZ => val != 0;
-        public override string ToString() => val.ToHexString();
+        public void Inc() => Value++;
+        public void Dec() => Value--;
+        public bool NZ => Value != 0;
+        public override string ToString() => Value.ToHexString();
     }
     internal class RegisterIndexed : IRegisterIndexed
     {
@@ -53,28 +53,28 @@ namespace Sharp80.Z80
             this.Proxy = Proxy;
             this.Name = Name;
         }
-        public byte val
+        public byte Value
         {
             get => z80.Memory[OffsetAddress];
             set => z80.Memory[OffsetAddress] = value;
         }
-        public void inc() => val++;
-        public void dec() => val--;
-        public bool NZ => val != 0;
-        public ushort OffsetAddress => Proxy.val.Offset(z80.ByteAtPCPlusCoreOpCodeSize.TwosComp());
-        public override string ToString() => val.ToHexString();
+        public void Inc() => Value++;
+        public void Dec() => Value--;
+        public bool NZ => Value != 0;
+        public ushort OffsetAddress => Proxy.Value.Offset(z80.ByteAtPCPlusCoreOpCodeSize.TwosComp());
+        public override string ToString() => Value.ToHexString();
     }
     internal class Register16 : IRegister<ushort>
     {
         public string Name { get; }
-        public ushort val { get; set; }
+        public ushort Value { get; set; }
 
         public Register16(string Name) => this.Name = Name;
 
-        public void inc() => val++;
-        public void dec() => val--;
-        public bool NZ => val != 0;
-        public override string ToString() => val.ToHexString();
+        public void Inc() => Value++;
+        public void Dec() => Value--;
+        public bool NZ => Value != 0;
+        public override string ToString() => Value.ToHexString();
     }
     internal class RegisterCompound : IRegisterCompound
     {
@@ -91,30 +91,30 @@ namespace Sharp80.Z80
         public RegisterCompound(string Name) : this(new Register8(Name + "l"), new Register8(Name + "h"), Name)
         {
         }
-        public ushort val
+        public ushort Value
         {
-            get => Lib.CombineBytes(L.val, H.val);
+            get => Lib.CombineBytes(L.Value, H.Value);
             set
             {
-                L.val = (byte)(value & 0xFF);
-                H.val = (byte)(value >> 8);
+                L.Value = (byte)(value & 0xFF);
+                H.Value = (byte)(value >> 8);
             }
         }
-        public void inc()
+        public void Inc()
         {
-            L.inc();
-            if (L.val == 0x00)
-                H.inc();
+            L.Inc();
+            if (L.Value == 0x00)
+                H.Inc();
         }
-        public void dec()
+        public void Dec()
         {
-            L.dec();
-            if (L.val == 0xFF)
-                H.dec();
+            L.Dec();
+            if (L.Value == 0xFF)
+                H.Dec();
         }
 
         public bool NZ => L.NZ || H.NZ;
-        public override string ToString() => val.ToHexString();
+        public override string ToString() => Value.ToHexString();
     }
 
     // Used only for the stack pointer indirection
@@ -131,14 +131,14 @@ namespace Sharp80.Z80
             proxy = Proxy;
             this.Name = Name;
         }
-        public ushort val
+        public ushort Value
         {
-            get => z80.Memory.GetWordAt(proxy.val);
-            set => z80.Memory.SetWordAt(proxy.val, value);
+            get => z80.Memory.GetWordAt(proxy.Value);
+            set => z80.Memory.SetWordAt(proxy.Value, value);
         }
-        public void inc() => val++;
-        public void dec() => val--;
-        public bool NZ => val != 0;
-        public override string ToString() => val.ToHexString();
+        public void Inc() => Value++;
+        public void Dec() => Value--;
+        public bool NZ => Value != 0;
+        public override string ToString() => Value.ToHexString();
     }
 }
