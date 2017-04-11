@@ -88,8 +88,8 @@ namespace Sharp80.TRS80
 
                         // JV3 sector size code is stored in a weird way
                         sd.SectorSizeCode = (byte)((flags & JV3_SECTOR_SIZE_MASK) ^ (sd.InUse ? 1 : 2));
-
                         sd.SectorSize = GetDataLengthFromCode(sd.SectorSizeCode);
+
                         sectors.Add(sd);
                     }
                 }

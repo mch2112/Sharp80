@@ -32,7 +32,7 @@ namespace Sharp80
         private Rectangle previousClientRect = Rectangle.Empty;
 
         private const uint SCREEN_REFRESH_RATE_HZ = 30;
-        private const uint KEYBOARD_REFRESH_RATE_HZ = 40;
+        private const uint KEYBOARD_REFRESH_RATE_HZ = 55;
         private const uint DISPLAY_MESSAGE_CYCLE_DURATION = SCREEN_REFRESH_RATE_HZ;  // 1 second
 
         private static bool suppressCursor = false;

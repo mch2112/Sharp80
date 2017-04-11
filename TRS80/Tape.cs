@@ -45,8 +45,6 @@ namespace Sharp80.TRS80
         private Clock clock;
         private PulseReq readPulseReq = null;
 
-        public string FilePath { get; set; }
-
         private byte[] data;
         private int byteCursor;
         private byte bitCursor;
@@ -68,6 +66,7 @@ namespace Sharp80.TRS80
 
         private Transition transition;
 
+        public string FilePath { get; set; }
         public Baud Speed { get; private set; }
         public bool Changed { get; private set; }
         public float Counter => byteCursor + ((7f - bitCursor) / 10);

@@ -18,7 +18,9 @@ namespace Sharp80.TRS80
         public ushort SectorSize { get; set; }
         public byte SectorSizeCode { get; set; }
         public byte[] SectorData { get; set; }
+
         public static SectorDescriptor Empty => new SectorDescriptor() { InUse = false };
+
         public override string ToString()
         {
             return string.Format("Track: {0:X2} Side: {1} Sector: {2:X2} Double Density: {3} Length: {4:X4} {5}",

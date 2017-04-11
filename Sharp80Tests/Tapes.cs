@@ -17,7 +17,7 @@ namespace Sharp80Tests
         public async Task TapeLoadTest()
         {
             await StartToBasic();
-            computer.TapeLoad(Path.Combine(Path.Combine(Storage.AppDataPath, @"Tapes" + Path.DirectorySeparatorChar), "Magic Carpet (SYSTEM IF) 1500 Baud.cas"));
+            computer.TapeLoad(Path.Combine(Path.Combine(Storage.AppDataPath, "Tapes"), "Magic Carpet (SYSTEM IF) 1500 Baud.cas"));
             Assert.IsTrue(computer.TapeLength > 5000, "Tape not loaded");
             computer.TapePlay();
             await PasteLine("SYSTEM");
