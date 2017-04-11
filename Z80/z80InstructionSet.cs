@@ -16,7 +16,6 @@ namespace Sharp80.Z80
             public Instruction NOP { get; private set; }
 
             private readonly SortedDictionary<uint, Instruction> instructions = new SortedDictionary<uint, Instruction>();
-
             private readonly Instruction[] STD, CB, DD, ED, FD, DDCB, FDCB;
 
             private Instruction DDPrefixNOP;

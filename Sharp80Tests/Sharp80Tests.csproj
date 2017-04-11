@@ -65,6 +65,8 @@
     <Compile Include="Numeric.cs" />
     <Compile Include="Assembly.cs" />
     <Compile Include="ProgramFlow.cs" />
+    <Compile Include="Tapes.cs" />
+    <Compile Include="Format.cs" />
     <Compile Include="Z80.cs" />
   </ItemGroup>
   <ItemGroup>

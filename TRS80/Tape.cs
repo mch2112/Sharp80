@@ -72,6 +72,7 @@ namespace Sharp80.TRS80
         public bool Changed { get; private set; }
         public float Counter => byteCursor + ((7f - bitCursor) / 10);
         public float Percent => (float)byteCursor / data.Length;
+        public int Length => data?.Length ?? 0;
 
         // CONSTRUCTOR
 

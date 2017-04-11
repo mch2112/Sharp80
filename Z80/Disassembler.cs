@@ -1,8 +1,10 @@
-﻿using System;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3. See license.txt for details.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Sharp80.Z80
 {

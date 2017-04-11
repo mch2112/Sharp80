@@ -2,10 +2,10 @@
 /// Licensed Under GPL v3. See license.txt for details.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace Sharp80.TRS80
 {
@@ -301,11 +301,11 @@ namespace Sharp80.TRS80
                     ret = true;
                     break;
                 case Storage.FILE_NAME_NEW:
-                    LoadFloppy(DriveNum, new DMK(true));
+                    LoadFloppy(DriveNum, new Floppy(true));
                     ret = true;
                     break;
                 case Storage.FILE_NAME_UNFORMATTED:
-                    LoadFloppy(DriveNum, new DMK(false));
+                    LoadFloppy(DriveNum, new Floppy(false));
                     ret = true;
                     break;
                 case "":
@@ -330,7 +330,7 @@ namespace Sharp80.TRS80
         }
         public void LoadFloppy(byte DriveNum, Floppy Floppy) => FloppyController.LoadFloppy(DriveNum, Floppy);
 
-        public void LoadTrsDosFloppy(byte DriveNum) => LoadFloppy(DriveNum, new DMK(Resources.TRSDOS) { FilePath = Storage.FILE_NAME_TRSDOS });
+        public void LoadTrsDosFloppy(byte DriveNum) => LoadFloppy(DriveNum, new Floppy(Resources.TRSDOS, Storage.FILE_NAME_TRSDOS));
 
         public void EjectFloppy(byte DriveNum)
         {
@@ -367,6 +367,7 @@ namespace Sharp80.TRS80
         public bool TapeIsBlank => Tape.IsBlank;
         public string TapePulseStatus => Tape.PulseStatus;
         public Baud TapeSpeed => Tape.Speed;
+        public int TapeLength => Tape.Length;
 
         /// <summary>
         /// Backdoor to get or change the initial user selection at
@@ -456,6 +457,37 @@ namespace Sharp80.TRS80
 
         // MISC
 
+        public string ScreenText
+        {
+            get
+            {
+                var m = VideoMemory;
+                StringBuilder sb = new StringBuilder();
+                var inc = WideCharMode ? 2 : 1;
+                for (int i = 0; i < ScreenMetrics.NUM_SCREEN_CHARS_Y; i++)
+                {
+                    for (int j = 0; j < ScreenMetrics.NUM_SCREEN_CHARS_X; j += inc)
+                    {
+                        var b = m[i * ScreenMetrics.NUM_SCREEN_CHARS_X + j];
+
+                        if (b.IsBetween(0x21, 0x7F))
+                        {
+                            sb.Append((char)b);
+                        }
+                        else if (b >= 0x80)
+                        {
+                            sb.Append('.');
+                        }
+                        else
+                        {
+                            sb.Append(' ');
+                        }
+                    }
+                    sb.Append(Environment.NewLine);
+                }
+                return sb.ToString();
+            }
+        }
         public string GetInternalsReport() => Processor.GetInternalsReport();
         public string GetClockReport() => Clock.GetInternalsReport();
         public string GetDisassembly() => Processor.GetRealtimeDisassembly();public bool LoadCMDFile(CmdFile File)

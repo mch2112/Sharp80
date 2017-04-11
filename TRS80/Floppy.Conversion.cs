@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace Sharp80.TRS80
 {
-    public partial class DMK
+    public partial class Floppy
     {
         // CONSTANTS
 
@@ -28,7 +28,7 @@ namespace Sharp80.TRS80
 
         // JV3
 
-        public static Floppy FromJV3(byte[] DiskData)
+        private static FloppyData FromJV3(byte[] DiskData)
         {
             var sectors = new List<SectorDescriptor>();
 
@@ -121,16 +121,14 @@ namespace Sharp80.TRS80
                     diskCursor += sd.SectorSize;
                 }
             }
-            return MakeFloppy(Sectors: sectors,
-                              WriteProtected: writeProt.Value,
-                              OriginalFileType: FileType.JV3);
+            return new FloppyData(sectors, writeProt.Value);
         }
-        private byte[] SerializeToJV3()
+        private byte[] ToJV3()
         {
-            var sectors = tracks.SelectMany(t => t.ToSectorDescriptors())
-                                .OrderBy(s => s.SideOne)
-                                .OrderBy(s => s.TrackNumber)
-                                .ToList();
+            var sectors = floppyData.Tracks.SelectMany(t => t.ToSectorDescriptors())
+                                    .OrderBy(s => s.SideOne)
+                                    .OrderBy(s => s.TrackNumber)
+                                    .ToList();
 
             byte[] temp = new byte[JV3_HEADER_SIZE * (int)(Math.Ceiling((double)sectors.Count / (double)JV3_SECTORS_PER_HEADER)) + 2 + this.NumTracks * MAX_TRACK_LENGTH];
 
@@ -194,10 +192,10 @@ namespace Sharp80.TRS80
             Array.Copy(temp, data, cursor);
             return data;
         }
-
+        
         // JV1
 
-        public static Floppy FromJV1(byte[] DiskData)
+        private static FloppyData FromJV1(byte[] DiskData)
         {
             const byte SECTORS_PER_TRACK = 10;
             const int SECTOR_LENGTH = 0x100;
@@ -231,15 +229,15 @@ namespace Sharp80.TRS80
                     Array.Copy(DiskData, (i * SECTORS_PER_TRACK + j) * SECTOR_LENGTH, sd.SectorData, 0, SECTOR_LENGTH);
                     sectors.Add(sd);
                 }
-
-            return MakeFloppy(Sectors: sectors,
-                              WriteProtected: false,
-                              OriginalFileType: FileType.JV1);
+            return new FloppyData(sectors, false);
         }
-        private byte[] SerializeToJV1()
+
+        private byte[] ToJV1()
         {
-            var sectors = tracks.Where(t => !t.SideOne)
-                                .SelectMany(t => MakeJV1Compatible(t.ToSectorDescriptors()))
+            // TODO: Handle case where a track is missing
+
+            var tracks = floppyData.Tracks.Where(t => !t.SideOne);
+            var sectors = tracks.SelectMany(t => MakeJV1Compatible(t.ToSectorDescriptors()))
                                 .OrderBy(s => s.SectorNumber)
                                 .OrderBy(s => s.TrackNumber);
 

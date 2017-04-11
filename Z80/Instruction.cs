@@ -16,7 +16,7 @@ namespace Sharp80.Z80
         private string operand0 = null;
         private string operand1 = null;
         private string operand2 = null;
-
+        private string postMnemonic;
         private int? numOperands = null;
 
         internal Action Execute { get; private set; }
@@ -35,8 +35,7 @@ namespace Sharp80.Z80
 
         public string Name { get; private set; }
         public string Mnemonic { get; private set; }
-        private string PostMnemonic { get; set; }
-
+        
         public byte Size { get; private set; }
         public byte OpcodeSize { get; private set; }
         public byte OpcodeCoreSize { get; private set; }
@@ -57,21 +56,20 @@ namespace Sharp80.Z80
             OpcodeSize = (byte)(OpcodeCoreSize + (Op3.HasValue ? 1 : 0));
 
             Size = OpcodeSize;
-
-            if (OpcodeSize == 1)
+            switch (OpcodeSize)
             {
-                Signature = Op0;
-                PaddedSig = (uint)(op[0] << 16);
-            }
-            else if (OpcodeSize == 2)
-            {
-                Signature = (uint)((op[0] << 8) | op[1]);
-                PaddedSig = Signature << 8;
-            }
-            else
-            {
-                Signature = (uint)((op[0] << 16) | (op[1] << 8) | (op[3]));
-                PaddedSig = Signature;
+                case 1:
+                    Signature = Op0;
+                    PaddedSig = (uint)(op[0] << 16);
+                    break;
+                case 2:
+                    Signature = (uint)((op[0] << 8) | op[1]);
+                    PaddedSig = Signature << 8;
+                    break;
+                default:
+                    Signature = (uint)((op[0] << 16) | (op[1] << 8) | (op[3]));
+                    PaddedSig = Signature;
+                    break;
             }
 
             bool hasDisp = Name.Contains("+d");
@@ -107,7 +105,7 @@ namespace Sharp80.Z80
             Debug.Assert(Op1 is null || Size >= 2);
             Debug.Assert(Op3 is null || Size == 4);
 
-            PostMnemonic = Name.Substring(Mnemonic.Length);
+            postMnemonic = Name.Substring(Mnemonic.Length);
 
             InitNameFn(hasReplaceableTokens);
         }
@@ -213,20 +211,20 @@ namespace Sharp80.Z80
 
         // RENDERING
 
-        private string NameNN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeCoreSize)], Memory[PC.Offset(OpcodeCoreSize + 1)]).ToHexString());
-        private string NameMM(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("(N)", "(" + (Memory[PC.Offset(Size - 1)]).ToHexString() + ")");
-        private string NameN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString());
-        private string NameD(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString());
-        private string NameE(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace(" e", " " + PC.Offset(Size + Memory[PC.Offset(OpcodeCoreSize)].TwosComp()).ToHexString());
-        private string NameDN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + PostMnemonic.Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString()).Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString());
+        private string NameNN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + postMnemonic.Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeCoreSize)], Memory[PC.Offset(OpcodeCoreSize + 1)]).ToHexString());
+        private string NameMM(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + postMnemonic.Replace("(N)", "(" + (Memory[PC.Offset(Size - 1)]).ToHexString() + ")");
+        private string NameN(IReadOnlyList<byte> Memory, ushort PC)  => Mnemonic + postMnemonic.Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString());
+        private string NameD(IReadOnlyList<byte> Memory, ushort PC)  => Mnemonic + postMnemonic.Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString());
+        private string NameE(IReadOnlyList<byte> Memory, ushort PC)  => Mnemonic + postMnemonic.Replace(" e", " " + PC.Offset(Size + Memory[PC.Offset(OpcodeCoreSize)].TwosComp()).ToHexString());
+        private string NameDN(IReadOnlyList<byte> Memory, ushort PC) => Mnemonic + postMnemonic.Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString()).Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString());
 
-        private string NameA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("\t ", "\t");
-        private string NameNNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeCoreSize)], Memory[PC.Offset(OpcodeCoreSize + 1)]).ToHexString() + "H").Replace("\t ", "\t");
-        private string NameMMA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("(N)", "(" + (Memory[PC.Offset(Size - 1)]).ToHexString() + "H)").Replace("\t ", "\t");
-        private string NameNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString() + "H").Replace("\t ", "\t");
-        private string NameDA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString() + "H").Replace("\t ", "\t");
-        private string NameEA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace(" e", " " + PC.Offset(Size + Memory[PC.Offset(OpcodeCoreSize)].TwosComp()).ToHexString() + "H").Replace("\t ", "\t");
-        private string NameDNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + PostMnemonic).Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString() + "H").Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString() + "H").Replace("\t ", "\t");
+        private string NameA(IReadOnlyList<byte> Memory, ushort PC)   => ("\t" + Mnemonic + "\t" + postMnemonic).Replace("\t ", "\t");
+        private string NameNNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + postMnemonic).Replace("NN", Lib.CombineBytes(Memory[PC.Offset(OpcodeCoreSize)], Memory[PC.Offset(OpcodeCoreSize + 1)]).ToHexString() + "H").Replace("\t ", "\t");
+        private string NameMMA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + postMnemonic).Replace("(N)", "(" + (Memory[PC.Offset(Size - 1)]).ToHexString() + "H)").Replace("\t ", "\t");
+        private string NameNA(IReadOnlyList<byte> Memory, ushort PC)  => ("\t" + Mnemonic + "\t" + postMnemonic).Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString() + "H").Replace("\t ", "\t");
+        private string NameDA(IReadOnlyList<byte> Memory, ushort PC)  => ("\t" + Mnemonic + "\t" + postMnemonic).Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString() + "H").Replace("\t ", "\t");
+        private string NameEA(IReadOnlyList<byte> Memory, ushort PC)  => ("\t" + Mnemonic + "\t" + postMnemonic).Replace(" e", " " + PC.Offset(Size + Memory[PC.Offset(OpcodeCoreSize)].TwosComp()).ToHexString() + "H").Replace("\t ", "\t");
+        private string NameDNA(IReadOnlyList<byte> Memory, ushort PC) => ("\t" + Mnemonic + "\t" + postMnemonic).Replace("+d", Memory[PC.Offset(OpcodeCoreSize)].ToTwosCompHexString() + "H").Replace(" N", " " + Memory[PC.Offset(Size - 1)].ToHexString() + "H").Replace("\t ", "\t");
 
         public override string ToString() => Name;
 
@@ -234,24 +232,24 @@ namespace Sharp80.Z80
         {
             if (HasReplaceableTokens)
             {
-                if (PostMnemonic.Contains("NN"))
+                if (postMnemonic.Contains("NN"))
                 {
                     FullName = NameNN;
                     AssemblableName = NameNNA;
                 }
-                else if (PostMnemonic.Contains("(N)"))
+                else if (postMnemonic.Contains("(N)"))
                 {
                     FullName = NameMM;
                     AssemblableName = NameMMA;
                 }
-                else if (PostMnemonic.Contains(" e"))
+                else if (postMnemonic.Contains(" e"))
                 {
                     FullName = NameE;
                     AssemblableName = NameEA;
                 }
-                else if (PostMnemonic.Contains(" N"))
+                else if (postMnemonic.Contains(" N"))
                 {
-                    if (PostMnemonic.Contains("+d"))
+                    if (postMnemonic.Contains("+d"))
                     {
                         FullName = NameDN;
                         AssemblableName = NameDNA;
@@ -262,7 +260,7 @@ namespace Sharp80.Z80
                         AssemblableName = NameNA;
                     }
                 }
-                else if (PostMnemonic.Contains("+d"))
+                else if (postMnemonic.Contains("+d"))
                 {
                     FullName = NameD;
                     AssemblableName = NameDA;
@@ -271,14 +269,13 @@ namespace Sharp80.Z80
             else
             {
                 FullName = (a, b) => Name;
-                if (PostMnemonic.Length == 0)
+                if (postMnemonic.Length == 0)
                     AssemblableName = (a, b) => "\t" + Name;
                 else if (Mnemonic == "RST")
-                    AssemblableName = (a, b) => "\t" + Mnemonic + "\t" + PostMnemonic + "H";
+                    AssemblableName = (a, b) => "\t" + Mnemonic + "\t" + postMnemonic + "H";
                 else
                     AssemblableName = NameA;
             }
-
             Debug.Assert(!(FullName is null));
             Debug.Assert(!(AssemblableName is null));
         }

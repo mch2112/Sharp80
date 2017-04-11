@@ -526,7 +526,7 @@ namespace Sharp80.Views
 
             if (FilePath.Length > 0)
             {
-                if (DMK.FromFile(FilePath, out NewPath))
+                if (Floppy.FromFile(FilePath, out NewPath))
                 {
                     if (Dialogs.AskYesNo("Floppy created and saved to:" + Environment.NewLine + NewPath + Environment.NewLine + "Load to floppy drive 1?"))
                     {
@@ -556,9 +556,9 @@ namespace Sharp80.Views
 
             if (path.Length > 0)
             {
-                var f = new DMK(Formatted);
+                var f = new Floppy(Formatted);
                 f.FilePath = path;
-                if (SaveBinaryFile(path, f.Serialize(ForceDMK: true)))
+                if (f.Save(FloppyFileType.DMK))
                     Dialogs.InformUser("Created floppy OK.");
                 else
                     Dialogs.AlertUser($"Failed to create floppy with filename {path}.",

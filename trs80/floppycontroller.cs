@@ -48,7 +48,7 @@ namespace Sharp80.TRS80
         private PulseReq motorOnPulseReq;
         private PulseReq commandPulseReq;
 
-        private Track track;
+        private ITrack track;
 
         // FDC Hardware Registers
         public byte CommandRegister => command.CommandRegister;
@@ -142,7 +142,7 @@ namespace Sharp80.TRS80
         public byte PhysicalTrackNum => CurrentDrive.PhysicalTrackNumber;
         public string DiskAngleDegrees => ((double)DiskAngle / DISK_ANGLE_DIVISIONS * 360).ToString("000.00000") + " degrees";
         public byte ValueAtTrackDataIndex => track?.ReadByte(TrackDataIndex, null) ?? 0;
-        internal Floppy GetFloppy(int DriveNumber) => drives[DriveNumber].Floppy;
+        internal IFloppy GetFloppy(int DriveNumber) => drives[DriveNumber].Floppy;
         private DriveState CurrentDrive => (CurrentDriveNumber >= NUM_DRIVES) ? null : drives[CurrentDriveNumber];
 
         // EXTERNAL INTERACTION AND INFORMATION
@@ -192,17 +192,17 @@ namespace Sharp80.TRS80
                 Floppy f = null;
                 try
                 {
-                    f = Floppy.LoadDisk(FilePath);
-                    ret = !(f is null);
+                    f = new Floppy(FilePath);
+                    ret = f.Valid;
                 }
                 catch (Exception)
                 {
                     ret = false;
                 }
-                if (f is null)
-                    UnloadDrive(DriveNum);
-                else
+                if (f.Valid)
                     LoadDrive(DriveNum, f);
+                else
+                    UnloadDrive(DriveNum);
             }
             return ret;
         }
@@ -217,13 +217,12 @@ namespace Sharp80.TRS80
                 var f = drives[DriveNum].Floppy;
 
                 if (!string.IsNullOrWhiteSpace(f.FilePath))
-                    IO.SaveBinaryFile(f.FilePath, f.Serialize(ForceDMK: false));
-                return true;
+                    return f.Save(FloppyFileType.DMK);
             }
-            catch (Exception)
+            catch
             {
-                return false;
             }
+            return false;
         }
         private void LoadDrive(byte DriveNum, Floppy Floppy)
         {

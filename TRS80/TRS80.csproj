@@ -50,9 +50,10 @@
     <Compile Include="Computer.cs" />
     <Compile Include="DriveNoise.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Floppy.Conversion.cs" />
     <Compile Include="Floppy.cs" />
-    <Compile Include="Floppy.DMK.cs" />
-    <Compile Include="Floppy.DMK.JV.cs" />
+    <Compile Include="Floppy.Utils.cs" />
+    <Compile Include="Floppy.FloppyData.cs" />
     <Compile Include="FloppyController.Callbacks.cs" />
     <Compile Include="FloppyController.Command.cs" />
     <Compile Include="FloppyController.cs" />
@@ -70,6 +71,7 @@
     <Compile Include="ISettings.cs" />
     <Compile Include="ISound.cs" />
     <Compile Include="ITimer.cs" />
+    <Compile Include="ITrack.cs" />
     <Compile Include="KeyCode.cs" />
     <Compile Include="KeyState.cs" />
     <Compile Include="Lib.cs" />

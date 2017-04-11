@@ -1,4 +1,7 @@
-﻿using System;
+﻿/// Sharp 80 (c) Matthew Hamilton
+/// Licensed Under GPL v3. See license.txt for details.
+
+using System;
 using System.IO;
 
 namespace Sharp80.TRS80
@@ -7,7 +10,7 @@ namespace Sharp80.TRS80
     {
         private class DriveState
         {
-            public Floppy Floppy { get; set; }
+            public IFloppy Floppy { get; set; }
             public byte PhysicalTrackNumber { get; set; }
             public bool IsLoaded => Floppy != null;
             public bool IsUnloaded => Floppy is null;
@@ -34,15 +37,17 @@ namespace Sharp80.TRS80
             {
                 try
                 {
+                    var f = new Floppy();
                     if (Reader.ReadBoolean())
-                        Floppy = new DMK(Reader);
-                    else
-                        Floppy = null;
+                        f.Deserialize(Reader, SerializationVersion);
                     PhysicalTrackNumber = Reader.ReadByte();
+                    if (f.Valid)
+                        Floppy = f;
                     return true;
                 }
                 catch
                 {
+                    Floppy = null;
                     return false;
                 }
             }

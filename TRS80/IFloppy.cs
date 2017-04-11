@@ -5,8 +5,9 @@ using System;
 
 namespace Sharp80.TRS80
 {
-    public interface IFloppy
+    public interface IFloppy : ISerializable
     {
+        bool Valid { get; }
         bool DoubleSided { get; }
         bool Changed { get; }
         byte NumTracks { get; }
@@ -15,6 +16,8 @@ namespace Sharp80.TRS80
         string FileDisplayName { get; }
         bool WriteProtected { get; set; }
         bool Formatted { get; }
+        bool Save(FloppyFileType Type);
         SectorDescriptor GetSectorDescriptor(byte TrackNum, bool SideOne, byte SectorIndex);
+        ITrack GetTrack(int TrackNum, bool SideOne);
     }
 }

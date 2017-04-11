@@ -10,7 +10,7 @@ namespace Sharp80Tests
     {
         protected Computer computer;
         
-        protected async Task StartToBasic(ClockSpeed ClockSpeed)
+        protected async Task StartToBasic(ClockSpeed ClockSpeed = ClockSpeed.Unlimited)
         {
             InitComputer(false, ClockSpeed.Unlimited);
             await computer.StartAndAwait();

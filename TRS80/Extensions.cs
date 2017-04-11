@@ -126,21 +126,14 @@ namespace Sharp80.TRS80
         /// </summary>
         /// <param name="Length">The minimum desired length</param>
         /// <param name="Value">The value to pad with</param>
-        /// <returns></returns>
-        public static T[] Pad<T>(this T[] Array, int Length, T Value)
-        {
-            return (Array.Length >= Length) ? Array : Array.Concat(new T[Length - Array.Length].SetAll(Value));
-        }
+        public static T[] Pad<T>(this T[] Array, int Length, T Value) => (Array.Length >= Length) ? Array : Array.Concat(new T[Length - Array.Length].SetAll(Value));
         public static T[] Fill<T>(this T[] Array, T Value)
         {
             for (int i = 0; i < Array.Length; i++)
                 Array[i] = Value;
             return Array;
         }
-        public static bool ArrayEquals<T>(this T[] Source, T[] Other)
-        {
-            return Source.SequenceEqual(Other);
-        }
+        public static bool ArrayEquals<T>(this T[] Source, T[] Other) => Source.SequenceEqual(Other);
         public static string ToArrayDeclaration(this byte[] Input) => "{" + String.Join(",", Input.Select(b => "0x" + b.ToHexString())) + "}";
 
         // NUMERIC FUNCTIONS

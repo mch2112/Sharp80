@@ -107,7 +107,7 @@ namespace Sharp80.Views
                                 if (Key.TryGetNum(out byte i))
                                 {
                                     if (!SelectLibrary(i))
-                                        if (i <= 4)
+                                        if (i < 4)
                                             DriveNumber = i;
                                     return true;
                                 }
@@ -319,10 +319,10 @@ namespace Sharp80.Views
                 switch (Path)
                 {
                     case Storage.FILE_NAME_NEW:
-                        Computer.LoadFloppy(DriveNumber.Value, new DMK(Formatted: true));
+                        Computer.LoadFloppy(DriveNumber.Value, new Floppy(Formatted: true));
                         break;
                     case Storage.FILE_NAME_UNFORMATTED:
-                        Computer.LoadFloppy(DriveNumber.Value, new DMK(Formatted: false));
+                        Computer.LoadFloppy(DriveNumber.Value, new Floppy(Formatted: false));
                         break;
                     case Storage.FILE_NAME_TRSDOS:
                         Computer.LoadTrsDosFloppy(DriveNumber.Value);
@@ -399,10 +399,18 @@ namespace Sharp80.Views
                     f.WriteProtected = !f.WriteProtected;
             }
         }
+
+        /// <summary>
+        /// Returns true if the library is available, even if the 
+        /// selection is invalid
+        /// </summary>
         private bool SelectLibrary(int Index)
         {
             if (LibraryDir is null || !Storage.LibraryOK)
                 return false;
+
+            if (Index < 1 || Index > LibraryMenu.Count)
+                return true;
 
             var item = LibraryMenu[(Index + 9) % 10];
             if (item.IsDir)
