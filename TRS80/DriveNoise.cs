@@ -54,8 +54,7 @@ namespace Sharp80.TRS80
                 driveNoise[i] = (short)(maxDriveNoiseAmp1 * Math.Sin(i / wav1Period * (Math.PI * 2)) +
                                         maxDriveNoiseAmp2 * Math.Sin(i / wav2Period * (Math.PI * 2))
                                         // random noise
-                                        * (0.85 + 0.15 * ((double)r.Next() / (double)(int.MaxValue)))
-                                        );
+                                        * (0.85 + 0.15 * ((double)r.Next() / (double)(int.MaxValue))));
 
             for (int i = 0; i < trackStepNoiseSampleSize; ++i)
             {
@@ -70,6 +69,9 @@ namespace Sharp80.TRS80
             }
             Reset();
         }
+
+        public void TrackStep() => trackStepCursor = 0;
+
         public void Reset()
         {
             trackStepCursor = trackStepNoiseSampleSize;
@@ -85,7 +87,5 @@ namespace Sharp80.TRS80
 
             return sample;
         }
-
-        public void TrackStep() => trackStepCursor = 0;
     }
 }

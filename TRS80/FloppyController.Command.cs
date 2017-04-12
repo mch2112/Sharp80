@@ -168,8 +168,8 @@ namespace Sharp80.TRS80
                             statusRegister |= 0x10;   // Bit 4: Seek error
                         if (CrcError)
                             statusRegister |= 0x08;   // Bit 3: CRC Error
-                        if (OnTrackZero) // Bit 2: Track Zero detect
-                            statusRegister |= 0x04;
+                        if (OnTrackZero)
+                            statusRegister |= 0x04;   // Bit 2: Track Zero detect
                         if (indexHole)
                             statusRegister |= 0x02;   // Bit 1: Index Detect
                         break;

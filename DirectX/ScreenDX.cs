@@ -39,8 +39,8 @@ namespace Sharp80.DirectX
         private SharpDX.Direct3D10.Device1 device3D;
         private SharpDX.Direct2D1.Factory d2DFactory;
 
-        private IDialogs Dialogs { get; set; }
-        private ISettings Settings { get; set; }
+        private IDialogs dialogs;
+        private ISettings settings;
         private bool advancedView = false;
         private bool initialized = false;
         private bool invalid = true;
@@ -48,7 +48,8 @@ namespace Sharp80.DirectX
         private bool erase = false;
         private bool isDrawing = false;
         private bool isDisposed = false;
-
+        private byte[] shadowScreen;
+        private bool shadowIsStdWidth;
         private string statusMessage = String.Empty;
         private int cyclesForMessageRemaining = 0;
         private readonly uint messageDisplayDuration;
@@ -56,13 +57,9 @@ namespace Sharp80.DirectX
         private DXBitmap[] charGenNormal, charGenWide, charGenKanji, charGenKanjiWide;
         private RawRectangleF infoRect, z80Rect, disassemRect;
         private RawRectangleF[] cellsNormal, cellsWide;
-
-        private byte[] shadowScreen;
-
+        
         public IList<byte> ScreenBytes => shadowScreen;
-
-        private bool shadowIsStdWidth;
-
+        
         private SolidColorBrush foregroundBrush,
                                 foregroundBrushWhite,
                                 foregroundBrushGreen,
@@ -80,8 +77,8 @@ namespace Sharp80.DirectX
 
         public ScreenDX(IAppWindow Parent, IDialogs Dialogs, ISettings Settings, uint MessageDisplayDuration)
         {
-            this.Dialogs = Dialogs;
-            this.Settings = Settings;
+            dialogs = Dialogs;
+            settings = Settings;
 
             advancedView = Settings.AdvancedView;
             isGreenScreen = Settings.GreenScreen;
@@ -152,7 +149,7 @@ namespace Sharp80.DirectX
                     AdvancedView = true;
                     break;
                 case Views.UserCommand.GreenScreen:
-                    Settings.GreenScreen = GreenScreen = !GreenScreen;
+                    settings.GreenScreen = GreenScreen = !GreenScreen;
                     break;
             }
         }
@@ -232,7 +229,7 @@ namespace Sharp80.DirectX
                 if (advancedView != value)
                 {
                     advancedView = value;
-                    Settings.AdvancedView = value;
+                    settings.AdvancedView = value;
                     parent.AdvancedViewChange();
                     Resize(DesiredLogicalSize);
                 }
@@ -424,9 +421,9 @@ namespace Sharp80.DirectX
                                         yOrigin + ScreenMetrics.VIRTUAL_SCREEN_HEIGHT - ScreenMetrics.INFO_RECT_HEIGHT - ScreenMetrics.SPACING);
 
             disassemRect = new RawRectangleF(z80Rect.Right,
-                                              z80Rect.Top,
-                                              ScreenMetrics.WINDOWED_WIDTH_ADVANCED,
-                                              z80Rect.Bottom);
+                                             z80Rect.Top,
+                                             ScreenMetrics.WINDOWED_WIDTH_ADVANCED,
+                                             z80Rect.Bottom);
 
             infoRect = new RawRectangleF(z80Rect.Left,
                                          yOrigin + ScreenMetrics.VIRTUAL_SCREEN_HEIGHT - ScreenMetrics.INFO_RECT_HEIGHT,
@@ -471,7 +468,7 @@ namespace Sharp80.DirectX
             }
             catch (Exception Ex)
             {
-                Dialogs.ExceptionAlert(Ex);
+                dialogs.ExceptionAlert(Ex);
             }
             CreateBackBuffer();
             CreateRenderTarget(Format.Unknown);
@@ -535,7 +532,7 @@ namespace Sharp80.DirectX
                     }
                     catch (Exception Ex)
                     {
-                        Dialogs.ExceptionAlert(Ex);
+                        dialogs.ExceptionAlert(Ex);
                         break;
                     }
                     finally
