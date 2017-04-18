@@ -13,7 +13,7 @@ namespace Sharp80.TRS80
 
     public class Clock : ISerializable
     {
-        public event EventHandler SpeedChanged;
+        public event Action SpeedChanged;
 
         public const ulong CLOCK_RATE = 2027520;
 
@@ -49,8 +49,8 @@ namespace Sharp80.TRS80
         private Task execThread;
 
         private Computer computer;
-        private Z80.Z80 z80;
-        private InterruptManager IntMgr;
+        private Z80.Z80 cpu;
+        private InterruptManager intMgr;
 
         private PulseScheduler pulseScheduler = new PulseScheduler();
         private ulong nextRtcIrqTick;
@@ -63,16 +63,16 @@ namespace Sharp80.TRS80
 
         // CONSTRUCTOR
 
-        internal Clock(Computer Computer, Z80.Z80 Processor, ITimer Timer, InterruptManager InterruptManager, ulong TicksPerSoundSample, Action SoundCallback)
+        internal Clock(Computer Computer, Z80.Z80 Cpu, ITimer Timer, InterruptManager InterruptManager, ulong TicksPerSoundSample, Action SoundCallback)
         {
             InitTickMeasurement(Timer.TicksPerSecond);
 
             TickCount = 0;
 
             computer = Computer;
-            z80 = Processor;
+            cpu = Cpu;
             timer = Timer;
-            IntMgr = InterruptManager;
+            intMgr = InterruptManager;
 
             ticksPerSoundSample = TicksPerSoundSample;
             soundCallback = SoundCallback;
@@ -168,7 +168,7 @@ namespace Sharp80.TRS80
                 {
                     ResetTriggers();
                     clockSpeed = value;
-                    SpeedChanged?.Invoke(this, EventArgs.Empty);
+                    SpeedChanged?.Invoke();
                     SyncRealTimeOffset();
                 }
             }
@@ -210,15 +210,15 @@ namespace Sharp80.TRS80
             {
                 while (TickCount > nextRtcIrqTick)
                     nextRtcIrqTick += TICKS_PER_IRQ;
-                IntMgr.RtcIntLatch.Latch();
+                intMgr.RtcIntLatch.Latch();
             }
 
             if (waitTrigger.Latched)
             {
                 if (TickCount >= waitTimeout ||
                     computer.FloppyControllerDrq ||
-                    IntMgr.FdcNmiLatch.Latched ||
-                    IntMgr.ResetButtonLatch.Latched)
+                    intMgr.FdcNmiLatch.Latched ||
+                    intMgr.ResetButtonLatch.Latched)
                 {
                     waitTrigger.Unlatch();
                     waitTrigger.ResetTrigger();
@@ -227,25 +227,25 @@ namespace Sharp80.TRS80
 
             // Execute something
 
-            if (IntMgr.Nmi && z80.CanNmi)
+            if (intMgr.Nmi && cpu.CanNmi)
             {
-                IntMgr.ResetNmiTriggers();
+                intMgr.ResetNmiTriggers();
 
-                z80.NonMaskableInterrupt();
+                cpu.NonMaskableInterrupt();
                 TickCount += (11 * TICKS_PER_TSTATE);
             }
             else if (waitTrigger.Latched)
             {
                 TickCount += TICKS_PER_TSTATE;
             }
-            else if (IntMgr.Irq && z80.CanInterrupt)
+            else if (intMgr.Irq && cpu.CanInterrupt)
             {
-                IntMgr.RtcIntLatch.ResetTrigger();
-                TickCount += z80.Interrupt();
+                intMgr.RtcIntLatch.ResetTrigger();
+                TickCount += cpu.Interrupt();
             }
             else
             {
-                TickCount += z80.Exec();
+                TickCount += cpu.Exec();
             }
 
             // Do callbacks

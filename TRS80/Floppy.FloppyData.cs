@@ -206,7 +206,7 @@ namespace Sharp80.TRS80
                 {
                     for (int j = 0; j < numSides; j++)
                     {
-                        var trkBytes = Track.ToTrackBytes(Sectors.Where(s => s.TrackNumber == i && (s.SideOne == (j == 1))), Track.DEFAULT_LENGTH_WITH_HEADER);
+                        var trkBytes = Track.ToTrackBytes(Sectors.Where(s => s.TrackNumber == i && s.Side == j), Track.DEFAULT_LENGTH_WITH_HEADER);
                         Array.Copy(trkBytes, 0, bytes, k, trkBytes.Length);
                         k += trkBytes.Length;
                     }

@@ -143,6 +143,7 @@ namespace Sharp80.Z80
         public byte Op0 => op[0];
         public byte Op1 => op[1];
         public byte Op3 => op[3];
+
         internal string GetOperand(int Index)
         {
             switch (Index)
@@ -153,6 +154,7 @@ namespace Sharp80.Z80
                 default: return String.Empty;
             }
         }
+
         private string Operand0
         {
             get

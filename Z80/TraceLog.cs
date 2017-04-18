@@ -11,20 +11,10 @@ namespace Sharp80.Z80
         private const int MAX_LINES = 1000000;
         private Z80 cpu;
         private List<string> trace;
-
-        private ushort pc;
-        private byte a;
-        private ushort bc;
-        private ushort de;
-        private ushort hl;
-        private ushort ix;
-        private ushort iy;
-        private ushort sp;
-        private byte hlm;
+        private ushort pc, bc, de, hl, ix, iy, sp;
+        private byte a, hlm;
         private string flags;
-
         private int lineCount;
-
         private Object logLock = new Object();
 
         public TraceLog(Z80 Cpu, ulong ElapsedTStataes)
@@ -32,12 +22,19 @@ namespace Sharp80.Z80
             cpu = Cpu;
             trace = new List<string>(100000);
         }
+
+
+        /// <summary>
+        /// Each line has two parts: the left part shows the instruction about to be executed
+        /// and the right shows the state after execution. This requires executing the instruction
+        /// from within this method.
+        /// </summary>
         public ushort Log(ulong ElapsedTStates, Func<Instruction, ushort> Exec)
         {
             var i = cpu.CurrentInstruction;
-
             string inst;
 
+            // Every 20 instructions, show a complete snapshot of the register status
             if (++lineCount % 20 == 0)
             {
                 inst = "=======================================================================================================" + Environment.NewLine + 
@@ -49,8 +46,10 @@ namespace Sharp80.Z80
                 inst = "";
             }
 
+            // Show instruction about to be executed
             inst += $"{ElapsedTStates:000,000,000}   {cpu.PcVal:X4}  {i.FullName(cpu.Memory, cpu.PcVal)}".PadRight(34);
 
+            // Capture register values so we know if they've changed
             pc = cpu.PcVal;
             a = cpu.AVal;
             bc = cpu.BcVal;
@@ -62,10 +61,10 @@ namespace Sharp80.Z80
             hlm = cpu.HlmVal;
             flags = cpu.Flags;
 
-
+            // Execute the current instruction
             var retVal = Exec(i);
 
-            //if (pc == cpu.PcVal) inst += "        "; else inst += $"PC {cpu.PcVal:X4} ";
+            // Show changed registers
             if (a == cpu.AVal) inst += "     ";      else inst += $"A:{cpu.AVal:X2} ";
             if (hl == cpu.HlVal) inst += "        "; else inst += $"HL:{cpu.HlVal:X4} ";
             if (bc == cpu.BcVal) inst += "        "; else inst += $"BC:{cpu.BcVal:X4} ";
@@ -94,7 +93,6 @@ namespace Sharp80.Z80
         }
         public string GetLogAndClear()
         {
-            var t = trace;
             lock (logLock)
             {
                 var ret = String.Join(Environment.NewLine, trace);

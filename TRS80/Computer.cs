@@ -18,18 +18,18 @@ namespace Sharp80.TRS80
         public bool Ready { get; private set; }
         public bool HasRunYet { get; private set; }
 
-        private Z80.Z80 Processor { get; set; }
-        private Clock Clock { get; set; }
-        private FloppyController FloppyController { get; set; }
-        private PortSet PortSet { get; set; }
-        private InterruptManager IntMgr { get; set; }
-        private IScreen Screen { get; set; }
-        private ISound Sound { get; set; }
-        private Tape Tape { get; set; }
-        private Printer Printer { get; set; }
+        private Z80.Z80 cpu;
+        private Clock clock;
+        private FloppyController floppyController;
+        private PortSet ports;
+        private InterruptManager intMgr;
+        private IScreen screen;
+        private ISound sound;
+        private Tape tape;
+        private Printer printer;
         private Memory memory;
-        private ISettings Settings { get; set; }
-        private IDialogs Dialogs { get; set; }
+        private ISettings settings;
+        private IDialogs dialogs;
 
         // CONSTRUCTOR
 
@@ -39,40 +39,41 @@ namespace Sharp80.TRS80
 
             HasRunYet = false;
 
-            this.Screen = Screen;
-            this.Settings = Settings;
-            this.Dialogs = Dialogs;
-            this.Sound = Sound;
+            screen = Screen;
+            settings = Settings;
+            dialogs = Dialogs;
+            sound = Sound;
 
-            Storage.Initialize(Settings, Dialogs);
+            Storage.Initialize(settings, dialogs);
+
             memory = new Memory();
-            IntMgr = new InterruptManager(this);
-            Tape = new Tape(this);
-            PortSet = new PortSet(this);
-            Processor = new Z80.Z80(this);
-            Printer = new Printer();
+            intMgr = new InterruptManager(this);
+            this.tape = new Tape(this);
+            ports = new PortSet(this);
+            cpu = new Z80.Z80(this);
+            printer = new Printer();
 
-            if (this.Sound.Stopped)
-                this.Sound = new SoundNull();
+            if (sound.Stopped)
+                sound = new SoundNull();
             else
-                this.Sound.SampleCallback = PortSet.CassetteOut;
+                sound.SampleCallback = ports.CassetteOut;
 
-            Clock = new Clock(this,
-                              Processor,
+            clock = new Clock(this,
+                              cpu,
                               Timer,
-                              IntMgr,
+                              intMgr,
                               ticksPerSoundSample,
                               Sound.Sample);
 
-            Clock.SpeedChanged += (s, e) => Sound.Mute = Clock.ClockSpeed != ClockSpeed.Normal;
+            clock.SpeedChanged += () => Sound.Mute = clock.ClockSpeed != ClockSpeed.Normal;
 
             DiskUserEnabled = Settings.DiskEnabled;
 
-            FloppyController = new FloppyController(this, PortSet, Clock, IntMgr, Sound, DiskUserEnabled);
+            floppyController = new FloppyController(this, ports, clock, intMgr, Sound, DiskUserEnabled);
 
-            IntMgr.Initialize(PortSet, Tape);
-            Tape.Initialize(Clock, IntMgr);
-            PortSet.Initialize(FloppyController, IntMgr, Tape, Printer);
+            intMgr.Initialize(ports, this.tape);
+            this.tape.Initialize(clock, intMgr);
+            ports.Initialize(floppyController, intMgr, this.tape, printer);
 
             for (byte i = 0; i < 4; i++)
                 LoadFloppy(i);
@@ -95,25 +96,25 @@ namespace Sharp80.TRS80
         /// This may vary from Settings.DiskEnabled because we'll disable
         /// the floppy contoller on start if no disk is in drive 0
         /// </summary>
-        public bool DiskEnabled => FloppyController.Enabled;
-        public bool IsRunning => Clock.IsRunning;
-        public bool IsStopped => Clock.IsStopped;
-        public ushort ProgramCounter => Processor.PcVal;
-        public ulong ElapsedTStates => Clock.ElapsedTStates;
+        public bool DiskEnabled => floppyController.Enabled;
+        public bool IsRunning => clock.IsRunning;
+        public bool IsStopped => clock.IsStopped;
+        public ushort ProgramCounter => cpu.PcVal;
+        public ulong ElapsedTStates => clock.ElapsedTStates;
 
         public Z80.IMemory Memory => memory;
-        public Z80.IPorts Ports => PortSet;
+        public Z80.IPorts Ports => ports;
         public SubArray<byte> VideoMemory => memory.VideoMemory;
 
         public ushort BreakPoint
         {
-            get => Processor.BreakPoint;
-            set => Processor.BreakPoint = value;
+            get => cpu.BreakPoint;
+            set => cpu.BreakPoint = value;
         }
         public bool BreakPointOn
         {
-            get => Processor.BreakPointOn;
-            set => Processor.BreakPointOn = value;
+            get => cpu.BreakPointOn;
+            set => cpu.BreakPointOn = value;
         }
         public bool AltKeyboardLayout
         {
@@ -122,58 +123,58 @@ namespace Sharp80.TRS80
         }
         public bool SoundOn
         {
-            get => Sound.On;
-            set => Sound.On = value;
+            get => sound.On;
+            set => sound.On = value;
         }
-        public bool SoundEnabled => !Sound.Stopped;
+        public bool SoundEnabled => !sound.Stopped;
         public bool DriveNoise
         {
-            get => Sound.UseDriveNoise;
-            set => Sound.UseDriveNoise = value;
+            get => sound.UseDriveNoise;
+            set => sound.UseDriveNoise = value;
         }
         public bool DiskUserEnabled { set; get; }
         public Z80.IStatus CpuStatus
         {
             // Safe to send this out in interface form
-            get => Processor;
+            get => cpu;
         }
 
         // FLOPPY SUPPORT
 
-        public IFloppy GetFloppy(byte DriveNum) => FloppyController.GetFloppy(DriveNum);
+        public IFloppy GetFloppy(byte DriveNum) => floppyController.GetFloppy(DriveNum);
 
-        public bool DriveIsUnloaded(byte DriveNum) => FloppyController.DriveIsUnloaded(DriveNum);
+        public bool DriveIsUnloaded(byte DriveNum) => floppyController.DriveIsUnloaded(DriveNum);
         public string GetIoStatusReport()
         {
-            return FloppyController.StatusReport +
-                   (Tape.MotorOn ? " Tape: " + Tape.StatusReport : String.Empty) +
-                   (Printer.HasContent ? " PRT" : String.Empty);
+            return floppyController.StatusReport +
+                   (tape.MotorOn ? " Tape: " + tape.StatusReport : String.Empty) +
+                   (printer.HasContent ? " PRT" : String.Empty);
         }
-        public bool? DriveBusyStatus => FloppyController.DriveBusyStatus;
-        public bool AnyDriveLoaded => FloppyController.AnyDriveLoaded;
-        public bool FloppyControllerDrq => FloppyController.Drq;
-        public string GetFloppyFilePath(byte DriveNum) => FloppyController.FloppyFilePath(DriveNum);
+        public bool? DriveBusyStatus => floppyController.DriveBusyStatus;
+        public bool AnyDriveLoaded => floppyController.AnyDriveLoaded;
+        public bool FloppyControllerDrq => floppyController.Drq;
+        public string GetFloppyFilePath(byte DriveNum) => floppyController.FloppyFilePath(DriveNum);
         public void SetFloppyFilePath(byte DriveNum, string Path)
         {
-            var f = FloppyController.GetFloppy(DriveNum);
+            var f = floppyController.GetFloppy(DriveNum);
             if (f != null)
                 f.FilePath = Path;
         }
-        public IFloppyControllerStatus FloppyControllerStatus => FloppyController;
-        public bool DiskHasChanged(byte DriveNum) => FloppyController.DiskHasChanged(DriveNum) ?? false;
+        public IFloppyControllerStatus FloppyControllerStatus => floppyController;
+        public bool DiskHasChanged(byte DriveNum) => floppyController.DiskHasChanged(DriveNum) ?? false;
 
         public bool SaveChangedStorage()
         {
             return Storage.SaveFloppies(this) && Storage.SaveTapeIfRequired(this);
         }
-        public void SaveFloppy(byte DriveNum) => FloppyController.SaveFloppy(DriveNum);
+        public void SaveFloppy(byte DriveNum) => floppyController.SaveFloppy(DriveNum);
 
         // RUN AND STEP COMMANDS
 
         public void Start()
         {
             Init();
-            Clock.Start();
+            clock.Start();
         }
         public async Task StartAndAwait()
         {
@@ -185,42 +186,42 @@ namespace Sharp80.TRS80
         {
             if (!HasRunYet)
             {
-                if (!DiskUserEnabled || !FloppyController.Available)
-                    FloppyController.Disable();
+                if (!DiskUserEnabled || !floppyController.Available)
+                    floppyController.Disable();
 
                 HasRunYet = true;
             }
-            Sound.Mute = Clock.ClockSpeed != ClockSpeed.Normal;
+            sound.Mute = clock.ClockSpeed != ClockSpeed.Normal;
         }
         public void Stop(bool WaitForStop)
         {
-            Sound.Mute = true;
-            Clock.Stop();
+            sound.Mute = true;
+            clock.Stop();
             if (WaitForStop)
             {
-                while (!Clock.IsStopped)
+                while (!clock.IsStopped)
                     Thread.Sleep(0);     // make sure we're not in the middle of a cycle
             }
         }
         public async Task StopAndAwait()
         {
-            Sound.Mute = true;
-            await Clock.StopAndAwait();
+            sound.Mute = true;
+            await clock.StopAndAwait();
         }
-        public void ResetButton() => IntMgr.ResetButtonLatch.Latch();
+        public void ResetButton() => intMgr.ResetButtonLatch.Latch();
         public void Reset()
         {
             if (Ready)
             {
                 ResetButton();
-                Screen.Reset();
+                screen.Reset();
             }
         }
         public void StepOver()
         {
             if (!IsRunning)
             {
-                if (Processor.StepOver())
+                if (cpu.StepOver())
                     Start();
                 else
                     Step();
@@ -230,7 +231,7 @@ namespace Sharp80.TRS80
         {
             if (!IsRunning)
             {
-                Processor.SteppedOut = false;
+                cpu.SteppedOut = false;
                 Start();
             }
         }
@@ -238,50 +239,50 @@ namespace Sharp80.TRS80
         {
             if (!HasRunYet)
                 Init();
-            Clock.Step();
+            clock.Step();
         }
         public void Jump(ushort Address)
         {
             Stop(true);
-            Processor.Jump(Address);
+            cpu.Jump(Address);
         }
         
         // CLOCK SPEED
 
         public ClockSpeed ClockSpeed
         {
-            get => Clock.ClockSpeed;
-            set => Clock.ClockSpeed = value;
+            get => clock.ClockSpeed;
+            set => clock.ClockSpeed = value;
         }
         
         // CHARGEN MODES
 
         public bool WideCharMode
         {
-            get => Screen.WideCharMode;
-            set => Screen.WideCharMode = value;
+            get => screen.WideCharMode;
+            set => screen.WideCharMode = value;
         }
         public bool AltCharMode
         {
-            get => Screen.AltCharMode;
-            set => Screen.AltCharMode = value;
+            get => screen.AltCharMode;
+            set => screen.AltCharMode = value;
         }
 
         // TRACE
 
         public bool TraceOn
         {
-            get => Processor.TraceOn;
-            set => Processor.TraceOn = value;
+            get => cpu.TraceOn;
+            set => cpu.TraceOn = value;
         }
-        public string Trace => Processor.Trace;
+        public string Trace => cpu.Trace;
 
         // CALLBACK MANAGEMENT
 
         /// <summary>
         /// Adds a pulse req without resetting the trigger
         /// </summary>
-        internal void RegisterPulseReq(PulseReq Req, bool SetTrigger) => Clock.RegisterPulseReq(Req, SetTrigger);
+        internal void RegisterPulseReq(PulseReq Req, bool SetTrigger) => clock.RegisterPulseReq(Req, SetTrigger);
 
         // FLOPPY SUPPORT
 
@@ -309,13 +310,13 @@ namespace Sharp80.TRS80
                     ret = true;
                     break;
                 case "":
-                    FloppyController.UnloadDrive(DriveNum);
+                    floppyController.UnloadDrive(DriveNum);
                     ret = true;
                     break;
                 default:
                     if (FilePath.StartsWith("\\")) // relative to library
                         FilePath = Path.Combine(Storage.LibraryPath, FilePath.Substring(1));
-                    ret = FloppyController.LoadFloppy(DriveNum, FilePath);
+                    ret = floppyController.LoadFloppy(DriveNum, FilePath);
                     break;
             }
             if (ret)
@@ -328,7 +329,7 @@ namespace Sharp80.TRS80
 
             return ret;
         }
-        public void LoadFloppy(byte DriveNum, Floppy Floppy) => FloppyController.LoadFloppy(DriveNum, Floppy);
+        public void LoadFloppy(byte DriveNum, Floppy Floppy) => floppyController.LoadFloppy(DriveNum, Floppy);
 
         public void LoadTrsDosFloppy(byte DriveNum) => LoadFloppy(DriveNum, new Floppy(Resources.TRSDOS, Storage.FILE_NAME_TRSDOS));
 
@@ -339,7 +340,7 @@ namespace Sharp80.TRS80
             if (running)
                 Stop(WaitForStop: true);
 
-            FloppyController.UnloadDrive(DriveNum);
+            floppyController.UnloadDrive(DriveNum);
 
             Storage.SaveDefaultDriveFileName(DriveNum, String.Empty);
 
@@ -349,25 +350,25 @@ namespace Sharp80.TRS80
 
         // TAPE DRIVE
 
-        public bool TapeLoad(string Path) => Tape.Load(Path);
-        public string TapeFilePath { get => Tape.FilePath; set => Tape.FilePath = value; }
-        public void TapeLoadBlank() => Tape.LoadBlank();
-        public void TapePlay() => Tape.Play();
-        public void TapeRecord() => Tape.Record();
-        public void TapeRewind() => Tape.Rewind();
-        public void TapeEject() => Tape.Eject();
-        public void TapeStop() => Tape.Stop();
-        public void TapeSave() => Tape.Save();
-        public bool TapeChanged => Tape.Changed;
-        public bool TapeMotorOnSignal { set => Tape.MotorOnSignal = value; }
-        public bool TapeMotorOn => Tape.MotorOn;
-        public float TapePercent => Tape.Percent;
-        public float TapeCounter => Tape.Counter;
-        public TapeStatus TapeStatus => Tape.Status;
-        public bool TapeIsBlank => Tape.IsBlank;
-        public string TapePulseStatus => Tape.PulseStatus;
-        public Baud TapeSpeed => Tape.Speed;
-        public int TapeLength => Tape.Length;
+        public bool TapeLoad(string Path) => tape.Load(Path);
+        public string TapeFilePath { get => tape.FilePath; set => tape.FilePath = value; }
+        public void TapeLoadBlank() => tape.LoadBlank();
+        public void TapePlay() => tape.Play();
+        public void TapeRecord() => tape.Record();
+        public void TapeRewind() => tape.Rewind();
+        public void TapeEject() => tape.Eject();
+        public void TapeStop() => tape.Stop();
+        public void TapeSave() => tape.Save();
+        public bool TapeChanged => tape.Changed;
+        public bool TapeMotorOnSignal { set => tape.MotorOnSignal = value; }
+        public bool TapeMotorOn => tape.MotorOn;
+        public float TapePercent => tape.Percent;
+        public float TapeCounter => tape.Counter;
+        public TapeStatus TapeStatus => tape.Status;
+        public bool TapeIsBlank => tape.IsBlank;
+        public string TapePulseStatus => tape.PulseStatus;
+        public Baud TapeSpeed => tape.Speed;
+        public int TapeLength => tape.Length;
 
         /// <summary>
         /// Backdoor to get or change the initial user selection at
@@ -381,11 +382,9 @@ namespace Sharp80.TRS80
 
         // PRINTER
 
-        public bool PrinterHasContent => Printer.HasContent;
-        public bool PrinterSave() => Printer.Save();
-        public string PrinterContent => Printer.PrintBuffer;
-        public string PrinterFilePath => Printer.FilePath;
-        public void PrinterReset() => Printer.Reset();
+        public bool PrinterHasContent => printer.HasContent;
+        public string PrinterContent => printer.PrintBuffer;
+        public void PrinterReset() => printer.Reset();
 
         // SNAPSHOTS
 
@@ -421,14 +420,14 @@ namespace Sharp80.TRS80
         {
             Writer.Write(SERIALIZATION_VERSION);
 
-            Processor.Serialize(Writer);
-            PortSet.Serialize(Writer);
+            cpu.Serialize(Writer);
+            ports.Serialize(Writer);
             memory.Serialize(Writer);
-            Clock.Serialize(Writer);
-            FloppyController.Serialize(Writer);
-            IntMgr.Serialize(Writer);
-            Screen.Serialize(Writer);
-            Tape.Serialize(Writer);
+            clock.Serialize(Writer);
+            floppyController.Serialize(Writer);
+            intMgr.Serialize(Writer);
+            screen.Serialize(Writer);
+            tape.Serialize(Writer);
         }
         private bool Deserialize(BinaryReader Reader)
         {
@@ -438,14 +437,14 @@ namespace Sharp80.TRS80
             {
                 if (ver >= 8) // currently supporting v 8 & 9
                 {
-                    if (Processor.Deserialize(Reader, ver) &&
-                        PortSet.Deserialize(Reader, ver) &&
+                    if (cpu.Deserialize(Reader, ver) &&
+                        ports.Deserialize(Reader, ver) &&
                         memory.Deserialize(Reader, ver) &&
-                        Clock.Deserialize(Reader, ver) &&
-                        FloppyController.Deserialize(Reader, ver) &&
-                        IntMgr.Deserialize(Reader, ver) &&
-                        Screen.Deserialize(Reader, ver) &&
-                        Tape.Deserialize(Reader, ver))
+                        clock.Deserialize(Reader, ver) &&
+                        floppyController.Deserialize(Reader, ver) &&
+                        intMgr.Deserialize(Reader, ver) &&
+                        screen.Deserialize(Reader, ver) &&
+                        tape.Deserialize(Reader, ver))
                     {
                         // ok
                         return true;
@@ -488,18 +487,18 @@ namespace Sharp80.TRS80
                 return sb.ToString();
             }
         }
-        public string GetInternalsReport() => Processor.GetInternalsReport();
-        public string GetClockReport() => Clock.GetInternalsReport();
-        public string GetDisassembly() => Processor.GetRealtimeDisassembly();public bool LoadCMDFile(CmdFile File)
+        public string GetInternalsReport() => cpu.GetInternalsReport();
+        public string GetClockReport() => clock.GetInternalsReport();
+        public string GetDisassembly() => cpu.GetRealtimeDisassembly();public bool LoadCMDFile(CmdFile File)
         {
             Stop(WaitForStop: true);
 
             if (File.Valid && File.Load(memory))
             {
                 if (File.ExecAddress.HasValue)
-                    Processor.Jump(File.ExecAddress.Value);
+                    cpu.Jump(File.ExecAddress.Value);
                 else
-                    Processor.Jump(File.LowAddress);
+                    cpu.Jump(File.LowAddress);
                 return true;
             }
             else
@@ -508,21 +507,21 @@ namespace Sharp80.TRS80
             }
         }
 
-        public string Disassemble(ushort Start, ushort End, Z80.DisassemblyMode Mode) => Processor.Disassemble(Start, End, Mode);
-        public string GetInstructionSetReport() => Processor.GetInstructionSetReport();
-        public Z80.Assembler.Assembly Assemble(string SourceText) => Processor.Assemble(SourceText);
+        public string Disassemble(ushort Start, ushort End, Z80.DisassemblyMode Mode) => cpu.Disassemble(Start, End, Mode);
+        public string GetInstructionSetReport() => cpu.GetInstructionSetReport();
+        public Z80.Assembler.Assembly Assemble(string SourceText) => cpu.Assemble(SourceText);
         public async Task Delay(uint VirtualMSec)
         {
             bool done = false;
             var pr = new PulseReq(PulseReq.DelayBasis.Microseconds, VirtualMSec * 1000, () => { done = true; });
-            Clock.RegisterPulseReq(pr, true);
+            clock.RegisterPulseReq(pr, true);
             while (!done && pr.Active && IsRunning)
                 await Task.Delay(Math.Max(2, (int)VirtualMSec / 100));
         }
         public bool HistoricDisassemblyMode
         {
-            get => Processor.HistoricDisassemblyMode;
-            set => Processor.HistoricDisassemblyMode = value;
+            get => cpu.HistoricDisassemblyMode;
+            set => cpu.HistoricDisassemblyMode = value;
         }
 
 
@@ -570,11 +569,10 @@ namespace Sharp80.TRS80
 
         public async Task Shutdown()
         {
-            FloppyController.Shutdown();
-            Printer.Shutdown();
-            Tape.Shutdown();
+            floppyController.Shutdown();
+            tape.Shutdown();
             await StopAndAwait();
-            await Sound.Shutdown();
+            await sound.Shutdown();
         }
     }
 }

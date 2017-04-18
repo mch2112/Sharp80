@@ -26,7 +26,6 @@ namespace Sharp80.Views
         }
         protected override bool processKey(KeyState Key)
         {
-            Invalidate();
             if (Key.Pressed && Key.IsUnmodified)
             {
                 if (Computer.PrinterHasContent)
@@ -51,6 +50,7 @@ namespace Sharp80.Views
                     }
                 }
             }
+            Invalidate();
             return base.processKey(Key);
         }
         protected override byte[] GetViewBytes()
@@ -106,8 +106,10 @@ namespace Sharp80.Views
         {
             if (Computer.PrinterHasContent)
             {
-                Computer.PrinterSave();
-                Dialogs.ShowTextFile(Computer.PrinterFilePath);
+                System.IO.Directory.CreateDirectory(Storage.DefaultPrintDir);
+                string filePath = System.IO.Path.Combine(Storage.DefaultPrintDir, "Printer.txt").MakeUniquePath();
+                System.IO.File.WriteAllText(filePath, Computer.PrinterContent);
+                Dialogs.ShowTextFile(filePath);
                 return true;
             }
             else

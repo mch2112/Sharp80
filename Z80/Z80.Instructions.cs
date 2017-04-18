@@ -263,8 +263,8 @@ namespace Sharp80.Z80
             HF = true;
             NF = true;
 
-            F5 = (A.Value & S_F5) == S_F5;
-            F3 = (A.Value & S_F3) == S_F3;
+            F3 = A.Value.IsBitSet(3);
+            F5 = A.Value.IsBitSet(5);
         }
         private void neg()
         {
@@ -277,8 +277,8 @@ namespace Sharp80.Z80
             HF = CF;
             CF = !CF;
 
-            F5 = (A.Value & S_F5) == S_F5;
-            F3 = (A.Value & S_F3) == S_F3;
+            F3 = A.Value.IsBitSet(3);
+            F5 = A.Value.IsBitSet(5);
 
             NF = false;
         }
@@ -288,8 +288,8 @@ namespace Sharp80.Z80
             NF = false;
             CF = true;
 
-            F5 = (A.Value & S_F5) == S_F5;
-            F3 = (A.Value & S_F3) == S_F3;
+            F3 = A.Value.IsBitSet(3);
+            F5 = A.Value.IsBitSet(5);
         }
 
         private void bitHLM(int shift)
@@ -303,27 +303,23 @@ namespace Sharp80.Z80
         {
             bit(r.Value, shift);
 
-            var off = r.OffsetAddress;
-            var ixdh = off >> 8;
-
-            F3 = (ixdh & S_F3) == S_F3;
-            F5 = (ixdh & S_F5) == S_F5;
-
-            WZ.Value = off;
+            WZ.Value = r.OffsetAddress;
+            F3 = WZ.Value.IsBitSet(11);
+            F5 = WZ.Value.IsBitSet(13);
         }
         private void bit(byte val, int shift)
         {
             F.Value &= (R_NF & R_F3 & R_F5 & R_SF);
-            F.Value |= S_HF;
-
+            
+            HF = true;
             ZF = ((val >> shift) & BIT_0_MASK) == 0x00;
             VF = ZF;
 
             if (NZ && shift == 7)
                 F.Value |= S_SF;
 
-            F3 = (val & S_F3) == S_F3;
-            F5 = (val & S_F5) == S_F5;
+            F3 = val.IsBitSet(3);
+            F5 = val.IsBitSet(5);
         }
 
         private void set(IRegister<byte> r, byte bit) => r.Value |= BIT[bit];
@@ -386,31 +382,29 @@ namespace Sharp80.Z80
             F.Value = SZ53(sum);
 
             HF = (a & 0x0F) + (val & 0x0F) + cfVal > 0x0F;
-            Debug.Assert(HF == (((a ^ sum ^ val) & S_HF) == S_HF));
 
             CF = sum > 0xFF;
             VF = ((a ^ val ^ 0x80) & (val ^ sum) & 0x80) == 0x80;
 
             A.Value = (byte)sum;
         }
-        private void adc(IRegister<ushort> r1, IRegister<ushort> r2)
+        private void adc_hl(IRegister<ushort> r)
         {
-            WZ.Value = r1.Value;
+            WZ.Value = HL.Value;
             WZ.Inc();
 
             int cfVal = CF ? 1 : 0;
-            int sum = r1.Value + r2.Value + cfVal;
+            int sum = HL.Value + r.Value + cfVal;
 
             F.Value = (byte)((sum >> 8) & (S_SF | S_F5 | S_F3));
 
-            HF = ((r1.Value & 0x0FFF) + (r2.Value & 0x0FFF) + cfVal) > 0x0FFF;
-            Debug.Assert(HF == ((((r1.Value ^ sum ^ r2.Value) >> 8) & S_HF) != 0));
+            HF = ((HL.Value & 0x0FFF) + (r.Value & 0x0FFF) + cfVal) > 0x0FFF;
 
-            VF = ((r1.Value ^ r2.Value ^ 0x8000) & (r2.Value ^ sum) & 0x8000) == 0x8000;
+            VF = ((HL.Value ^ r.Value ^ 0x8000) & (r.Value ^ sum) & 0x8000) == 0x8000;
             ZF = (sum & 0xFFFF) == 0;
             CF = sum > 0xFFFF;
 
-            r1.Value = (ushort)sum;
+            HL.Value = (ushort)sum;
         }
 
         private void sub(IRegister<byte> r) => sub(r.Value);
@@ -429,8 +423,6 @@ namespace Sharp80.Z80
             F.Value = (byte)(SZ53(diff & 0xFF) | S_NF);
 
             HF = (a & 0x0F) - (val & 0x0F) < 0;
-
-            Debug.Assert(HF == (((a ^ diff ^ val) & S_HF) == S_HF));
 
             CF = diff < 0;
             VF = ((val ^ a) & (a ^ diff) & 0x80) == 0x80;
@@ -454,31 +446,25 @@ namespace Sharp80.Z80
 
             HF = (a & 0x0F) - (val & 0x0F) - cfVal < 0;
 
-            Debug.Assert(HF == (((a ^ diff ^ val) & S_HF) == S_HF));
-
             CF = diff < 0;
             VF = ((a ^ val) & (a ^ diff) & 0x80) == 0x80;
         }
-        private void sbc(IRegister<ushort> r1, IRegister<ushort> r2)
+        private void sbc_hl(IRegister<ushort> r2)
         {
-            Debug.Assert(r1.Equals(HL));
-
-            WZ.Value = r1.Value;
+            WZ.Value = HL.Value;
             WZ.Inc();
 
             int cfVal = CF ? 1 : 0;
-            int diff = r1.Value - r2.Value - cfVal;
+            int diff = HL.Value - r2.Value - cfVal;
 
             F.Value = (byte)(S_NF | (diff >> 8) & (S_SF | S_F5 | S_F3));
-            HF = ((r1.Value & 0x0FFF) - (r2.Value & 0x0FFF)) - cfVal < 0;
+            HF = ((HL.Value & 0x0FFF) - (r2.Value & 0x0FFF)) - cfVal < 0;
 
-            Debug.Assert(HF == ((((r1.Value ^ diff ^ r2.Value) >> 8) & S_HF) != 0x00));
-
-            VF = ((r2.Value ^ r1.Value) & (r1.Value ^ diff) & 0x8000) != 0x0000;
+            VF = ((r2.Value ^ HL.Value) & (HL.Value ^ diff) & 0x8000) != 0x0000;
             ZF = diff == 0;
             CF = diff < 0;
 
-            r1.Value = (ushort)diff;
+            HL.Value = (ushort)diff;
         }
 
         private void inc(IRegister<byte> r)

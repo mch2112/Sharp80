@@ -61,17 +61,12 @@ namespace Sharp80.Z80
                                                                         Lib.GetSpacedHex(Memory, n.addr, n.inst.Size),
                                                                         n.inst.FullName(Memory, n.addr))));
         }
-        internal string GetLineInfo(string Prefix, ushort PC, Instruction inst)
-        {
-            return string.Format("{0}{1}  {2} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(Memory, PC));
-        }
         internal string GetLineInfo(string Prefix, ref ushort PC, Instruction inst)
         {
             var s = string.Format("{0}{1}  {2} {3}", Prefix, PC.ToHexString(), Lib.GetSpacedHex(Memory, PC, inst.Size), inst.FullName(Memory, PC));
             PC += inst.Size;
             return s;
         }
-        public string GetLineInfo(ushort PC) => GetLineInfo(string.Empty, PC, GetInstructionAt(PC));
 
         // INSTRUCTION SET
 
@@ -81,20 +76,27 @@ namespace Sharp80.Z80
 
         public ushort PcVal => PC.Value;
         public ushort SpVal => SP.Value;
-        public ushort AfVal => AF.Value;
+
         public byte AVal => A.Value;
+
+        public ushort AfVal => AF.Value;
         public ushort BcVal => BC.Value;
         public ushort DeVal => DE.Value;
         public ushort HlVal => HL.Value;
+
         public ushort IxVal => IX.Value;
         public ushort IyVal => IY.Value;
+
         public ushort AfpVal => AFp.Value;
         public ushort BcpVal => BCp.Value;
         public ushort DepVal => DEp.Value;
         public ushort HlpVal => HLp.Value;
+
         public byte HlmVal => HLM.Value;
+
         public ushort WzVal => WZ.Value;
-        public string Flags => flagsToString[F.Value];
         public ushort IrVal => (ushort)((I.Value << 8) | R.Value);
+
+        public string Flags => flagsToString[F.Value];
     }
 }

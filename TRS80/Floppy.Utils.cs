@@ -239,25 +239,12 @@ namespace Sharp80.TRS80
                     byte secNum = startingSectorNumber;
                     for (byte k = 0; k < sectorsPerTrack; k++)
                     {
-                        var sd = new SectorDescriptor()
-                        {
-                            TrackNumber = i,
-                            SectorNumber = secNum,
-                            SideOne = j > 0,
-                            InUse = true,
-                            SectorSize = SECTOR_SIZE,
-                            SectorSizeCode = GetDataLengthCode(SECTOR_SIZE),
-                            SectorData = new byte[SECTOR_SIZE],
-                            DAM = DAM_NORMAL,
-                            DoubleDensity = DoubleDensity,
-                            CrcError = false
-                        };
+                        var sectorData = new byte[SECTOR_SIZE];
 
                         if (i != DIRECTORY_TRACK)
-                            for (int l = 0; l < SECTOR_SIZE; l++)
-                                sd.SectorData[l] = 0xE5;
+                            sectorData.Fill((byte)0xE5);
 
-                        sectors.Add(sd);
+                        sectors.Add(new SectorDescriptor(i, secNum, j > 0, DoubleDensity, DAM_NORMAL, sectorData));
 
                         if (DoubleDensity)
                         {

@@ -31,7 +31,10 @@ namespace Sharp80.Views
                 Indent($"DE  {Status.DeVal:X4}  DE' {Status.DepVal:X4}") +
                 Indent($"HL  {Status.HlVal:X4}  HL' {Status.HlpVal:X4}") +
                 Format() +
-                Indent($"IX  {Status.IxVal:X4}  IY' {Status.IyVal:X4}")));
+                Indent($"IX  {Status.IxVal:X4}  IY {Status.IyVal:X4}") +
+                Indent($"IR  {Status.IrVal:X4}  WZ {Status.WzVal:X4}") +
+                Format() +
+                Indent(Status.Flags)));
         }
     }
 }

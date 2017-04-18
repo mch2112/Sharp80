@@ -78,39 +78,13 @@ namespace Sharp80.TRS80
                 }
             }
             
-            public int CommandCategory
-            {
-                get
-                {
-                    switch (Type)
-                    {
-                        case FdcCommandType.Restore:
-                        case FdcCommandType.Seek:
-                        case FdcCommandType.Step:
-                            return 1;
-                        case FdcCommandType.ReadSector:
-                        case FdcCommandType.WriteSector:
-                            return 2;
-                        case FdcCommandType.ReadTrack:
-                        case FdcCommandType.WriteTrack:
-                        case FdcCommandType.ReadAddress:
-                            return 3;
-                        case FdcCommandType.ForceInterrupt:
-                        case FdcCommandType.ForceInterruptImmediate:
-                            return 4;
-                        default:
-                            return 0;
-                    }
-                }
-            }
-
-            public ulong StepRate => stepRates[CommandRegister & 0x03];
-            public bool MarkSectorDeleted => CommandRegister.IsBitSet(0);
-            public bool SideSelectVerify => CommandRegister.IsBitSet(1);
-            public bool TypeOneVerify => CommandRegister.IsBitSet(2);
-            public bool Delay => CommandRegister.IsBitSet(2);
-            public bool SideOneExpected => CommandRegister.IsBitSet(3);
-            public bool MultipleRecords => CommandRegister.IsBitSet(4);
+            public ulong StepRate =>           stepRates[CommandRegister & 0x03];
+            public bool MarkSectorDeleted =>   CommandRegister.IsBitSet(0);
+            public bool SideSelectVerify =>    CommandRegister.IsBitSet(1);
+            public bool TypeOneVerify =>       CommandRegister.IsBitSet(2);
+            public bool Delay =>               CommandRegister.IsBitSet(2);
+            public bool SideOneExpected =>     CommandRegister.IsBitSet(3);
+            public bool MultipleRecords =>     CommandRegister.IsBitSet(4);
             public bool UpdateTrackRegister => CommandRegister.IsBitSet(4);
 
             public byte GetStatus(bool MotorOn, bool Busy, bool IndexDetect, bool DriveLoaded, bool WriteProtected, bool Drq, bool SectorDeleted, bool SeekError, bool CrcError, bool LostData, bool OnTrackZero)
@@ -144,6 +118,7 @@ namespace Sharp80.TRS80
                 byte statusRegister = 0x00;
                 bool indexHole = false;
                 bool headLoaded = false;
+
                 if (!MotorOn)
                 {
                     statusRegister |= 0x80; // not ready

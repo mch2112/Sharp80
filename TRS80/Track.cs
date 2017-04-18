@@ -34,11 +34,11 @@ namespace Sharp80.TRS80
             // Combine to single ushort, strip out unused bit 14
             header = Data.Slice(0, HEADER_LENGTH_BYTES).ToUShortArray().Select(h => (ushort)(h & (OFFSET_MASK | DOUBLE_DENSITY_MASK))).ToArray();
 
-            this.data = Data.Slice(HEADER_LENGTH_BYTES);
+            data = Data.Slice(HEADER_LENGTH_BYTES);
 
-            System.Diagnostics.Debug.Assert(Data.Length % 2 == 0);
-            if (Data.Length % 2 == 1)
-                Data = Data.Pad(Data.Length + 1, (byte)0x00);
+            System.Diagnostics.Debug.Assert(data.Length % 2 == 0);
+            if (data.Length % 2 == 1)
+                data = data.Pad(data.Length + 1, (byte)0x00);
 
             InitDensity();
             InitDensityMap();
@@ -46,7 +46,9 @@ namespace Sharp80.TRS80
             if (SingleDensitySingleByte)
                 ConvertFromSingleByte();
 
-            LengthWithHeader = this.data.Length + HEADER_LENGTH_BYTES;
+            // As of this point, the data array is of fixed size and will never be reassigned
+
+            LengthWithHeader = data.Length + HEADER_LENGTH_BYTES;
 
             //RebuildHeader();
             //Changed = true;
@@ -302,7 +304,7 @@ namespace Sharp80.TRS80
             byte b;
             foreach (var s in Sectors)
             {
-                sideNum = (byte)(s.SideOne ? 1 : 0);
+                sideNum = s.Side;
                 dataLengthCode = Floppy.GetDataLengthCode(s.SectorData.Length);
                 ushort crc;
                 if (s.DoubleDensity)
@@ -390,7 +392,7 @@ namespace Sharp80.TRS80
 
         // HELPERS
 
-        // This might seem like cheating but the FDC hardware does this, and likely does the 
+        // This method might seem like cheating but the FDC hardware does this, and likely does the 
         // determination in a similar way.
         public bool HasIdamAt(int TrackIndex, bool DoubleDensity)
         {
@@ -439,11 +441,15 @@ namespace Sharp80.TRS80
             for (int SectorIndex = 0; SectorIndex < HEADER_LENGTH && Header[SectorIndex] > 0; SectorIndex++)
             {
                 bool density = Header[SectorIndex] >= DOUBLE_DENSITY_MASK;
-                int offset = (Header[SectorIndex] & OFFSET_MASK) - HEADER_LENGTH_BYTES;
                 int byteMultiple = density ? 1 : 2;
+                int offset = (Header[SectorIndex] & OFFSET_MASK) - HEADER_LENGTH_BYTES;
                 if (data[offset] != Floppy.IDAM)
                     continue;
 
+                byte trackNum = data[offset + 1 * byteMultiple];
+                bool sideOne = data[offset + 2 * byteMultiple] > 0;
+                byte sectorNum = data[offset + 3 * byteMultiple];
+                
                 byte dam = 0x00;
                 int dataStart = 0x00;
                 bool deleted = false;
@@ -459,37 +465,34 @@ namespace Sharp80.TRS80
 
                 var sizeCode = data[offset + 4 * byteMultiple];
                 var dataLength = Floppy.GetDataLengthFromCode(sizeCode);
-
-                var sd = new SectorDescriptor()
-                {
-                    TrackNumber = data[offset + 1 * byteMultiple],
-                    SideOne = data[offset + 2 * byteMultiple] > 0,
-                    SectorNumber = data[offset + 3 * byteMultiple],
-                    SectorSizeCode = sizeCode,
-                    SectorSize = dataLength,
-                    DoubleDensity = density,
-                    SectorData = new byte[dataLength]
-                };
-
+                var sectorData = new byte[dataLength];
+                bool crcError;
+                bool inUse;
                 if (dam == 0x00)
                 {
-                    sd.CrcError = true;
-                    sd.InUse = false;
+                    crcError = true;
+                    inUse = false;
                 }
                 else
                 {
-                    sd.DAM = dam;
-                    sd.InUse = !deleted;
-                    ushort actualCrc = Lib.Crc(sd.DoubleDensity ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET, sd.DAM);
+                    inUse = !deleted;
+                    ushort actualCrc = Lib.Crc(density ? Floppy.CRC_RESET_A1_A1_A1 : Floppy.CRC_RESET, dam);
                     for (int i = 0; i < dataLength; i++)
                     {
-                        sd.SectorData[i] = data[dataStart + i * byteMultiple];
-                        actualCrc = Lib.Crc(actualCrc, sd.SectorData[i]);
+                        sectorData[i] = data[dataStart + i * byteMultiple];
+                        actualCrc = Lib.Crc(actualCrc, sectorData[i]);
                     }
                     ushort recordedCrc = Lib.CombineBytes(data[dataStart + (dataLength + 1) * byteMultiple], data[dataStart + dataLength * byteMultiple]);
-                    sd.CrcError = actualCrc != recordedCrc;
+                    crcError = actualCrc != recordedCrc;
                 }
-                sds.Add(sd);
+                sds.Add(new SectorDescriptor(trackNum,
+                                             sectorNum,
+                                             sideOne,
+                                             density,
+                                             dam,
+                                             sectorData,
+                                             inUse,
+                                             crcError));
             }
             return sds.OrderBy(s => s.SectorNumber).ToList();
         }

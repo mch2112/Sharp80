@@ -13,16 +13,16 @@ namespace Sharp80.TRS80
         public const string FILE_NAME_NEW = "{NEW}";
         public const string FILE_NAME_UNFORMATTED = "{UNFORMATTED}";
 
-        private static ISettings Settings;
-        private static IDialogs Dialogs;
+        private static ISettings settings;
+        private static IDialogs dialogs;
         private static string userPath = null;
         private static string appDataPath = null;
         private static string libraryPath = null;
 
         public static void Initialize(ISettings Settings, IDialogs Dialogs)
         {
-            Storage.Settings = Settings;
-            Storage.Dialogs = Dialogs;
+            settings = Settings;
+            dialogs = Dialogs;
         }
 
         // SYSTEM PATHS
@@ -65,16 +65,16 @@ namespace Sharp80.TRS80
             switch (DriveNum)
             {
                 case 0:
-                    fileName = Settings.Disk0Filename;
+                    fileName = settings.Disk0Filename;
                     break;
                 case 1:
-                    fileName = Settings.Disk1Filename;
+                    fileName = settings.Disk1Filename;
                     break;
                 case 2:
-                    fileName = Settings.Disk2Filename;
+                    fileName = settings.Disk2Filename;
                     break;
                 case 3:
-                    fileName = Settings.Disk3Filename;
+                    fileName = settings.Disk3Filename;
                     break;
             }
             if (File.Exists(fileName) || IsFileNameToken(fileName))
@@ -94,16 +94,16 @@ namespace Sharp80.TRS80
             switch (DriveNum)
             {
                 case 0:
-                    Settings.Disk0Filename = FilePath;
+                    settings.Disk0Filename = FilePath;
                     break;
                 case 1:
-                    Settings.Disk1Filename = FilePath;
+                    settings.Disk1Filename = FilePath;
                     break;
                 case 2:
-                    Settings.Disk2Filename = FilePath;
+                    settings.Disk2Filename = FilePath;
                     break;
                 case 3:
-                    Settings.Disk3Filename = FilePath;
+                    settings.Disk3Filename = FilePath;
                     break;
             }
         }
@@ -114,7 +114,7 @@ namespace Sharp80.TRS80
             if (string.IsNullOrWhiteSpace(ext))
                 ext = "dsk";
 
-            return Dialogs.UserSelectFile(Save: Save,
+            return dialogs.UserSelectFile(Save: Save,
                                           DefaultPath: DefaultPath,
                                           Title: Prompt,
                                           Filter: DskOnly ? "TRS-80 DSK Files (*.dsk)|*.dsk|All Files (*.*)|*.*"
@@ -137,7 +137,7 @@ namespace Sharp80.TRS80
             bool? save = false;
 
             if (Computer.DiskHasChanged(DriveNum))
-                save = Dialogs.AskYesNoCancel($"Drive {DriveNum} has changed. Save it?");
+                save = dialogs.AskYesNoCancel($"Drive {DriveNum} has changed. Save it?");
 
             if (!save.HasValue)
                 return false;
@@ -147,7 +147,7 @@ namespace Sharp80.TRS80
                 var path = Computer.GetFloppyFilePath(DriveNum);
                 if (!IsPathWritable(path))
                 {
-                    var defaultPath = Settings.DefaultFloppyDirectory;
+                    var defaultPath = settings.DefaultFloppyDirectory;
                     if (String.IsNullOrWhiteSpace(defaultPath) || !Directory.Exists(defaultPath))
                         path = DocsPath;
 
@@ -179,7 +179,7 @@ namespace Sharp80.TRS80
         /// <returns></returns>
         public static string GetDefaultTapeFileName()
         {
-            string path = Settings.LastTapeFile;
+            string path = settings.LastTapeFile;
                 
             if (File.Exists(path) || IsFileNameToken(path))
                 return path;
@@ -188,10 +188,10 @@ namespace Sharp80.TRS80
             else
                 return String.Empty;
         }
-        internal static string LastTapeFile => Settings.LastTapeFile;
+        internal static string LastTapeFile => settings.LastTapeFile;
         public static string GetTapeFilePath(string Prompt, string DefaultPath, bool Save, bool SelectFileInDialog)
         {
-            return Dialogs.UserSelectFile(Save: Save,
+            return dialogs.UserSelectFile(Save: Save,
                                           DefaultPath: DefaultPath,
                                           Title: Prompt,
                                           Filter: "TRS-80 Tape Files (*.cas)|*.cas|All Files (*.*)|*.*",
@@ -203,7 +203,7 @@ namespace Sharp80.TRS80
             bool? save = false;
 
             if (Computer.TapeChanged)
-                save = Dialogs.AskYesNoCancel("The tape has been written to. Save it?");
+                save = dialogs.AskYesNoCancel("The tape has been written to. Save it?");
 
             if (!save.HasValue)
                 return false;
@@ -216,7 +216,7 @@ namespace Sharp80.TRS80
                     if (!Directory.Exists(Path.GetDirectoryName(path)))
                         path = Path.Combine(AppDataPath, "Tapes\\");
 
-                    path = Dialogs.GetTapeFilePath(path, true);
+                    path = dialogs.GetTapeFilePath(path, true);
                     if (string.IsNullOrWhiteSpace(path))
                     {
                         return false;
@@ -224,7 +224,7 @@ namespace Sharp80.TRS80
                     else
                     {
                         Computer.TapeFilePath = path;
-                        Settings.LastTapeFile = path;
+                        settings.LastTapeFile = path;
                     }
                 }
                 Computer.TapeSave();
@@ -236,16 +236,16 @@ namespace Sharp80.TRS80
 
         public static bool GetAsmFilePath(out string Path)
         {
-            Path = Settings.LastAsmFile;
+            Path = settings.LastAsmFile;
 
             if (String.IsNullOrWhiteSpace(Path))
                 Path = System.IO.Path.Combine(AppDataPath, @"ASM Files\");
 
-            Path = Dialogs.GetAssemblyFile(Path, false);
+            Path = dialogs.GetAssemblyFile(Path, false);
 
             if (Path.Length > 0)
             {
-                Settings.LastAsmFile = Path;
+                settings.LastAsmFile = Path;
                 return true;
             }
             else

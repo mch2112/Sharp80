@@ -13,8 +13,6 @@ namespace Sharp80.Z80.Assembler
     {
         public const int MAX_TITLE_LENGTH = 6;
 
-        public bool OK { get; private set; } = false;
-
         private Assembly assembly = null;
         private string title = null;
         private List<Instruction> instructionSet;
@@ -56,6 +54,10 @@ namespace Sharp80.Z80.Assembler
             instructionSet = InstructionSet.ToList();
         }
 
+        // PROPERTIES
+
+        public bool OK { get; private set; } = false;
+
         // MAIN PROCESS
 
         public Assembly Assemble(string SourceText)
@@ -73,7 +75,6 @@ namespace Sharp80.Z80.Assembler
             }
             return assembly;
         }
-
 
         private void Assemble()
         {
@@ -93,8 +94,6 @@ namespace Sharp80.Z80.Assembler
             int sourceFileLine = 0;
             Macro m = null;
 
-            bool ended = false;
-
             for (int i = 0; i < lines.Count; i++)
             {
                 sourceFileLine++;
@@ -105,10 +104,12 @@ namespace Sharp80.Z80.Assembler
                 {
                     string mn = GetCol(line, 1);
 
-                    if (m != null) // are we currently loading a macro?
+                    if (m != null) // are we currently loading a macro definition?
                     {
                         if (mn == "ENDM")
                             m = null;
+                        else if (mn == "MACRO")
+                            AddLine(line, sourceFileLine, null, "Illegal nested macro");
                         else if (!String.IsNullOrWhiteSpace(line))
                             m.AddLine(line);
                     }
@@ -117,18 +118,19 @@ namespace Sharp80.Z80.Assembler
                         macros.Add(m = new Macro(line));
                         AddLine("; Macro " + m.Name, sourceFileLine);
                     }
-                    else if ((m = GetMacro(mn)) != null)
+                    else if ((m = macros.FirstOrDefault(macro => macro.Name == mn)) != null)
                     {
+                        // we're expanding an already defined macro
                         // macros convert a delimited set of tokens each to an instruction
                         foreach (string l in m.Expand(GetCol(line, 2), sourceFileLine, out string Error))
                             AddLine(l, sourceFileLine, null, Error);
                         m = null;
                     }
-                    else if (!ended)
+                    else
                     {
                         AddLine(line, sourceFileLine);
                         if (mn == "END")
-                            ended = true; // don't allow any non macro lines after end statement
+                            break;
                     }
                 }
             }
@@ -440,9 +442,6 @@ namespace Sharp80.Z80.Assembler
                 }
             }
         }
-
-        // AUXILIARY PROCESSES
-
         private bool GetMatchingInstruction(LineInfo lp)
         {
             if (!lp.IsMetaInstruction)
@@ -472,7 +471,10 @@ namespace Sharp80.Z80.Assembler
             }
             return false;
         }
-        private string PreprocessLine(string Input)
+
+        // HELPER METHODS
+
+        private static string PreprocessLine(string Input)
         {
             string line = Input.TrimEnd().Truncate(0x100);
 
@@ -541,8 +543,6 @@ namespace Sharp80.Z80.Assembler
 
             return sb.ToString();
         }
-        private Macro GetMacro(string Name) => macros.FirstOrDefault(m => m.Name == Name);
-
         private static ushort? GetSymbolValue(Dictionary<string, LineInfo> SymbolTable, LineInfo CurrentLP, string Symbol, ushort Offset = 0, bool ForceHex = false)
         {
             string displacement;
@@ -727,9 +727,6 @@ namespace Sharp80.Z80.Assembler
             // They must both be numeric
             return true;
         }
-
-        // HELPER METHODS
-
         private static string GetCol(string Line, int ColNum)
         {
             string[] lines = Line.Split('\t');

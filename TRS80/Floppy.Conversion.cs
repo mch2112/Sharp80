@@ -41,43 +41,10 @@ namespace Sharp80.TRS80
                 {
                     if (DiskData[i] != JV3_SECTOR_FREE && DiskData[i + 1] != JV3_SECTOR_FREE) // 0xFF for unused header entries
                     {
-                        var sd = new SectorDescriptor()
-                        {
-                            TrackNumber = DiskData[i],
-                            SectorNumber = DiskData[i + 1]
-                        };
-
                         byte flags = DiskData[i + 2];
-
-                        sd.InUse = (flags & JV3_SECTOR_FREE_FLAGS) != JV3_SECTOR_FREE_FLAGS;
-                        sd.DoubleDensity = (flags & JV3_DOUBLE_DENSITY) == JV3_DOUBLE_DENSITY;
-
-                        // The 2-bit DAM_TYPE field encodes the sector's data address mark:
-                        // JV3_DAM value   Single density        Double density
-                        // 0x00            0xFB (Normal)         0xFB (Normal)
-                        // 0x20            0xFA (User-defined)	 0xF8 (Deleted)
-                        // 0x40            0xF9 (User-defined)   Invalid; unused
-                        // 0x60            0xF8 (Deleted)        Invalid; unused
-                        switch (flags & JV3_DAM_TYPE)
-                        {
-                            case 0x00:
-                                sd.DAM = DAM_NORMAL;
-                                break;
-                            case 0x20:
-                                sd.DAM = DAM_DELETED;// don't record 0xFA in SD since causes incompatibilities
-                                break;
-                            case 0x40:
-                                sd.DAM = sd.DoubleDensity ? DAM_NORMAL : (byte)0xF9;
-                                break;
-                            case 0x60:
-                                sd.DAM = DAM_DELETED;
-                                break;
-                        }
-
-                        sd.SideOne = (flags & JV3_SIDE_ONE) == JV3_SIDE_ONE;
-                        sd.CrcError = (flags & JV3_CRC_ERROR) == JV3_CRC_ERROR;
-                        sd.NonIbm = (flags & JV3_NON_IBM) == JV3_NON_IBM;
-
+                        bool dd = (flags & JV3_DOUBLE_DENSITY) == JV3_DOUBLE_DENSITY;
+                        var inUse = (flags & JV3_SECTOR_FREE_FLAGS) != JV3_SECTOR_FREE_FLAGS;
+                        
                         // Sector Size Codes
                         // Size    IBM size   SECTOR_SIZE field SECTOR_SIZE field
                         //           code        if in use         if free
@@ -85,10 +52,19 @@ namespace Sharp80.TRS80
                         // 0x100      01            0                 3
                         // 0x200      02            3                 0
                         // 0x400      03            2                 1
-
                         // JV3 sector size code is stored in a weird way
-                        sd.SectorSizeCode = (byte)((flags & JV3_SECTOR_SIZE_MASK) ^ (sd.InUse ? 1 : 2));
-                        sd.SectorSize = GetDataLengthFromCode(sd.SectorSizeCode);
+                        var sectorSizeCode = (byte)((flags & JV3_SECTOR_SIZE_MASK) ^ (inUse ? 1 : 2));
+                        var sectorSize = GetDataLengthFromCode(sectorSizeCode);
+
+                        var sd = new SectorDescriptor(DiskData[i],
+                                                      DiskData[i + 1],
+                                                      (flags & JV3_SIDE_ONE) == JV3_SIDE_ONE,
+                                                      dd,
+                                                      GetDamFromJV3Flags(flags, dd),
+                                                      new byte[sectorSize],
+                                                      inUse,
+                                                      (flags & JV3_CRC_ERROR) == JV3_CRC_ERROR,
+                                                      (flags & JV3_NON_IBM) == JV3_NON_IBM);
 
                         sectors.Add(sd);
                     }
@@ -108,14 +84,12 @@ namespace Sharp80.TRS80
                         if (DiskData.Length - diskCursor < sd.SectorSize) // not enough data for sector
                         {
                             if (DiskData.Length > diskCursor) // try to get some data
-                                sd.SectorData = DiskData.Slice(diskCursor, DiskData.Length).Pad(sd.SectorSize, (byte)0x00);
-                            else
-                                sd.SectorData = new byte[sd.SectorSize];
+                                Array.Copy(DiskData, diskCursor, sd.SectorData, 0, DiskData.Length - diskCursor);
                             diskCursor = DiskData.Length; // push cursor past end; we're done
                         }
                         else
                         {
-                            sd.SectorData = DiskData.Slice(diskCursor, diskCursor + sd.SectorSize);
+                            Array.Copy(DiskData, diskCursor, sd.SectorData, 0, sd.SectorSize);
                         }
                     }
                     diskCursor += sd.SectorSize;
@@ -123,6 +97,30 @@ namespace Sharp80.TRS80
             }
             return new FloppyData(sectors, writeProt.Value);
         }
+
+        private static byte GetDamFromJV3Flags(byte flags, bool DoubleDensity)
+        {
+            // The 2-bit DAM_TYPE field encodes the sector's data address mark:
+            // JV3_DAM value   Single density        Double density
+            // 0x00            0xFB (Normal)         0xFB (Normal)
+            // 0x20            0xFA (User-defined)	 0xF8 (Deleted)
+            // 0x40            0xF9 (User-defined)   Invalid; unused
+            // 0x60            0xF8 (Deleted)        Invalid; unused
+            switch (flags & JV3_DAM_TYPE)
+            {
+                case 0x00:
+                    return DAM_NORMAL;
+                case 0x20:
+                    return DAM_DELETED;// don't record 0xFA in SD since causes incompatibilities
+                case 0x40:
+                    return DoubleDensity ? DAM_NORMAL : (byte)0xF9;
+                case 0x60:
+                    return DAM_DELETED;
+                default:
+                    throw new Exception();
+            }
+        }
+
         private byte[] ToJV3()
         {
             var sectors = floppyData.Tracks.SelectMany(t => t.ToSectorDescriptors())
@@ -212,20 +210,7 @@ namespace Sharp80.TRS80
             for (byte i = 0; i < numTracks; i++)
                 for (byte j = 0; j < SECTORS_PER_TRACK; j++)
                 {
-                    var sd = new SectorDescriptor()
-                    {
-                        TrackNumber = i,
-                        SectorNumber = j,
-                        CrcError = false,
-                        DAM = (i == 17) ? DAM_DELETED : DAM_NORMAL,
-                        DoubleDensity = false,
-                        InUse = true,
-                        //NonIbm = false,
-                        SectorSize = SECTOR_LENGTH,
-                        SectorSizeCode = GetDataLengthCode(SECTOR_LENGTH),
-                        SideOne = false,
-                        SectorData = new byte[SECTOR_LENGTH]
-                    };
+                    var sd = new SectorDescriptor(i, j, false, false, (i == 17) ? DAM_DELETED : DAM_NORMAL, new byte[SECTOR_LENGTH], true, false, false);
                     Array.Copy(DiskData, (i * SECTORS_PER_TRACK + j) * SECTOR_LENGTH, sd.SectorData, 0, SECTOR_LENGTH);
                     sectors.Add(sd);
                 }
@@ -237,7 +222,7 @@ namespace Sharp80.TRS80
             // TODO: Handle case where a track is missing
 
             var tracks = floppyData.Tracks.Where(t => !t.SideOne);
-            var sectors = tracks.SelectMany(t => MakeJV1Compatible(t.ToSectorDescriptors()))
+            var sectors = tracks.SelectMany(t => MakeJV1Compatible(t.ToSectorDescriptors(), t.PhysicalTrackNum))
                                 .OrderBy(s => s.SectorNumber)
                                 .OrderBy(s => s.TrackNumber);
 
@@ -251,14 +236,14 @@ namespace Sharp80.TRS80
             }
             return data;
         }
-        private IEnumerable<SectorDescriptor> MakeJV1Compatible(IEnumerable<SectorDescriptor> Sectors)
+        private IEnumerable<SectorDescriptor> MakeJV1Compatible(IEnumerable<SectorDescriptor> Sectors, byte TrackNum)
         {
             var sectors = Sectors.Where(s => s.SectorSize == JV1_SECTOR_SIZE);
 
             var newSectors = new List<SectorDescriptor>();
 
-            for (int i = 0; i < JV1_SECTORS_PER_TRACK; i++)
-                newSectors.Add(sectors.FirstOrDefault(s => s.SectorNumber == i) ?? new SectorDescriptor() { SectorData = new byte[JV1_SECTOR_SIZE] });
+            for (byte i = 0; i < JV1_SECTORS_PER_TRACK; i++)
+                newSectors.Add(sectors.FirstOrDefault(s => s.SectorNumber == i) ?? new SectorDescriptor(TrackNum, i, false, false, DAM_NORMAL, new byte[JV1_SECTOR_SIZE]));
 
             return newSectors;
         }
