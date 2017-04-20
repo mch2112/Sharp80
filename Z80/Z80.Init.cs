@@ -188,8 +188,8 @@ namespace Sharp80.Z80
                 InstructionSet.Add(new Instruction(string.Format("INC {0}",      r16s[i].Name),  6, () => inc(r16s[i]),                (byte)(0x03 + i * 0x10)));
                 InstructionSet.Add(new Instruction(string.Format("DEC {0}",      r16s[i].Name),  6, () => dec(r16s[i]),                (byte)(0x0B + i * 0x10)));
                 InstructionSet.Add(new Instruction(string.Format("ADD HL, {0}",  r16s[i].Name), 11, () => add(HL, r16s[i]),            (byte)(0x09 + i * 0x10)));
-                InstructionSet.Add(new Instruction(string.Format("SBC HL, {0}",  r16s[i].Name), 15, () => sbc_hl(r16s[i]), 0xED,      (byte)(0x42 + i * 0x10)));
-                InstructionSet.Add(new Instruction(string.Format("ADC HL, {0}",  r16s[i].Name), 15, () => adc_hl(r16s[i]), 0xED,      (byte)(0x4A + i * 0x10)));
+                InstructionSet.Add(new Instruction(string.Format("SBC HL, {0}",  r16s[i].Name), 15, () => sbc_hl(r16s[i]), 0xED,       (byte)(0x42 + i * 0x10)));
+                InstructionSet.Add(new Instruction(string.Format("ADC HL, {0}",  r16s[i].Name), 15, () => adc_hl(r16s[i]), 0xED,       (byte)(0x4A + i * 0x10)));
 
                 InstructionSet.Add(new Instruction($"POP {r16a[i].Name}",  10, () => pop(r16a[i]),  (byte)(0xC1 + i * 0x10)));
                 InstructionSet.Add(new Instruction($"PUSH {r16a[i].Name}", 11, () => push(r16a[i]), (byte)(0xC5 + i * 0x10)));

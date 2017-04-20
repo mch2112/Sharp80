@@ -97,7 +97,7 @@ namespace Sharp80.Views
             DriveNumber = DriveNumber ?? 0;
 
             var f = Computer.GetFloppy(DriveNumber.Value);
-            var sd = f.GetSectorDescriptor(trackNum, sideOne, sectorIndex);
+            var sd = f?.GetSectorDescriptor(trackNum, sideOne, sectorIndex);
 
             int numBytes = Math.Min(0x100, sd?.SectorData?.Length ?? 0);
 
@@ -109,7 +109,7 @@ namespace Sharp80.Views
             WriteToByteArray(cells, 0x0C0, "Trk");
             WriteToByteArrayHex(cells, 0x100, trackNum);
 
-            if (f.DoubleSided)
+            if (f?.DoubleSided ?? false)
             {
                 WriteToByteArray(cells, 0x280, "Side");
                 cells[0x2C0] = (byte)(sideOne ? '1' : '0');

@@ -612,34 +612,10 @@ namespace Sharp80.DirectX
         }
         private void DrawView(IEnumerable<byte> ViewBytes, bool ForceRedraw)
         {
-            bool stdWidth;
-            DXBitmap[] charGen;
-
-            int end;
-            string msg;
-
-            // Tag the status message at the end if there is one
-            if (cyclesForMessageRemaining > 0 || (!AdvancedView && !computer.IsRunning && computer.HasRunYet))
-            {
-                if (cyclesForMessageRemaining > 0)
-                {
-                    msg = " " + StatusMessage;
-                    end = ScreenMetrics.NUM_SCREEN_CHARS - msg.Length;
-                }
-                else
-                {
-                    msg = " Paused";
-                    end = ScreenMetrics.NUM_SCREEN_CHARS - 7;
-                }
-            }
-            else
-            {
-                end = ScreenMetrics.NUM_SCREEN_CHARS;
-                msg = String.Empty;
-            }
-
+            
             // Figure out what we are displaying and which char set to use
-
+            DXBitmap[] charGen;
+            bool stdWidth;
             if (ViewBytes is null)
             {
                 ViewBytes = computer.VideoMemory;
@@ -655,6 +631,24 @@ namespace Sharp80.DirectX
                 charGen = charGenNormal;
             }
 
+            int stride = stdWidth ? 1 : 2;
+            int end;
+            string msg;
+            // Tag the status message at the end if there is one
+            if (cyclesForMessageRemaining > 0 || (!AdvancedView && !computer.IsRunning && computer.HasRunYet))
+            {
+                if (cyclesForMessageRemaining > 0)  
+                    msg = " " + StatusMessage; // leading space for readability.
+                else
+                    msg = " Paused";
+                end = ScreenMetrics.NUM_SCREEN_CHARS - msg.Length * stride;
+            }
+            else
+            {
+                end = ScreenMetrics.NUM_SCREEN_CHARS;
+                msg = String.Empty;
+            }
+            
             var cells = stdWidth ? cellsNormal : cellsWide;
             bool drawAll = ForceRedraw || stdWidth != shadowIsStdWidth;
 
@@ -663,7 +657,7 @@ namespace Sharp80.DirectX
             int i = 0;
             foreach (byte v in ViewBytes)
             {
-                byte b = (i < end) ? v : (byte)msg[(i - end) / (stdWidth ? 1 : 2)];
+                byte b = (i < end) ? v : (byte)msg[(i - end) / stride];
 
                 if ((stdWidth || i % 2 == 0) && (drawAll || shadowScreen[i] != b))
                 {
