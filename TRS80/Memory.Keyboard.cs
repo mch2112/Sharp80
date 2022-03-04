@@ -138,7 +138,6 @@ namespace Sharp80.TRS80
             complexMappings.Add((PhysicalKey, false), (VirtualKeyUnshifted, VirtualShiftUnshifted));
             complexMappings.Add((PhysicalKey, true), (VirtualKeyShifted, VirtualShiftShifted));
         }
-
         private void AddKey(VirtualKey VirtualKey, ushort Address, byte Mask, params KeyCode[] PhysicalKeys)
         {
             keyAddresses.Add(VirtualKey, (Address, Mask, (byte)~Mask));

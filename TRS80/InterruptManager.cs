@@ -19,15 +19,15 @@ namespace Sharp80.TRS80
         public Trigger CasRisingEdgeIntLatch { get; private set; }
         public Trigger CasFallingEdgeIntLatch { get; private set; }
 
-        private Trigger vidAltCharLatch;
-        private Trigger vidWideCharLatch;
+        private readonly Trigger vidAltCharLatch;
+        private readonly Trigger vidWideCharLatch;
 
-        private Trigger vidWaitLatch;
-        private Trigger extIoIntLatch;
-        private Trigger ioIntLatch;
-        private Trigger rs232ErrorIntLatch;
-        private Trigger rs232ReceiveIntLatch;
-        private Trigger rs232XmitIntLatch;
+        private readonly Trigger vidWaitLatch;
+        private readonly Trigger extIoIntLatch;
+        private readonly Trigger ioIntLatch;
+        private readonly Trigger rs232ErrorIntLatch;
+        private readonly Trigger rs232ReceiveIntLatch;
+        private readonly Trigger rs232XmitIntLatch;
 
         public InterruptManager(Computer Computer)
         {
@@ -103,8 +103,8 @@ namespace Sharp80.TRS80
         {
             set
             {
-                bool oldNmiEnabled = FdcNmiLatch.Enabled;
-                bool oldMotorOrDrqNmiEnabled = FdcMotorOffNmiLatch.Enabled;
+                //bool oldNmiEnabled = FdcNmiLatch.Enabled;
+                //bool oldMotorOrDrqNmiEnabled = FdcMotorOffNmiLatch.Enabled;
 
                 FdcNmiLatch.Enabled = value.IsBitSet(7);
                 FdcMotorOffNmiLatch.Enabled = value.IsBitSet(6);

@@ -124,7 +124,7 @@ namespace Sharp80.TRS80
         }
         public static bool SaveFloppies(Computer Computer)
         {
-            // returns true on user cancel
+            // returns false on user cancel
             for (byte b = 0; b < 4; b++)
             {
                 if (!SaveFloppyIfRequired(Computer, b))

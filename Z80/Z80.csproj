@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Z80</RootNamespace>
     <AssemblyName>Z80</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -44,11 +44,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assembler.Assembly.cs" />
-    <Compile Include="Assembler.cs" />
-    <Compile Include="Assembler.LineInfo.cs" />
-    <Compile Include="Assembler.Macro.cs" />
-    <Compile Include="Assembler.Operand.cs" />
+    <Compile Include="Assembler\Assembly.cs" />
+    <Compile Include="Assembler\Assembler.cs" />
+    <Compile Include="Assembler\LineInfo.cs" />
+    <Compile Include="Assembler\Macro.cs" />
+    <Compile Include="Assembler\Operand.cs" />
     <Compile Include="CircularBuffer.cs" />
     <Compile Include="Disassembler.cs" />
     <Compile Include="Extensions.cs" />

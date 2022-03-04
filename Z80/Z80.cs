@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Sharp80.Z80
 {
-    public partial class Z80 : IStatus
+    public partial class Z80
     {
         public const int MEMORY_SIZE = 0x10000;
 
@@ -14,17 +14,19 @@ namespace Sharp80.Z80
         public const int NUM_DISASSEMBLY_LINES = 22;
 
         private Disassembler disassembler;
-        private CircularBuffer historyBuffer;
+        private readonly CircularBuffer historyBuffer;
 
         // REGISTERS
 
-        private IRegister<ushort> PC, SP, WZ;
-        private IRegister<byte> A, F, B, C, D, E, H, L, I, R, Ap, Fp, Bp, Cp, Dp, Ep, Hp, Lp;
-        private IRegisterCompound IX, IY, BC, DE, HL, AF, BCp, DEp, HLp, AFp;
+        private readonly IRegister<ushort> PC;
+        private readonly IRegister<ushort> SP;
+        private readonly IRegister<ushort> WZ;
+        private readonly IRegister<byte> A, F, B, C, D, E, H, L, I, R, Ap, Fp, Bp, Cp, Dp, Ep, Hp, Lp;
+        private readonly RegisterCompound IX, IY, BC, DE, HL, AF, BCp, DEp, HLp, AFp;
 
-        private IRegister<byte> BCM, DEM, HLM;
-        private IRegisterIndexed IXM, IYM;
-        private IRegister<ushort> SPM;
+        private readonly IRegister<byte> BCM, DEM, HLM;
+        private readonly IRegisterIndexed IXM, IYM;
+        private readonly IRegister<ushort> SPM;
 
         // FLAGS
 
@@ -54,8 +56,8 @@ namespace Sharp80.Z80
         private const byte R_CF = BIT_0_INV_MASK, R_NF = BIT_1_INV_MASK, R_VF = BIT_2_INV_MASK, R_F3 = BIT_3_INV_MASK,
                            R_HF = BIT_4_INV_MASK, R_F5 = BIT_5_INV_MASK, R_ZF = BIT_6_INV_MASK, R_SF = BIT_7_INV_MASK;
 
-        private IComputer computer;
-        private IPorts ports;
+        private readonly IComputer computer;
+        private readonly IPorts ports;
 
         internal IMemory Memory { get; private set; }
         internal Instruction CurrentInstruction { get; private set; }
@@ -505,7 +507,7 @@ namespace Sharp80.Z80
                 if (traceOn != value)
                 {
                     if (value)
-                        TraceLog = new TraceLog(this, computer.ElapsedTStates);
+                        TraceLog = new TraceLog(this);
                     traceOn = value;
                 }
             }

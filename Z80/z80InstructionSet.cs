@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Sharp80.Z80
 {
-    public partial class Z80 : IStatus
+    public partial class Z80
     {
         public class Z80InstructionSet : IEnumerable<Instruction>
         {

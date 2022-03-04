@@ -16,15 +16,15 @@ namespace Sharp80.TRS80
 
         private const ushort KEYBOARD_MEMORY_BLOCK = 0x3800;
 
-        public SubArray<byte> VideoMemory { get; private set; }
+        public ArraySegment<byte> VideoMemory { get; private set; }
 
-        private byte[] mem;            // The entire memory space of the TRS80
+        private readonly byte[] mem;            // The entire memory space of the TRS80
         private ushort firstRAMByte;    // 1 + the last ROM byte
 
         public Memory()
         {
             mem = new byte[Z80.Z80.MEMORY_SIZE];
-            VideoMemory = new SubArray<byte>(mem, 0x3C00, 0x4000);
+            VideoMemory = new ArraySegment<byte>(mem, 0x3C00, 0x400);
 
 #if NOROM
             firstRAMByte = 0;

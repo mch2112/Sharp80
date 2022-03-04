@@ -18,18 +18,18 @@ namespace Sharp80.TRS80
         public bool Ready { get; private set; }
         public bool HasRunYet { get; private set; }
 
-        private Z80.Z80 cpu;
-        private Clock clock;
-        private FloppyController floppyController;
-        private PortSet ports;
-        private InterruptManager intMgr;
-        private IScreen screen;
-        private ISound sound;
-        private Tape tape;
-        private Printer printer;
-        private Memory memory;
-        private ISettings settings;
-        private IDialogs dialogs;
+        private readonly Z80.Z80 cpu;
+        private readonly Clock clock;
+        private readonly FloppyController floppyController;
+        private readonly PortSet ports;
+        private readonly InterruptManager intMgr;
+        private readonly IScreen screen;
+        private readonly ISound sound;
+        private readonly Tape tape;
+        private readonly Printer printer;
+        private readonly Memory memory;
+        private readonly ISettings settings;
+        private readonly IDialogs dialogs;
 
         // CONSTRUCTOR
 
@@ -104,7 +104,7 @@ namespace Sharp80.TRS80
 
         public Z80.IMemory Memory => memory;
         public Z80.IPorts Ports => ports;
-        public SubArray<byte> VideoMemory => memory.VideoMemory;
+        public ArraySegment<byte> VideoMemory => memory.VideoMemory;
 
         public ushort BreakPoint
         {
@@ -133,7 +133,7 @@ namespace Sharp80.TRS80
             set => sound.UseDriveNoise = value;
         }
         public bool DiskUserEnabled { set; get; }
-        public Z80.IStatus CpuStatus
+        public Z80.Z80 CpuStatus
         {
             // Safe to send this out in interface form
             get => cpu;
@@ -290,7 +290,7 @@ namespace Sharp80.TRS80
         public bool LoadFloppy(byte DriveNum, string FilePath)
         {
             bool running = IsRunning;
-            bool ret = false;
+            bool ret;
 
             if (running)
                 Stop(WaitForStop: true);
@@ -460,14 +460,13 @@ namespace Sharp80.TRS80
         {
             get
             {
-                var m = VideoMemory;
                 StringBuilder sb = new StringBuilder();
                 var inc = WideCharMode ? 2 : 1;
                 for (int i = 0; i < ScreenMetrics.NUM_SCREEN_CHARS_Y; i++)
                 {
                     for (int j = 0; j < ScreenMetrics.NUM_SCREEN_CHARS_X; j += inc)
                     {
-                        var b = m[i * ScreenMetrics.NUM_SCREEN_CHARS_X + j];
+                        var b = memory[0x3C00 + i * ScreenMetrics.NUM_SCREEN_CHARS_X + j];
 
                         if (b.IsBetween(0x21, 0x7F))
                         {
@@ -536,17 +535,17 @@ namespace Sharp80.TRS80
             {
                 foreach (char c in text)
                 {
-                    var kc = c.ToKeyCode();
+                    var (Code, Shifted) = c.ToKeyCode();
 
-                    if (kc.Shifted)
+                    if (Shifted)
                         NotifyKeyboardChange(new KeyState(KeyCode.LeftShift, true, false, false, true));
 
                     if (c == '\n')
-                        await KeyStroke(kc.Code, kc.Shifted, 1000);
+                        await KeyStroke(Code, Shifted, 1000);
                     else
-                        await KeyStroke(kc.Code, kc.Shifted);
+                        await KeyStroke(Code, Shifted);
 
-                    if (kc.Shifted)
+                    if (Shifted)
                         NotifyKeyboardChange(new KeyState(KeyCode.LeftShift, true, false, false, false));
 
                     if (Token.IsCancellationRequested || !IsRunning)

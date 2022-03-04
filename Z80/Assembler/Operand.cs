@@ -200,7 +200,7 @@ namespace Sharp80.Z80.Assembler
             {
                 string text = RawText;
 
-                string index = String.Empty;
+                string index;
 
                 if (IndexDisplacement.HasValue)
                 {

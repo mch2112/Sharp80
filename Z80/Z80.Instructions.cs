@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Sharp80.Z80
 {
-    public partial class Z80 : IStatus
+    public partial class Z80
     {
         private static readonly byte[] BIT = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
         private static readonly byte[] NOT = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F };
@@ -867,15 +867,11 @@ namespace Sharp80.Z80
         }
         private void ex(IRegister<ushort> r1, IRegister<ushort> r2)
         {
-            ushort temp = r1.Value;
-            r1.Value = r2.Value;
-            r2.Value = temp;
+            (r2.Value, r1.Value) = (r1.Value, r2.Value);
         }
         private void ex_spm(IRegister<ushort> r2)
         {
-            ushort temp = SPM.Value;
-            SPM.Value = r2.Value;
-            r2.Value = temp;
+            (r2.Value, SPM.Value) = (SPM.Value, r2.Value);
             WZ.Value = r2.Value;
         }
 

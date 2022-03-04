@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Sharp80.Z80
 {
-    public partial class Z80 : IStatus
+    public partial class Z80
     {
         private ushort[] disassemblyAddresses = new ushort[NUM_DISASSEMBLY_LINES];
         private static string[] flagsToString = new string[0x100];

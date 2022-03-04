@@ -60,16 +60,16 @@ namespace Sharp80.TRS80
                 for (int i = 0; i < Title.Length; i++)
                     writer.Write((byte)Title[i]);
 
-                foreach (var d in Assembly.Segments)
+                foreach (var (SegmentAddress, Bytes) in Assembly.Segments)
                 {
-                    dest = d.SegmentAddress;
+                    dest = SegmentAddress;
                     cursor = 0;
 
-                    segmentSize = d.Bytes.Length;
+                    segmentSize = Bytes.Length;
 
                     while (cursor < segmentSize)
                     {
-                        blockSize = Math.Min(0x100, d.Bytes.Length - cursor);
+                        blockSize = Math.Min(0x100, Bytes.Length - cursor);
                         writer.Write((byte)0x01);   // block marker
                         writer.Write((byte)(blockSize + 2)); // 0x02 == 256 bytes
                         dest.Split(out lowDest, out highDest);
@@ -77,7 +77,7 @@ namespace Sharp80.TRS80
                         writer.Write(highDest);
                         while (blockSize-- > 0)
                         {
-                            writer.Write(d.Bytes[cursor++]);
+                            writer.Write(Bytes[cursor++]);
                             dest++;
                         }
                     }
@@ -101,9 +101,9 @@ namespace Sharp80.TRS80
         {
             if (Valid)
             {
-                foreach (var b in segments)
-                    for (int i = 0; i < b.Bytes.Length; i++)
-                        Memory[(ushort)(i + b.SegmentAddress)] = b.Bytes[i];
+                foreach (var (SegmentAddress, Bytes) in segments)
+                    for (int i = 0; i < Bytes.Length; i++)
+                        Memory[(ushort)(i + SegmentAddress)] = Bytes[i];
                 IsLoaded = true;
                 return true;
             }

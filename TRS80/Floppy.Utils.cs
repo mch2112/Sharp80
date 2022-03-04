@@ -180,7 +180,7 @@ namespace Sharp80.TRS80
             fn = fn.PadRight(8);
             ext = ext.PadRight(3, 'X');
 
-            fn = fn + ext;
+            fn += ext;
 
             return fn;
         }

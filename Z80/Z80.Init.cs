@@ -5,7 +5,7 @@ using System;
 
 namespace Sharp80.Z80
 {
-    public partial class Z80 : IStatus
+    public partial class Z80
     {
         public Z80InstructionSet InstructionSet { get; }
 

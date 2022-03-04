@@ -546,7 +546,7 @@ namespace Sharp80.Z80.Assembler
         private static ushort? GetSymbolValue(Dictionary<string, LineInfo> SymbolTable, LineInfo CurrentLP, string Symbol, ushort Offset = 0, bool ForceHex = false)
         {
             string displacement;
-            ushort? sVal = 0;
+            ushort? sVal;
             ushort? ret = null;
 
             if (Symbol.Length == 0)

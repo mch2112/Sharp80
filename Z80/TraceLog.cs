@@ -9,15 +9,15 @@ namespace Sharp80.Z80
     internal class TraceLog
     {
         private const int MAX_LINES = 1000000;
-        private Z80 cpu;
-        private List<string> trace;
-        private ushort pc, bc, de, hl, ix, iy, sp;
+        private readonly Z80 cpu;
+        private readonly List<string> trace;
+        private ushort bc, de, hl, ix, iy, sp;
         private byte a, hlm;
         private string flags;
         private int lineCount;
-        private Object logLock = new Object();
+        private readonly object logLock = new object();
 
-        public TraceLog(Z80 Cpu, ulong ElapsedTStataes)
+        public TraceLog(Z80 Cpu)
         {
             cpu = Cpu;
             trace = new List<string>(100000);
@@ -50,7 +50,6 @@ namespace Sharp80.Z80
             inst += $"{ElapsedTStates:000,000,000}   {cpu.PcVal:X4}  {i.FullName(cpu.Memory, cpu.PcVal)}".PadRight(34);
 
             // Capture register values so we know if they've changed
-            pc = cpu.PcVal;
             a = cpu.AVal;
             bc = cpu.BcVal;
             de = cpu.DeVal;
@@ -65,7 +64,7 @@ namespace Sharp80.Z80
             var retVal = Exec(i);
 
             // Show changed registers
-            if (a == cpu.AVal) inst += "     ";      else inst += $"A:{cpu.AVal:X2} ";
+            if (a == cpu.AVal)   inst += "     ";    else inst += $"A:{cpu.AVal:X2} ";
             if (hl == cpu.HlVal) inst += "        "; else inst += $"HL:{cpu.HlVal:X4} ";
             if (bc == cpu.BcVal) inst += "        "; else inst += $"BC:{cpu.BcVal:X4} ";
             if (de == cpu.DeVal) inst += "        "; else inst += $"DE:{cpu.DeVal:X4} ";
@@ -95,7 +94,7 @@ namespace Sharp80.Z80
         {
             lock (logLock)
             {
-                var ret = String.Join(Environment.NewLine, trace);
+                var ret = string.Join(Environment.NewLine, trace);
                 trace.Clear();
                 return ret;
             }

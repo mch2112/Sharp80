@@ -12,8 +12,8 @@ namespace Sharp80.TRS80
         private enum OpStatus
         { Prepare, Delay, Step, CheckVerify, VerifyTrack, CheckingWriteProtectStatus, SetDrq, DrqCheck, SeekingIndexHole, SeekingIDAM, ReadingAddressData, CheckingAddressData, SeekingDAM, ReadingData, WritingData, WriteFiller, WriteFilter2, WriteDAM, WriteCRCHigh, WriteCRCLow, ReadCRCHigh, ReadCRCLow, Finalize, NMI, OpDone }
 
-        private PortSet ports;
-        private InterruptManager IntMgr;
+        private readonly PortSet ports;
+        private readonly InterruptManager IntMgr;
         private Clock clock;
         private Computer computer;
         private ISound sound;
@@ -181,7 +181,7 @@ namespace Sharp80.TRS80
         }
         internal bool LoadFloppy(byte DriveNum, string FilePath)
         {
-            var ret = false;
+            bool ret;
             if (FilePath.Length == 0)
             {
                 UnloadDrive(DriveNum);

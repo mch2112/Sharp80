@@ -23,7 +23,7 @@ namespace Sharp80.Z80
     {
         public IRegister<ushort> Proxy { get; }
         public string Name { get; }
-        private Z80 z80;
+        private readonly Z80 z80;
         public Register8Indirect(Z80 Processor, IRegister<ushort> Proxy, string Name)
         {
             z80 = Processor;
@@ -123,7 +123,7 @@ namespace Sharp80.Z80
         public string Name { get; }
 
         private Z80 z80;
-        private IRegister<ushort> proxy;
+        private readonly IRegister<ushort> proxy;
 
         public Register16Indirect(Z80 Processor, IRegister<ushort> Proxy, string Name)
         {
